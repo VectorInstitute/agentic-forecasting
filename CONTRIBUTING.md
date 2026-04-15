@@ -13,7 +13,7 @@ Commits do **not** run linters automatically. After `uv sync --group dev`, run t
 uv run pre-commit run --all-files
 ```
 
-Or use **`make dev lint`** to apply Black/isort and run mypy on the `aieng` package. Fix any failures before submitting a PR — GitHub Actions runs `pre-commit run --all-files` on pushes and pull requests to `main`.
+Or use **`make dev lint`** to sync the dev environment, apply Ruff formatting/import sorting, and run mypy on the `aieng` package. Fix any failures before submitting a PR — GitHub Actions runs `pre-commit run --all-files` on pushes and pull requests to `main`.
 
 ## Coding guidelines
 
