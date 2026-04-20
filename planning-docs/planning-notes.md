@@ -1,3 +1,73 @@
+## Apr 20, 2026 — The futures baseline as a teaching concept; context and the no-futures case [Ethan]
+
+The energy commodity experiment has an unusually strong built-in baseline: the front-month futures price is the market's own prediction, aggregating the knowledge of all participants. This makes it ideal **learn days material** — the comparison is intuitive ("can you beat the market?"), the failure modes are instructive, and the concept generalises immediately to a broader question: *where does context add the most value?*
+
+The answer seems to hinge on whether a futures-like signal exists. When it does, the market has already processed most of the publicly available information. Qualitative context may still add value at the margins — around events the market hasn't priced yet, or in regimes where consensus is breaking down — but the bar is high. When there is no such signal, numerical methods are working from historical patterns alone, and the gap where context can contribute is much wider.
+
+This suggests a rough taxonomy of our experiments by how much context can plausibly add:
+
+- **Liquid markets with futures** (WTI crude, RBOB gasoline, equity indices): market baseline is strong; context is supplementary and hard to add systematically.
+- **Non-market targets** (CPI food sub-indices, macroeconomic indicators): no efficient aggregator of expert knowledge; context — news, policy signals, commodity market inputs — is potentially a primary signal. The CFPR experiment lives here. This is exactly why AutoARIMA struggles at regime shifts: it cannot see the qualitative drivers.
+- **Sparse, decision-driven targets** (BoC rate decisions, regulatory outcomes): fundamentally a reasoning task; historical patterns are weak signal; context and structured argument are essentially the whole forecast.
+- **Discrete event questions** (ForecastBench): no continuous price series at all; pure information retrieval and reasoning.
+
+The bootcamp arc runs roughly in this order — from the hardest case for context (liquid markets) to the cases where context is most essential (discrete events). That's a compelling pedagogical structure, and it gives participants a clear frame for understanding when they should expect an agentic forecaster to outperform a numerical one. We should keep this in mind as we sequence the reference experiments and learn days materials.
+
+The **futures baseline** (`FuturesBaseline` predictor, using the front-month futures price as the point forecast) is worth enshrining as a proper reference method in `implementations/methods/` once the energy experiment is underway. It is novel relative to any other predictor in the project, highly interpretable, and directly illustrates the concept of market-implied expectations — all of which make it excellent teaching material independently of its performance.
+
+---
+
+## Apr 20, 2026 — Energy commodity prices: next reference experiment [Ethan & Agent]
+
+### Framing
+
+The next reference experiment should be crude oil and gasoline prices using daily financial data rather than the NYISO grid dataset. The motivating insight: crude oil futures embed a *market-consensus forward curve* as a first-class covariate, which sets up an unusually sharp head-to-head comparison. At any prediction horizon, a futures contract at that maturity already represents what the market thinks the price will be. The central empirical question becomes: can any method — ARIMA, LLMP, frontier agent — consistently add something on top of what the futures market already encodes? The answer is probably "no in general, yes in specific regimes," which is precisely the interesting finding.
+
+This experiment also completes a natural price transmission chain that's already partially in the project: WTI crude (market, daily) → RBOB gasoline futures (wholesale, daily) → CPI gasoline (consumer, monthly, already in `getting_started`). The pedagogical arc writes itself.
+
+The experiment lends particularly well to Track 2 secondary agent uses: OPEC decisions, EIA inventory surprises, and geopolitical events (Strait of Hormuz, Russian export restrictions) are exactly the kinds of signals an agent might monitor to update a forward price distribution in ways a purely numerical method cannot.
+
+### Data sources
+
+Everything needed is already accessible through existing adapters or requires only minor additions:
+
+| Series | Source | ID / Ticker | Notes |
+| :---- | :---- | :---- | :---- |
+| WTI crude oil spot | FRED | `DCOILWTICO` | Daily, USD/barrel. Already fetched as a CFPR covariate candidate. |
+| Brent crude spot | FRED | `DCOILBRENTEU` | Daily, USD/barrel. International benchmark; useful as covariate. |
+| RBOB gasoline futures (front-month) | yfinance | `RB=F` | Daily, USD/gallon. Direct market precursor to retail gasoline prices. |
+| WTI futures term structure | yfinance | `CL=F` + further-dated contracts | Forward curve at 1m, 2m, 3m maturities. The market's own forecast. |
+| EIA weekly crude inventories | FRED | `WCRSTUS1` | Weekly, released Wednesdays. Fundamental supply/demand signal. |
+| USD trade-weighted index | FRED | `DTWEXBGS` | Daily. Strong inverse correlation with oil prices. |
+| CAD/USD exchange rate | FRED | `DEXCAUS` | Daily. Already fetched. Canadian context. |
+
+### Prediction targets
+
+- **Primary — WTI crude oil spot** (`DCOILWTICO`): the global benchmark, universally understood, daily frequency, long history.
+- **Secondary — RBOB gasoline front-month futures** (`RB=F`): connects directly to the CPI gasoline series in `getting_started`; the direct market input to retail gasoline prices.
+
+### Horizons
+
+Three horizons chosen to stress-test different predictor strengths:
+
+- **5 trading days (≈ 1 week):** High noise regime. Futures advantage is weakest; technical/momentum signals matter most.
+- **21 trading days (≈ 1 month):** The front-month futures price is the market's own prediction at almost exactly this horizon — the head-to-head is most direct here.
+- **63 trading days (≈ 3 months):** Qualitative context — OPEC signalling, geopolitical trajectory, inventory trends — is most likely to add value relative to the futures curve.
+
+### Backtesting design
+
+- **Frequency:** daily (business days)
+- **Origins:** monthly (first trading day of each month)
+- **Backtest window:** 2010–2024. Captures the 2014–16 OPEC production war, the 2020 COVID demand collapse, and the 2022 Russia/Ukraine spike — three distinct regime types that stress-test everything.
+- **Evaluation window:** 2023–2025 (to be confirmed)
+- **Note:** The existing framework supports daily frequency via `ForecastingTask.frequency`; business-day calendar handling and the yfinance adapter will need to be verified or extended before the first backtest run.
+
+### Relationship to NYISO
+
+NYISO (hourly electricity load/price) is a distinct energy dataset and the two experiments are complementary rather than competing. However, NYISO has not been started, and this experiment has a cleaner connection to the existing CPI gasoline work and a more direct tie to the futures-as-covariate story. The NYISO holding-queue item remains; relative prioritization is a decision for the next sprint planning session. The charter datasets table has not been changed pending that decision.
+
+---
+
 ## Apr 20, 2026 — Agentic forecasting: two-track framing [Ethan & Agent]
 
 The project is cleaner with an explicit distinction between two concerns that have been conflating: head-to-head evaluation (Track 1) and extended agent capabilities (Track 2).
