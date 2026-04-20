@@ -1,3 +1,15 @@
+## Apr 20, 2026 — The no-futures contrast case [Ethan & Agent]
+
+The energy commodity experiment is compelling precisely because futures markets do much of the work. The natural complement — and the more important pedagogical point — is a prediction problem where no such market exists and the agent has to build the aggregated intelligence from scratch.
+
+The CFPR food price experiment is actually that case. There are futures markets for the inputs (wheat, canola, WTI for distribution), but none for what Canadians pay at the checkout. The price transmission gap — logistics, retailer margins, exchange rate passthrough, trade policy — is not efficiently priced anywhere. That is exactly where a well-informed agent has a natural advantage over a numerical baseline. We already have this experiment; we just need to be explicit about why the contrast with WTI holds.
+
+If we ever want a second, maximally intuitive example outside the existing experiments: Canadian housing prices (NHPI or CREA MLS composite). No liquid futures market, driven by BoC decisions, immigration policy, stress test rules, and zoning reform — all legible in public documents before they show up in prices.
+
+Together these form a clean didactic arc: energy prices for "the market does the work," food (and potentially housing) for "you have to build the intelligence from scratch." The bootcamp experiments happen to span this arc already.
+
+---
+
 ## Apr 20, 2026 — The futures baseline as a teaching concept; context and the no-futures case [Ethan]
 
 The energy commodity experiment has an unusually strong built-in baseline: the front-month futures price is the market's own prediction, aggregating the knowledge of all participants. This makes it ideal **learn days material** — the comparison is intuitive ("can you beat the market?"), the failure modes are instructive, and the concept generalises immediately to a broader question: *where does context add the most value?*
