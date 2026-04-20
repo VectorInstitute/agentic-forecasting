@@ -81,9 +81,12 @@ This represents a fundamental reconceptualization of the relationship between LL
 
 The most capable agent we can envision looks something like this: given a forecasting task, the agent decides what analyses to run, executes code to produce one or more numerical forecasts, retrieves relevant news and policy signals, weighs the evidence, and produces a calibrated prediction with a clear rationale and cited sources. This kind of system is not a fixed pipeline — it is a configurable architecture that bootcamp participants are explicitly invited to explore and extend.
 
-The bootcamp platform is built to support two complementary dimensions of comparison:
-1. **Independent method evaluation** — each paradigm applied to the same reference tasks, with standardized evaluation metrics, so numerical, LLMP, and agentic approaches can be directly ranked.
-2. **Agent capability exploration** — how do additional tools, code execution, information retrieval, or accumulated experience change a forecasting agent's performance and calibration?
+The bootcamp platform is built to support two complementary tracks:
+
+1. **Head-to-head evaluation (Track 1)** — each paradigm applied to the same reference tasks, with standardized evaluation metrics, so numerical, LLMP, and agentic approaches can be directly ranked. An agent that invokes numerical methods as skills or retrieves external context still emits a `ContinuousForecast` or `BinaryForecast` through the same evaluation harness. This is the primary comparison lens for the bootcamp.
+2. **Extended agent capabilities (Track 2)** — things agents can do that conventional methods structurally cannot: scenario analysis, monitoring and updating, open-ended Q&A, and simulation. These tasks don't reduce to a standard prediction and require their own evaluation methodology. Track 2 is a documented future research direction; the evaluation methodology is an open problem.
+
+A fully capable agent built for Track 2 can always be asked to produce a standardized prediction and participate in Track 1 evaluation. The structured prediction interface is one task type it supports — not the definition of what an agent is.
 
 ### 3\. Discrete Event Forecasters
 

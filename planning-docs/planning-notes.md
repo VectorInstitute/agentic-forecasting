@@ -1,3 +1,22 @@
+## Apr 20, 2026 — Agentic forecasting: two-track framing [Ethan & Agent]
+
+The project is cleaner with an explicit distinction between two concerns that have been conflating: head-to-head evaluation (Track 1) and extended agent capabilities (Track 2).
+
+**Track 1 — Head-to-head evaluation.** Agents competing against conventional methods on standardized prediction tasks using the existing evaluation harness. This track stays exactly as designed: `predict(task, context) -> ContinuousForecast | BinaryForecast`, scored with CRPS or Brier, comparable across paradigms. The getting-started experiments, CFPR, and S&P500 use cases all belong here. The LLMP is the natural baseline; a frontier agent that invokes numerical methods as skills and optionally retrieves external context is the ceiling. Both plug into the same harness and produce the same output types.
+
+**Track 2 — Extended agent capabilities.** Things agents can do that conventional methods structurally cannot: running experiments and simulations, monitoring information sources and adjusting predictions as new data arrives, answering open-ended questions, modelling alternative scenarios and what-ifs. This track is not yet actively developed, but it deserves a documented home. The evaluation methodology for these tasks is a genuine open problem — it won't reduce to CRPS on a backtest window. That is not a reason to defer thinking about it; it is the most interesting research question in the project.
+
+These tracks are not in tension. An agent built for Track 2 can still be asked to produce a standardized prediction and submit it to Track 1 evaluation. The structured prediction interface is just one kind of task it knows how to do. This framing keeps the comparison methodology clean while leaving room to explore the broader value question.
+
+### Key decisions
+
+- The LLMP → frontier agent graduation path (Ali's track) is Track 1 work. The existing harness handles it; no new interfaces needed for this path.
+- Track 2 is documented but not yet built. A backlog item has been added for a design session once the Track 1 frontier agent is operational.
+- The agent backbone design (`aieng/forecasting/agents/`) should not be scoped purely around the structured-output case. An agent that can handle open-ended tasks and also produce structured forecasts on demand is the right target architecture.
+- `bootcamp-project-charter.md` Section 2.1 updated to reflect the two-track framing.
+
+---
+
 ## Apr 17, 2026 (pm) — `getting_started/` hello-world refactor + end-of-week tidy [Ethan & Agent]
 
 ### Work completed

@@ -184,6 +184,27 @@ active task.  Timebox: a single deep-dive session (2-3h) with one artifact.
 
 ---
 
+### Extended Agent Capabilities: Simulation, Monitoring, and Scenario Analysis *(Track 2 — design session)*
+
+**Theme:** Agent architecture
+**Dependencies:** Track 1 frontier agent (Ali) working end-to-end
+**Deferred from:** Apr 20, 2026 strategy session
+
+The two-track framing (see planning-notes Apr 20, 2026) distinguishes head-to-head evaluation (Track 1) from extended agent capabilities (Track 2). This item captures the Track 2 design work.
+
+Track 2 covers things agents can do that conventional methods structurally cannot:
+
+- **Simulation / experiments:** running parametric what-if analyses (e.g., "if oil prices stay elevated through Q3, what should we expect for baked goods by Q1 next year?")
+- **Monitoring:** continuously watching information sources and issuing updated predictions as new signals arrive
+- **Open-ended Q&A:** answering questions about forecasts, explaining uncertainty, identifying related risks
+- **Scenario analysis:** modelling alternative futures with explicit assumptions
+
+The evaluation methodology for these tasks is a genuine open problem — it will not reduce to CRPS or Brier score on a standard backtest window. That is the central design challenge for this session.
+
+Output: an ADR-style writeup in `planning-docs/` plus a stub experiment folder (`implementations/experiments/extended_capabilities/` or similar) with a README that sketches the first concrete task type and how it might be evaluated.
+
+---
+
 ### Covariate framing for multivariate and agentic predictors
 
 **Theme:** Task / data model
