@@ -82,13 +82,33 @@ class YahooFinanceDailyAdapter(BaseAdapter):
 
     def fetch(self) -> pd.DataFrame:
         if self._cache_path is not None and self._cache_path.exists() and not self._refresh:
-            return self._read_cache(self._cache_path)
+            df = self._read_cache(self._cache_path)
+        else:
+            df = self._fetch_from_yahoo()
+            if self._cache_path is not None:
+                self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+                df.to_parquet(self._cache_path, index=False)
+        return self._apply_date_range(df)
 
-        df = self._fetch_from_yahoo()
-        if self._cache_path is not None:
-            self._cache_path.parent.mkdir(parents=True, exist_ok=True)
-            df.to_parquet(self._cache_path, index=False)
-        return df
+    def _apply_date_range(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Trim rows to ``start`` / ``end`` (same semantics as yfinance ``history``).
+
+        Cached parquet is often the full history; without this step, ``start`` and
+        ``end`` would only apply on a fresh download, not on cache reads.
+        """
+        out = df
+        if self._start:
+            lo = pd.Timestamp(self._start)
+            out = out[out["timestamp"] >= lo]
+        if self._end is not None:
+            hi = pd.Timestamp(self._end)
+            out = out[out["timestamp"] < hi]
+        if out.empty:
+            raise RuntimeError(
+                f"No rows left after applying date range start={self._start!r} end={self._end!r} "
+                f"for ticker {self._ticker!r}."
+            )
+        return out.reset_index(drop=True)
 
     def _fetch_from_yahoo(self) -> pd.DataFrame:
         try:
