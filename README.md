@@ -6,21 +6,22 @@ A research and learning platform for experimenting with forecasting agents on re
 
 ## What this is
 
-This repository provides the infrastructure and reference implementations for a bootcamp that teaches participants to build, evaluate, and compare forecasting systems across three paradigms:
+This repository provides the infrastructure and reference implementations for a bootcamp that teaches participants to build, evaluate, and compare forecasting systems across four paradigms:
 
 - **Numerical forecasters** — statistical and ML models (ARIMA, gradient boosting, deep learning, time-series foundation models) applied to continuous series
 - **LLM Processes** — probabilistic forecasts conditioned on historical observations *and* natural language context, using the LLM itself as the forecasting engine
-- **Discrete event forecasters** — probability estimates for binary/categorical outcomes (e.g. Metaculus-style questions), treated as information retrieval and reasoning problems
+- **Frontier agentic forecasters** — LLM-driven agents that invoke numerical methods as skills, retrieve context, and reason over evidence before emitting a structured prediction
+- **Discrete event forecasters** — probability estimates for binary/categorical outcomes (e.g. policy-decision questions), treated as information retrieval and reasoning problems
 
-A central objective is empirical comparison across methods on shared, standardized datasets. The evaluation infrastructure is identical for backtesting and live evaluation — the same interfaces, the same scoring, the same result format.
+A central objective is empirical comparison across methods on shared, standardized datasets (**Track 1**). A secondary, capability-only track (**Track 2**) showcases extended agent behaviour — scenario analysis, monitoring, open-ended Q&A — without building a new evaluation framework for it. The bootcamp's centrepiece is the **convergence**: a single flagship agent exercised in both modes on two reference experiments — Energy Commodity Prices (topical, current-events-driven) and the S&P 500 (liquid-market equities). One agent, two modes, two surfaces. The backtest/eval infrastructure is identical for Track 1 backtesting and live evaluation — the same interfaces, the same scoring, the same result format.
 
-### Planned data sources
+### Data sources
 
 - **StatCan** — Canadian macroeconomic indicators (CPI, employment, trade)
-- **FRED** — US and international macroeconomic series
-- **yfinance** — Canadian-listed equities and earnings
-- **NYISO** — New York electricity demand and price
-- **ForecastBench** — Discrete event forecasting questions (sourced from Metaculus, FRED, Yahoo Finance, and Rand Forecasting) with historical resolutions and community predictions; CC-BY-SA-4.0
+- **FRED** — US and international macroeconomic series; commodity prices (WTI, Brent crude, inventories, exchange rates)
+- **yfinance** — equities, indices, and commodity futures
+
+Scope is intentionally narrow. See `planning-docs/bootcamp-project-charter.md` for the full set of reference experiments and the rationale for dataset selection.
 
 ---
 
@@ -35,7 +36,7 @@ implementations/           # Reference implementations (uv workspace package: ai
 │                          #   from methods.base_llmp import BaseLLMPredictor
 └── experiments/           # Use-case notebooks, specs, task configs
     ├── getting_started/            # hello-world: single-series CPI gasoline backtest
-    └── food_price_forecasting/     # CFPR reference experiment (flagship use case)
+    └── food_price_forecasting/     # CFPR — flagship no-futures multivariate case
 
 reference_specs/           # YAML specs for canonical backtest and eval tasks
 
@@ -69,7 +70,8 @@ uv run python scripts/fetch_cpi.py   # StatCan CPI — 47 Canada-wide series
 Each use case under `implementations/experiments/` has a `README.md` with a recommended learning path.
 
 - **Start here:** `implementations/experiments/getting_started/` — the hello-world tour. Single series (CPI gasoline), 12-month horizon, naive + AutoARIMA baselines, one `BacktestSpec`, one `EvalSpec`. The smallest useful end-to-end walkthrough of the evaluation framework.
-- **Graduate to:** `implementations/experiments/food_price_forecasting/` — the bootcamp's flagship CFPR reference experiment. Nine correlated CPI sub-indices, a 12-step trajectory, the avg/avg YoY metric from the real Canada's Food Price Report, helper modules for analysis and plotting, and cached artefacts for fast iteration.
+- **Graduate to:** `implementations/experiments/food_price_forecasting/` — the CFPR reference experiment, flagship of the no-futures multivariate case. Nine correlated CPI sub-indices, a 12-step trajectory, the avg/avg YoY metric from the real Canada's Food Price Report, helper modules for analysis and plotting, and cached artefacts for fast iteration.
+- **Look ahead to:** the bootcamp centrepiece — the Track 1 + Track 2 convergence on Energy Commodity Prices and the S&P 500. See `planning-docs/bootcamp-project-charter.md` for the framing and the full map of reference experiments.
 
 ---
 

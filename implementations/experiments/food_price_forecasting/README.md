@@ -4,12 +4,22 @@ Replicates the **Canada's Food Price Report (CFPR)** forecasting methodology —
 an annual estimate of the year-over-year percentage change in Canadian food
 prices across nine CPI sub-categories.
 
-This is the bootcamp's **flagship** reference experiment — the graduation
-step from `implementations/experiments/getting_started/`.  It is a fully
-working, literature-aligned forecasting task that runs in minutes on a
-laptop and provides a launching pad for LLM and agent-based predictors.
-If this is your first session with the repo, start at `getting_started/`
-and come here once the single-series loop is familiar.
+This is the bootcamp's flagship **no-futures multivariate** reference
+experiment — the graduation step from
+`implementations/experiments/getting_started/`, and the case where
+context genuinely matters because no market aggregator summarises the
+answer.  It is a fully working, literature-aligned forecasting task that
+runs in minutes on a laptop and provides a launching pad for LLM and
+agent-based predictors.  If this is your first session with the repo,
+start at `getting_started/` and come here once the single-series loop is
+familiar.
+
+> For the bootcamp's overall centrepiece — the Track 1 + Track 2
+> convergence on Energy Commodity Prices and the S&P 500 — see
+> `planning-docs/bootcamp-project-charter.md` → *Reference Experiments*
+> → *The convergence*.  CFPR remains the flagship of its own paradigm
+> (no-futures multivariate with context-driven agent retrieval) but is
+> not the convergence surface itself.
 
 ---
 

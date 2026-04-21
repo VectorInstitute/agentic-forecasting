@@ -19,7 +19,7 @@ experiments/
 │   ├── cpi_data_exploration.ipynb
 │   └── cpi_backtest_demo.ipynb
 │
-├── food_price_forecasting/      # CFPR reference experiment — the flagship use case
+├── food_price_forecasting/      # CFPR — flagship no-futures multivariate case
 │   ├── README.md
 │   ├── data.py                  #   build_food_cpi_service, canonical series
 │   ├── analysis.py              #   CFPR analysis helpers (avg/avg YoY, CRPS, MAPE)
@@ -27,7 +27,8 @@ experiments/
 │   ├── food_data_exploration.ipynb
 │   └── food_cpi_experiment.ipynb
 │
-├── sp500/                       # S&P500 reference experiment (planned — Behnoosh)
+├── sp500/                       # S&P 500 — convergence surface (planned — Behnoosh)
+├── energy_prices/               # Energy commodities — convergence surface (planned)
 ├── boc_rate_decisions/          # Bank of Canada rate decisions (planned)
 └── ...
 ```
@@ -35,7 +36,10 @@ experiments/
 **Start with `getting_started/`.**  It is the intentional entry point —
 the smallest end-to-end walkthrough of the evaluation framework against
 a single volatile target.  `food_price_forecasting/` is the graduation
-step: same interfaces, much richer use case.
+step: same interfaces, much richer use case.  For the bootcamp's overall
+centrepiece — the Track 1 + Track 2 convergence — see `sp500/` and
+`energy_prices/` when they land, and the charter's *Reference
+Experiments* section for the framing.
 
 ---
 

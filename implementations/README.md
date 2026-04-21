@@ -12,7 +12,7 @@ implementations/
 ├── methods/              # importable reference Predictor implementations
 └── experiments/          # use-case notebooks, specs, task configs
     ├── getting_started/          # hello-world: CPI gasoline backtest
-    └── food_price_forecasting/   # CFPR reference experiment (flagship)
+    └── food_price_forecasting/   # CFPR — flagship no-futures multivariate case
 ```
 
 ## Importing methods

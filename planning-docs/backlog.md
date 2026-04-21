@@ -4,7 +4,20 @@ This file is a plain-text complement to ClickUp. It captures the current set of 
 
 **Primary deliverable:** Bootcamp readiness. All sprint decisions should be made against this target first.
 
-**Kaggle note:** Gemma 4 Good Hackathon final submission deadline is May 18, 2026. This is a "nice to have" that must not disrupt the bootcamp critical path. The fine-tunable LLMP / Kaggle submission task is in the holding queue; it is explicitly lower priority than active sprint work.
+**Definition of a bootcamp-complete repo (technical):**
+- Core data + backtest/eval infrastructure is stable, documented, and reproducible.
+- At least one strong reference method per major paradigm is runnable in-repo (numerical, LLMP, agentic/hybrid as scoped in `bootcamp-project-charter.md`).
+- All **five reference experiments** from the charter's Reference Experiments section are present and runnable end-to-end: getting-started CPI gasoline, CFPR, energy commodity prices, S&P 500, BoC rate decisions.
+- Evaluation artifacts and specs are versioned, legible, and consistent across docs/notebooks.
+- Repo quality bar is met (`make lint` clean, mypy non-regressing, key READMEs current).
+
+**Scope guardrails (Apr 21, 2026):**
+- NYISO and other grid-operator datasets are **out of scope**. Energy is carried through commodity markets (FRED, yfinance) and the CPI gasoline transmission chain.
+- ForecastBench is **out of scope as a core reference experiment**. BoC is the single binary-paradigm reference experiment. ForecastBench may be surfaced in learn-days discussion as a participant-exploration target.
+- Model fine-tuning (including Gemma / Unsloth / Kaggle submissions) is **out of scope**.
+- **Track 2 evaluation methodology is out of scope** — deferred to the separate Agentic Evaluations bootcamp. Track 2 work in this repo is a capability demonstration only.
+
+**The convergence (bootcamp centrepiece, Apr 21, 2026):** Experiments 3 (Energy Commodity Prices) and 4 (S&P 500) are the designated Track 1 + Track 2 convergence surfaces. A single flagship ADK agent — developed as part of Ali's sprint — is exercised in two modes: emitting `ContinuousForecast` outputs for Track 1 backtesting, and performing research / analysis / monitoring / Q&A for Track 2 demonstrations, over the *same* data. Three feeder tracks converge here: the energy use case (holding-queue priority 2), the S&P 500 use case (active sprint — Behnoosh), and the flagship frontier agent (active sprint — Ali). Plan every sprint decision with that convergence in mind.
 
 ---
 
@@ -12,11 +25,17 @@ This file is a plain-text complement to ClickUp. It captures the current set of 
 
 Five people are active this sprint, each with a single focused area.
 
+**Mid-sprint operating mode (next 7 days):**
+- Prefer finishing and documenting over starting net-new tracks.
+- A task is "done" only when its exit criteria are met and reflected in docs.
+- Do not pull from the holding queue unless an active owner becomes unblocked.
+- Keep all decisions anchored to bootcamp readiness, not exploratory breadth.
+
 | Person | Focus |
 |--------|-------|
 | Ethan | CFPR use case + backtest/eval/live testing engine |
-| Ali | First LLMP → agentic forecaster |
-| Behnoosh | S&P500 reference use case |
+| Ali | First LLMP → flagship frontier agent |
+| Behnoosh | S&P 500 reference use case |
 | Franklin | Code quality & Coder bootcamp environment |
 | Ahmad | Call for Participation presentation |
 
@@ -30,27 +49,51 @@ Simultaneously develop the CFPR (Canada's Food Price Report) reference experimen
 
 **Testing engine:** The core backtest and eval infrastructure exists. What remains is the harder design question: what does "live testing" look like, and how do we handle it honestly for agentic forecasters? The central open question — to be explored with Ali — is how realistically we can retrieve internet context with effective information cutoffs for backtesting agentic forecasters. We may find that backtest results won't reliably generalize to live performance for agents that search the web; that's fine. Get the plumbing working, document the problem honestly, and chart the course toward agent skills that can interact with the backtest/eval engines and with baseline/numerical forecasters.
 
+**Exit criteria for sprint close:**
+- `planning-docs/technical-design.md` reflects the current two-track framing and includes a clear statement of live-testing limits for web-searching agents.
+- CFPR canonical experiment docs are internally consistent (`README`, specs, and backlog references match current behavior).
+- A short written handoff note exists for the first LLMP/agent integration point into CFPR (what is ready now vs. blocked on Ali).
+
 ---
 
-### Ali — First LLMP → Agentic Forecaster
+### Ali — First LLMP → Flagship Frontier Agent
 
-Ali is the long-haul engineer for the agentic forecasting work. This sprint: implement the first LLMP (LLM Process), then graduate quickly to a first properly agentic forecaster.
+Ali is the long-haul engineer for the agentic forecasting work. This sprint: implement the first LLMP (LLM Process), then graduate quickly to the flagship frontier agent that will anchor the Track 1 + Track 2 convergence.
 
 **Start with research reading** before writing any code. Key starting point: Gruver et al. 2024, "Large Language Models Are Zero-Shot Time Series Forecasters." Also review the LiteLLM docs and Google ADK docs to understand both options before committing to a design.
 
 **Base LLMP:** Implement `BaseLLMPredictor(Predictor)` in `implementations/methods/base_llmp.py`. This is a minimal LLM-based predictor — an LLMFunction, not a full agent. It takes serialized historical observations and a task description, and produces a `ContinuousForecast` via Pydantic structured output, with no hidden state or framework side-effects. Key design decision to document: LiteLLM directly (preferred for simplicity and transparency) vs. Google ADK in non-agentic mode. Run a backtest on the CPI reference spec and compare CRPS vs. the ARIMA baseline.
 
-**Agentic forecaster:** Once the base LLMP is running end-to-end, graduate to a first properly agentic forecaster: an ADK-based coding agent that can retrieve data via tools, write and execute code to produce numerical forecasts, and optionally search for context. The agent backbone (ADK setup, tool definitions, prompt scaffolding) is reusable infrastructure and belongs in `aieng/forecasting/agents/`; task-specific configuration lives in `implementations/`. Timebox aggressively — a working demo with documented decisions is more valuable than completeness. Start with StatCan CPI; apply to S&P500 once Behnoosh's use case is ready. Coordinate with Ethan on what the agentic forecaster will need from the testing engine.
+**Flagship frontier agent (Track 1 — convergence target):** Once the base LLMP is running end-to-end, graduate to the *flagship* frontier agent: an ADK-based coding agent that can retrieve data via tools, write and execute code to produce numerical forecasts, and optionally search for context. This agent must emit a `ContinuousForecast` or `BinaryForecast` through the same `Predictor` interface as the LLMP — that is what makes it a Track 1 predictor. The agent backbone (ADK setup, tool definitions, prompt scaffolding) is reusable infrastructure and belongs in `aieng/forecasting/agents/`; task-specific configuration lives in `implementations/`.
+
+This agent is designed with the convergence in mind from day one: it is the *same* agent that will eventually run Track 1 predictions AND Track 2 research / analysis / monitoring on the Energy Commodity Prices and S&P 500 experiments (see the *The convergence* block at the top of this file). Structure the backbone so that Track 2 task types — scenario analysis, monitoring loops, open-ended Q&A — can be layered on without forking the agent. Start on StatCan CPI for validation; extend to S&P 500 once Behnoosh's use case is ready; Energy Commodity Prices activates when priority 2 in the holding queue is pulled. Timebox aggressively — a working demo with documented decisions is more valuable than completeness. Coordinate with Ethan on what the testing engine needs.
+
+**Track 2 tasks themselves are deliberately downstream of this sprint.** The Track 2 holding-queue item will layer on top of this same agent backbone; do not branch into Track 2 task types in this sprint. The deliverable here is the flagship agent backbone plus Track 1 evidence on at least one canonical spec.
+
+**Exit criteria for sprint close:**
+- `BaseLLMPredictor` runs end-to-end on one canonical spec and returns valid `ContinuousForecast` output via Pydantic.
+- One benchmark comparison is recorded against an existing baseline (CRPS table or equivalent).
+- The LiteLLM-vs-ADK decision is documented with rationale; any frontier-agent work this sprint is limited to a scoped starter plan, not a broad build-out.
+- The starter plan explicitly addresses how the flagship agent will be exercised on the convergence surfaces (Energy + S&P 500) and how it will be extended to Track 2 task types without forking.
 
 ---
 
-### Behnoosh — S&P500 Reference Use Case
+### Behnoosh — S&P 500 Reference Use Case
 
-Behnoosh owns the S&P500 reference use case end to end. This is an evolving task: it begins with task framing and grows as new methods land.
+Behnoosh owns the S&P 500 reference use case end to end. This is an evolving task: it begins with task framing and grows as new methods land.
 
-**This sprint:** Frame the forecasting task — this is a real design decision (30-day return distribution? directional binary? something else?) and the choice should be documented with rationale. Stand up the yfinance data adapter; register S&P500 series in the data service; write a `BacktestSpec` YAML; produce a demo notebook under `implementations/experiments/sp500/` with `DartsAutoARIMAPredictor` as the first baseline; write a `README.md` documenting data provenance, task framing decisions, and licence.
+**This sprint:** Frame the forecasting task — this is a real design decision (30-day return distribution? directional binary? something else?) and the choice should be documented with rationale. Stand up the yfinance data adapter; register S&P 500 series in the data service; write a `BacktestSpec` YAML; produce a demo notebook under `implementations/experiments/sp500/` with `DartsAutoARIMAPredictor` as the first baseline; write a `README.md` documenting data provenance, task framing decisions, and licence.
 
-**Ongoing:** As additional methods become available (LLMP from Ali, additional numerical methods), apply them to the SP500 task and extend the comparison table. Think carefully about what a well-designed backtesting regime looks like for financial data (non-overlapping test windows, look-ahead risk, etc.), what "eval" testing means for this domain, and how live testing might eventually work — especially once agentic forecasters are involved. Coordinate with Ethan on these questions; financial data may surface requirements the existing testing engine doesn't yet handle.
+**Ongoing:** As additional methods become available (LLMP from Ali, additional numerical methods), apply them to the S&P 500 task and extend the comparison table. Think carefully about what a well-designed backtesting regime looks like for financial data (non-overlapping test windows, look-ahead risk, etc.), what "eval" testing means for this domain, and how live testing might eventually work — especially once agentic forecasters are involved. Coordinate with Ethan on these questions; financial data may surface requirements the existing testing engine doesn't yet handle.
+
+**Cross-experiment note:** the `yfinanceAdapter` Behnoosh stands up for S&P 500 is also what the energy commodity prices experiment needs for the WTI term structure and RBOB front-month. Aim for the adapter to be general-purpose from day one so the energy experiment does not rebuild it.
+
+**Convergence note:** S&P 500 is one of the two Track 1 + Track 2 convergence surfaces (the other is Energy Commodity Prices). Ali's flagship frontier agent is designed to run on this experiment. The task framing chosen here, and the baseline comparison table, become the spine that the flagship agent is scored against. Anti-leakage rigour in the backtest regime is therefore doubly important — the agent comparison rides on top of it.
+
+**Exit criteria for sprint close:**
+- S&P 500 task framing is explicitly chosen and documented with rationale.
+- First runnable `BacktestSpec` + demo notebook exist and execute with `DartsAutoARIMAPredictor`.
+- README covers provenance/licence and key anti-leakage assumptions in the backtest setup.
 
 ---
 
@@ -62,6 +105,10 @@ Franklin brings software engineering expertise and has limited time this sprint 
 
 **Coder platform:** Assess what environment configuration is needed for the bootcamp (Coder workspace images, dependencies, GPU access). Set up or prototype a Coder workspace that a participant could use to run the reference notebooks end-to-end. Where he can't complete the setup himself, document exactly what's needed and identify who should step in to ensure a smooth bootcamp.
 
+**Exit criteria for sprint close:**
+- One concrete code-quality pass lands (types/docs/tests) with no `make lint` or mypy regression.
+- Coder setup outcome is explicit: either a runnable prototype or a handoff-ready gap document with owners and blockers.
+
 ---
 
 ### Ahmad — Call for Participation Presentation
@@ -70,78 +117,76 @@ Ahmad is joining for this sprint only to produce the presentation for the Call f
 
 **First:** Read `planning-docs/bootcamp-project-charter.md`, `planning-docs/technical-design.md`, and the most recent entries in `planning-docs/planning-notes.md`.
 
-**Then produce a presentation** (format TBD — slides or structured document) covering: bootcamp motivations and goals; the four forecasting paradigms (numerical, LLMP, agentic, hybrid); the reference use cases and datasets (CFPR, S&P500, BoC, ForecastBench); a walkthrough of the technical components being built so far (data service, evaluation harness, implementations layer, agentic forecaster design); and what participation in the bootcamp will look like. Share a draft with Ethan for review before the meeting.
+**Then produce a presentation** (format TBD — slides or structured document) covering:
+- Bootcamp motivations and goals.
+- The four forecasting paradigms (numerical, LLM Processes, frontier agentic, discrete-event) and the two-track framing (Track 1 head-to-head evaluation; Track 2 extended agent capability demonstration — with Track 2 evaluation explicitly deferred to the Agentic Evaluations bootcamp).
+- The two domains (Finance, Economics) and three data sources (StatCan, FRED, yfinance). Note that energy is a cross-cutting theme via commodity markets and CPI gasoline — not a separate domain or dataset.
+- The **five reference experiments**: getting-started CPI gasoline, CFPR, energy commodity prices, S&P 500, BoC rate decisions. Make clear which are done, which are in progress, and which are queued.
+- **The convergence** — Energy Commodity Prices and S&P 500 as the Track 1 + Track 2 convergence surfaces, with a single flagship agent exercised in both modes. This is the bootcamp's central demonstration and should be the pitch's emotional peak.
+- A walkthrough of the technical components being built (data service, evaluation harness, implementations layer, agent backbone plans).
+- What participation in the bootcamp will look like.
+
+Share a draft with Ethan for review before the meeting.
+
+**Exit criteria for sprint close:**
+- Draft shared with Ethan and includes one explicit "needs decision" list for unresolved technical points.
+- Review date and revision owner are set so the presentation is on-track for the one-week-before-meeting target.
 
 ---
 
 ## Holding Queue
 
-These tasks are scoped and understood but not yet assigned. Reorder priorities freely.
+These tasks are scoped and understood but not yet assigned.
+
+**Activation guardrail (mid-sprint):** do not activate a holding-queue item this week unless an active-sprint owner is blocked or has completed their exit criteria early.
+**Owner policy:** individual names are assigned in `## Active Sprint` only. Holding-queue items stay unassigned until activated.
+
+**Priority order for bootcamp completion:**
+1. **Pass 2 — binary forecasting + BoC reference experiment** (unlocks Pass 2 of the framework and completes the discrete-event paradigm; *sized ~2× any single item below — see item description*)
+2. Energy commodity prices reference experiment (primary convergence surface; unlocks the "with-futures" pedagogical arc and the topical monitoring story)
+3. FuturesBaseline reference method (subset of the energy experiment; small, high-teaching-value deliverable)
+4. Covariate framing for multivariate and agentic predictors (design precursor for multivariate energy + reinstated CFPR covariates)
+5. **Extended agent capabilities (Track 2) — convergence demonstration on Energy + S&P 500** (bootcamp centrepiece; layered on Ali's flagship agent)
+6. Numerical forecaster expansion + foundation models
+7. Per-user eval tracking
 
 ---
 
-### Numerical Forecaster Expansion & Foundation Models
+### Pass 2 — Binary Forecasting + BoC Reference Experiment *(priority 1)*
 
-**Owner:** TBD (good onboarding task — Darts/ML background helpful)
-**Dependencies:** None
+**Theme:** New paradigm (Pass 2) + reference experiment on top
+**Dependencies:** None (independent of financial/energy work)
+**Unlocks:** completes Pass 2 of the framework, enables any future binary task
 
-The current predictor library has one variant: `DartsAutoARIMAPredictor`. Before the bootcamp, we want a richer numerical forecaster leaderboard: a trivial baseline, a broader Darts model, and at least one time series foundation model. This gives participants clear reference points to beat and demonstrates the breadth of the numerical forecasting paradigm.
+**⚠️ Sizing note.** This item is effectively **all of Pass 2 of the framework plus the first experiment built on top of it** — comparable in scope to the combined weight of priorities 2, 3, and 4 below. Part A introduces an entirely new prediction payload type, a new predictor ABC, a new scoring rule, and the associated evaluation loop; Part B validates all of that with a concrete experiment. Infrastructure and experiment are deliberately kept in a single item because the cleanest validation of the Part A design is building the Part B experiment on top of it — but the sizing is explicitly ~2× any other single holding-queue item and activation should plan accordingly.
 
-- ✅ Move `DartsAutoARIMAPredictor` from inline notebook definition to `implementations/methods/darts_arima.py`; update the CPI demo notebook to import it (completed Apr 16, 2026)
-- `SeasonalNaivePredictor` in `implementations/methods/naive.py`
-- A second Darts model predictor (ETS or N-BEATS)
-- `ChronosPredictor` or `TimesFMPredictor` — one time series foundation model via HuggingFace, zero-shot
-- Apply all to `cpi_gasoline_12m`; extend the comparison table in `getting_started/cpi_backtest_demo.ipynb`
-- Consider a multi-series panel showing Gasoline, Shelter, and All-items side by side (the getting-started notebook already runs the comparison for gasoline vs. shelter — easy to extend)
+The current evaluation harness only supports `ContinuousForecast`. This adds the second paradigm — discrete-event / binary forecasting — and the single core reference experiment for it: **Bank of Canada interest rate decisions**. BoC is well-defined, sparsely resolved, publicly documented, and directly relevant to sponsor interest in regulatory-decision prediction.
 
----
+#### Part A — Pass 2 infrastructure
 
-### Binary Forecasting + BoC Reference Experiment
+- `BinaryForecast` Pydantic model (probability estimate, Metaculus-style conventions; explicit resolution criterion).
+- `BinaryPredictor` ABC.
+- Binary evaluation loop with Brier score (reuse `_run_eval_loop` internals where possible; generalize `backtest()` / `evaluate()` to dispatch on payload type).
+- `technical-design.md` updated with `BinaryForecast` type, `BinaryPredictor`, and binary evaluation loop.
 
-**Owner:** TBD (economics interest helpful)
-**Dependencies:** None (can work independently of active sprint tasks)
+#### Part B — BoC experiment as first instance
 
-The current evaluation harness only supports `ContinuousForecast`. This adds the second paradigm: discrete event / binary forecasting. The Bank of Canada interest rate decision is the ideal first reference task — well-defined, sparsely-resolved, publicly available historical data, and directly relevant to bootcamp sponsors. This also lays the groundwork for ForecastBench integration.
+- Source historical BoC interest rate decisions, ingest, define `ForecastingTask`.
+- Write `BacktestSpec` YAML under `reference_specs/boc_rate_decisions/`.
+- Demo notebook under `implementations/experiments/boc_rate_decisions/`.
+- Document the discrete-event framing decision inside the experiment README ("next rate value" vs. "cut/hold/hike" and/or "will cut at next meeting?"). Record rationale.
+- At least one baseline binary predictor (e.g. a simple historical-base-rate predictor) to validate the Part A harness end-to-end.
 
-- `BinaryForecast` Pydantic model (probability estimate, follows Metaculus conventions)
-- `BinaryPredictor` ABC and binary evaluation loop with Brier score (reuse `run_eval_loop` where possible)
-- BoC interest rate decisions: source historical decisions, ingest, define `ForecastingTask`, write `BacktestSpec` YAML, demo notebook under `implementations/experiments/boc_rate_decisions/`
-- Document the ForecastBench integration point (no integration required yet)
-- Update `technical-design.md` with `BinaryForecast` type and binary evaluation loop
+**Scope note.** ForecastBench integration is **not** a deliverable of this task. The discrete-event paradigm is fully exercised by BoC for bootcamp purposes; ForecastBench is in the charter's out-of-scope section and may be surfaced as learn-days material. Agentic/LLM-based BoC predictors are also *not* a deliverable of this item — they will be layered on by Ali's flagship agent work once Pass 2 is landed.
 
 ---
 
-### ForecastBench Integration *(next priority after binary forecasting)*
+### Energy Commodity Prices Reference Experiment *(priority 2)*
 
-**Owner:** TBD
-**Dependencies:** Binary forecasting task above
-
-Integrate ForecastBench as the primary source of discrete event forecasting questions and resolutions. ForecastBench provides direct download access under CC-BY-SA-4.0 — no outreach or API key required. Data includes historical questions, resolutions, and published community predictions from Metaculus, FRED, Yahoo Finance, and Rand Forecasting. ForecastBench data is not a time series and does not flow through the `ProviderAdapter` / `SeriesStore` path — integration will be a separate loader into the binary evaluation infrastructure. Direct Metaculus API integration remains a future option but is no longer needed for a reference experiment.
-
-**Decision date:** Apr 10, 2026.
-
----
-
-### Fine-Tunable LLMP + Kaggle Submission *(nice to have)*
-
-**Owner:** TBD (requires deep project context; Kaggle submission narrative needs it)
-**Dependencies:** CFPR use case (Ethan), base LLMP (Ali)
-**Deadline:** Gemma 4 Good Hackathon final submission May 18, 2026
-
-The core research question: does fine-tuning a small open model (Gemma 4 via Unsloth) on historical forecasting I/O examples improve predictive performance relative to a zero-shot base LLMP, and in what conditions? This task must not block bootcamp readiness. Only activate if CFPR and base LLMP are complete with margin to spare before May 18.
-
-- I/O example extraction: generate (prompt, `ContinuousForecast`) pairs for all backtest origins up to a cutoff
-- Unsloth integration: fine-tune Gemma 4; wrap as a new `Predictor` variant
-- Apply to CFPR task; compare CRPS vs. base LLMP and ARIMA
-- Kaggle submission notebook/writeup
-
----
-
-### Energy Commodity Prices Reference Experiment
-
-**Owner:** TBD
-**Dependencies:** yfinance adapter (Behnoosh's S&P500 work establishes the pattern); daily frequency handling verified in the backtest engine
+**Theme:** Reference experiment — primary convergence surface
+**Dependencies:** `yfinanceAdapter` (shared with S&P 500 active-sprint work); daily frequency handling verified in the backtest engine.
 **Decision date:** Apr 20, 2026
+**Convergence role (Apr 21, 2026):** Primary Track 2 demonstration surface. The flagship frontier agent will run Track 1 continuous forecasts on WTI / RBOB here AND be exercised on Track 2 monitoring + scenario analysis over the same data. Design this experiment with that downstream reuse in mind (e.g. the data surfaces and baseline comparison table must be robust enough to carry an agent comparison on top).
 
 A reference experiment on crude oil and gasoline prices using daily financial data. The central motivating idea: crude oil futures embed a market-consensus forward curve as a first-class covariate, making this an unusually sharp head-to-head setup. At any prediction horizon, a futures contract at that maturity *is* the market's own forecast. Any model that consistently adds something on top of that is making a real claim.
 
@@ -149,30 +194,93 @@ A reference experiment on crude oil and gasoline prices using daily financial da
 - Primary: WTI crude oil spot (FRED `DCOILWTICO`)
 - Secondary: RBOB gasoline front-month futures (yfinance `RB=F`)
 
-**Horizons:** 5 trading days (≈ 1 week), 21 trading days (≈ 1 month, aligns with front-month futures), 63 trading days (≈ 3 months)
+**Horizons:** 5 trading days (approximately 1 week), 21 trading days (approximately 1 month, aligns with front-month futures), 63 trading days (approximately 3 months)
 
 **Key covariates:** WTI futures term structure at 1m/2m/3m maturities (yfinance), Brent crude spot (FRED `DCOILBRENTEU`), EIA weekly crude inventories (FRED `WCRSTUS1`), USD trade-weighted index (FRED `DTWEXBGS`), CAD/USD (FRED `DEXCAUS`)
 
 **Backtesting design:** Monthly origins, first trading day of each month, 2010–2024 window (covers OPEC 2014–16 production war, 2020 COVID collapse, 2022 Russia/Ukraine spike). Evaluation window: 2023–2025.
 
-**Deliverables:** yfinance adapter (or verify existing), `scripts/fetch_energy.py`, `reference_specs/energy_prices/`, demo notebook under `implementations/experiments/energy_prices/` with WTI spot as primary target and the futures front-month contract as a "market baseline" predictor.
+**Deliverables:** yfinance adapter (or verify existing from Behnoosh's S&P 500 work), `scripts/fetch_energy.py`, `reference_specs/energy_prices/`, demo notebook under `implementations/experiments/energy_prices/` with WTI spot as primary target and the futures front-month contract as a market baseline predictor.
 
-**Note on NYISO:** This experiment complements rather than replaces NYISO (hourly electricity load/price are distinct from commodity spot/futures). Relative prioritization versus the NYISO item to be decided at the next sprint planning session.
-
-**Connection to existing work:** Completes the price transmission chain: WTI crude (this experiment) → RBOB futures (this experiment) → CPI gasoline (already in `getting_started`). `DCOILWTICO` and `DEXCAUS` were already fetched as CFPR covariate candidates; data infrastructure is largely in place.
+**Connection to existing work:** Completes the price transmission chain: WTI crude → RBOB futures → CPI gasoline (already in `getting_started`). `DCOILWTICO` and `DEXCAUS` were already fetched as CFPR covariate candidates; data infrastructure is largely in place.
 
 ---
 
-### NYISO Reference Experiment *(Behnoosh, after S&P500)*
+### FuturesBaseline Reference Method *(priority 3)*
 
-**Owner:** Behnoosh
-**Dependencies:** S&P500 use case (pattern established)
+**Theme:** Reference method
+**Dependencies:** Energy commodity experiment activated
+**Decision date:** Apr 20, 2026
 
-NYISO (New York Independent System Operator) replaces IESO (Ontario electricity) as the energy dataset. Behnoosh identified it as a better fit for classical multivariate forecasting. Define hourly demand/price `ForecastingTask` variants, NYISO data adapter, reference spec, demo notebook. By the time this is tackled, the use-case scaffolding pattern will be well-established and most of the effort is data ingestion + task framing.
+Create `FuturesBaseline` as a first-class predictor in `implementations/methods/` that uses the front-month futures price as the point forecast at matching horizons. This should be treated as both a benchmark and a teaching artifact for market-implied expectations in liquid markets.
+
+**Deliverables:**
+- `implementations/methods/futures_baseline.py` with clear assumptions and horizon mapping rules.
+- Usage in the energy experiment notebook and comparison table alongside ARIMA/LLMP/agentic variants.
+- Brief method note in README/docs explaining when this baseline is expected to be strong vs. weak.
 
 ---
 
-### Per-User Eval Tracking
+### Covariate framing for multivariate and agentic predictors *(priority 4)*
+
+**Theme:** Task / data model (design session)
+**Dependencies:** First multivariate numeric predictor and first agentic forecaster with access to auxiliary data
+**Deferred from:** Apr 17, 2026 CFPR refactor session
+
+FRED macro covariates (US CPI for food-at-home, meats/poultry/fish/eggs, fruits/vegetables; Canada 10-year bond yield; Canada/US exchange rate) were intentionally removed from the canonical CFPR experiment because there is currently no consistent framing of "exogenous covariates" that works across univariate Darts models, multivariate Darts models, LLM/LLMP predictors, and agentic forecasters. The tribal knowledge — *which FRED series, at what lags, transformed how* — is encoded only in the old notebook and in notes.
+
+The energy commodity experiment reintroduces the same problem at scale (WTI + futures + Brent + inventories + USD index) and cannot be cleanly built without resolving it. This design item now serves both reinstating CFPR covariates and enabling the energy experiment.
+
+**Open sub-questions:**
+- Should covariates live on the `ForecastingTask` (declaring what signals are permissible) or on the `Predictor` (each model decides what it wants)?
+- Does an agentic forecaster discover covariates by searching the `DataService` registry, by being told in a prompt, or by calling a tool?
+- How do we express "covariates are allowed but optional" so the same task can be run with and without them?
+- Can the `ForecastContext` grow a covariate-view API without coupling the task definition to specific data sources?
+
+**Output:** a short design doc plus an updated `reference_specs/food_cpi/` variant that opts into FRED covariates via whatever mechanism we choose, so the old multivariate predictor story can be reinstated cleanly.
+
+---
+
+### Extended Agent Capabilities (Track 2): Convergence Demonstration *(priority 5)*
+
+**Theme:** Agent architecture — capability demonstration on the convergence surfaces
+**Dependencies:** Flagship frontier agent operational on Track 1 (Ali); Energy Commodity Prices experiment landed (priority 2); S&P 500 experiment landed (Behnoosh, active sprint).
+**Confirmed scope:** Apr 21, 2026 — demonstration only; evaluation methodology is explicitly out of scope and is the subject of the separate Agentic Evaluations bootcamp.
+**Convergence target confirmed:** Apr 21, 2026 — Energy Commodity Prices and S&P 500 are the designated Track 2 surfaces (see *The convergence* block at the top of this file).
+
+This is the bootcamp centrepiece. The *same* flagship agent that emits Track 1 `ContinuousForecast` outputs on Energy Commodity Prices and S&P 500 is exercised here on Track 2 task types over the same data. The distinction is about *task types*, not about *agents* — a single agent, two modes.
+
+Track 2 covers things agents can do that conventional methods structurally cannot:
+- **Monitoring and re-forecasting** (primary — Energy) — agent watches OPEC communications, EIA inventory releases, and geopolitical news, and issues updated WTI / RBOB forecasts as signals arrive. Directly topical given current Persian Gulf conflict and commodity-market volatility.
+- **Scenario / what-if analysis** (primary — Energy, S&P 500) — "if WTI stays above $X through Q3, what should we expect for RBOB gasoline by Q4?"; "how should the S&P 500 return distribution shift if the Fed pivots?"
+- **Open-ended Q&A** (both surfaces) — explaining forecasts, uncertainty, assumptions, related risks, sources cited.
+- **Reasoning walkthroughs** (both surfaces) — evidence-chain rationale alongside a structured prediction the same agent issued in Track 1.
+
+**Deliverables (minimum bar for bootcamp readiness):**
+- The flagship ADK agent from Ali's Track 1 work, exercised on **at least two** Track 2 task types across Energy Commodity Prices and S&P 500 (one per surface is the bare minimum; ideally both surfaces carry monitoring + scenario analysis).
+- Demo notebooks under the relevant experiment directories (`implementations/experiments/energy_prices/track2_*.ipynb`, `implementations/experiments/sp500/track2_*.ipynb`). Not a separate `extended_capabilities/` folder — the convergence means these live with the experiments they extend.
+- A short ADR-style writeup in `planning-docs/` covering: what the agent can do in Track 2 mode, what it cannot, the honest evaluation gap, and pointers to the Agentic Evaluations bootcamp for how evaluation is being thought about elsewhere.
+
+**Explicit non-goals:**
+- Building a Track 2 scoring framework or benchmark — out of scope; deferred to the Agentic Evaluations bootcamp.
+- Forking the agent for Track 2 — the design commitment is one flagship agent exercised in two modes. If the Track 1 agent needs structural changes to support Track 2 task types, those changes go back into the Track 1 agent.
+
+---
+
+### Numerical Forecaster Expansion & Foundation Models *(priority 6)*
+
+**Dependencies:** None
+
+The current predictor library has `LastValuePredictor`, `DartsAutoARIMAPredictor`, `DartsLinearRegressionPredictor`, and `DartsLightGBMPredictor`. Before the bootcamp, we want a richer numerical forecaster leaderboard: a seasonal naive baseline and at least one time series foundation model. This gives participants clear reference points to beat and demonstrates the breadth of the numerical forecasting paradigm.
+
+- `SeasonalNaivePredictor` in `implementations/methods/naive.py`
+- `ChronosPredictor` or `TimesFMPredictor` — one time series foundation model via HuggingFace, zero-shot
+- Apply all to `cpi_gasoline_12m`; extend the comparison table in `getting_started/cpi_backtest_demo.ipynb`
+- Consider a multi-series panel showing Gasoline, Shelter, and All-items side by side (the getting-started notebook already runs the comparison for gasoline vs. shelter — easy to extend)
+
+---
+
+### Per-User Eval Tracking *(priority 7)*
 
 **Theme:** Infrastructure
 **Dependencies:** Binary forecasting task (or later)
@@ -181,115 +289,11 @@ Wire `EvalTracker` to per-participant identity for the bootcamp leaderboard. The
 
 ---
 
-### Numeric Predictors as Agent Skills: Design Session
-
-**Theme:** Agent architecture
-**Dependencies:** Ali's base LLMP up and running; CFPR use case (reference task)
-**Deferred from:** Apr 17, 2026 CFPR refactor session
-
-A full design session is needed to answer the open question: how should an
-agentic forecaster reach for a numerical predictor (AutoARIMA, LightGBM,
-foundation model, …) and present its output as part of a structured
-reasoning trace?
-
-Open sub-questions:
-
-- What is the interface contract?  Is a numeric predictor exposed as a tool
-  returning a `ContinuousForecast`, as a sub-agent, or as a callable skill
-  object with its own schema?
-- How does the agent pick between predictors?  (Free choice? Configured
-  short-list? Meta-forecast over predictors?)
-- How do we capture the reasoning and the chosen predictor in the
-  `Prediction.metadata` so the decisions are auditable later?
-- How does this plumb through the existing backtest/eval engine without
-  leaking agent-specific concepts into the `Predictor` ABC?
-
-Output of the session should be a short ADR-style writeup in
-`planning-docs/` plus an entry moved out of this holding queue into an
-active task.  Timebox: a single deep-dive session (2-3h) with one artifact.
-
----
-
-### Extended Agent Capabilities: Simulation, Monitoring, and Scenario Analysis *(Track 2 — design session)*
-
-**Theme:** Agent architecture
-**Dependencies:** Track 1 frontier agent (Ali) working end-to-end
-**Deferred from:** Apr 20, 2026 strategy session
-
-The two-track framing (see planning-notes Apr 20, 2026) distinguishes head-to-head evaluation (Track 1) from extended agent capabilities (Track 2). This item captures the Track 2 design work.
-
-Track 2 covers things agents can do that conventional methods structurally cannot:
-
-- **Simulation / experiments:** running parametric what-if analyses (e.g., "if oil prices stay elevated through Q3, what should we expect for baked goods by Q1 next year?")
-- **Monitoring:** continuously watching information sources and issuing updated predictions as new signals arrive
-- **Open-ended Q&A:** answering questions about forecasts, explaining uncertainty, identifying related risks
-- **Scenario analysis:** modelling alternative futures with explicit assumptions
-
-The evaluation methodology for these tasks is a genuine open problem — it will not reduce to CRPS or Brier score on a standard backtest window. That is the central design challenge for this session.
-
-Output: an ADR-style writeup in `planning-docs/` plus a stub experiment folder (`implementations/experiments/extended_capabilities/` or similar) with a README that sketches the first concrete task type and how it might be evaluated.
-
----
-
-### Covariate framing for multivariate and agentic predictors
-
-**Theme:** Task / data model
-**Dependencies:** First multivariate numeric predictor and first agentic
-forecaster with access to auxiliary data
-**Deferred from:** Apr 17, 2026 CFPR refactor session
-
-FRED macro covariates (US CPI for food-at-home, meats/poultry/fish/eggs,
-fruits/vegetables; Canada 10-year bond yield; Canada/US exchange rate) were
-intentionally removed from the canonical CFPR experiment because there is
-currently no consistent framing of "exogenous covariates" that works across
-univariate Darts models, multivariate Darts models, LLM/LLMP predictors, and
-agentic forecasters.  The tribal knowledge — *which FRED series, at what
-lags, transformed how* — is encoded only in the old notebook and in
-Ethan's head.
-
-Open sub-questions:
-
-- Should covariates live on the `ForecastingTask` (declaring what signals
-  are permissible) or on the `Predictor` (each model decides what it wants)?
-- Does an agentic forecaster discover covariates by searching the
-  `DataService` registry, by being told in a prompt, or by calling a tool?
-- How do we express "covariates are allowed but optional" so the same task
-  can be run with and without them?
-- Can the `ForecastContext` grow a covariate-view API without coupling the
-  task definition to specific data sources?
-
-Output: a short design doc plus an updated `reference_specs/food_cpi/`
-variant that opts into FRED covariates via whatever mechanism we choose,
-so the old multivariate predictor story can be reinstated cleanly.
-
----
-
-### BoC Rate Decisions: Discrete Event Framing *(may merge with binary forecasting task)*
-
-If the binary forecasting task defines the BoC task as a continuous series (next rate value), this adds the discrete event reframing ("Will BoC cut at the next announcement?"). May be in-scope for the binary forecasting task itself — defer the decision until that task is started.
-
----
-
-### ForecastBench Historical Predictions: ICL / Fine-Tuning Research *(future)*
-
-**Dependencies:** ForecastBench integration, binary evaluation harness
-
-ForecastBench publishes historical community predictions alongside questions and resolutions. This opens several research directions not needed for the bootcamp but worth recording:
-
-- **ICL:** Can a discrete event forecasting agent use published historical predictions and resolutions as few-shot examples to improve calibration?
-- **Fine-tuning:** Can fine-tuning on ForecastBench historical prediction data improve base model performance on discrete event tasks?
-- **Hypothesis formation and resolution feedback:** Can an agent learn to form, test, and revise hypotheses by observing past resolution outcomes — simulating the superforecaster update loop?
-- **Backtest-based strategy evaluation:** Can we replay different agent strategies against historical ForecastBench questions to identify which approaches generalize to live questions?
-
-Not in scope for Phase 1. Documented here as a future research agenda.
-
-**Decision date:** Apr 10, 2026.
-
----
-
 ## Completed
 
-*(Tasks move here when done, with a brief note and date.)*
+- **Apr 17, 2026 — CFPR canonical refactor landed:** `food_price_forecasting/` is modularized (`data.py`, `analysis.py`, `plots.py`), canonical 9-series specs are in `reference_specs/food_cpi/food_cpi_cfpr_{backtest,eval}.yaml`, and artifact/eval tracking is filesystem-backed (`data/predictions/`, `data/eval_runs.yaml`).
+- **Apr 17, 2026 — `getting_started/` refactor completed:** former `economic_forecasting/` renamed and retargeted to CPI gasoline with updated specs/docs and validated notebook runs.
+- **Apr 16, 2026 — Numerical methods packaging cleanup completed:** `DartsAutoARIMAPredictor` moved from inline notebook code to `implementations/methods/darts_arima.py`; demo notebook updated to import it.
 
 ---
 

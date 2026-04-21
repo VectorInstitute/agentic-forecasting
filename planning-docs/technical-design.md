@@ -215,6 +215,22 @@ Resolution        →  ground truth
 Score             →  how well the answer matched
 ```
 
+### Track 1 vs Track 2: Architectural Scope
+
+**Decision date:** Apr 20, 2026. **Confirmed:** Apr 21, 2026.
+
+The evaluation architecture described above — `Predictor` ABC, `ContinuousForecast` / `BinaryForecast` payloads, `backtest()` / `evaluate()`, CRPS and Brier scoring — is **Track 1 infrastructure**. It handles every head-to-head comparison the bootcamp is designed to enable: numerical vs. LLMP vs. agentic predictor on the same task, scored with the same rule, and ranked on the same board.
+
+**Track 2** (extended agent capabilities — scenario analysis, monitoring, open-ended Q&A, reasoning walkthroughs) does *not* flow through this harness. It is a **capability demonstration** built on the same ADK agent backbone used for Track 1 but exercised on task types that do not reduce to a `ContinuousForecast` or `BinaryForecast`. Crucially, **evaluation of Track 2 capabilities is out of scope for this bootcamp** — that is the subject of the separate Agentic Evaluations bootcamp. Track 2 deliverables in this repo are demonstrations (notebooks, writeups) and honestly-scoped capability claims, not scored benchmarks.
+
+**The convergence (design commitment).** A single flagship ADK agent is built, and it is exercised in two modes — Track 1 (formal predictions on energy commodities and equities) and Track 2 (research, analysis, monitoring, Q&A on the same data surfaces). The bootcamp does not build two separate agents. The Track 1 / Track 2 distinction is about *task types*, not about *agents* or *codebases*.
+
+**Architectural consequences:**
+- No changes to the `Predictor` ABC or evaluation harness are required to support Track 2.
+- Track 2 surfaces (agent tools, prompt scaffolding, ad-hoc question types) live in the agent backbone (`aieng/forecasting/agents/`, future) and in experiment-specific configs under `implementations/experiments/<use-case>/`.
+- Any Track 2 agent that can also emit a structured `ContinuousForecast` / `BinaryForecast` automatically participates in Track 1 — the harness does not care that it is also capable of other things.
+- The backlog holds one Track 2 design item. It produces an ADR plus a minimal prototype task type; it does **not** build a Track 2 scoring framework.
+
 ### Backtesting: User Model and Interfaces
 
 **Decision date:** Apr 2, 2026
@@ -223,7 +239,7 @@ Score             →  how well the answer matched
 
 Users invoke backtests directly in code or notebooks — they are not required to submit predictors to an external engine. This is the right model for the bootcamp: low friction, immediate feedback, easy iteration.
 
-The submission-based model (ForecastBench, Numerai, Kaggle) is designed for trust at scale when participants cannot be given ground truth before submitting. That is appropriate for a live competition but adds unnecessary infrastructure overhead for a learning environment. The bridge between the two models: **if `BacktestResult` is a serializable, self-contained Pydantic object, "submitting" later just means running the function and sending the result somewhere.** Nothing in the backtest-first design forecloses that path.
+Submission-based models (Numerai, Kaggle-style competitions) are designed for trust at scale when participants cannot be given ground truth before submitting. That is appropriate for a live competition but adds unnecessary infrastructure overhead for a learning environment. The bridge between the two models: **if `BacktestResult` is a serializable, self-contained Pydantic object, "submitting" later just means running the function and sending the result somewhere.** Nothing in the backtest-first design forecloses that path.
 
 #### `BacktestSpec`
 
@@ -437,9 +453,9 @@ Which series are meaningfully related (e.g., CPI sub-components, related equity 
 Two concrete payload types:
 
 - **`ContinuousForecast`** — point forecast + quantiles at standard levels (0.05…0.95), for economic/time series tasks. Designed to be YAML-serializable from day one.
-- **`BinaryForecast`** — probability estimate, for discrete event questions (ForecastBench / Metaculus-style). (Planned — Pass 2.)
+- **`BinaryForecast`** — probability estimate, for discrete-event questions (e.g. BoC rate decisions). (Planned — Pass 2.)
 
-We follow existing standards rather than inventing new ones. For discrete event forecasting, we follow Metaculus conventions (which ForecastBench is compatible with).
+We follow existing standards rather than inventing new ones. For discrete-event forecasting we follow widely-used conventions (e.g. Metaculus-style probability estimates with an explicit resolution criterion).
 
 **`ContinuousForecast` fields:**
 - `point_forecast: float` — central estimate (typically the median of the predictive distribution)
@@ -481,8 +497,7 @@ DataService                  # registration + management layer (scripts, noteboo
     ├── LocalCSVAdapter      # first-class path for custom datasets (planned)         │
     ├── StatCanAdapter       # ✅ implemented                                         │
     ├── FREDAdapter          # ✅ implemented                                          │
-    ├── yfinanceAdapter      # planned                                                │
-    └── NYISOAdapter         # planned — CSV download, hourly load/price data         │
+    └── yfinanceAdapter      # planned — equities + commodity futures                 │
                                                                                       │
 ForecastContext  ◄────────────────────────────────────────────────────────────────────┘
   (predictor-facing, read-only, cutoff-scoped view — what predictors receive)
@@ -490,19 +505,17 @@ ForecastContext  ◄────────────────────
 
 ### Finalized Datasets
 
-**Decision date:** Apr 10, 2026.
+**Decision date:** Apr 10, 2026. **Revised:** Apr 21, 2026 — NYISO removed; ForecastBench moved out of scope as a core dataset (see `bootcamp-project-charter.md`).
 
-The following datasets are confirmed for the bootcamp. Access conditions and integration status are captured here as the technical source of truth.
+The following three datasets are the core of the bootcamp. Access conditions and integration status are the technical source of truth.
 
 | Dataset | Access Method | License / Conditions | Adapter Status | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **Statistics Canada** | `stats-can` Python library / SDMX API | Open Government Licence (no conditions) | ✅ `StatCanAdapter` | `released_at` approximated as `timestamp + 21 days` |
-| **FRED** | REST API with key | Attribution required; API key needed | ✅ `FREDAdapter` | `released_at = timestamp` (no vintage dates via `fredapi`); API key from `FRED_API_KEY` env var |
-| **yfinance** | Python SDK | Attribution required; rate-limited | Planned `yfinanceAdapter` | Suitability for bulk backtesting (vs. real-time) still under evaluation |
-| **NYISO** | CSV download | No conditions apparent on data files | Planned `NYISOAdapter` | 5-minute granularity, ~11 load zones; task framing TBD |
-| **ForecastBench** | Direct download (site + GitHub) | CC-BY-SA-4.0 — attribution required | Separate integration (Pass 2) | Supersedes direct Metaculus API integration; includes Metaculus + FRED + Yahoo Finance + Rand questions, historical resolutions, and community predictions |
+| **Statistics Canada** | `stats-can` Python library / SDMX API | Open Government Licence (no conditions) | ✅ `StatCanAdapter` | `released_at` approximated as `timestamp + 21 days`. Powers getting-started, CFPR, and BoC experiments. |
+| **FRED** | REST API with key | Attribution required; API key needed | ✅ `FREDAdapter` | `released_at = timestamp` (no vintage dates via `fredapi`); API key from `FRED_API_KEY` env var. Powers CFPR covariates, energy commodity prices, and BoC covariates. |
+| **yfinance** | Python SDK | Attribution required; rate-limited | Planned `yfinanceAdapter` | Powers S&P 500 experiment and the futures side of the energy commodity experiment (WTI term structure, RBOB front-month). Suitability for bulk backtesting (vs. real-time live use) is part of the S&P 500 experiment scope. |
 
-**ForecastBench note:** ForecastBench data is structured as questions + resolutions + community predictions — not as time series — and is not served through the `ProviderAdapter` / `SeriesStore` path. It will be integrated as part of the Pass 2 discrete event evaluation infrastructure (see H3 in backlog).
+**Out-of-scope data sources.** NYISO (and other grid-operator datasets) are not in the bootcamp's core scope — energy is carried via commodity-market data (FRED, yfinance) and the CPI gasoline transmission chain. ForecastBench is not a core reference experiment either; it remains available under CC-BY-SA-4.0 for participant exploration and learn-days discussion. See the project charter's Out of Scope section.
 
 ### Canonical Internal Format
 
@@ -561,8 +574,8 @@ A more precise implementation (using StatCan's SDMX release schedule) is deferre
 
 Shared abstractions are extracted after both passes are working — not designed in advance.
 
-1. **Pass 1 — Economic forecasting** (StatCan, continuous series, `ContinuousForecast` payloads)
-2. **Pass 2 — Discrete event forecasting** (binary/categorical, ForecastBench / Metaculus questions, `BinaryForecast` payloads)
+1. **Pass 1 — Continuous forecasting** (StatCan / FRED / yfinance, time series, `ContinuousForecast` payloads). Used by the getting-started, CFPR, energy-prices, and S&P 500 reference experiments.
+2. **Pass 2 — Discrete-event forecasting** (binary/categorical, `BinaryForecast` payloads). The first-class Pass-2 experiment is **Bank of Canada rate decisions**.
 
 ### Phase 1 Build Sequence (Pass 1) — Status
 
@@ -592,7 +605,21 @@ Shared abstractions are extracted after both passes are working — not designed
 23. ✅ Description helpers — `aieng/forecasting/evaluation/describe.py` (`describe_task`, `describe_spec`) for notebooks, docs, and LLM prompts
 24. ✅ CFPR refactor — canonical `food_cpi_cfpr_{backtest,eval}.yaml` across all 9 sub-indices (July origins, horizons 6–17); notebook rewritten as a narrative shell over `experiments.food_price_forecasting.{data,analysis,plots}`; FRED covariates removed from the canonical task (deferred pending a multivariate/agentic framing design)
 
-**Next:** Pass 2 (ForecastBench discrete event questions / `BinaryForecast` / BoC reference experiment); see backlog T4. Also: expand `methods/` with `SeasonalNaivePredictor` and a foundation model predictor (T3).  Deferred design threads: *Numeric predictors as agent skills* and *Covariate framing for multivariate and agentic predictors* (both in the backlog holding queue).
+**Next:** Pass 2 — `BinaryForecast`, `BinaryPredictor` ABC, binary evaluation loop, and the BoC reference experiment as the first concrete instantiation. Also in flight or queued: the S&P 500 reference experiment (active sprint, Behnoosh), the energy commodity prices reference experiment + `FuturesBaseline` method, and expansion of `methods/` with `SeasonalNaivePredictor` and a foundation model predictor. Deferred design threads: *Numeric predictors as agent skills* and *Covariate framing for multivariate and agentic predictors* (both in the backlog holding queue).
+
+### Reference Experiments Roadmap
+
+The bootcamp-complete state of this repo is defined by a fixed set of five reference experiments (see `bootcamp-project-charter.md` for the pedagogical framing). This section captures the infrastructure dependencies and current status of each.
+
+| # | Experiment | Payload | Datasets | Infra dependencies | Status |
+|---|---|---|---|---|---|
+| 1 | `getting_started` — CPI Gasoline, 12m | `ContinuousForecast` | StatCan | Pass 1 complete | ✅ done (`implementations/experiments/getting_started/`) |
+| 2 | CFPR — food CPI, 9 targets, 12-step trajectory | `ContinuousForecast` (multi-horizon, multi-target) | StatCan (targets), FRED (covariates, deferred) | Pass 1 + `MultiTargetBacktestSpec` + multi-horizon `predict()` + artifact store | ✅ framework done (`implementations/experiments/food_price_forecasting/`); LLMP/agent predictors pending Ali |
+| 3 | Energy commodity prices — WTI primary, RBOB secondary | `ContinuousForecast` (daily, multivariate) | FRED + yfinance | Pass 1 + `yfinanceAdapter` + business-day calendar handling + `FuturesBaseline` reference method | 🟡 scoped in backlog |
+| 4 | S&P 500 market predictions | `ContinuousForecast` (daily, financial) | yfinance | Pass 1 + `yfinanceAdapter` + careful backtest design for financial data | 🟡 active sprint (Behnoosh) |
+| 5 | Bank of Canada rate decisions | `BinaryForecast` | StatCan (rate history) + FRED (macro context) | **Pass 2**: `BinaryForecast`, `BinaryPredictor`, Brier scoring, binary `evaluate()` | 🟡 scoped in backlog |
+
+**Track 2 demonstration** is attached to experiments 3 (Energy Commodity Prices) and 4 (S&P 500) — the bootcamp's convergence surfaces. The same ADK-based flagship agent that emits `ContinuousForecast` outputs for Track 1 backtesting on these experiments is exercised on Track 2 task types (monitoring, scenario analysis, research Q&A, reasoning walkthroughs) over the same data. No new harness infrastructure is required — Track 2 surfaces live in the agent backbone (`aieng/forecasting/agents/`) and in experiment-specific configs under `implementations/experiments/`. See `bootcamp-project-charter.md` → *Reference Experiments* → *The convergence* for the programmatic framing.
 
 ### Long-Term Vision
 

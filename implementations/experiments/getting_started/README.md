@@ -111,14 +111,17 @@ against [`cpi_gasoline_eval_2yr.yaml`](../../../reference_specs/cpi_gasoline_eva
 ## Graduation: CFPR
 
 When this experiment feels small, graduate to
-[`food_price_forecasting/`](../food_price_forecasting/).  That
-experiment is the bootcamp's flagship reference implementation:
-nine correlated CPI sub-indices, a 12-step trajectory per origin,
-`MultiTargetBacktestSpec`, `cached_multi_backtest()`, helper modules
-(`data.py`, `analysis.py`, `plots.py`), and the avg/avg YoY metric that
-Canada's Food Price Report actually publishes.  Everything in
-`getting_started/` is the minimum viable subset of that story; CFPR is
-the full article.
+[`food_price_forecasting/`](../food_price_forecasting/).  That is the
+flagship of the no-futures multivariate case: nine correlated CPI
+sub-indices, a 12-step trajectory per origin, `MultiTargetBacktestSpec`,
+`cached_multi_backtest()`, helper modules (`data.py`, `analysis.py`,
+`plots.py`), and the avg/avg YoY metric that Canada's Food Price Report
+actually publishes.  Everything in `getting_started/` is the minimum
+viable subset of that story; CFPR is the full article.
+
+See `planning-docs/bootcamp-project-charter.md` for the full map of
+reference experiments, including the Energy Commodity Prices and S&P 500
+experiments that anchor the Track 1 + Track 2 convergence.
 
 ---
 
