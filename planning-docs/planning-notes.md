@@ -1,3 +1,44 @@
+## Apr 21, 2026 — Plan of record: scope crystallization + convergence commitment [Ethan & Agent]
+
+Two linked passes through the docs to get the bootcamp plan crisp enough to hand off to development without ambiguity. The prior week's direction (two-track framing, no-futures contrast case, energy experiment, futures baseline as teaching concept) is now reflected as the single plan of record across `bootcamp-project-charter.md`, `technical-design.md`, `backlog.md`, `README.md`, and the `implementations/` READMEs.
+
+### Pass 1 — Scope crystallization
+
+Tightened the bootcamp's stated scope to remove ambiguity:
+
+- **Two domains (Finance, Economics), three data sources (StatCan, FRED, yfinance), four paradigms, five reference experiments.** Energy is carried as a cross-cutting theme through commodity markets and the CPI gasoline transmission chain — not a separate domain or dataset.
+- **Out of scope, made explicit:** NYISO and other grid-operator datasets (energy is handled via commodities); ForecastBench as a core reference experiment (BoC is the single binary-paradigm experiment; ForecastBench is learn-days / ICL-corpus material only); model fine-tuning including the Gemma hackathon and any Kaggle submissions; Track 2 evaluation methodology (deferred to the separate Agentic Evaluations bootcamp).
+- **Five reference experiments codified** with a table in the charter and a mirror Roadmap table in the tech design: `getting_started` (CPI gasoline, done), CFPR (done), Energy Commodity Prices (queued), S&P 500 (active), BoC rate decisions (queued — Pass 2).
+
+### Pass 2 — The convergence as plan of record
+
+Named the bootcamp centrepiece explicitly. Ethan's call: lean into the energy story (topical given the current Persian Gulf conflict) while zooming in on equities as a complementary financial surface; the same agent that emits formal Track 1 predictions is the agent that does Track 2 research, analysis, monitoring, and open-ended Q&A.
+
+- **Convergence surfaces:** Experiments 3 (Energy Commodity Prices) and 4 (S&P 500) are the designated Track 1 + Track 2 demonstration surfaces. One flagship ADK agent, exercised in two modes, on the same data — not two separate agents.
+- **Three feeder tracks converge here:** Behnoosh's S&P 500 use case (active), the Energy Commodity Prices holding-queue item, and Ali's flagship frontier agent (active). Each feeder now carries a convergence note in its backlog entry calling out the downstream reuse.
+- **Ali's sprint exit criteria** now require the starter plan to explicitly address how the flagship agent is exercised on Energy + S&P 500, and how Track 2 task types layer on without forking.
+- **Track 2 holding-queue item** now locks Energy + S&P 500 as the demo surfaces (no more "leading candidates — choice deferred") and specifies deliverables live inside the experiment directories, not in a separate `extended_capabilities/` folder. The convergence means Track 2 notebooks ship *with* what they extend.
+
+### Supporting cleanups
+
+- **BoC priority-1 sizing made obvious.** Renamed to "Pass 2 — Binary Forecasting + BoC" with an up-front sizing warning (effectively all of Pass 2 + the first experiment on top — ~2× any other single holding-queue item) and a clean Part A (infrastructure) / Part B (experiment) split inside the task body.
+- **Signal discipline.** Removed the all-checkmarks Dataset × Method Applicability table from the charter (it was 3×4 = 12 ✅ cells carrying no information) and reshaped the Example Tasks section into a leaner "Participant Extension Ideas" menu that doesn't duplicate the Reference Experiments table.
+- **Flagship language tightened.** CFPR is now consistently described as "flagship of the no-futures multivariate case" — still the richest use case of its paradigm, but not "the" flagship of the bootcamp overall. The bootcamp centrepiece is the Energy + S&P 500 convergence.
+
+### Key decisions
+
+- The convergence (Energy + S&P 500 + one flagship agent, Track 1 + Track 2) is the bootcamp's central demonstration. It replaces "Track 2 demo choice deferred" as the plan of record.
+- `implementations/experiments/` will carry `energy_prices/` and expanded `sp500/` with Track 2 notebooks living inside each, alongside Track 1 specs and baselines.
+- ForecastBench, NYISO, grid-operator datasets, and fine-tuning are explicitly out of scope; they may be surfaced on learn days but carry no build commitment.
+- CFPR remains important but is reframed: the flagship of the no-futures multivariate case, not the bootcamp's overall centrepiece.
+
+### Follow-ups not taken here
+
+- Whether to pre-create empty `energy_prices/` and expanded `sp500/` directories as signposts vs. waiting until the holding-queue items activate.
+- The ADR-style writeup for Track 2 (what the flagship agent can do, what it cannot, and the open evaluation gap pointing to the Agentic Evaluations bootcamp) is a deliverable of the Track 2 holding-queue item itself; it will land when that item activates.
+
+---
+
 ## Apr 20, 2026 — The no-futures contrast case [Ethan & Agent]
 
 The energy commodity experiment is compelling precisely because futures markets do much of the work. The natural complement — and the more important pedagogical point — is a prediction problem where no such market exists and the agent has to build the aggregated intelligence from scratch.
