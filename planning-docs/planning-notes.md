@@ -757,8 +757,8 @@ explicit.
 
 **TODO C3 — `eval.py`: `import pandas as pd` is misplaced in the import block**
 `import pandas as pd` appears at line 49, after the pydantic/local imports, instead of
-grouped with the other third-party imports. Doesn't fail lint (isort not configured)
-but is inconsistent with project style.
+grouped with the other third-party imports. The ordering is inconsistent with project
+style even if the file still passes lint.
 
 ---
 

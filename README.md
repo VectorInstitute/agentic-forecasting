@@ -110,7 +110,7 @@ print(f"Mean CRPS: {result.mean_crps:.4f}")
 
 ```bash
 make lint        # Full CI suite: ruff format + ruff check + mypy + pre-commit hooks
-make format      # Format only (ruff format + isort), no mypy
+make format      # Format only (ruff format + Ruff import sorting), no mypy
 ```
 
 A passing `make lint` means CI will accept the code. Strict **mypy** applies to the `aieng` package; `scripts/` and `implementations/` are linted but not typechecked.

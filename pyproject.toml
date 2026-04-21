@@ -22,9 +22,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "black>=24.10.0",
     "codecov>=2.1.13",
-    "isort>=5.13.0",
     "mypy>=1.14.1",
     "nbqa>=1.9.1",
     "pip-audit>=2.7.3",
@@ -67,16 +65,6 @@ warn_return_any = true
 implicit_reexport = false
 strict_equality = true
 extra_checks = true
-
-[tool.black]
-line-length = 120
-target-version = ["py312"]
-
-[tool.isort]
-profile = "black"
-line_length = 120
-known_first_party = ["aieng"]
-src_paths = ["aieng-forecasting"]
 
 [tool.ruff]
 include = ["*.py", "pyproject.toml", "*.ipynb"]
