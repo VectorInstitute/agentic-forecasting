@@ -1,3 +1,16 @@
+## Apr 22, 2026 — Canonical scope wording for financial markets [Ethan & Agent]
+
+Clarified the plan-of-record wording across charter, backlog, technical design, and READMEs so sprint reviewers see one consistent message:
+
+- The project tracks **five technical reference experiments**: 1) getting-started CPI gasoline, 2) CFPR, 3a) Financial Markets S&P 500 primary template, 3b) Financial Markets energy extension, 4) BoC rate decisions.
+- Financial markets is one experiment family with two technical entries: **3a is primary, 3b is extension**.
+- Convergence language is now explicit: Track 1 + Track 2 demonstrations land on S&P 500 first, then extend to energy with near-zero marginal structural work.
+- Backlog priority labels and dependency references are aligned to the current ranked order (no stale priority numbering).
+
+This note supersedes conflicting shorthand from Apr 21 entries that alternated between "four" vs. "five" reference experiments and treated S&P 500 + energy as either co-equal convergence surfaces or primary+extension.
+
+---
+
 ## Apr 21, 2026 — FuturesBaseline dropped; futures as covariates [Ethan & Agent]
 
 The `FuturesBaseline` predictor class is unnecessary. Futures data is registered in the `DataService` as covariate series like any other — predictors that support covariates simply request them. The "can you beat the market?" teaching moment comes from the comparison table (model with futures covariates vs. without), not from a dedicated predictor. The holding-queue item is removed. The covariate framing design session (now priority 2) absorbs this concern: futures prices are the motivating example for the financial markets experiment, and the design question — how covariates are expressed across univariate, multivariate, LLMP, and agentic predictors — is the same question regardless of which covariate series is involved.

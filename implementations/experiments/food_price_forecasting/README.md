@@ -15,7 +15,7 @@ start at `getting_started/` and come here once the single-series loop is
 familiar.
 
 > For the bootcamp's overall centrepiece — the Track 1 + Track 2
-> convergence on Energy Commodity Prices and the S&P 500 — see
+> convergence on the S&P 500 primary template with energy as extension — see
 > `planning-docs/bootcamp-project-charter.md` → *Reference Experiments*
 > → *The convergence*.  CFPR remains the flagship of its own paradigm
 > (no-futures multivariate with context-driven agent retrieval) but is

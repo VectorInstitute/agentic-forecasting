@@ -27,8 +27,8 @@ experiments/
 │   ├── food_data_exploration.ipynb
 │   └── food_cpi_experiment.ipynb
 │
-├── sp500/                       # S&P 500 — convergence surface (planned — Behnoosh)
-├── energy_prices/               # Energy commodities — convergence surface (planned)
+├── sp500/                       # Financial Markets 3a — primary template (planned — Behnoosh)
+├── energy_prices/               # Financial Markets 3b — energy extension of sp500 template (planned)
 ├── boc_rate_decisions/          # Bank of Canada rate decisions (planned)
 └── ...
 ```
@@ -37,9 +37,10 @@ experiments/
 the smallest end-to-end walkthrough of the evaluation framework against
 a single volatile target.  `food_price_forecasting/` is the graduation
 step: same interfaces, much richer use case.  For the bootcamp's overall
-centrepiece — the Track 1 + Track 2 convergence — see `sp500/` and
-`energy_prices/` when they land, and the charter's *Reference
-Experiments* section for the framing.
+centrepiece — the Track 1 + Track 2 convergence — starts with `sp500/`
+as the primary template and extends to `energy_prices/` with minimal
+structural changes. See the charter's *Reference Experiments* section
+for the canonical framing.
 
 ---
 

@@ -7,7 +7,7 @@ This file is a plain-text complement to ClickUp. It captures the current set of 
 **Definition of a bootcamp-complete repo (technical):**
 - Core data + backtest/eval infrastructure is stable, documented, and reproducible.
 - At least one strong reference method per major paradigm is runnable in-repo (numerical, LLMP, agentic/hybrid as scoped in `bootcamp-project-charter.md`).
-- All **five reference experiments** from the charter's Reference Experiments section are present and runnable end-to-end: getting-started CPI gasoline, CFPR, energy commodity prices, S&P 500, BoC rate decisions.
+- All **five technical reference experiments** from the charter's Reference Experiments section are present and runnable end-to-end: getting-started CPI gasoline, CFPR, Financial Markets 3a (S&P 500 template), Financial Markets 3b (energy extension), and BoC rate decisions.
 - Evaluation artifacts and specs are versioned, legible, and consistent across docs/notebooks.
 - Repo quality bar is met (`make lint` clean, mypy non-regressing, key READMEs current).
 
@@ -66,7 +66,7 @@ Ali is the long-haul engineer for the agentic forecasting work. This sprint: imp
 
 **Flagship frontier agent (Track 1 — convergence target):** Once the base LLMP is running end-to-end, graduate to the *flagship* frontier agent: an ADK-based coding agent that can retrieve data via tools, write and execute code to produce numerical forecasts, and optionally search for context. This agent must emit a `ContinuousForecast` or `BinaryForecast` through the same `Predictor` interface as the LLMP — that is what makes it a Track 1 predictor. The agent backbone (ADK setup, tool definitions, prompt scaffolding) is reusable infrastructure and belongs in `aieng/forecasting/agents/`; task-specific configuration lives in `implementations/`.
 
-This agent is designed with the convergence in mind from day one: it is the *same* agent that will eventually run Track 1 predictions AND Track 2 research / analysis / monitoring on the Energy Commodity Prices and S&P 500 experiments (see the *The convergence* block at the top of this file). Structure the backbone so that Track 2 task types — scenario analysis, monitoring loops, open-ended Q&A — can be layered on without forking the agent. Start on StatCan CPI for validation; extend to S&P 500 once Behnoosh's use case is ready; Energy Commodity Prices activates when priority 2 in the holding queue is pulled. Timebox aggressively — a working demo with documented decisions is more valuable than completeness. Coordinate with Ethan on what the testing engine needs.
+This agent is designed with the convergence in mind from day one: it is the *same* agent that will eventually run Track 1 predictions AND Track 2 research / analysis / monitoring on the S&P 500 experiment first, then the energy extension (see *The convergence* at the top of this file). Structure the backbone so that Track 2 task types — scenario analysis, monitoring loops, open-ended Q&A — can be layered on without forking the agent. Start on StatCan CPI for validation; extend to S&P 500 once Behnoosh's use case is ready; energy activates when priority 4 in the holding queue is pulled. Timebox aggressively — a working demo with documented decisions is more valuable than completeness. Coordinate with Ethan on what the testing engine needs.
 
 **Track 2 tasks themselves are deliberately downstream of this sprint.** The Track 2 holding-queue item will layer on top of this same agent backbone; do not branch into Track 2 task types in this sprint. The deliverable here is the flagship agent backbone plus Track 1 evidence on at least one canonical spec.
 
@@ -74,7 +74,7 @@ This agent is designed with the convergence in mind from day one: it is the *sam
 - `BaseLLMPredictor` runs end-to-end on one canonical spec and returns valid `ContinuousForecast` output via Pydantic.
 - One benchmark comparison is recorded against an existing baseline (CRPS table or equivalent).
 - The LiteLLM-vs-ADK decision is documented with rationale; any frontier-agent work this sprint is limited to a scoped starter plan, not a broad build-out.
-- The starter plan explicitly addresses how the flagship agent will be exercised on the convergence surfaces (Energy + S&P 500) and how it will be extended to Track 2 task types without forking.
+- The starter plan explicitly addresses how the flagship agent will be exercised on S&P 500 first and then extended to energy using the same backbone, including how Track 2 task types layer on without forking.
 
 ---
 
@@ -122,7 +122,7 @@ Ahmad is joining for this sprint only to produce the presentation for the Call f
 - Bootcamp motivations and goals.
 - The four forecasting paradigms (numerical, LLM Processes, frontier agentic, discrete-event) and the two-track framing (Track 1 head-to-head evaluation; Track 2 extended agent capability demonstration — with Track 2 evaluation explicitly deferred to the Agentic Evaluations bootcamp).
 - The two domains (Finance, Economics) and three data sources (StatCan, FRED, yfinance). Note that energy is a cross-cutting theme via commodity markets and CPI gasoline — not a separate domain or dataset.
-- The **five reference experiments**: getting-started CPI gasoline, CFPR, financial markets (S&P 500 first, energy as natural extension), BoC rate decisions. Make clear which are done, which are in progress, and which are queued.
+- The **five technical reference experiments**: getting-started CPI gasoline, CFPR, Financial Markets 3a (S&P 500 primary template), Financial Markets 3b (energy extension), and BoC rate decisions. Make clear which are done, which are in progress, and which are queued.
 - **The convergence** — S&P 500 as the primary Track 1 + Track 2 convergence surface, with energy commodities as the structurally-identical extension. One flagship agent, same code, two datasets. This is the bootcamp's central demonstration and should be the pitch's emotional peak.
 - A walkthrough of the technical components being built (data service, evaluation harness, implementations layer, agent backbone plans).
 - What participation in the bootcamp will look like.
@@ -198,7 +198,7 @@ FRED macro covariates were intentionally removed from the canonical CFPR experim
 
 ---
 
-### Extended Agent Capabilities (Track 2): Convergence Demonstration *(priority 4)*
+### Extended Agent Capabilities (Track 2): Convergence Demonstration *(priority 3)*
 
 **Theme:** Agent architecture — capability demonstration
 **Dependencies:** Flagship frontier agent operational on Track 1 (Ali); S&P 500 experiment landed (Behnoosh, active sprint).
@@ -220,7 +220,7 @@ Energy is a near-zero marginal extension once the S&P 500 Track 2 demo is runnin
 
 ---
 
-### Energy Commodity Prices — Data Extension *(priority 5)*
+### Energy Commodity Prices — Data Extension *(priority 4)*
 
 **Theme:** Data extension (not a separate experiment build)
 **Dependencies:** S&P 500 experiment template established (Behnoosh, active sprint)
@@ -237,7 +237,7 @@ The energy commodity experiment reuses the S&P 500 template verbatim — same co
 
 ---
 
-### Numerical Forecaster Expansion & Foundation Models *(priority 6)*
+### Numerical Forecaster Expansion & Foundation Models *(priority 5)*
 
 **Dependencies:** None
 
@@ -250,7 +250,7 @@ The current predictor library has `LastValuePredictor`, `DartsAutoARIMAPredictor
 
 ---
 
-### Per-User Eval Tracking *(priority 7)*
+### Per-User Eval Tracking *(priority 6)*
 
 **Theme:** Infrastructure
 **Dependencies:** Binary forecasting task (or later)

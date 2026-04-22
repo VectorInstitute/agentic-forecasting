@@ -120,8 +120,9 @@ actually publishes.  Everything in `getting_started/` is the minimum
 viable subset of that story; CFPR is the full article.
 
 See `planning-docs/bootcamp-project-charter.md` for the full map of
-reference experiments, including the Energy Commodity Prices and S&P 500
-experiments that anchor the Track 1 + Track 2 convergence.
+reference experiments, including Financial Markets 3a (S&P 500 primary
+template) and 3b (energy extension) that anchor the Track 1 + Track 2
+convergence.
 
 ---
 
