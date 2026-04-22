@@ -1,3 +1,31 @@
+## Apr 21, 2026 — FuturesBaseline dropped; futures as covariates [Ethan & Agent]
+
+The `FuturesBaseline` predictor class is unnecessary. Futures data is registered in the `DataService` as covariate series like any other — predictors that support covariates simply request them. The "can you beat the market?" teaching moment comes from the comparison table (model with futures covariates vs. without), not from a dedicated predictor. The holding-queue item is removed. The covariate framing design session (now priority 2) absorbs this concern: futures prices are the motivating example for the financial markets experiment, and the design question — how covariates are expressed across univariate, multivariate, LLMP, and agentic predictors — is the same question regardless of which covariate series is involved.
+
+---
+
+## Apr 21, 2026 — Financial markets experiments: unified template, S&P 500 first [Ethan & Behnoosh & Agent]
+
+Behnoosh confirmed that the S&P 500 and energy commodity experiments are structurally identical: same daily horizon framing, same code, different covariates and data sources. The right response is to build one template experiment well, not two parallel ones.
+
+### Decision
+
+S&P 500 is the primary financial markets build. Behnoosh's sprint task is reframed as building a **reusable template** — `yfinanceAdapter`, a general-purpose data prep script, and multi-horizon `BacktestSpec` YAMLs (1d, 5d, 14d, 30d). Energy extends this template with a data fetch script and a spec file; no new experiment code is needed. The `FuturesBaseline` predictor applies to equity index futures first, then energy futures unchanged.
+
+### Consequences
+
+- The holding-queue "Energy Commodity Prices Reference Experiment" item is collapsed to a small data-extension task (priority 5 in the queue). The full scoping detail (targets, covariates, backtesting design) that was in the backlog is now superseded by "reuse the S&P 500 template."
+- `FuturesBaseline` is decoupled from the energy experiment and moves to holding-queue priority 2, applicable to equities immediately.
+- The charter's Reference Experiments table merges experiments 3 and 4 into a single "Financial Markets" row with S&P 500 as primary and energy as extension, reducing to four reference experiments. The table number is 4, not 5.
+- Track 2 convergence demo is built on S&P 500 first; energy extends it trivially once that's running.
+- Covariate framing design session becomes the decision that unblocks both CFPR covariates and the financial markets covariates (equity sector indices, VIX, yield curve, FRED energy series) — same design question, one answer.
+
+### Note on multiple horizons
+
+The agreed framing for financial markets predictions: daily origins, multi-horizon outputs — 1d, 5d, 14d, 30d. This is more granular than the current CPI experiments (monthly frequency, 12m horizon) and will surface new backtest design questions (non-overlapping windows, which horizons to score agents on, what "live testing" means for a daily predictor). These are tracked in the testing engine thread but are not blockers for the first numerical baseline run.
+
+---
+
 ## Apr 21, 2026 — Plan of record: scope crystallization + convergence commitment [Ethan & Agent]
 
 Two linked passes through the docs to get the bootcamp plan crisp enough to hand off to development without ambiguity. The prior week's direction (two-track framing, no-futures contrast case, energy experiment, futures baseline as teaching concept) is now reflected as the single plan of record across `bootcamp-project-charter.md`, `technical-design.md`, `backlog.md`, `README.md`, and the `implementations/` READMEs.

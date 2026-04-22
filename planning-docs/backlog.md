@@ -17,7 +17,7 @@ This file is a plain-text complement to ClickUp. It captures the current set of 
 - Model fine-tuning (including Gemma / Unsloth / Kaggle submissions) is **out of scope**.
 - **Track 2 evaluation methodology is out of scope** — deferred to the separate Agentic Evaluations bootcamp. Track 2 work in this repo is a capability demonstration only.
 
-**The convergence (bootcamp centrepiece, Apr 21, 2026):** Experiments 3 (Energy Commodity Prices) and 4 (S&P 500) are the designated Track 1 + Track 2 convergence surfaces. A single flagship ADK agent — developed as part of Ali's sprint — is exercised in two modes: emitting `ContinuousForecast` outputs for Track 1 backtesting, and performing research / analysis / monitoring / Q&A for Track 2 demonstrations, over the *same* data. Three feeder tracks converge here: the energy use case (holding-queue priority 2), the S&P 500 use case (active sprint — Behnoosh), and the flagship frontier agent (active sprint — Ali). Plan every sprint decision with that convergence in mind.
+**The convergence (bootcamp centrepiece, Apr 21, 2026):** The S&P 500 experiment (active sprint — Behnoosh) is the primary convergence surface: it is the template for all financial-markets experiments in this project, and it is the data on which Ali's flagship agent is first developed and demonstrated in both Track 1 (formal predictions) and Track 2 (research / monitoring / Q&A). The energy commodity experiment is structurally identical — same code, same horizons, different data — and activates as a natural extension once the S&P 500 template is solid. Two feeder tracks converge on the S&P 500 surface: Behnoosh's use case (active) and Ali's flagship agent (active). Plan every sprint decision with that convergence in mind.
 
 ---
 
@@ -78,22 +78,23 @@ This agent is designed with the convergence in mind from day one: it is the *sam
 
 ---
 
-### Behnoosh — S&P 500 Reference Use Case
+### Behnoosh — Financial Markets Reference Experiment (S&P 500 first)
 
-Behnoosh owns the S&P 500 reference use case end to end. This is an evolving task: it begins with task framing and grows as new methods land.
+Behnoosh owns the financial markets reference experiment end to end. S&P 500 is the first asset; the experiment is designed as a **reusable template** from day one. Energy commodities, individual equities, or other liquid assets can be dropped in later by swapping the data fetch script and series IDs — the experiment code itself changes minimally.
 
-**This sprint:** Frame the forecasting task — this is a real design decision (30-day return distribution? directional binary? something else?) and the choice should be documented with rationale. Stand up the yfinance data adapter; register S&P 500 series in the data service; write a `BacktestSpec` YAML; produce a demo notebook under `implementations/experiments/sp500/` with `DartsAutoARIMAPredictor` as the first baseline; write a `README.md` documenting data provenance, task framing decisions, and licence.
+**This sprint:** Frame the forecasting task (documented with rationale) and stand up the experiment template:
+- `yfinanceAdapter` — general-purpose; fetch S&P 500 (`^GSPC`) and relevant index futures (`ES=F`). Design for reuse: energy data will use the same adapter.
+- `scripts/fetch_sp500.py` — data population script following the same pattern as `scripts/fetch_cpi.py` and `scripts/fetch_fred.py`.
+- Multiple daily horizons: 1d, 5d, 14d, 30d. Document the rationale for the horizon choices and what each tests (noise regime, futures-curve head-to-head, qualitative-context window).
+- `BacktestSpec` YAMLs under `reference_specs/sp500/`; demo notebook under `implementations/experiments/sp500/` with `DartsAutoARIMAPredictor` as first baseline.
+- `README.md` covering data provenance, task framing decisions, licence, and an explicit note that the experiment structure is the template for additional financial assets.
 
-**Ongoing:** As additional methods become available (LLMP from Ali, additional numerical methods), apply them to the S&P 500 task and extend the comparison table. Think carefully about what a well-designed backtesting regime looks like for financial data (non-overlapping test windows, look-ahead risk, etc.), what "eval" testing means for this domain, and how live testing might eventually work — especially once agentic forecasters are involved. Coordinate with Ethan on these questions; financial data may surface requirements the existing testing engine doesn't yet handle.
-
-**Cross-experiment note:** the `yfinanceAdapter` Behnoosh stands up for S&P 500 is also what the energy commodity prices experiment needs for the WTI term structure and RBOB front-month. Aim for the adapter to be general-purpose from day one so the energy experiment does not rebuild it.
-
-**Convergence note:** S&P 500 is one of the two Track 1 + Track 2 convergence surfaces (the other is Energy Commodity Prices). Ali's flagship frontier agent is designed to run on this experiment. The task framing chosen here, and the baseline comparison table, become the spine that the flagship agent is scored against. Anti-leakage rigour in the backtest regime is therefore doubly important — the agent comparison rides on top of it.
+**Ongoing:** As methods land (LLMP from Ali, additional numerical methods, models with futures covariates), apply them to the S&P 500 task and extend the comparison table. Think carefully about anti-leakage (non-overlapping test windows, look-ahead risk) — the baseline comparison table is the spine the flagship agent gets scored against, so rigour here pays double.
 
 **Exit criteria for sprint close:**
-- S&P 500 task framing is explicitly chosen and documented with rationale.
-- First runnable `BacktestSpec` + demo notebook exist and execute with `DartsAutoARIMAPredictor`.
-- README covers provenance/licence and key anti-leakage assumptions in the backtest setup.
+- Task framing and horizon choices are explicitly documented with rationale.
+- Multi-horizon `BacktestSpec` + demo notebook execute end-to-end with `DartsAutoARIMAPredictor`.
+- README notes the template role and confirms the adapter generalises to other assets.
 
 ---
 
@@ -121,8 +122,8 @@ Ahmad is joining for this sprint only to produce the presentation for the Call f
 - Bootcamp motivations and goals.
 - The four forecasting paradigms (numerical, LLM Processes, frontier agentic, discrete-event) and the two-track framing (Track 1 head-to-head evaluation; Track 2 extended agent capability demonstration — with Track 2 evaluation explicitly deferred to the Agentic Evaluations bootcamp).
 - The two domains (Finance, Economics) and three data sources (StatCan, FRED, yfinance). Note that energy is a cross-cutting theme via commodity markets and CPI gasoline — not a separate domain or dataset.
-- The **five reference experiments**: getting-started CPI gasoline, CFPR, energy commodity prices, S&P 500, BoC rate decisions. Make clear which are done, which are in progress, and which are queued.
-- **The convergence** — Energy Commodity Prices and S&P 500 as the Track 1 + Track 2 convergence surfaces, with a single flagship agent exercised in both modes. This is the bootcamp's central demonstration and should be the pitch's emotional peak.
+- The **five reference experiments**: getting-started CPI gasoline, CFPR, financial markets (S&P 500 first, energy as natural extension), BoC rate decisions. Make clear which are done, which are in progress, and which are queued.
+- **The convergence** — S&P 500 as the primary Track 1 + Track 2 convergence surface, with energy commodities as the structurally-identical extension. One flagship agent, same code, two datasets. This is the bootcamp's central demonstration and should be the pitch's emotional peak.
 - A walkthrough of the technical components being built (data service, evaluation harness, implementations layer, agent backbone plans).
 - What participation in the bootcamp will look like.
 
@@ -142,13 +143,12 @@ These tasks are scoped and understood but not yet assigned.
 **Owner policy:** individual names are assigned in `## Active Sprint` only. Holding-queue items stay unassigned until activated.
 
 **Priority order for bootcamp completion:**
-1. **Pass 2 — binary forecasting + BoC reference experiment** (unlocks Pass 2 of the framework and completes the discrete-event paradigm; *sized ~2× any single item below — see item description*)
-2. Energy commodity prices reference experiment (primary convergence surface; unlocks the "with-futures" pedagogical arc and the topical monitoring story)
-3. FuturesBaseline reference method (subset of the energy experiment; small, high-teaching-value deliverable)
-4. Covariate framing for multivariate and agentic predictors (design precursor for multivariate energy + reinstated CFPR covariates)
-5. **Extended agent capabilities (Track 2) — convergence demonstration on Energy + S&P 500** (bootcamp centrepiece; layered on Ali's flagship agent)
-6. Numerical forecaster expansion + foundation models
-7. Per-user eval tracking
+1. **Pass 2 — binary forecasting + BoC reference experiment** (unlocks Pass 2 of the framework; *sized ~2× any single item below — see item description*)
+2. Covariate framing for multivariate and agentic predictors (futures series are the primary example for the financial markets experiment; also unblocks CFPR covariates)
+3. **Extended agent capabilities (Track 2) — convergence demonstration on S&P 500** (bootcamp centrepiece; layered on Ali's flagship agent)
+4. Energy data extension (fetch script + spec + demo notebook reusing S&P 500 template; not a separate major build)
+5. Numerical forecaster expansion + foundation models
+6. Per-user eval tracking
 
 ---
 
@@ -181,89 +181,59 @@ The current evaluation harness only supports `ContinuousForecast`. This adds the
 
 ---
 
-### Energy Commodity Prices Reference Experiment *(priority 2)*
-
-**Theme:** Reference experiment — primary convergence surface
-**Dependencies:** `yfinanceAdapter` (shared with S&P 500 active-sprint work); daily frequency handling verified in the backtest engine.
-**Decision date:** Apr 20, 2026
-**Convergence role (Apr 21, 2026):** Primary Track 2 demonstration surface. The flagship frontier agent will run Track 1 continuous forecasts on WTI / RBOB here AND be exercised on Track 2 monitoring + scenario analysis over the same data. Design this experiment with that downstream reuse in mind (e.g. the data surfaces and baseline comparison table must be robust enough to carry an agent comparison on top).
-
-A reference experiment on crude oil and gasoline prices using daily financial data. The central motivating idea: crude oil futures embed a market-consensus forward curve as a first-class covariate, making this an unusually sharp head-to-head setup. At any prediction horizon, a futures contract at that maturity *is* the market's own forecast. Any model that consistently adds something on top of that is making a real claim.
-
-**Prediction targets:**
-- Primary: WTI crude oil spot (FRED `DCOILWTICO`)
-- Secondary: RBOB gasoline front-month futures (yfinance `RB=F`)
-
-**Horizons:** 5 trading days (approximately 1 week), 21 trading days (approximately 1 month, aligns with front-month futures), 63 trading days (approximately 3 months)
-
-**Key covariates:** WTI futures term structure at 1m/2m/3m maturities (yfinance), Brent crude spot (FRED `DCOILBRENTEU`), EIA weekly crude inventories (FRED `WCRSTUS1`), USD trade-weighted index (FRED `DTWEXBGS`), CAD/USD (FRED `DEXCAUS`)
-
-**Backtesting design:** Monthly origins, first trading day of each month, 2010–2024 window (covers OPEC 2014–16 production war, 2020 COVID collapse, 2022 Russia/Ukraine spike). Evaluation window: 2023–2025.
-
-**Deliverables:** yfinance adapter (or verify existing from Behnoosh's S&P 500 work), `scripts/fetch_energy.py`, `reference_specs/energy_prices/`, demo notebook under `implementations/experiments/energy_prices/` with WTI spot as primary target and the futures front-month contract as a market baseline predictor.
-
-**Connection to existing work:** Completes the price transmission chain: WTI crude → RBOB futures → CPI gasoline (already in `getting_started`). `DCOILWTICO` and `DEXCAUS` were already fetched as CFPR covariate candidates; data infrastructure is largely in place.
-
----
-
-### FuturesBaseline Reference Method *(priority 3)*
-
-**Theme:** Reference method
-**Dependencies:** Energy commodity experiment activated
-**Decision date:** Apr 20, 2026
-
-Create `FuturesBaseline` as a first-class predictor in `implementations/methods/` that uses the front-month futures price as the point forecast at matching horizons. This should be treated as both a benchmark and a teaching artifact for market-implied expectations in liquid markets.
-
-**Deliverables:**
-- `implementations/methods/futures_baseline.py` with clear assumptions and horizon mapping rules.
-- Usage in the energy experiment notebook and comparison table alongside ARIMA/LLMP/agentic variants.
-- Brief method note in README/docs explaining when this baseline is expected to be strong vs. weak.
-
----
-
-### Covariate framing for multivariate and agentic predictors *(priority 4)*
+### Covariate framing for multivariate and agentic predictors *(priority 2)*
 
 **Theme:** Task / data model (design session)
 **Dependencies:** First multivariate numeric predictor and first agentic forecaster with access to auxiliary data
 **Deferred from:** Apr 17, 2026 CFPR refactor session
 
-FRED macro covariates (US CPI for food-at-home, meats/poultry/fish/eggs, fruits/vegetables; Canada 10-year bond yield; Canada/US exchange rate) were intentionally removed from the canonical CFPR experiment because there is currently no consistent framing of "exogenous covariates" that works across univariate Darts models, multivariate Darts models, LLM/LLMP predictors, and agentic forecasters. The tribal knowledge — *which FRED series, at what lags, transformed how* — is encoded only in the old notebook and in notes.
-
-The energy commodity experiment reintroduces the same problem at scale (WTI + futures + Brent + inventories + USD index) and cannot be cleanly built without resolving it. This design item now serves both reinstating CFPR covariates and enabling the energy experiment.
+FRED macro covariates were intentionally removed from the canonical CFPR experiment because there is currently no consistent framing of "exogenous covariates" that works across univariate Darts models, multivariate Darts models, LLM/LLMP predictors, and agentic forecasters. The same design question surfaces in the financial markets experiment — futures prices (index futures, energy futures), VIX, yield curve, and sector indices are all natural covariate candidates — and resolving it once yields the right answer everywhere. There is no separate `FuturesBaseline` predictor; futures data is just another covariate series registered in the `DataService`. The "can you beat the market?" teaching moment comes from the comparison table: a model *with* futures covariates vs. one without.
 
 **Open sub-questions:**
 - Should covariates live on the `ForecastingTask` (declaring what signals are permissible) or on the `Predictor` (each model decides what it wants)?
 - Does an agentic forecaster discover covariates by searching the `DataService` registry, by being told in a prompt, or by calling a tool?
 - How do we express "covariates are allowed but optional" so the same task can be run with and without them?
-- Can the `ForecastContext` grow a covariate-view API without coupling the task definition to specific data sources?
 
-**Output:** a short design doc plus an updated `reference_specs/food_cpi/` variant that opts into FRED covariates via whatever mechanism we choose, so the old multivariate predictor story can be reinstated cleanly.
+**Output:** a short design doc plus an updated `reference_specs/food_cpi/` variant that opts into covariates via whatever mechanism we choose.
 
 ---
 
-### Extended Agent Capabilities (Track 2): Convergence Demonstration *(priority 5)*
+### Extended Agent Capabilities (Track 2): Convergence Demonstration *(priority 4)*
 
-**Theme:** Agent architecture — capability demonstration on the convergence surfaces
-**Dependencies:** Flagship frontier agent operational on Track 1 (Ali); Energy Commodity Prices experiment landed (priority 2); S&P 500 experiment landed (Behnoosh, active sprint).
-**Confirmed scope:** Apr 21, 2026 — demonstration only; evaluation methodology is explicitly out of scope and is the subject of the separate Agentic Evaluations bootcamp.
-**Convergence target confirmed:** Apr 21, 2026 — Energy Commodity Prices and S&P 500 are the designated Track 2 surfaces (see *The convergence* block at the top of this file).
+**Theme:** Agent architecture — capability demonstration
+**Dependencies:** Flagship frontier agent operational on Track 1 (Ali); S&P 500 experiment landed (Behnoosh, active sprint).
+**Confirmed scope:** Apr 21, 2026 — demonstration only; evaluation is the subject of the separate Agentic Evaluations bootcamp.
 
-This is the bootcamp centrepiece. The *same* flagship agent that emits Track 1 `ContinuousForecast` outputs on Energy Commodity Prices and S&P 500 is exercised here on Track 2 task types over the same data. The distinction is about *task types*, not about *agents* — a single agent, two modes.
+The flagship agent from Ali's Track 1 work is exercised here on Track 2 task types over the same S&P 500 data. Single agent, two modes. Track 2 covers things agents can do that conventional methods structurally cannot:
+- **Monitoring and re-forecasting** — agent watches macro news, Fed communications, and earnings signals and updates its S&P 500 distribution as new signals arrive.
+- **Scenario / what-if analysis** — "how should the S&P 500 return distribution shift if the Fed pivots?"; "what if the Persian Gulf conflict drives WTI above $X?"
+- **Open-ended Q&A and reasoning walkthroughs** — citing evidence, explaining uncertainty, surfacing assumptions.
 
-Track 2 covers things agents can do that conventional methods structurally cannot:
-- **Monitoring and re-forecasting** (primary — Energy) — agent watches OPEC communications, EIA inventory releases, and geopolitical news, and issues updated WTI / RBOB forecasts as signals arrive. Directly topical given current Persian Gulf conflict and commodity-market volatility.
-- **Scenario / what-if analysis** (primary — Energy, S&P 500) — "if WTI stays above $X through Q3, what should we expect for RBOB gasoline by Q4?"; "how should the S&P 500 return distribution shift if the Fed pivots?"
-- **Open-ended Q&A** (both surfaces) — explaining forecasts, uncertainty, assumptions, related risks, sources cited.
-- **Reasoning walkthroughs** (both surfaces) — evidence-chain rationale alongside a structured prediction the same agent issued in Track 1.
+Energy is a near-zero marginal extension once the S&P 500 Track 2 demo is running (same agent, different data).
 
-**Deliverables (minimum bar for bootcamp readiness):**
-- The flagship ADK agent from Ali's Track 1 work, exercised on **at least two** Track 2 task types across Energy Commodity Prices and S&P 500 (one per surface is the bare minimum; ideally both surfaces carry monitoring + scenario analysis).
-- Demo notebooks under the relevant experiment directories (`implementations/experiments/energy_prices/track2_*.ipynb`, `implementations/experiments/sp500/track2_*.ipynb`). Not a separate `extended_capabilities/` folder — the convergence means these live with the experiments they extend.
-- A short ADR-style writeup in `planning-docs/` covering: what the agent can do in Track 2 mode, what it cannot, the honest evaluation gap, and pointers to the Agentic Evaluations bootcamp for how evaluation is being thought about elsewhere.
+**Deliverables:**
+- Flagship agent exercised on at least two Track 2 task types on S&P 500 data.
+- Demo notebook(s) inside `implementations/experiments/sp500/`.
+- Short ADR-style writeup in `planning-docs/` covering what the agent can do, what it cannot, and the open evaluation questions.
 
-**Explicit non-goals:**
-- Building a Track 2 scoring framework or benchmark — out of scope; deferred to the Agentic Evaluations bootcamp.
-- Forking the agent for Track 2 — the design commitment is one flagship agent exercised in two modes. If the Track 1 agent needs structural changes to support Track 2 task types, those changes go back into the Track 1 agent.
+**Non-goals:** Track 2 scoring framework; forking the agent.
+
+---
+
+### Energy Commodity Prices — Data Extension *(priority 5)*
+
+**Theme:** Data extension (not a separate experiment build)
+**Dependencies:** S&P 500 experiment template established (Behnoosh, active sprint)
+**Decision date:** Apr 21, 2026
+
+The energy commodity experiment reuses the S&P 500 template verbatim — same code, same horizons, different series. This is a small, focused task, not a parallel experiment build.
+
+**Deliverables:**
+- `scripts/fetch_energy.py` — populates WTI crude (`DCOILWTICO` via FRED), RBOB gasoline front-month (`RB=F` via yfinance), and WTI futures term structure (`CL=F` 1m/2m/3m via yfinance). `DCOILWTICO` and `DEXCAUS` are already fetched; this script adds the missing yfinance series.
+- `reference_specs/energy_prices/` — `BacktestSpec` and `EvalSpec` YAMLs using the same structure as `reference_specs/sp500/`.
+- Demo notebook under `implementations/experiments/energy_prices/` — runs `DartsAutoARIMAPredictor` (with and without futures covariates) on WTI spot as the primary target. The notebook can be short; the S&P 500 notebook is the narrative reference.
+
+**What this is not:** a separate infrastructure build. If the S&P 500 template requires significant changes to accommodate energy (e.g. daily-frequency edge cases, FRED vs. yfinance calendar alignment), resolve those in the S&P 500 template first.
 
 ---
 
