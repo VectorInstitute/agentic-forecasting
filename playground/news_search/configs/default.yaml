@@ -11,12 +11,12 @@ langfuse_dataset_name: news-grounding-q1-2026-v1
 
 date_range:
   start: "2026-02-01"
-  end: "2026-03-31"
+  end: "2026-03-01"
 
 # Remove or set to null for the full 90-day run.
 # Start with a small number to verify the pipeline works before committing
 # to a long run (each date requires one Gemini API call).
-max_dates: 3
+max_dates: null
 
 agent:
   model: gemini-flash-latest
@@ -60,7 +60,7 @@ task_prompt_template: |
 # stride_days: 7   → weekly (13 API calls)
 # stride_days: 30  → roughly monthly (3 API calls)
 # Override on the CLI: uv run python run.py --stride 7
-stride_days: 1
+stride_days: 7
 
 run_name_prefix: news-grounding
 
