@@ -10,7 +10,7 @@ dependencies = [
     "aieng-forecasting",
     "aieng-implementations",
     "news-search-playground",
-    "filelock==3.25.2",
+    "filelock==3.29.0",
     "jupyterlab>=4.4.8",
     "matplotlib>=3.10.8",
     "nbconvert>=7.17.0",
