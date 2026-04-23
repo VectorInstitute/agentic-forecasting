@@ -1,7 +1,7 @@
 """Environment-variable settings loaded via pydantic-settings.
 
-Reads from the .env at the repo root (two levels up) so the playground
-shares credentials with the rest of the project.
+Reads from the .env at the repo root so the playground shares credentials
+with the rest of the project.
 """
 
 from __future__ import annotations
@@ -13,7 +13,9 @@ from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-_REPO_ROOT_ENV = Path(__file__).resolve().parents[4] / ".env"
+# _settings.py lives at playground/news_search/news_search/_settings.py
+# parents: [0]=news_search pkg, [1]=playground/news_search, [2]=playground, [3]=repo root
+_REPO_ROOT_ENV = Path(__file__).resolve().parents[3] / ".env"
 
 
 class Settings(BaseSettings):

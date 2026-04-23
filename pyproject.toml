@@ -9,6 +9,7 @@ requires-python = ">=3.12"
 dependencies = [
     "aieng-forecasting",
     "aieng-implementations",
+    "news-search-playground",
     "filelock==3.25.2",
     "jupyterlab>=4.4.8",
     "matplotlib>=3.10.8",
@@ -38,11 +39,13 @@ dev = [
 members = [
   "aieng-forecasting",
   "implementations",
+  "playground/news_search",
 ]
 
 [tool.uv.sources]
 aieng-forecasting = { workspace = true }
 aieng-implementations = { workspace = true }
+news-search-playground = { workspace = true }
 
 [tool.mypy]
 ignore_missing_imports = true
