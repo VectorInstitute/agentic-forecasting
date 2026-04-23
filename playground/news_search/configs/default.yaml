@@ -19,7 +19,7 @@ date_range:
 max_dates: 3
 
 agent:
-  model: gemini-2.0-flash
+  model: gemini-flash-latest
   temperature: 0.1
   max_output_tokens: 4096
   system_prompt: |
@@ -56,6 +56,12 @@ task_prompt_template: |
   Do not include anything that happened after that date.
 
 run_name_prefix: news-grounding
+
+# Directory (relative to wherever you run run.py from) to write per-date
+# markdown summaries into.  Each run gets its own subdirectory:
+#   outputs/<run_name>/<date_iso>.md
+# Set to null to disable filesystem output.
+output_dir: outputs
 
 # Seconds between successive Gemini API calls.  Increase if you hit 429s.
 delay_between_requests_sec: 5.0

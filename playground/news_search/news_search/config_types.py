@@ -62,6 +62,15 @@ class RunConfig(BaseModel):
 
     run_name_prefix: str = "news-grounding"
 
+    output_dir: str | None = Field(
+        default="outputs",
+        description=(
+            "Directory to write per-date markdown summaries into.  Each run gets its own "
+            "subdirectory: <output_dir>/<run_name>/<date_iso>.md.  "
+            "Set to null to disable filesystem output."
+        ),
+    )
+
     delay_between_requests_sec: float = Field(
         default=5.0,
         description=(

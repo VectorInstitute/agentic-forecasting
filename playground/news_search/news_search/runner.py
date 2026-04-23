@@ -6,6 +6,7 @@ import asyncio
 import logging
 import time
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 from news_search._settings import Settings
@@ -136,6 +137,42 @@ def _link_trace_to_dataset_item(
 
 
 # ---------------------------------------------------------------------------
+# Filesystem output helpers (optional)
+# ---------------------------------------------------------------------------
+
+
+def _output_path(output_dir: str, run_name: str, d: date) -> Path:
+    return Path(output_dir) / run_name / f"{d.isoformat()}.md"
+
+
+def _write_output(
+    output_dir: str,
+    run_name: str,
+    d: date,
+    prompt: str,
+    summary: str,
+    model: str,
+) -> Path:
+    """Write the summary to <output_dir>/<run_name>/<date_iso>.md and return the path."""
+    path = _output_path(output_dir, run_name, d)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = (
+        f"# News Headlines: {d.strftime('%B %d, %Y')}\n\n"
+        f"**Date:** {d.isoformat()}  \n"
+        f"**Run:** {run_name}  \n"
+        f"**Model:** {model}  \n\n"
+        f"---\n\n"
+        f"{summary}\n\n"
+        f"---\n\n"
+        f"<details><summary>Prompt sent to agent</summary>\n\n"
+        f"```\n{prompt}\n```\n\n"
+        f"</details>\n"
+    )
+    path.write_text(content, encoding="utf-8")
+    return path
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
@@ -171,6 +208,10 @@ def run_news_search(config: RunConfig) -> None:
         config.agent.model,
     )
 
+    if config.output_dir:
+        run_output_dir = Path(config.output_dir) / run_name
+        logger.info("Filesystem output: %s", run_output_dir.resolve())
+
     if lf is not None:
         _ensure_dataset(lf, config)
         _upsert_dataset_items(lf, config, dates)
@@ -197,6 +238,17 @@ def run_news_search(config: RunConfig) -> None:
 
         logger.info("  → %d chars returned", len(summary))
 
+        if config.output_dir:
+            out_path = _write_output(
+                config.output_dir,
+                run_name,
+                d,
+                prompt,
+                summary,
+                config.agent.model,
+            )
+            logger.debug("  Saved → %s", out_path)
+
         if trace is not None:
             trace.update(output={"summary": summary, "date_iso": d.isoformat()})
             _link_trace_to_dataset_item(
@@ -216,3 +268,9 @@ def run_news_search(config: RunConfig) -> None:
         )
     else:
         logger.info("Done (no Langfuse logging — add credentials to .env to enable).")
+
+    if config.output_dir:
+        logger.info(
+            "Summaries written to: %s",
+            (Path(config.output_dir) / run_name).resolve(),
+        )
