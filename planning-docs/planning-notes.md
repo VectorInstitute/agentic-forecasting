@@ -1,3 +1,21 @@
+## Apr 22, 2026 — First LLM-based predictor: `BaseLLMPredictor` [Ali & Agent]
+
+Implemented the first LLM-based forecaster at `implementations/methods/base_llmp.py`. Decisions recorded in `technical-design.md` under *LLM SDK: LiteLLM*, *Tracing & Logging: Langfuse*, and *BaseLLMPredictor: minimal LLM forecaster*.
+
+Locked decisions:
+- SDK is LiteLLM for LLMFunctions. ADK remains the framework for agentic predictors.
+- Sample-based empirical quantiles (N=20, temperature 1.0) over `STANDARD_QUANTILES`, post-sorted. Direct verbalized-quantile elicitation is not supported in v1.
+- Serialization is ISO-month dates with fixed-precision decimals, target-only; no digit-spacing, no rescaling.
+- No chain-of-thought in the base predictor; reasoning-enabled models off by default.
+- Langfuse Stage 1 only: `@observe()` + `langfuse_otel` callback + trace URL on `Prediction.metadata`. Session grouping via `propagate_attributes` is Stage 2, deferred to a separate PR.
+- LiteLLM bootstrap is lazy and idempotent inside `BaseLLMPredictor.__init__`, so non-LLM predictors do not require Langfuse env vars.
+
+Deferred follow-ups: covariates (blocked on *Covariate framing*), direct-mode calibration study, conformal wrapper on residuals, parallel sampling (must also solve Langfuse thread-context propagation), Stage 2 Langfuse.
+
+One adjustment worth recording: `Prediction` is a flat per-step record with scalar-per-level quantiles, so the sampling path produces an `(N, H)` trajectory array and fans out into `len(task.horizons)` per-step `Prediction` records, matching `DartsAutoARIMAPredictor`.
+
+---
+
 ## Apr 22, 2026 — Canonical scope wording for financial markets [Ethan & Agent]
 
 Clarified the plan-of-record wording across charter, backlog, technical design, and READMEs so sprint reviewers see one consistent message:

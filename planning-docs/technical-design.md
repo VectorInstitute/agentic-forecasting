@@ -105,9 +105,57 @@ prompt infrastructure are reusable across use cases and belong in `aieng-forecas
 (e.g. `aieng/forecasting/agents/`). The task-specific configuration and experiments
 using those agents live in `implementations/experiments/<use-case>/`.
 
+### LLM SDK: LiteLLM (for LLMFunctions)
+
+**Decision date:** Apr 22, 2026
+
+**LiteLLM** is the SDK for non-agentic LLM calls in this repo. Google ADK remains the framework for agentic predictors (that decision is unchanged); LiteLLM covers the "LLMFunction" case where a single structured completion is all we need.
+
+Key reasons:
+- One function surface (`litellm.completion`) covers schema-validated JSON output, token usage, USD cost, and the `langfuse_otel` callback without pulling in an agent runtime.
+- Provider portability is a one-string change (Claude, GPT, Gemini, Ollama, vLLM).
+- First-class Langfuse integration via the `langfuse_otel` callback; nests under `@observe()` spans.
+- Pydantic AI and ADK both require an `Agent`/`Runner` object even for a single call and inject hidden system prompts, which conflicts with the LLMFunction goal.
+
+Hygiene:
+- Pin `litellm` to a specific minor line in `implementations/pyproject.toml`; upgrades go through PR review.
+- Pass `response_format` as the explicit `{"type": "json_schema", "json_schema": {...}}` dict rather than a Pydantic class, to avoid documented conversion bugs on Anthropic.
+- LiteLLM bootstrap (callbacks, disk cache) happens lazily inside `BaseLLMPredictor.__init__`, not at `methods/__init__.py` import time, so non-LLM predictors do not require Langfuse env vars.
+
 ### Tracing & Logging: Langfuse
 
-**Langfuse** is selected for tracing. The integration point is at the **Predictor level** — reasoning traces are linked to prediction outcomes via `predictor_id` + `question_id`. This is separate from the evaluation harness's own prediction/resolution/score logging. Implementation details are deferred.
+**Langfuse** is selected for tracing. The integration point is at the `Predictor` level: reasoning traces are linked to prediction outcomes via `predictor_id` + `task_id`, independent of the evaluation harness's own prediction/resolution/score persistence.
+
+Stage 1 (ships with `BaseLLMPredictor`, Apr 22, 2026):
+- `@observe()` wraps `predict()`.
+- `litellm.callbacks = ["langfuse_otel"]` nests each completion under the outer span.
+- `Prediction.metadata["langfuse_trace_id"]` / `["langfuse_trace_url"]` link each persisted forecast back to its trace.
+- When `LANGFUSE_PUBLIC_KEY` is unset, the callback is not registered and trace fields are omitted, so CI and offline runs are unaffected.
+
+Stage 2 (deferred, separate PR): `propagate_attributes(session_id=..., user_id=..., tags=[...])` around the backtest loop for session-grouped dashboards, and Langfuse `Scores` for post-hoc CRPS annotation. Both are harness/notebook changes, not predictor changes.
+
+### BaseLLMPredictor: minimal LLM forecaster
+
+**Decision date:** Apr 22, 2026. **Location:** `implementations/methods/base_llmp.py`.
+
+`BaseLLMPredictor` is the first LLM-based `Predictor` subclass and the baseline against which agentic forecasters must justify their additional machinery. It is an LLMFunction, not an agent: a serialized numeric history plus a task description in, a `ContinuousForecast` per horizon step out.
+
+Method: given horizons `[h_1, ..., h_k]` and `H = max(horizons)`, issue `n_samples` completions at `temperature=1.0`, each returning a Pydantic-validated `list[float]` of length `H`. Stack into an `(N, H)` array and take per-step empirical quantiles at `STANDARD_QUANTILES`, post-sorted for monotonicity. Direct verbalized-quantile elicitation is not supported in v1 (overconfident on continuous forecasting in every benchmark we reviewed).
+
+Serialization: ISO-month dates, fixed `precision` decimal places, one observation per line, target-only. Modern tokenizers chunk digits deterministically so Gruver's digit-spacing is not applied.
+
+Prompt: stable system prompt with the output contract; user prompt with task description, series metadata, history, and explicit forecast window. No chain-of-thought; reasoning-enabled models are not used by default.
+
+Out of scope for v1 (each is a tracked follow-up):
+- Covariates (blocked on the *Covariate framing* design item in the backlog).
+- Direct-mode quantile elicitation as a calibration ablation.
+- Conformal-prediction wrapper on held-out residuals.
+- Parallel sampling fan-out (must also solve Langfuse thread-context propagation).
+- Langfuse session grouping via `propagate_attributes` (Stage 2 above).
+
+`Prediction.metadata` emitted per call: `model`, `n_samples`, `temperature`, `cost_usd`, `input_tokens`, `output_tokens`, `parse_failures`, and `langfuse_trace_id` / `langfuse_trace_url` when Langfuse is active.
+
+`predictor_id = f"base_llmp[{cfg.model}]"` so two instances with different models appear as distinct rows in `BacktestResult` without extra bookkeeping.
 
 ### Structured Outputs: Pydantic
 
@@ -604,6 +652,7 @@ Shared abstractions are extracted after both passes are working — not designed
 22. ✅ Artifact store — `aieng/forecasting/evaluation/artifacts.py` with YAML round-trip + `cached_backtest` / `cached_multi_backtest` under `data/predictions/<spec_id>/`
 23. ✅ Description helpers — `aieng/forecasting/evaluation/describe.py` (`describe_task`, `describe_spec`) for notebooks, docs, and LLM prompts
 24. ✅ CFPR refactor — canonical `food_cpi_cfpr_{backtest,eval}.yaml` across all 9 sub-indices (July origins, horizons 6–17); notebook rewritten as a narrative shell over `experiments.food_price_forecasting.{data,analysis,plots}`; FRED covariates removed from the canonical task (deferred pending a multivariate/agentic framing design)
+25. ✅ `BaseLLMPredictor` in `implementations/methods/base_llmp.py` — first LLM-based forecaster; sample-based empirical quantiles via LiteLLM + Pydantic structured output; Langfuse `@observe` span with trace URL on `Prediction.metadata`. Target-only (no covariates), no CoT, no agent runtime. Design record: *LLM SDK: LiteLLM*, *Tracing & Logging: Langfuse*, *BaseLLMPredictor: minimal LLM forecaster*.
 
 **Next:** Pass 2 — `BinaryForecast`, `BinaryPredictor` ABC, binary evaluation loop, and the BoC reference experiment as the first concrete instantiation. Also in flight or queued: the S&P 500 reference experiment (active sprint, Behnoosh), the energy commodity data extension, and expansion of `methods/` with `SeasonalNaivePredictor` and a foundation model predictor. Deferred design threads: *Covariate framing for multivariate and agentic predictors* (futures prices as covariates are the primary motivating example for the financial markets experiment) and *Numeric predictors as agent skills* — both in the backlog holding queue.
 

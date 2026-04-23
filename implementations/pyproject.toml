@@ -8,6 +8,9 @@ requires-python = ">=3.12"
 dependencies = [
     "aieng-forecasting",
     "lightgbm>=4.6.0",
+    # litellm pinned to a single minor line; upgrades go through PR review.
+    "litellm>=1.83,<1.84",
+    "langfuse>=3.0,<5.0",
 ]
 
 [tool.uv.sources]
