@@ -64,8 +64,7 @@ class RunConfig(BaseModel):
         default=1,
         ge=1,
         description=(
-            "Step size between sampled dates. "
-            "stride_days=1 samples every day; stride_days=7 samples once per week."
+            "Step size between sampled dates. stride_days=1 samples every day; stride_days=7 samples once per week."
         ),
     )
 

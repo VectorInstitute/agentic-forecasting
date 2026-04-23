@@ -153,7 +153,10 @@ def _write_output(
     summary: str,
     model: str,
 ) -> Path:
-    """Write the summary to <output_dir>/<run_name>/<date_iso>.md and return the path."""
+    """Write the summary to ``<output_dir>/<run_name>/<date_iso>.md``.
+
+    Returns the path written.
+    """
     path = _output_path(output_dir, run_name, d)
     path.parent.mkdir(parents=True, exist_ok=True)
     content = (

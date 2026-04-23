@@ -17,7 +17,6 @@ from pathlib import Path
 
 import yaml
 from dotenv import load_dotenv
-
 from news_search.config_types import RunConfig
 from news_search.runner import run_news_search
 
@@ -64,6 +63,7 @@ def _load_config(
 
 
 def main() -> None:
+    """Parse args, load config, and run the news-search agent."""
     args = _parse_args()
 
     logging.basicConfig(

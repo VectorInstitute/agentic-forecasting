@@ -13,8 +13,8 @@ from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-# _settings.py lives at playground/news_search/news_search/_settings.py
-# parents: [0]=news_search pkg, [1]=playground/news_search, [2]=playground, [3]=repo root
+# parents: [0]=news_search pkg, [1]=playground/news_search,
+#          [2]=playground, [3]=repo root
 _REPO_ROOT_ENV = Path(__file__).resolve().parents[3] / ".env"
 
 

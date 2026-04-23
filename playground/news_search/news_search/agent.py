@@ -56,11 +56,10 @@ class AgentRunner:
             session_id=session.id,
             new_message=content,
         ):
-            if event.is_final_response():
-                if event.content and event.content.parts:
-                    text = event.content.parts[0].text or ""
-                    logger.debug("Received response (%d chars)", len(text))
-                    return text
+            if event.is_final_response() and event.content and event.content.parts:
+                text = event.content.parts[0].text or ""
+                logger.debug("Received response (%d chars)", len(text))
+                return text
 
         return ""
 
@@ -86,7 +85,7 @@ def build_agent(config: AgentConfig) -> LlmAgent:
 
 
 async def run_agent_async(agent: LlmAgent, prompt: str) -> str:
-    """Convenience wrapper: create a one-shot ``AgentRunner`` and run *prompt*.
+    """Run *prompt* via a one-shot ``AgentRunner`` and return the response text.
 
     Prefer ``AgentRunner`` directly when running multiple prompts to avoid
     re-initialising the Runner on every call.
