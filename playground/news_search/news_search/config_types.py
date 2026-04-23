@@ -60,6 +60,15 @@ class RunConfig(BaseModel):
         )
     )
 
+    stride_days: int = Field(
+        default=1,
+        ge=1,
+        description=(
+            "Step size between sampled dates. "
+            "stride_days=1 samples every day; stride_days=7 samples once per week."
+        ),
+    )
+
     run_name_prefix: str = "news-grounding"
 
     output_dir: str | None = Field(

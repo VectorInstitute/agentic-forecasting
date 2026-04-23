@@ -22,13 +22,13 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def generate_dates(start: date, end: date) -> list[date]:
-    """Return every calendar day in [start, end] inclusive."""
+def generate_dates(start: date, end: date, stride_days: int = 1) -> list[date]:
+    """Return sampled dates in [start, end] inclusive, stepping by *stride_days*."""
     dates: list[date] = []
     current = start
     while current <= end:
         dates.append(current)
-        current += timedelta(days=1)
+        current += timedelta(days=stride_days)
     return dates
 
 
@@ -195,7 +195,7 @@ def run_news_search(config: RunConfig) -> None:
 
     agent = build_agent(config.agent)
 
-    dates = generate_dates(config.date_range.start, config.date_range.end)
+    dates = generate_dates(config.date_range.start, config.date_range.end, config.stride_days)
     if config.max_dates is not None:
         dates = dates[: config.max_dates]
         logger.info("max_dates=%d; capping run to first %d date(s)", config.max_dates, len(dates))

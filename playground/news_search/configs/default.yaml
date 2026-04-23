@@ -10,7 +10,7 @@ description: >
 langfuse_dataset_name: news-grounding-q1-2026-v1
 
 date_range:
-  start: "2026-01-01"
+  start: "2026-02-01"
   end: "2026-03-31"
 
 # Remove or set to null for the full 90-day run.
@@ -55,6 +55,13 @@ task_prompt_template: |
   IMPORTANT: Only include events that were publicly known as of {date_iso}.
   Do not include anything that happened after that date.
 
+# Step size between sampled dates.
+# stride_days: 1   → every day (90 API calls for Q1 2026)
+# stride_days: 7   → weekly (13 API calls)
+# stride_days: 30  → roughly monthly (3 API calls)
+# Override on the CLI: uv run python run.py --stride 7
+stride_days: 1
+
 run_name_prefix: news-grounding
 
 # Directory (relative to wherever you run run.py from) to write per-date
@@ -64,4 +71,4 @@ run_name_prefix: news-grounding
 output_dir: outputs
 
 # Seconds between successive Gemini API calls.  Increase if you hit 429s.
-delay_between_requests_sec: 5.0
+delay_between_requests_sec: 1.0
