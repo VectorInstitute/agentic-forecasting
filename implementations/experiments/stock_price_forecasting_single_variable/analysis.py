@@ -1,4 +1,4 @@
-"""Analysis helpers for S&P 500 next-business-day log-return forecasting."""
+"""Analysis helpers for S&P 500 prior-close-to-next-open log-return forecasting."""
 
 from __future__ import annotations
 
@@ -15,18 +15,32 @@ if TYPE_CHECKING:
 
 
 def build_next_day_targets(df: pd.DataFrame) -> pd.DataFrame:
-    """Supervised frame: at date t, target is log(close[t+1] / close[t])."""
-    required = {"timestamp", "value"}
+    """Supervised frame aligned with ``sp500_log_ret_1b`` in ``data.py``.
+
+    Each row's ``timestamp`` is the **next session** (open day). The target is
+    ``log(open[t+1] / adj_close[t])`` using same-day ``open`` and adjusted
+    close ``value`` from Yahoo rows indexed by calendar session.
+    """
+    required = {"timestamp", "value", "open"}
     missing = required - set(df.columns)
     if missing:
-        raise ValueError(f"Missing required columns: {sorted(missing)}")
+        raise ValueError(
+            f"Missing required columns: {sorted(missing)}. "
+            "Use ``build_sp500_service`` / ``YahooFinanceDailyAdapter`` so the frame includes "
+            "``open`` alongside adjusted close in ``value``."
+        )
 
-    out = df[["timestamp", "value"]].copy()
+    out = df[list(required)].copy()
     out = out.sort_values("timestamp").reset_index(drop=True)
     out["close_t"] = out["value"]
-    out["close_t_plus_1b"] = out["close_t"].shift(-1)
-    out["log_ret_1b"] = np.log(out["close_t_plus_1b"] / out["close_t"])
-    return out.drop(columns=["value"]).dropna(subset=["close_t_plus_1b"]).reset_index(drop=True)
+    out["open_t_plus_1b"] = out["open"].shift(-1)
+    out["log_ret_1b"] = np.log(out["open_t_plus_1b"] / out["close_t"])
+    out["timestamp"] = out["timestamp"].shift(-1)
+    return (
+        out.drop(columns=["value", "open"])
+        .dropna(subset=["open_t_plus_1b", "timestamp"])
+        .reset_index(drop=True)
+    )
 
 
 def summarize_log_returns(df: pd.DataFrame) -> pd.Series:
@@ -115,7 +129,7 @@ def direction_classification_metrics(
     y_pred_col: str = "pred_up_point",
     y_score_col: str = "prob_up",
 ) -> pd.Series:
-    """Binary metrics for predicting a positive next-day log return.
+    """Binary metrics for predicting a positive next-session log return.
 
     Positive class label ``1`` means the realized return is strictly above zero.
     Point-based predictions use column ``pred_up_point`` by default; optional

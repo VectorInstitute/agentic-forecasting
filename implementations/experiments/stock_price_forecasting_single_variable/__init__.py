@@ -1,4 +1,4 @@
-"""S&P 500 single-variable experiment helpers (Yahoo Finance ^GSPC, log returns)."""
+"""S&P 500 single-variable experiment helpers (Yahoo Finance ^GSPC, close-to-open log returns)."""
 
 from .analysis import (
     build_direction_eval_frame,

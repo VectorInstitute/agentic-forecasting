@@ -83,6 +83,11 @@ class YahooFinanceDailyAdapter(BaseAdapter):
     def fetch(self) -> pd.DataFrame:
         if self._cache_path is not None and self._cache_path.exists() and not self._refresh:
             df = self._read_cache(self._cache_path)
+            if "open" not in df.columns:
+                df = self._fetch_from_yahoo()
+                if self._cache_path is not None:
+                    self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+                    df.to_parquet(self._cache_path, index=False)
         else:
             df = self._fetch_from_yahoo()
             if self._cache_path is not None:
@@ -130,15 +135,22 @@ class YahooFinanceDailyAdapter(BaseAdapter):
             raise RuntimeError(
                 f"Yahoo Finance response for {self._ticker!r} is missing 'Adj Close'."
             )
+        if "Open" not in raw.columns:
+            raise RuntimeError(
+                f"Yahoo Finance response for {self._ticker!r} is missing 'Open'."
+            )
 
         df = raw.reset_index()
         timestamp_col = "Date" if "Date" in df.columns else df.columns[0]
-        df = df.rename(columns={timestamp_col: "timestamp", "Adj Close": "value"})
+        df = df.rename(
+            columns={timestamp_col: "timestamp", "Adj Close": "value", "Open": "open"}
+        )
         df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_localize(None)
         df["value"] = pd.to_numeric(df["value"], errors="coerce")
-        df = df.dropna(subset=["value"]).sort_values("timestamp").reset_index(drop=True)
+        df["open"] = pd.to_numeric(df["open"], errors="coerce")
+        df = df.dropna(subset=["value", "open"]).sort_values("timestamp").reset_index(drop=True)
         df["released_at"] = df["timestamp"] + pd.offsets.BDay(1)
-        return df[["timestamp", "value", "released_at"]]
+        return df[["timestamp", "value", "released_at", "open"]]
 
     @staticmethod
     def _read_cache(cache_path: Path) -> pd.DataFrame:
@@ -146,7 +158,14 @@ class YahooFinanceDailyAdapter(BaseAdapter):
         df["timestamp"] = pd.to_datetime(df["timestamp"])
         df["value"] = pd.to_numeric(df["value"], errors="coerce")
         df["released_at"] = pd.to_datetime(df["released_at"])
-        return df[["timestamp", "value", "released_at"]].dropna(subset=["value"]).reset_index(drop=True)
+        cols = ["timestamp", "value", "released_at"]
+        if "open" in df.columns:
+            df["open"] = pd.to_numeric(df["open"], errors="coerce")
+            cols.append("open")
+        out = df[cols].dropna(subset=["value"]).reset_index(drop=True)
+        if "open" in out.columns:
+            out = out.dropna(subset=["open"]).reset_index(drop=True)
+        return out
 
 
 class StaticFrameAdapter(BaseAdapter):
@@ -159,13 +178,25 @@ class StaticFrameAdapter(BaseAdapter):
         return self._frame.copy()
 
 
-def _build_log_return_frame(price_df: pd.DataFrame) -> pd.DataFrame:
-    frame = price_df[["timestamp", "value"]].copy().sort_values("timestamp").reset_index(drop=True)
-    frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
+def _build_close_to_next_open_log_return_frame(price_df: pd.DataFrame) -> pd.DataFrame:
+    """One row per **open** session: value = log(open[t] / adj_close[t-1])."""
+    required = {"timestamp", "value", "open"}
+    missing = required - set(price_df.columns)
+    if missing:
+        raise RuntimeError(
+            "Price data must include same-day 'open' alongside adjusted close ('value'). "
+            f"Missing columns: {sorted(missing)}."
+        )
+    frame = price_df[list(required)].copy().sort_values("timestamp").reset_index(drop=True)
+    for col in ("value", "open"):
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
+    frame = frame.dropna(subset=["value", "open"]).reset_index(drop=True)
+    adj_close_prev = frame["value"].shift(1)
+    open_t = frame["open"]
+    frame["value"] = np.log(open_t / adj_close_prev)
     frame = frame.dropna(subset=["value"]).reset_index(drop=True)
-    frame["value"] = np.log(frame["value"] / frame["value"].shift(1))
-    frame = frame.dropna(subset=["value"]).reset_index(drop=True)
-    frame["released_at"] = frame["timestamp"] + pd.offsets.BDay(1)
+    # Realized after the print of ``open`` on ``timestamp`` (same calendar session).
+    frame["released_at"] = pd.to_datetime(frame["timestamp"])
     return frame[["timestamp", "value", "released_at"]]
 
 
@@ -185,7 +216,7 @@ def build_sp500_service(
     )
     metadata = SeriesMetadata(
         series_id=SP500_SERIES_ID,
-        description="S&P 500 adjusted close (Yahoo Finance ^GSPC)",
+        description="S&P 500 adjusted close and same-day open (Yahoo Finance ^GSPC)",
         source=f"Yahoo Finance ({SP500_TICKER})",
         units="USD",
         frequency="B",
@@ -211,7 +242,7 @@ def build_sp500_log_return_service(
         refresh=refresh,
     )
     price_df = price_adapter.fetch()
-    log_return_df = _build_log_return_frame(price_df)
+    log_return_df = _build_close_to_next_open_log_return_frame(price_df)
 
     svc = DataService()
     svc.register(
@@ -219,11 +250,14 @@ def build_sp500_log_return_service(
         StaticFrameAdapter(log_return_df),
         SeriesMetadata(
             series_id=SP500_LOG_RETURN_SERIES_ID,
-            description="S&P 500 one-business-day log return, derived from adjusted close",
+            description=(
+                "S&P 500 log return from prior session adjusted close to current session open "
+                "(Yahoo Finance ^GSPC)"
+            ),
             source=f"Yahoo Finance ({SP500_TICKER}), derived",
             units="log-return",
             frequency="B",
-            table_id="yahoo:^GSPC:log-return",
+            table_id="yahoo:^GSPC:log-return-close-to-open",
         ),
     )
     return svc

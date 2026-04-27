@@ -1,6 +1,6 @@
 # S&P 500 single-variable forecasting (Yahoo Finance)
 
-Single target: **one-business-day log return** from `^GSPC` adjusted close.
+Single target: **log return from prior session adjusted close to the next session’s open** (`^GSPC`, Yahoo Finance).
 
 - Helpers: `data.py`, `analysis.py`, `plots.py`
 - Notebooks: `sp500_data_exploration.ipynb`, `sp500_backtest_demo.ipynb` (naive vs `DartsAutoARIMAPredictor` only)
