@@ -6,12 +6,12 @@ prices across nine CPI sub-categories.
 
 This is the bootcamp's flagship **no-futures multivariate** reference
 experiment — the graduation step from
-`implementations/experiments/getting_started/`, and the case where
+`implementations/getting_started/`, and the case where
 context genuinely matters because no market aggregator summarises the
 answer.  It is a fully working, literature-aligned forecasting task that
 runs in minutes on a laptop and provides a launching pad for LLM and
 agent-based predictors.  If this is your first session with the repo,
-start at `getting_started/` and come here once the single-series loop is
+start at `implementations/getting_started/` and come here once the single-series loop is
 familiar.
 
 > For the bootcamp's overall centrepiece — the Track 1 + Track 2
@@ -59,7 +59,7 @@ referenced everywhere else (YAML specs, notebook, helpers).
 
 ## CFPR methodology
 
-The CFPR is published each November/December.  By that point, the July CPI
+The CFPR is published each November/December. By that point, the July CPI
 release is typically the most recent data available.  We model the report's
 preparation discipline at every origin:
 
@@ -94,7 +94,7 @@ Both specs are the **source of truth**.  The notebook loads them with
 ## Module layout
 
 ```
-implementations/experiments/food_price_forecasting/
+implementations/food_price_forecasting/
 ├── data.py        # build_food_cpi_service(); FOOD_CPI_SERIES; CATEGORY_LABELS
 ├── analysis.py    # predictions_to_dataframe, compute_avgyoy, summarize_crps,
 │                  # compute_mape, rationales_table
@@ -106,7 +106,7 @@ implementations/experiments/food_price_forecasting/
 ```
 
 Unit tests for the analysis helpers live under
-`implementations/tests/experiments/food_price_forecasting/test_analysis.py`.
+`implementations/tests/food_price_forecasting/test_analysis.py`.
 
 ---
 

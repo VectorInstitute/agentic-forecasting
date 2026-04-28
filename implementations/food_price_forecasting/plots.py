@@ -27,10 +27,7 @@ DEFAULT_PREDICTOR_PALETTE: list[str] = ["#7f7f7f", "#1f77b4", "#2ca02c", "#d6272
 """Default colour palette for up to five predictors (grey, blue, green, red, purple)."""
 
 
-def _resolve_colors(
-    predictors: list[str],
-    colors: dict[str, str] | None,
-) -> dict[str, str]:
+def _resolve_colors(predictors: list[str], colors: dict[str, str] | None) -> dict[str, str]:
     """Return a ``predictor_id -> colour`` map that covers every predictor.
 
     Any explicit entries in ``colors`` are preserved; missing predictors get
@@ -264,9 +261,7 @@ def plot_avgyoy_grid(
 
 
 def plot_crps_disaggregated(
-    predictions_df: pd.DataFrame,
-    by: str = "origin_year",
-    colors: dict[str, str] | None = None,
+    predictions_df: pd.DataFrame, by: str = "origin_year", colors: dict[str, str] | None = None
 ) -> tuple[Figure, Axes]:
     """Plot mean CRPS per predictor disaggregated by origin-year or horizon.
 
@@ -311,10 +306,7 @@ def plot_crps_disaggregated(
 # ---------------------------------------------------------------------------
 
 
-def plot_mape_distribution(
-    mape_df: pd.DataFrame,
-    colors: dict[str, str] | None = None,
-) -> tuple[Figure, Axes]:
+def plot_mape_distribution(mape_df: pd.DataFrame, colors: dict[str, str] | None = None) -> tuple[Figure, Axes]:
     """Box plot of per-task mean-APE distribution, one box per predictor.
 
     Parameters
@@ -351,9 +343,7 @@ def plot_mape_distribution(
 # ---------------------------------------------------------------------------
 
 
-def plot_food_cpi_small_multiples(
-    data_service: DataService,
-) -> tuple[Figure, np.ndarray]:
+def plot_food_cpi_small_multiples(data_service: DataService) -> tuple[Figure, np.ndarray]:
     """Small-multiples overview of all 9 food CPI categories.
 
     Each subplot shows the full history of one category, with the y-axis

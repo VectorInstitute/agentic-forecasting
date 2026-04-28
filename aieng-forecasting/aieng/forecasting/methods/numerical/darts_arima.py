@@ -6,7 +6,7 @@ exogenous covariates; this class does not expose any covariate parameters.
 
 The probabilistic forecast is produced via Monte Carlo sampling (``num_samples``
 draws from the predictive distribution).  Point forecast is the median;
-quantiles are computed at :data:`~aieng.forecasting.evaluation.prediction.STANDARD_QUANTILES`
+quantiles use :data:`~aieng.forecasting.evaluation.prediction.STANDARD_QUANTILES`
 levels.
 
 For multi-horizon tasks, the model is fitted once to ``n = max(task.horizons)``
@@ -15,7 +15,7 @@ trajectory. This is more efficient than fitting once per horizon.
 
 Usage::
 
-    from methods.darts_arima import DartsAutoARIMAPredictor
+    from aieng.forecasting.methods.darts_arima import DartsAutoARIMAPredictor
     from aieng.forecasting.evaluation import backtest, BacktestSpec
 
     predictor = DartsAutoARIMAPredictor()
@@ -31,11 +31,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from aieng.forecasting.data.context import ForecastContext
-from aieng.forecasting.evaluation.prediction import (
-    STANDARD_QUANTILES,
-    ContinuousForecast,
-    Prediction,
-)
+from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
 
@@ -60,7 +56,8 @@ class DartsAutoARIMAPredictor(Predictor):
     - **Darts AutoARIMA** requires ``statsforecast`` (already a project
       dependency).  No additional install is needed.
     - AutoARIMA can be slow (seconds to tens of seconds per origin). For rapid
-      iteration use :class:`~methods.darts_regression.DartsLinearRegressionPredictor`
+      iteration use
+      :class:`~aieng.forecasting.methods.darts_regression.DartsLinearRegressionPredictor`
       instead.
     """
 

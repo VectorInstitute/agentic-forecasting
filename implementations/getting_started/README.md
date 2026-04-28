@@ -3,11 +3,11 @@
 The bootcamp's **"hello-world"** forecasting experiment.  Start here if
 this is your first session with the repo.
 
-The task deliberately keeps the framework surface minimal \u2014 a single
+The task deliberately keeps the framework surface minimal - a single
 series, a single 12-month horizon, one `BacktestSpec`, the `backtest()`
-and `evaluate()` entry points \u2014 so the evaluation loop itself is clear
+and `evaluate()` entry points - so the evaluation loop itself is clear
 before you meet the richer patterns in
-[`food_price_forecasting/`](../food_price_forecasting/) (multi-target,
+[`implementations/food_price_forecasting/`](../food_price_forecasting/) (multi-target,
 multi-horizon trajectories, avg/avg YoY, cached artefacts).
 
 ---
@@ -18,20 +18,20 @@ multi-horizon trajectories, avg/avg YoY, cached artefacts).
 ahead.**  Evaluated at January and July origins from 2000 to 2026.
 
 **Why gasoline?**  Because it *breaks* our models, visibly.  The
-evaluation window covers four textbook regime shifts \u2014 the 2008
-crude-oil collapse, the 2014\u201316 OPEC-led decline, the 2020 COVID
-demand shock, and the 2021\u201322 Russia/Ukraine surge.  A 12-month-ahead
+evaluation window covers four textbook regime shifts - the 2008
+crude-oil collapse, the 2014-16 OPEC-led decline, the 2020 COVID
+demand shock, and the 2021-22 Russia/Ukraine surge. A 12-month-ahead
 forecast has no mechanism for seeing any of them coming.  The CRPS
 spikes at each of those origins are exactly the motivation for the
 downstream bootcamp work: exogenous covariates, LLM context, and
 agents that can retrieve that context themselves.
 
 Headline `cpi_all_items_canada` was the original target here and is a
-fine series \u2014 just too smooth to teach anything interesting.
+fine series - just too smooth to teach anything interesting.
 
-**Score:** CRPS (lower is better).  CRPS rewards both calibration (is
-the probability band the right width?) and sharpness (is it as narrow
-as it can be?).
+**Score:** Continuous Ranked Probability Score or CRPS for short (lower is better).
+CRPS rewards both calibration (is the probability band the right width?) and sharpness
+(is it as narrow as it can be?).
 
 ---
 
@@ -50,14 +50,14 @@ This registers all 47 Canada-wide CPI series from StatCan table
 
 ## Learning path
 
-### 1. Warm up \u2014 `cpi_data_exploration.ipynb`
+### 1. Warm up - `cpi_data_exploration.ipynb`
 
 Nine cells.  Registers three focus series (all-items, gasoline,
 shelter), shows the cutoff-enforcement pattern, plots levels and
 year-over-year change, and constructs a `ForecastingTask` by hand so
 you can see what the YAML spec turns into.
 
-### 2. Run the backtest \u2014 `cpi_backtest_demo.ipynb`
+### 2. Run the backtest - `cpi_backtest_demo.ipynb`
 
 Ten cells.  Walks through the full cycle:
 
@@ -76,7 +76,7 @@ Ten cells.  Walks through the full cycle:
 
 ### 3. Write your own predictor
 
-Read [`implementations/methods/naive.py`](../../methods/naive.py) for a
+Read [`aieng-forecasting/aieng/forecasting/methods/baselines/naive.py`](../../aieng-forecasting/aieng/forecasting/methods/baselines/naive.py) for a
 step-by-step annotated reference.  Subclass `Predictor`:
 
 ```python
@@ -103,15 +103,15 @@ the `BacktestResult.mean_crps` values are directly comparable.
 ### 5. Spend an eval run
 
 Once you have a predictor you're confident about, run `evaluate()`
-against [`cpi_gasoline_eval_2yr.yaml`](../../../reference_specs/cpi_gasoline_eval_2yr.yaml).
-`max_runs: 5` \u2014 spend deliberately.
+against [`cpi_gasoline_eval_2yr.yaml`](../../reference_specs/cpi_gasoline_eval_2yr.yaml).
+`max_runs: 5` - spend deliberately.
 
 ---
 
 ## Graduation: CFPR
 
 When this experiment feels small, graduate to
-[`food_price_forecasting/`](../food_price_forecasting/).  That is the
+[`implementations/food_price_forecasting/`](../food_price_forecasting/).  That is the
 flagship of the no-futures multivariate case: nine correlated CPI
 sub-indices, a 12-step trajectory per origin, `MultiTargetBacktestSpec`,
 `cached_multi_backtest()`, helper modules (`data.py`, `analysis.py`,
@@ -129,23 +129,24 @@ convergence.
 ## Directory layout
 
 ```
-implementations/
-\u251c\u2500\u2500 methods/                         # importable reference predictors
-\u2502   \u251c\u2500\u2500 naive.py                     #   LastValuePredictor \u2014 the floor
-\u2502   \u2514\u2500\u2500 darts_arima.py               #   DartsAutoARIMAPredictor \u2014 the baseline
-\u2514\u2500\u2500 experiments/
-    \u2514\u2500\u2500 getting_started/             # this directory
-        \u251c\u2500\u2500 README.md                # this file
-        \u251c\u2500\u2500 cpi_data_exploration.ipynb
-        \u2514\u2500\u2500 cpi_backtest_demo.ipynb
+getting_started/                 # this directory
+├── README.md
+├── cpi_data_exploration.ipynb
+└── cpi_backtest_demo.ipynb
 ```
+
+Reference predictors live in the `aieng-forecasting` package under
+`aieng/forecasting/methods/`:
+
+- `baselines/` for floor baselines such as `LastValuePredictor`
+- `numerical/` for Darts-based numerical predictors
 
 Reference specs (at the repo root, shared across use cases):
 
 ```
 reference_specs/
-\u251c\u2500\u2500 cpi_gasoline_12m.yaml            # backtest spec \u2014 use freely
-\u2514\u2500\u2500 cpi_gasoline_eval_2yr.yaml       # eval spec \u2014 5 runs max
+├── cpi_gasoline_12m.yaml            # backtest spec - use freely
+└── cpi_gasoline_eval_2yr.yaml       # eval spec - 5 runs max
 ```
 
 ---
@@ -154,7 +155,7 @@ reference_specs/
 
 ```python
 from aieng.forecasting.evaluation import (
-    Predictor,          # ABC \u2014 implement this
+    Predictor,          # ABC - implement this
     backtest,           # run a backtest, returns BacktestResult
     evaluate,           # run against the held-out eval window
     BacktestSpec,       # loaded from reference_specs/ YAML
