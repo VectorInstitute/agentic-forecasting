@@ -1,4 +1,4 @@
-"""Tests for MultiTargetBacktestSpec, multi_backtest(), MultiTargetEvalSpec, multi_evaluate()."""
+"""Tests for multi-target backtest and eval APIs."""
 
 from datetime import datetime
 from pathlib import Path
@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 import numpy as np
 import pandas as pd
 import pytest
-
 from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.data.models import SeriesMetadata
 from aieng.forecasting.data.service import DataService
@@ -61,14 +60,19 @@ def _build_data_service(
 
 
 class ConstantPredictor(Predictor):
+    """Minimal predictor for multi-target harness tests."""
+
     def __init__(self, value: float = 100.0) -> None:
+        """Store the constant point forecast value."""
         self._value = value
 
     @property
     def predictor_id(self) -> str:
+        """Stable id shared across tasks in these tests."""
         return "constant"
 
     def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
+        """Emit one constant probabilistic prediction per horizon."""
         offset = pd.tseries.frequencies.to_offset(task.frequency)
         point = self._value
         return [
@@ -93,7 +97,10 @@ class ConstantPredictor(Predictor):
 
 
 class TestMultiTargetBacktestSpec:
+    """Tests for ``MultiTargetBacktestSpec`` construction and helpers."""
+
     def test_construction_two_tasks(self) -> None:
+        """Spec retains task list, id, and window fields."""
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b")],
@@ -106,6 +113,7 @@ class TestMultiTargetBacktestSpec:
         assert spec.spec_id == "mt_bt"
 
     def test_specs_returns_one_per_task(self) -> None:
+        """specs() yields one BacktestSpec per task id."""
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b"), _make_task("c", "s_c")],
@@ -119,6 +127,7 @@ class TestMultiTargetBacktestSpec:
         assert "a" in task_ids and "b" in task_ids and "c" in task_ids
 
     def test_specs_share_window_parameters(self) -> None:
+        """Decomposed specs share start, end, stride, and warmup."""
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b")],
@@ -134,6 +143,7 @@ class TestMultiTargetBacktestSpec:
             assert s.warmup == spec.warmup
 
     def test_specs_propagate_description(self) -> None:
+        """Parent description copies onto each decomposed spec."""
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b")],
@@ -145,6 +155,7 @@ class TestMultiTargetBacktestSpec:
             assert s.description == "A test multi-target backtest."
 
     def test_start_after_end_raises(self) -> None:
+        """Invalid window bounds raise ValueError."""
         with pytest.raises(ValueError, match="start.*must be before end"):
             MultiTargetBacktestSpec(
                 spec_id="mt_bt",
@@ -154,6 +165,7 @@ class TestMultiTargetBacktestSpec:
             )
 
     def test_mixed_frequencies_raises(self) -> None:
+        """Tasks must share the same pandas frequency alias."""
         task_monthly = ForecastingTask(
             task_id="monthly",
             target_series_id="s1",
@@ -177,6 +189,7 @@ class TestMultiTargetBacktestSpec:
             )
 
     def test_single_task_minimum(self) -> None:
+        """Single-task multi specs are allowed."""
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
             tasks=[_make_task()],
@@ -186,6 +199,7 @@ class TestMultiTargetBacktestSpec:
         assert len(spec.specs()) == 1
 
     def test_yaml_roundtrip(self) -> None:
+        """Spec survives model_dump / model_validate."""
         spec = MultiTargetBacktestSpec(
             spec_id="food_18m_backtest",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b")],
@@ -210,7 +224,10 @@ class TestMultiTargetBacktestSpec:
 
 
 class TestMultiBacktest:
+    """Tests for ``multi_backtest``."""
+
     def test_returns_dict_keyed_by_task_id(self) -> None:
+        """Results dict keys match task ids."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
@@ -223,6 +240,7 @@ class TestMultiBacktest:
         assert set(results.keys()) == {"a", "b"}
 
     def test_each_result_is_backtest_result(self) -> None:
+        """Every entry is a BacktestResult instance."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
@@ -236,6 +254,7 @@ class TestMultiBacktest:
             assert isinstance(result, BacktestResult)
 
     def test_predictor_id_matches(self) -> None:
+        """Backtest results carry the predictor id through."""
         svc = _build_data_service("s_a")
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
@@ -248,6 +267,7 @@ class TestMultiBacktest:
         assert results["a"].predictor_id == "constant"
 
     def test_mean_crps_per_task(self) -> None:
+        """Per-task mean CRPS matches mean of that task's scores."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
@@ -267,7 +287,10 @@ class TestMultiBacktest:
 
 
 class TestMultiTargetEvalSpec:
+    """Tests for ``MultiTargetEvalSpec``."""
+
     def test_construction(self) -> None:
+        """Construction stores spec id and max_runs."""
         spec = MultiTargetEvalSpec(
             spec_id="test_mt_eval",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b")],
@@ -280,6 +303,7 @@ class TestMultiTargetEvalSpec:
         assert spec.max_runs == 5
 
     def test_specs_share_spec_id(self) -> None:
+        """Each decomposed EvalSpec keeps the parent spec_id."""
         spec = MultiTargetEvalSpec(
             spec_id="shared_id",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b")],
@@ -290,6 +314,7 @@ class TestMultiTargetEvalSpec:
             assert s.spec_id == "shared_id"
 
     def test_specs_propagate_description(self) -> None:
+        """Description propagates to every decomposed eval spec."""
         spec = MultiTargetEvalSpec(
             spec_id="desc_test",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b")],
@@ -301,6 +326,7 @@ class TestMultiTargetEvalSpec:
             assert s.description == "A test multi-target eval."
 
     def test_mixed_frequencies_raises(self) -> None:
+        """Mixed task frequencies are rejected."""
         task_m = ForecastingTask(task_id="m", target_series_id="s1", horizons=[12], frequency="MS", description="m")
         task_q = ForecastingTask(task_id="q", target_series_id="s2", horizons=[4], frequency="QS", description="q")
         with pytest.raises(ValueError, match="same frequency"):
@@ -312,6 +338,7 @@ class TestMultiTargetEvalSpec:
             )
 
     def test_yaml_roundtrip(self) -> None:
+        """Multi-target eval spec survives dump/validate."""
         spec = MultiTargetEvalSpec(
             spec_id="food_18m_eval",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b")],
@@ -336,7 +363,10 @@ class TestMultiTargetEvalSpec:
 
 
 class TestMultiEvaluate:
+    """Tests for ``multi_evaluate``."""
+
     def test_returns_dict_keyed_by_task_id(self) -> None:
+        """Per-task eval results are keyed by task id."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetEvalSpec(
             spec_id="mt_eval",
@@ -349,6 +379,7 @@ class TestMultiEvaluate:
         assert set(results.keys()) == {"a", "b"}
 
     def test_each_result_is_eval_result(self) -> None:
+        """Each value is an EvalResult instance."""
         svc = _build_data_service("s_a")
         spec = MultiTargetEvalSpec(
             spec_id="mt_eval",
@@ -376,6 +407,7 @@ class TestMultiEvaluate:
         assert tracker.runs_for("budget_test") == 1
 
     def test_run_number_increments_across_calls(self, tmp_path: Path) -> None:
+        """Second multi_evaluate bumps run_number with tracker."""
         svc = _build_data_service("s_a")
         spec = MultiTargetEvalSpec(
             spec_id="run_num_test",
@@ -392,6 +424,7 @@ class TestMultiEvaluate:
         assert r2["a"].run_number == 2
 
     def test_budget_enforced_across_multi_calls(self, tmp_path: Path) -> None:
+        """Budget exhaustion raises EvalBudgetExceededError."""
         svc = _build_data_service("s_a")
         spec = MultiTargetEvalSpec(
             spec_id="budget_limit",
@@ -408,6 +441,7 @@ class TestMultiEvaluate:
             multi_evaluate(ConstantPredictor(), spec, svc, tracker=tracker)
 
     def test_no_tracker_runs_unconditionally(self) -> None:
+        """Without tracker, run_number stays one even with max_runs set."""
         svc = _build_data_service("s_a")
         spec = MultiTargetEvalSpec(
             spec_id="no_tracker",
@@ -420,6 +454,7 @@ class TestMultiEvaluate:
         assert results["a"].run_number == 1
 
     def test_run_number_is_one_without_tracker(self) -> None:
+        """All tasks report run_number 1 when no tracker is used."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetEvalSpec(
             spec_id="no_tracker_two_tasks",

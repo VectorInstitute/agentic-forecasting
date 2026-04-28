@@ -75,6 +75,7 @@ class Predictor(ABC):
                 )
 
                 offset = pd.tseries.frequencies.to_offset(task.frequency)
+                start = pd.Timestamp(context.as_of)
                 payload = ContinuousForecast(
                     point_forecast=self._value,
                     quantiles={q: self._value for q in STANDARD_QUANTILES},
@@ -85,7 +86,7 @@ class Predictor(ABC):
                         task_id=task.task_id,
                         issued_at=datetime.utcnow(),
                         as_of=context.as_of,
-                        forecast_date=(pd.Timestamp(context.as_of) + offset * h).to_pydatetime(),
+                        forecast_date=(start + offset * h).to_pydatetime(),
                         payload=payload,
                     )
                     for h in task.horizons

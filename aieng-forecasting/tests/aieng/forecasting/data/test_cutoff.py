@@ -4,7 +4,6 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-
 from aieng.forecasting.data.cutoff import CutoffEnforcer
 
 

@@ -3,7 +3,6 @@
 from datetime import datetime
 
 import pytest
-
 from aieng.forecasting.evaluation.prediction import (
     STANDARD_QUANTILES,
     ContinuousForecast,
@@ -30,16 +29,21 @@ def _make_prediction(**overrides: object) -> Prediction:
 
 
 class TestContinuousForecast:
+    """Tests for ``ContinuousForecast`` validation and serialization."""
+
     def test_construction(self) -> None:
+        """Default construction fills standard quantiles."""
         fc = _make_forecast(160.0)
         assert fc.point_forecast == 160.0
         assert len(fc.quantiles) == len(STANDARD_QUANTILES)
 
     def test_quantile_keys_out_of_range_raises(self) -> None:
+        """Quantile keys outside (0, 1) raise ValueError."""
         with pytest.raises(ValueError, match="Quantile keys must be in"):
             ContinuousForecast(point_forecast=100.0, quantiles={1.5: 105.0})
 
     def test_zero_quantile_key_raises(self) -> None:
+        """Quantile key zero is rejected."""
         with pytest.raises(ValueError, match="Quantile keys must be in"):
             ContinuousForecast(point_forecast=100.0, quantiles={0.0: 100.0})
 
@@ -61,7 +65,10 @@ class TestContinuousForecast:
 
 
 class TestPrediction:
+    """Tests for ``Prediction`` metadata and serialization."""
+
     def test_construction(self) -> None:
+        """Construction sets ids and forecast dates from kwargs."""
         pred = _make_prediction()
         assert pred.predictor_id == "test_predictor"
         assert pred.forecast_date == datetime(2025, 1, 1)
@@ -76,6 +83,7 @@ class TestPrediction:
         assert restored.payload.point_forecast == pred.payload.point_forecast
 
     def test_metadata_defaults_to_empty_dict(self) -> None:
+        """Omitted metadata becomes an empty dict."""
         pred = _make_prediction()
         assert pred.metadata == {}
 

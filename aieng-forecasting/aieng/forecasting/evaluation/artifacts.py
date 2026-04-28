@@ -52,7 +52,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
-
 from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.backtest import (
     BacktestResult,

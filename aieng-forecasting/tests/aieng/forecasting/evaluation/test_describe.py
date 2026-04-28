@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
-
 from aieng.forecasting.data.models import SeriesMetadata
 from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.backtest import BacktestSpec, MultiTargetBacktestSpec
@@ -42,13 +41,17 @@ def _service_with(series_id: str) -> DataService:
 
 
 class TestDescribeTask:
+    """Tests for ``describe_task`` string output."""
+
     def test_includes_task_id(self) -> None:
+        """Rendered text includes task id and description."""
         task = _make_task()
         out = describe_task(task)
         assert "task_a" in out
         assert "Description of task_a" in out
 
     def test_single_horizon_rendered_as_int(self) -> None:
+        """Single horizon lists as a plain integer."""
         task = ForecastingTask(
             task_id="one_h",
             target_series_id="series_a",
@@ -60,11 +63,13 @@ class TestDescribeTask:
         assert "horizons:    12" in out
 
     def test_multi_horizon_rendered_with_length(self) -> None:
+        """Multiple horizons show both values and count."""
         task = _make_task()
         out = describe_task(task)
         assert "len=7" in out
 
     def test_series_metadata_when_service_given(self) -> None:
+        """Registered series metadata appears when a service is passed."""
         task = _make_task(series_id="series_a")
         svc = _service_with("series_a")
         out = describe_task(task, svc)
@@ -73,6 +78,7 @@ class TestDescribeTask:
         assert "Index 2002=100" in out
 
     def test_unregistered_series_when_service_given(self) -> None:
+        """Missing target series is called out when a service is passed."""
         task = _make_task(series_id="missing_series")
         svc = _service_with("other_series")
         out = describe_task(task, svc)
@@ -80,7 +86,10 @@ class TestDescribeTask:
 
 
 class TestDescribeSpec:
+    """Tests for ``describe_spec`` across spec types."""
+
     def test_backtest_spec(self) -> None:
+        """BacktestSpec renders window, stride, and embedded task."""
         spec = BacktestSpec(
             task=_make_task(),
             start=datetime(2010, 1, 1),
@@ -96,6 +105,7 @@ class TestDescribeSpec:
         assert "stride:      6" in out
 
     def test_eval_spec_includes_spec_id_and_max_runs(self) -> None:
+        """EvalSpec output includes spec id and max_runs."""
         spec = EvalSpec(
             spec_id="some_eval",
             task=_make_task(),
@@ -109,6 +119,7 @@ class TestDescribeSpec:
         assert "max_runs:    5" in out
 
     def test_multi_target_backtest_spec_lists_all_tasks(self) -> None:
+        """Multi-target backtest spec lists every task block."""
         spec = MultiTargetBacktestSpec(
             spec_id="mt_bt",
             tasks=[_make_task("a", "s_a"), _make_task("b", "s_b"), _make_task("c", "s_c")],
@@ -122,6 +133,7 @@ class TestDescribeSpec:
         assert "tasks:       3" in out
 
     def test_multi_target_eval_spec(self) -> None:
+        """Multi-target eval spec includes id, description, and max_runs."""
         spec = MultiTargetEvalSpec(
             spec_id="mt_eval",
             tasks=[_make_task("a", "s_a")],
@@ -136,6 +148,7 @@ class TestDescribeSpec:
         assert "max_runs:    3" in out
 
     def test_unsupported_spec_raises(self) -> None:
+        """Non-spec objects raise TypeError."""
         with pytest.raises(TypeError):
             describe_spec(object())  # type: ignore[arg-type]
 
