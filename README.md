@@ -29,14 +29,11 @@ Scope is intentionally narrow. See `planning-docs/bootcamp-project-charter.md` f
 
 ```
 aieng-forecasting/         # Installable library package (import as aieng.forecasting)
-                           # Interfaces, data layer, backtest + eval engines — core infrastructure
+                           # Core infrastructure: Interfaces, data layer, backtest + eval engines, reference predictor implementations
 
-implementations/           # Reference implementations (uv workspace package: aieng-implementations)
-├── methods/               # Importable reference Predictor implementations
-│                          #   from methods.base_llmp import BaseLLMPredictor
-└── experiments/           # Use-case notebooks, specs, task configs
-    ├── getting_started/            # hello-world: single-series CPI gasoline backtest
-    └── food_price_forecasting/     # CFPR — flagship no-futures multivariate case
+implementations/           # Reference implementations
+└── getting_started/            # hello-world: single-series CPI gasoline backtest
+└── food_price_forecasting/     # CFPR — flagship no-futures multivariate case
 
 reference_specs/           # YAML specs for canonical backtest and eval tasks
 
@@ -54,8 +51,16 @@ planning-docs/             # Architecture decisions, project charter, planning n
 ```bash
 git clone <repo-url>
 cd agentic-forecasting
-uv sync --group dev
+uv sync
 ```
+
+**macOS — LightGBM and OpenMP:** The library depends on **LightGBM** (used by `DartsLightGBMPredictor` and some notebooks). The PyPI wheel expects **OpenMP** at runtime. If you see `Library not loaded: @rpath/libomp.dylib` when importing or training, install Homebrew’s OpenMP once and restart your shell or Jupyter kernel:
+
+```bash
+brew install libomp
+```
+
+On Apple Silicon the dylib is typically under `/opt/homebrew/opt/libomp/lib/`; on Intel Homebrew, `/usr/local/opt/libomp/lib/`.
 
 ### 2. Populate the data cache
 
@@ -67,10 +72,10 @@ uv run python scripts/fetch_cpi.py   # StatCan CPI — 47 Canada-wide series
 
 ### 3. Open an experiment
 
-Each use case under `implementations/experiments/` has a `README.md` with a recommended learning path.
+Each use case under `implementations` has a `README.md` with a recommended learning path.
 
-- **Start here:** `implementations/experiments/getting_started/` — the hello-world tour. Single series (CPI gasoline), 12-month horizon, naive + AutoARIMA baselines, one `BacktestSpec`, one `EvalSpec`. The smallest useful end-to-end walkthrough of the evaluation framework.
-- **Graduate to:** `implementations/experiments/food_price_forecasting/` — the CFPR reference experiment, flagship of the no-futures multivariate case. Nine correlated CPI sub-indices, a 12-step trajectory, the avg/avg YoY metric from the real Canada's Food Price Report, helper modules for analysis and plotting, and cached artefacts for fast iteration.
+- **Start here:** `implementations/getting_started/` — the hello-world tour. Single series (CPI gasoline), 12-month horizon, naive + AutoARIMA baselines, one `BacktestSpec`, one `EvalSpec`. The smallest useful end-to-end walkthrough of the evaluation framework.
+- **Graduate to:** `implementations/food_price_forecasting/` — the CFPR reference experiment, flagship of the no-futures multivariate case. Nine correlated CPI sub-indices, a 12-step trajectory, the avg/avg YoY metric from the real Canada's Food Price Report, helper modules for analysis and plotting, and cached artefacts for fast iteration.
 - **Look ahead to:** the bootcamp centrepiece — the Track 1 + Track 2 convergence built on the S&P 500 template and then extended to energy commodities. See `planning-docs/bootcamp-project-charter.md` for the framing and the full map of reference experiments.
 
 ---

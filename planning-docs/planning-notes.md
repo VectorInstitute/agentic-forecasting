@@ -69,7 +69,7 @@ Named the bootcamp centrepiece explicitly. Ethan's call: lean into the energy st
 ### Key decisions
 
 - The convergence (Energy + S&P 500 + one flagship agent, Track 1 + Track 2) is the bootcamp's central demonstration. It replaces "Track 2 demo choice deferred" as the plan of record.
-- `implementations/experiments/` will carry `energy_prices/` and expanded `sp500/` with Track 2 notebooks living inside each, alongside Track 1 specs and baselines.
+- `implementations/` will carry `energy_prices/` and expanded `sp500/` with Track 2 notebooks living inside each, alongside Track 1 specs and baselines.
 - ForecastBench, NYISO, grid-operator datasets, and fine-tuning are explicitly out of scope; they may be surfaced on learn days but carry no build commitment.
 - CFPR remains important but is reframed: the flagship of the no-futures multivariate case, not the bootcamp's overall centrepiece.
 
@@ -186,6 +186,7 @@ These tracks are not in tension. An agent built for Track 2 can still be asked t
 ### Work completed
 
 **`economic_forecasting/` renamed to `getting_started/`**
+
 - The original example (CPI All-items, 12-month ahead) was too quiet to
   teach anything — a smooth trending series does not motivate a
   probabilistic forecast framework.  Retargeted to `cpi_gasoline_canada`:
@@ -197,7 +198,7 @@ These tracks are not in tension. An agent built for Track 2 can still be asked t
   moment: a pure univariate time-series method cannot see macro regime
   shifts coming.  Motivation for everything downstream (covariates,
   LLM context, agentic retrieval).
-- `implementations/experiments/getting_started/`:
+- `implementations/getting_started/`:
   - `cpi_data_exploration.ipynb` — trimmed to 3 focus series
     (all-items, gasoline, shelter) to make the first look uncluttered.
   - `cpi_backtest_demo.ipynb` — end-to-end tour.  Key additions vs. the
@@ -217,6 +218,7 @@ These tracks are not in tension. An agent built for Track 2 can still be asked t
   `technical-design.md`, `backlog.md`, and aieng docstrings.
 
 **End-to-end execution verified**
+
 - `cpi_data_exploration.ipynb`: runs in ~5s.
 - `cpi_backtest_demo.ipynb`: runs in ~19s (AutoARIMA on 51 origins is
   surprisingly fast).  Produces the expected CRPS table (gasoline:
@@ -296,6 +298,7 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
 ### Work completed
 
 **Spec metadata (framework, `aieng-forecasting`)**
+
 - Added `spec_id` (required) and `description` (optional) to
   `MultiTargetBacktestSpec`; `description` propagates to the per-task
   `BacktestSpec` objects returned by `MultiTargetBacktestSpec.specs()`.
@@ -306,6 +309,7 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
   `describe_spec()` output.
 
 **Artefact store (`aieng/forecasting/evaluation/artifacts.py`)**
+
 - Filesystem-backed persistence for `BacktestResult` and `EvalResult`
   objects, YAML encoded under `data/predictions/<spec_id>/` by default.
 - Public surface: `save_backtest_result`, `load_backtest_result`,
@@ -319,6 +323,7 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
   bootcamp setting where each participant's `data/` directory is private.
 
 **Description helpers (`aieng/forecasting/evaluation/describe.py`)**
+
 - `describe_task(task, data_service=None)` — plain-text summary of a
   `ForecastingTask`, optionally enriched with series metadata.
 - `describe_spec(spec, data_service=None)` — same, dispatching across
@@ -327,6 +332,7 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
   of task descriptions handed to LLM predictors.
 
 **Canonical CFPR YAML specs**
+
 - Replaced `food_cpi_18m_{backtest,eval}.yaml` with
   `food_cpi_cfpr_{backtest,eval}.yaml`: 9 tasks (all sub-indices),
   trajectory horizons `[6..17]` from July origins, annual stride 12.
@@ -335,7 +341,8 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
   loading the YAML and calling `describe_spec()` gives the same text a
   reader sees in the file.
 
-**Experiment decomposition (`implementations/experiments/food_price_forecasting/`)**
+**Experiment decomposition (`implementations/food_price_forecasting/`)**
+
 - `data.py`: `FOOD_CPI_SERIES` (the 9 canonical series),
   `CATEGORY_LABELS`, and `build_food_cpi_service(cache_dir)` that registers
   them on a `DataService`.  No FRED covariates — the topic is deferred.
@@ -351,17 +358,19 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
   extend the experiment.
 
 **Eval tracker relocation**
+
 - The CFPR notebook now points `EvalTracker` at
   `data/eval_runs.yaml` (gitignored) rather than the experiment folder, so
   each participant's run-budget is private.
 
 **Packaging**
+
 - Added `experiments*` to `implementations/pyproject.toml` packages.find
   include so the notebook and tests can import
-  `from experiments.food_price_forecasting.X import ...` without sys.path
+  `from food_price_forecasting.X import ...` without sys.path
   hacks.
 - Test helpers live at
-  `implementations/tests/experiments/food_price_forecasting/test_analysis.py`
+  `implementations/tests/food_price_forecasting/test_analysis.py`
   with 12 tests covering the tidy-DataFrame shape and the exact semantics
   of `compute_avgyoy`.
 
@@ -396,6 +405,7 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
 ### Work completed
 
 **Breaking change: multi-horizon `Predictor` interface**
+
 - `ForecastingTask.horizon: int` replaced by `ForecastingTask.horizons: list[int]`. A `model_validator(mode="before")` coerces old `horizon=N` syntax transparently — all existing YAML specs, Python call sites, and tests continue to work unchanged.
 - `task.horizon` property (= `max(task.horizons)`) retained as a convenience for single-step callers and as the `n` parameter for Darts trajectory generation.
 - `Predictor.predict()` return type changed from `Prediction` to `list[Prediction]` — one element per step in `task.horizons`. Single-horizon predictors return a one-element list; trajectory predictors return all steps from a single model call.
@@ -408,6 +418,7 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
 **Rationale for breaking change:** trajectory-based models (Darts, and future LLMs) naturally produce a coherent forecast path in one call. `predict() -> list[Prediction]` makes single- and multi-horizon a natural special case of the same interface. An LLM reasoner over a 12-month forecast window should not be forced into 12 separate single-step calls — that would destroy temporal coherence.
 
 **CFPR notebook redesign (`food_cpi_experiment.ipynb`)**
+
 - Uses `horizons=list(range(6, 18))` (12 steps, Jan–Dec of Y+1 from a July origin) for the main backtesting loop.
 - Fast-mode flag (`FAST_MODE = True`): uses only `LastValuePredictor` and two `DartsLinearRegressionPredictor` variants (univariate + with covariates) for rapid iteration. `DartsAutoARIMAPredictor` and `DartsLightGBMPredictor` can be added when `FAST_MODE = False`.
 - New: **avg/avg YoY computation** — `compute_avgyoy()` derives the CFPR-style average-year-over-average-year YoY from the 12-step trajectory, including quantile-level uncertainty bands.
@@ -429,27 +440,32 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
 ### Work completed
 
 **Framework: multi-target evaluation support** (`aieng-forecasting`)
+
 - Added `MultiTargetBacktestSpec` and `multi_backtest()` to `evaluation/backtest.py`: groups N `ForecastingTask`s under shared window parameters; returns `dict[task_id, BacktestResult]`. Validates that all tasks share the same `frequency`.
 - Added `MultiTargetEvalSpec` and `multi_evaluate()` to `evaluation/eval.py`: budget-controlled multi-task eval where a single `multi_evaluate()` call consumes exactly one run from the `EvalTracker` budget regardless of task count. This is the correct semantics — the budget controls how many times you can "peek" at the held-out window, not how many series you evaluate at once.
 - 22 new tests covering construction, validation, result structure, and budget enforcement for all multi-target paths.
 
 **Data: FREDAdapter + covariate fetch script**
+
 - New `FREDAdapter` (wraps `fredapi`) in `aieng/forecasting/data/adapters/fred.py`. Reads API key from `FRED_API_KEY` env var. Sets `released_at = timestamp` (acknowledged limitation — FRED doesn't expose vintage dates via `fredapi`; noted in module docstring for future refinement).
 - `scripts/fetch_fred.py`: fetches 6 FRED macro covariates for food price forecasting — US CPI food at home, US CPI meats/poultry/fish/eggs, US CPI fruits/vegetables, Canada 10-year bond yield, CAD/USD exchange rate, S&P 100 VXO. Wilshire 5000 (`WILL5000IND`) removed after FRED returned 400.
 - `scripts/fetch_cpi.py`: added 4 missing food CPI categories (fish/seafood, fruit preparations and nuts, other food and non-alcoholic beverages, vegetables and vegetable preparations), completing the 9-series CFPR target set.
 - `python-dotenv` added as a dependency; `fetch_fred.py` now calls `load_dotenv()` at startup so `FRED_API_KEY` is loaded from the repo-root `.env` without requiring a shell export.
 
 **Methods: `DartsAutoARIMAPredictor` promoted to shared module**
+
 - Moved from an inline notebook definition to `implementations/methods/darts_arima.py`.
 - Univariate only: Darts `AutoARIMA` in this stack does not accept `past_covariates` on `fit`/`predict`, so the predictor exposes no covariate parameters.
 - `cpi_backtest_demo.ipynb` updated to import from the new module.
 
 **Reference specs: `reference_specs/food_cpi/`**
+
 - Four YAML files: `food_cpi_18m_backtest.yaml`, `food_cpi_18m_eval.yaml`, `food_cpi_3m_backtest.yaml`, `food_cpi_3m_eval.yaml`.
 - Each covers all 9 food CPI target series.
 - Two-horizon design rationale: 18-month horizon replicates the original CFPR experiment; 3-month horizon is added to provide a denser eval window (more resolvable origins within recent history) without going too far back in time.
 
-**Experiment notebooks: `implementations/experiments/food_price_forecasting/`**
+**Experiment notebooks: `implementations/food_price_forecasting/`**
+
 - `food_data_exploration.ipynb`: registers all StatCan food CPI series and FRED covariates, inspects date ranges, plots historical series, computes cross-correlations.
 - `food_cpi_18m_experiment.ipynb`: `multi_backtest` over 18-month horizon for `LastValuePredictor` and univariate `DartsAutoARIMAPredictor`; CRPS comparison table; post-hoc MAPE computed from median forecast; `multi_evaluate` against `food_cpi_18m_eval.yaml`; YoY % change derivation.
 - `food_cpi_3m_experiment.ipynb`: same structure at 3-month horizon; section contrasting eval-density advantage over the 18-month experiment.
@@ -464,6 +480,7 @@ End-of-week checkpoint — leaving a trail of pick-ups for the next session:
 - **`WILL5000IND` removed.** FRED returns 400 for this series ID. The S&P 100 VXO (`VXOCLS`) is sufficient as a market-uncertainty proxy.
 
 ### Commits
+
 - `9f4f31a` — `feat(cfpr)`: main delivery (23 files, +4424/−1248)
 - `c412abe` — `fix(fetch_fred)`: load `.env`, drop invalid `WILL5000IND`
 
@@ -498,7 +515,7 @@ H1 promoted to T7 (S&P500 use case) with significantly expanded scope — Behnoo
 
 - **Ahmad is single-sprint; deadline is firm.** CFP presentation should be review-ready at least 1 week before the meeting. Ahmad should read the charter, technical design doc, and recent planning notes before writing anything.
 
-- **Franklin task clarification needed.** Franklin's headline suggestion — "refactor Methods so they are separated from reference implementations" — was completed on Apr 9 in the `implementations/` restructuring session (`implementations/methods/` + `implementations/experiments/` split). Franklin should review what was done before starting T8 to avoid duplicate work. His task should focus on: (1) any additional engineering quality improvements he sees, and (2) the Coder platform setup. If the Apr 9 work already satisfies his refactoring intent, the Coder platform assessment becomes the primary deliverable.
+- **Franklin task clarification needed.** Franklin's headline suggestion — "refactor Methods so they are separated from reference implementations" — was completed on Apr 9 in the `implementations/` restructuring session (`implementations/methods/` + `implementations/` split). Franklin should review what was done before starting T8 to avoid duplicate work. His task should focus on: (1) any additional engineering quality improvements he sees, and (2) the Coder platform setup. If the Apr 9 work already satisfies his refactoring intent, the Coder platform assessment becomes the primary deliverable.
 
 - **T3 and T4 remain TBD.** No owner assigned this sprint. T3 (numerical forecaster expansion) could naturally fold into Behnoosh's SP500 work once she's ready for more methods. T4 (binary forecasting + BoC) is a prerequisite for H3 (ForecastBench); defer until an owner is identified.
 
@@ -523,11 +540,11 @@ Another note: I hesitate to say this but we might want to consider supporting Au
 After some review, these are the datasets we are planning to support:
 
 Dataset Name,Description,Data Access URL,Terms of Use URL,Data Access,Access Conditions,Comments
-New York ISO Energy Data,Energy market price and system load data from New York's independent system operator. Load data are available down to 5-minute windows across ~11 geographic regions.,https://www.nyiso.com/load-data,https://www.nyiso.com/legal-notice,CSV download,None apparent for data files (no warranty),Need to frame a reference prediction task and collect relevant data.
-Statistics Canada,"Official statistical data related to population, resources, economy, society, and culture.",https://www.statcan.gc.ca/en/developers,https://www.statcan.gc.ca/en/terms-conditions/open-licence,Various methods,None apparent,Has been quite reliable in the past.
-FRED,US and international economic data.,https://fred.stlouisfed.org/docs/api/fred/,https://fred.stlouisfed.org/docs/api/terms_of_use.html,API w/ key,"Attribution requirement, API Key",Has been quite reliable in the past.
-yfinance,Financial and market data from Yahoo! finance.,https://github.com/ranaroussi/yfinance,https://legal.yahoo.com/us/en/yahoo/terms/product-atos/apiforydn/index.html,Python SDK,"Rate limited, attribution requirement",Is real-time access (as opposed to bulk download for backtesting) reliable?
-ForecastBench,"ForecastBench is a dynamic, continuously-updated benchmark designed to measure the accuracy of ML systems on a constantly changing set of forecasting questions. Data and questions are sourced from multiple real-world data sources and platforms, including FRED, Yahoo Finance, Metaculus, and Rand Forecasting.",https://www.forecastbench.org/datasets/,https://github.com/forecastingresearch/forecastbench-datasets,Direct download from official site and project GitHub,CC-BY-SA-4.0 license -- attribution required,This dataset can probably supercede Metaculus for the bootcamp since it includes questions from Metaculus and other sources in a very convenient format.
+New York ISO Energy Data,Energy market price and system load data from New York's independent system operator. Load data are available down to 5-minute windows across ~11 geographic regions.,<https://www.nyiso.com/load-data,https://www.nyiso.com/legal-notice,CSV> download,None apparent for data files (no warranty),Need to frame a reference prediction task and collect relevant data.
+Statistics Canada,"Official statistical data related to population, resources, economy, society, and culture.",<https://www.statcan.gc.ca/en/developers,https://www.statcan.gc.ca/en/terms-conditions/open-licence,Various> methods,None apparent,Has been quite reliable in the past.
+FRED,US and international economic data.,<https://fred.stlouisfed.org/docs/api/fred/,https://fred.stlouisfed.org/docs/api/terms_of_use.html,API> w/ key,"Attribution requirement, API Key",Has been quite reliable in the past.
+yfinance,Financial and market data from Yahoo! finance.,<https://github.com/ranaroussi/yfinance,https://legal.yahoo.com/us/en/yahoo/terms/product-atos/apiforydn/index.html,Python> SDK,"Rate limited, attribution requirement",Is real-time access (as opposed to bulk download for backtesting) reliable?
+ForecastBench,"ForecastBench is a dynamic, continuously-updated benchmark designed to measure the accuracy of ML systems on a constantly changing set of forecasting questions. Data and questions are sourced from multiple real-world data sources and platforms, including FRED, Yahoo Finance, Metaculus, and Rand Forecasting.",<https://www.forecastbench.org/datasets/,https://github.com/forecastingresearch/forecastbench-datasets,Direct> download from official site and project GitHub,CC-BY-SA-4.0 license -- attribution required,This dataset can probably supercede Metaculus for the bootcamp since it includes questions from Metaculus and other sources in a very convenient format.
 
 In particular, ForecastBench looks like a way better / more convenient way to explore discrete/world event predictions. They provide convenient ways to access historical and current questions and resolutions. You can even access past predictions. Wow! That could be amazing for solution development... Lots of ideas -- can an agent learn to use (published!) past predictions and resolutions for ICL? For finetuning? Does it improve anything? I'm also thinking along the lines of being able to backtest/simulate/learn different ways an agent could form and test hypotheses, learn from resolution feedback, etc. Of course we don't need to build any of that right now, but I'd like to record the basic idea as it relates to other planned work.
 
@@ -541,6 +558,7 @@ reference methods) are cross-cutting — they don't belong inside any single use
 folder.
 
 **Final structure:**
+
 ```
 implementations/
 ├── pyproject.toml   # uv workspace package: aieng-implementations
@@ -550,9 +568,10 @@ implementations/
 ```
 
 **Import story (no sys.path hacks):**
+
 ```python
 from aieng.forecasting.evaluation import Predictor, backtest   # unchanged
-from methods.base_llmp import BaseLLMPredictor                  # reference methods
+from aieng.forecasting.methods.base_llmp import BaseLLMPredictor                  # reference methods
 ```
 
 **Packaging note:** `[tool.setuptools.packages.find] include = ["methods*"]` tells
@@ -567,15 +586,15 @@ sub-package. Simplified to a flat layout with explicit package include.
 
 - **NEW:** `implementations/pyproject.toml`, `implementations/README.md`
 - **NEW:** `implementations/methods/__init__.py`, `implementations/methods/README.md`
-- **NEW:** `implementations/experiments/README.md`
-- **MOVED:** `implementations/economic_forecasting/` → `implementations/experiments/economic_forecasting/`
+- **NEW:** `implementations/README.md`
+- **MOVED:** `implementations/economic_forecasting/` → `implementations/economic_forecasting/`
 - **UPDATED:** root `pyproject.toml` (new workspace member + source), root `README.md`,
-  `implementations/experiments/economic_forecasting/README.md`, `technical-design.md`,
+  `implementations/economic_forecasting/README.md`, `technical-design.md`,
   `backlog.md` (T2 path)
 
 ### Decisions
 
-- **Three-tier rule:** infrastructure → `aieng-forecasting`; reference methods → `implementations/methods/` (import as `methods`); experiments → `implementations/experiments/<use-case>/`. Documented in `technical-design.md`.
+- **Three-tier rule:** infrastructure → `aieng-forecasting`; reference methods → `implementations/methods/` (import as `methods`); experiments → `implementations/<use-case>/`. Documented in `technical-design.md`.
 - **`experiments/` is not a Python package.** It contains notebooks and scripts only. Nothing in `experiments/` is ever imported by other code.
 - **`methods/` triggers the "two concrete instances" rule.** `BaseLLMPredictor` will be used across CPI, CFPR, BoC, equities, etc. — this is the concrete duplication that justifies the shared layer.
 
@@ -610,7 +629,7 @@ sub-package. Simplified to a flat layout with explicit package include.
 
 ## Apr 9, 2026 - Next steps for core and reference implementations [Ethan]
 
-See: https://www.kaggle.com/competitions/gemma-4-good-hackathon/overview/submission-requirements
+See: <https://www.kaggle.com/competitions/gemma-4-good-hackathon/overview/submission-requirements>
 Basic idea could be to ask whether fine-tuning a Gemma model could improve its performance in economic forecasting. This is something I want to do for the forecasting bootcamp / project anyway.
 Could fit in a couple of tracks including
 
@@ -625,12 +644,14 @@ For the bootcamp and wider project I think this would be awesome anyway -- being
 Otherwise, here are my top directions:
 
 For use cases / experiments (separating these from methods):
+
 - Behnoosh suggested framing a multivari(able/ate) prediction task around S&P500. This opens a very wide range of techniques that could be considered and benchmarked.
 - After an advisory panel meeting in which panelists mentioned interest in being able to predict outcomes of regulatory decisions, I thought a really clean analogy could be predicting BoC interest rate decisions. The fact that it boils down to a numeric series is convenient, but it's really more a good example of a sparsely-resolved, ongoing research and decision process. So it has nice characteristics for the bootcamp. I think this warrants its own reference experiment.
 - As said above, let's have a reference experiment that precisely replicates the CFPR process. Can compare any and all forecasters.
 - Finally, let's work on plugging in directly to Metaculus and/or ForecastBench as a final source of questions that will definitely be geared more towards the purely agentic forecasters.
 
 Now in terms of methods/techniques that we need reference implementations for:
+
 - Base LLMP using LiteLLM (probably), i.e. the "agentic forecaster" that doesn't really have any tools. It's not really an agent, but more like an LLMFunction. This might mean using LiteLLM directly as opposed to Google ADK, but we'll see. If we can just use ADK in a non-agentic way, to implement a more basic LLMP, then sure. But I really think we should make sure we can have a minimal LLMP with no hidden injections/sideeffects of using an agent SDK.
 - Determine how we're going to interface with model fine tuning. To start with, I'd think the best thing to do is just add code to slice off the required I/O examples for finetuning up to a given cutoff point. I don't know exactly how yet but I think tools/packages like Unsloth will be able to help us connect the fine-tuning piece end-to-end. Then it just becomes another model that we need to do timeseries cross validation for, etc. etc.
 - Then we need to build what we intend to be our "frontier agent" -- which will provide a template for a powerful, modern agent. I am leaning towards building this really as a coding agent with skills over tools. I really like the idea of an agent that can not only retrieve data but can also use skills (and write/exec code) to produce its own numerical forecasts or do other kinds of data analysis before responding. The agent template can be quite high level, and customizing it could end up being a key activity during the bootcamp.
@@ -638,6 +659,7 @@ Now in terms of methods/techniques that we need reference implementations for:
 - Make sure we include support for some time series foundation models
 
 So to summarize on the methods part, it looks like we want:
+
 - Base LLMP
 - Fine-tunable LLMP
 - Frontier Agentic Forecaster Base and Implementations
@@ -645,9 +667,6 @@ So to summarize on the methods part, it looks like we want:
 - Time series foundation model
 
 Maybe we'll call those reference methods and have a separate concept for reference "experiments" or "use cases", which are meant to be more about exploring the actual prediction task. I still want to make sure we're not doing silly things like superfluous wrappers around Darts code (or Google ADK code, or LiteLLM, etc.)
-
-
-
 
 ## Apr 7, 2026 — Implementations architecture: follow-up decisions [Ethan & Agent]
 
@@ -696,11 +715,13 @@ our `Predictor` ABC belong in `implementations/`, visible to bootcamp
 participants in the same place as the notebooks and experiments.
 
 **Deleted from the package:**
+
 - `aieng-forecasting/aieng/forecasting/evaluation/predictors/arima.py`
 - `aieng-forecasting/aieng/forecasting/evaluation/predictors/__init__.py`
 - `ARIMAPredictor` removed from `evaluation/__init__.py` exports
 
 **New files in `implementations/economic_forecasting/`:**
+
 - `predictors/darts_arima.py` — `DartsAutoARIMAPredictor`, the moved
   implementation renamed to make the Darts dependency explicit
 - `predictors/predictor_template.py` — annotated last-value naive baseline;
@@ -708,6 +729,7 @@ participants in the same place as the notebooks and experiments.
 - `README.md` — use case description, learning path, and interface reference
 
 **Updated:**
+
 - `cpi_backtest_demo.ipynb` — predictor now defined inline in the notebook
   (identical to `predictors/darts_arima.py`) so participants see the full
   implementation in the linear flow
@@ -738,18 +760,21 @@ No test changes required — all tests use a locally-defined `ConstantPredictor`
 All 11 items from the session 3 audit were fixed in this session. Summary:
 
 **Category A (doc/code inconsistencies):**
+
 - `technical-design.md` Unified Loop: corrected `question_id` → `task_id`, `horizon` → `forecast_date`, added `as_of`
 - `technical-design.md` `BacktestResult` snippet: added `skipped_origins: int`
 - `arima.py`: replaced deprecated `datetime.utcnow()` with `datetime.now(tz=timezone.utc).replace(tzinfo=None)` (consistent with `backtest.py` and `eval.py`)
 - `task.py` + `technical-design.md`: documented `resolution_fn` explicitly as a placeholder; the harness currently ignores it and always uses the default observed-value strategy
 
 **Category B (stale documentation):**
+
 - `technical-design.md` package structure: added `eval.py` and `backtest.py` to the diagram
 - `technical-design.md`: removed stale inline "Build sequence for this layer" list from the Backtesting section (the ✅-marked Phase 1 sequence at the bottom is the authoritative tracker)
 - `service.py` docstring example: updated table ID from `18-10-0004-13` → `18-10-0004-11`
 - `ContinuousForecast` docstring: corrected quantile constraint ("keys must be in (0,1); standard levels recommended but not enforced")
 
 **Category C (design debt):**
+
 - Extracted `_compute_origins()` shared utility to `backtest.py`; both `BacktestSpec.origins()` and `EvalSpec.origins()` now delegate to it (DRY)
 - Renamed `_run_eval_loop` → `run_eval_loop` (dropped private prefix since it intentionally crosses module boundaries into `eval.py`)
 - Removed unused `import pandas as pd` from `eval.py` (pandas was only needed for the now-extracted origins logic)
@@ -796,10 +821,12 @@ will confuse implementors who configure it expecting it to do something.
 
 **TODO B1 — `technical-design.md`: package structure diagram missing `eval.py`**
 The diagram under "Package: aieng-forecasting" shows:
+
 ```
 └── evaluation/
     └── predictors/
 ```
+
 but `evaluation/eval.py` was added. Update the diagram to include it.
 
 **TODO B2 — `technical-design.md`: "Build sequence for this layer" inside the
@@ -851,12 +878,14 @@ style even if the file still passes lint.
 Two additive features on top of the Phase 1 backtest layer.
 
 **`Prediction.metadata`** (`aieng/forecasting/evaluation/prediction.py`):
+
 - Added `metadata: dict[str, Any]` field to `Prediction`, defaulting to `{}`.
 - The harness never reads or validates it — passes through transparently to `BacktestResult.predictions` and `EvalResult.predictions`.
 - Predictors populate it with whatever structured side-channel data they want (token counts, source lists, Langfuse trace IDs, etc.). No schema enforced beyond `dict[str, Any]`.
 - `Predictor` ABC docstring updated to document this as the canonical pattern for "things that travel with a prediction."
 
 **Eval mode** (`aieng/forecasting/evaluation/eval.py`):
+
 - `EvalSpec` — mirrors `BacktestSpec` with `spec_id` (tracker key) and `max_runs` (optional budget cap encoded directly in the spec YAML).
 - `EvalResult` — analogous to `BacktestResult`, adds `run_number` provenance (which run against this spec this was).
 - `EvalTracker` — file-backed YAML counter. `runs_for(spec_id)` / `record(spec_id, ran_at)`. Survives process restarts. Path is caller-supplied; wiring to per-user identity is deferred.
@@ -899,12 +928,14 @@ A couple of questions on my mind today. These might not be actual problems, but 
 Full Phase 1 evaluation layer — the repo now supports a complete, runnable backtest.
 
 **New evaluation layer** (`aieng/forecasting/evaluation/`):
+
 - `prediction.py` — `ContinuousForecast` (point + quantiles at 0.05…0.95), `Prediction` (metadata wrapper). Both YAML-serializable Pydantic models.
 - `predictor.py` — `Predictor` ABC with `predict(task, context) -> Prediction` and `predictor_id` property.
 - `backtest.py` — `BacktestSpec`, `BacktestResult`, `backtest()` function. Derives origins from spec, enforces warmup, resolves ground truth, scores with CRPS (`properscoring`).
 - `predictors/arima.py` — `ARIMAPredictor` using Darts `AutoARIMA`. Fits per-origin, generates 500 Monte Carlo samples, extracts quantiles at standard levels.
 
 **Data layer fix:**
+
 - `StatCanAdapter.fetch()` now populates `released_at = timestamp + 21 days` to approximate StatCan's publication lag. Removes the optimistic bias in backtests.
 
 **Reference spec:** `reference_specs/cpi_allitems_12m.yaml` — CPI All-items, 12-month horizon, January and July origins, 2000–2026, warmup=24.
@@ -1049,6 +1080,7 @@ def predict(task: ForecastingTask, context: ForecastContext) -> Prediction:
 ### Current state of the codebase
 
 The data service foundation is fully functional:
+
 - `DataService` → `SeriesStore` + `CutoffEnforcer` + `StatCanAdapter`
 - `ForecastingTask` model defined (problem spec only)
 - 9 Canada-wide CPI series loadable from StatCan
@@ -1122,7 +1154,8 @@ Also created `technical-design.md` as the technical source of truth, and updated
 I am indeed thinking it makes sense for me to just start building around (1) the Canada's Food Price Report (CFPR) forecasting task and (2) Metaculus forecasting questions. These cover two distinct forecasting modalities: multivariate/multi-target time series forecasting and discrete event prediction.
 
 I just updated the bootcamp-project-charter. A couple of ideas are coming together:
-- LLMPs are starting to look a lot like a special case of forecasting agent. A basic LLMP might be something closer to an "LLMFunction" than a full agent, where an LLMFunction is a configured LLM call where the prompts, examples, input data and output format are all specified. I've used this repo in the past: https://github.com/567-labs/instructor  (Note: might want to look at Pydantic AI -- https://ai.pydantic.dev/#why-use-pydantic-ai) But generally speaking, it might be good for us to unify around Google ADK and build as much as possible using its native/built-in features. In fact, let's take the approach of: try to build it with ADK, and only if we're blocked should we introduce additional dependencies.
+
+- LLMPs are starting to look a lot like a special case of forecasting agent. A basic LLMP might be something closer to an "LLMFunction" than a full agent, where an LLMFunction is a configured LLM call where the prompts, examples, input data and output format are all specified. I've used this repo in the past: <https://github.com/567-labs/instructor>  (Note: might want to look at Pydantic AI -- <https://ai.pydantic.dev/#why-use-pydantic-ai>) But generally speaking, it might be good for us to unify around Google ADK and build as much as possible using its native/built-in features. In fact, let's take the approach of: try to build it with ADK, and only if we're blocked should we introduce additional dependencies.
 - So, the "baseline" LLMP could be a simple agent that has some basic access to historical data (perhaps it can get fixed observations via a tool) and contains instructions in the system prompt for how to produce a structured forecast as output, which should be defined (and validated!) by a Pydantic dataclass.
 - Then more advanced agentic forecasters including hybrids will look more like modern agents with tools, code execution, agent skills, etc. LLMPs might use tools and/or code to build additional context before producing a forecast.
 - One specific example of a hybrid numerical/LLMP could be an agent that uses tools or code to produce a numerical forecast (or even ensemble of forecasts) and can additionally fetch context from a number of sources. This way, the additional context could be used to condition the numerical forecasts, and a "challenge" could be to find the right agent design/configuration to best leverage these sources of data.
@@ -1141,6 +1174,7 @@ I just updated the bootcamp-project-charter. A couple of ideas are coming togeth
 -- (We could even consider building a set of agent skills that would enable agents to use Darts more effectively...)
 
 ## Mar 30, 2026 [Ethan]
+
 TODOs
 
 - Dig into metaculus “data” to see what we can get. Will likely need to reach out to their team to get access for research purposes.

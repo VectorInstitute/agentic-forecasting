@@ -17,6 +17,7 @@ This document is the **technical source of truth** for the agentic forecasting r
 **Darts** is the primary numerical forecasting library.
 
 Key reasons:
+
 - Consistent `fit()`/`predict()` API across all model types — one mental model to debug
 - Better developer experience for a mixed-skill bootcamp audience
 - Built-in `historical_forecasts()` and `backtest()` utilities are first-class
@@ -34,25 +35,32 @@ sktime remains a valid reference for specific use cases (AutoARIMA, panel foreca
 The installable library package is named **`aieng-forecasting`**, located at `aieng-forecasting/` in the workspace root. Import namespace: `aieng.forecasting`. It follows the template's uv workspace convention — registered as a workspace member in the root `pyproject.toml`.
 
 Structure:
+
 ```
 aieng-forecasting/aieng/forecasting/
 ├── data/                   # DataService, ForecastContext, SeriesStore, CutoffEnforcer, adapters
 │   └── adapters/           # BaseAdapter, StatCanAdapter, LocalCSVAdapter (future)
-└── evaluation/             # ForecastingTask, Predictor ABC, Prediction types, backtest + eval engines
-    ├── artifacts.py        # Filesystem-backed YAML store for BacktestResult / EvalResult; cached_* wrappers
-    ├── backtest.py         # BacktestSpec, BacktestResult, MultiTargetBacktestSpec, backtest(), multi_backtest()
-    ├── describe.py         # describe_task(), describe_spec() — plain-text descriptions for prompts / docs
-    ├── eval.py             # EvalSpec, EvalResult, MultiTargetEvalSpec, EvalTracker, evaluate(), multi_evaluate()
-    ├── prediction.py       # ContinuousForecast, Prediction, STANDARD_QUANTILES
-    ├── predictor.py        # Predictor ABC — the interface all forecasting models must implement
-    └── task.py             # ForecastingTask
+├── evaluation/             # ForecastingTask, Predictor ABC, Prediction types, backtest + eval engines
+│   ├── artifacts.py        # Filesystem-backed YAML store for BacktestResult / EvalResult; cached_* wrappers
+│   ├── backtest.py         # BacktestSpec, BacktestResult, MultiTargetBacktestSpec, backtest(), multi_backtest()
+│   ├── describe.py         # describe_task(), describe_spec() — plain-text descriptions for prompts / docs
+│   ├── eval.py             # EvalSpec, EvalResult, MultiTargetEvalSpec, EvalTracker, evaluate(), multi_evaluate()
+│   ├── prediction.py       # ContinuousForecast, Prediction, STANDARD_QUANTILES
+│   ├── predictor.py        # Predictor ABC — the interface all forecasting models must implement
+│   └── task.py             # ForecastingTask
+└── methods/
+    ├── baselines/          # simple floor baselines and teaching references
+    ├── numerical/          # classical / ML numerical forecasters
+    ├── llm_processes/      # planned LLM-process predictors
+    └── agentic/            # planned tool-using / hybrid predictors
 ```
 
-**Concrete predictor implementations do not live in this package.** The
-package exports only the `Predictor` ABC and evaluation infrastructure.
-Reference implementations live in `implementations/methods/` (importable,
-cross-cutting) and `implementations/experiments/` (use-case notebooks and
-task-specific config). See the Implementations layer structure section below.
+**Reusable reference predictor implementations do live in this package** under
+`aieng/forecasting/methods/`. The package owns stable reusable forecasting
+code: data layer, evaluation harness, and cross-use-case predictor
+implementations. Notebook-first experiments and use-case-specific helper
+modules live in `implementations/`. See the Implementations layer structure
+section below.
 
 Tests mirror the package under `aieng-forecasting/tests/aieng/forecasting/`.
 
@@ -60,50 +68,68 @@ Tests mirror the package under `aieng-forecasting/tests/aieng/forecasting/`.
 
 **Decision date:** Apr 7, 2026 (original); revised Apr 9, 2026
 
-The `implementations/` directory is a **uv workspace package** (`aieng-implementations`) with two distinct sub-trees:
+The `implementations/` directory has two distinct sub-trees:
 
 ```
 implementations/
-├── pyproject.toml            # workspace package: name = "aieng-implementations"
 ├── README.md
-├── methods/                  # installable Python package (import as `methods`)
-│   └── <method>.py           # e.g. base_llmp.py, darts_arima.py
-└── experiments/              # NOT a Python package — notebooks and scripts only
-    └── <use-case>/           # e.g. getting_started/, food_price_forecasting/, boc_rate_decisions/
-        ├── README.md         # learning path, interfaces quick-reference
-        └── *.ipynb / *.py    # notebooks and experiment scripts
+└── <use-case>/           # e.g. getting_started/, food_price_forecasting/, boc_rate_decisions/
+    ├── README.md         # learning path, interfaces quick-reference
+    └── *.ipynb / *.py    # notebooks and experiment scripts
 ```
 
-**Packaging note:** `implementations/pyproject.toml` uses `[tool.setuptools.packages.find] include = ["methods*", "experiments*"]`. The `experiments*` entry is required so that experiment helper modules (e.g. `experiments.food_price_forecasting.analysis`) can be imported from notebooks and tests without `sys.path` hacks. Individual experiment notebooks themselves remain run-directly artefacts; the packaged modules exist to keep analysis and plotting logic out of notebook cells.
-
-#### Three-tier placement rule
+#### Placement rule
 
 | Tier | Location | What belongs here |
 |---|---|---|
-| **Infrastructure** | `aieng-forecasting` (`aieng.forecasting`) | Stable ABCs, evaluation harness, data service, agent backbone. No concrete implementations. |
-| **Reference methods** | `implementations/methods/` (import as `methods`) | Concrete `Predictor` subclasses, cross-cutting and reusable across use cases. |
-| **Experiments** | `implementations/experiments/<use-case>/` | Task-specific notebooks, specs, prompts, and configs. Run directly; never imported. |
+| **Reusable package code** | `aieng-forecasting` (`aieng.forecasting`) | Stable ABCs, evaluation harness, data service, reusable reference predictors, future agent backbone. |
+| **Experiments** | `implementations/<use-case>/` | Task-specific notebooks, helper modules, specs, prompts, and configs. Notebook-first by default; importable locally when helper modules are useful. |
 
-A method implementation lives in `methods/` from the moment it is intended for use
-across more than one experiment. Task-specific configuration (e.g. a prompt template
-tuned for the CFPR task) lives in `experiments/<use-case>/`.
+A method implementation lives in `aieng/forecasting/methods/` from the moment
+it is intended for use across more than one experiment. Task-specific
+configuration (e.g. a prompt template tuned for the CFPR task) lives in
+`implementations/<use-case>/`.
 
 #### Import pattern
 
-Because `implementations` is installed as a workspace package, experiment notebooks
-import reference methods with no `sys.path` manipulation:
+The **`agentic-forecasting-implementations`** distribution is defined in
+`implementations/pyproject.toml` and is a **uv workspace member** (with
+`aieng-forecasting`) in the root `pyproject.toml`. It ships top-level
+**use-case helper packages** at `implementations/<name>/` when those directories
+contain `__init__.py` files (for example `food_price_forecasting`). This keeps
+shared notebook helpers importable under local `uv sync` without making
+`implementations/` a separately published library. Reusable predictors and the
+`aieng.forecasting` namespace live in `aieng-forecasting`.
+
+Because the workspace installs these packages, experiment notebooks can import
+shared helpers and reference methods with no `sys.path` manipulation:
 
 ```python
-from aieng.forecasting.evaluation import Predictor, backtest   # core infrastructure
-from methods.base_llmp import BaseLLMPredictor                  # reference method
+from aieng.forecasting.evaluation import backtest   # core infrastructure
+from aieng.forecasting.methods import LastValuePredictor
+from aieng.forecasting.methods.numerical import DartsAutoARIMAPredictor
+from food_price_forecasting.analysis import summarize_crps
 ```
+
+#### Package dependency policy
+
+`aieng-forecasting` keeps **core + data** dependencies in
+`[project.dependencies]` and exposes method-family dependencies as
+`[project.optional-dependencies]` extras:
+
+- `numerical`
+- `llm`
+- `agentic`
+
+This keeps the install story easy to understand for package consumers while
+allowing the repo root to choose its own default workspace experience.
 
 #### Agent backbone in the package (future)
 
 When agentic predictors are built, the ADK agent definition, tool scaffolding, and
 prompt infrastructure are reusable across use cases and belong in `aieng-forecasting`
 (e.g. `aieng/forecasting/agents/`). The task-specific configuration and experiments
-using those agents live in `implementations/experiments/<use-case>/`.
+using those agents live in `implementations/<use-case>/`.
 
 ### Tracing & Logging: Langfuse
 
@@ -149,6 +175,7 @@ Predictor → Prediction → Resolution → Score
 A `ForecastingTask` is a Pydantic model that defines a prediction *problem*. It says nothing about how a predictor should solve it — which series to fetch, how to handle gaps, what model to use. Those are predictor concerns.
 
 Fields:
+
 - `task_id` — unique identifier
 - `target_series_id` — the series being forecast (key into `SeriesStore`)
 - `horizons: list[int]` — one or more horizon steps to forecast. `horizon h` means `h` frequency-units ahead of the origin. Single-step tasks use `horizons=[N]`. Multi-step trajectory tasks (e.g. CFPR's 12-month Jan–Dec window) list all required steps explicitly.
@@ -167,11 +194,13 @@ For backtesting, the harness iterates over historical origins defined by the tas
 `ForecastContext` is the **predictor-facing, read-only, cutoff-scoped data view**. It is what the backtesting and live evaluation harnesses pass to predictors — predictors never receive a raw `DataService`.
 
 Key design properties:
+
 - **Bakes in `as_of`**: the information cutoff date is set once at construction time. `get_series()` always enforces it automatically — there is no way for a predictor to accidentally access future data.
 - **Additive, not a replacement**: `DataService` remains as the registration and management layer (used by setup scripts and notebooks). `ForecastContext` is its companion for the predictor interface.
 - **Mode-agnostic**: the harness creates a `ForecastContext` via `DataService.context(as_of)` for each backtest origin. In live evaluation, the same factory is called with the current date. The predictor interface is identical in both modes.
 
 **Predictor interface — multi-horizon (breaking change, Apr 2026):**
+
 ```python
 def predict(task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
     series = context.get_series(task.target_series_id)
@@ -185,6 +214,7 @@ Single-horizon tasks return a one-element list. Multi-horizon tasks (e.g. a 12-s
 **Rationale:** trajectory-based models (Darts, LLMs) naturally produce a coherent full-horizon path in one call. Forcing `N` separate single-step calls would be both inefficient and architecturally incoherent — especially for LLMs whose reasoning is over the whole trajectory. `list[Prediction]` makes single- and multi-horizon a natural special case of the same interface.
 
 **Harness pattern:**
+
 ```python
 ctx = data_service.context(as_of=origin_date)
 preds = predictor.predict(task, ctx)  # list[Prediction]
@@ -226,8 +256,9 @@ The evaluation architecture described above — `Predictor` ABC, `ContinuousFore
 **The convergence (design commitment).** A single flagship ADK agent is built, and it is exercised in two modes — Track 1 (formal predictions on energy commodities and equities) and Track 2 (research, analysis, monitoring, Q&A on the same data surfaces). The bootcamp does not build two separate agents. The Track 1 / Track 2 distinction is about *task types*, not about *agents* or *codebases*.
 
 **Architectural consequences:**
+
 - No changes to the `Predictor` ABC or evaluation harness are required to support Track 2.
-- Track 2 surfaces (agent tools, prompt scaffolding, ad-hoc question types) live in the agent backbone (`aieng/forecasting/agents/`, future) and in experiment-specific configs under `implementations/experiments/<use-case>/`.
+- Track 2 surfaces (agent tools, prompt scaffolding, ad-hoc question types) live in the agent backbone (`aieng/forecasting/agents/`, future) and in experiment-specific configs under `implementations/<use-case>/`.
 - Any Track 2 agent that can also emit a structured `ContinuousForecast` / `BinaryForecast` automatically participates in Track 1 — the harness does not care that it is also capable of other things.
 - The backlog holds one Track 2 design item. It produces an ADR plus a minimal prototype task type; it does **not** build a Track 2 scoring framework.
 
@@ -269,6 +300,7 @@ results = backtest(
 ```
 
 Internally the function:
+
 1. Derives forecast origins from `spec.start`, `spec.end`, `spec.task.frequency`, `spec.stride`
 2. Applies `spec.warmup` to skip early origins with insufficient history
 3. For each origin: calls `data_service.context(as_of)`, then `predictor.predict(task, ctx)`
@@ -279,6 +311,7 @@ Internally the function:
 #### `BacktestResult`
 
 `BacktestResult` is a first-class Pydantic model, not just a DataFrame of scores. It is designed to be YAML-serializable from day one so that it can be:
+
 - Persisted alongside a predictor implementation
 - Fed to an agent or downstream process as structured context
 - Compared fairly across predictors on the same spec
@@ -458,10 +491,12 @@ Two concrete payload types:
 We follow existing standards rather than inventing new ones. For discrete-event forecasting we follow widely-used conventions (e.g. Metaculus-style probability estimates with an explicit resolution criterion).
 
 **`ContinuousForecast` fields:**
+
 - `point_forecast: float` — central estimate (typically the median of the predictive distribution)
 - `quantiles: dict[float, float]` — standard quantile levels 0.05, 0.10, 0.20…0.90, 0.95; keys must be in (0, 1)
 
 **`Prediction` fields (metadata wrapper):**
+
 - `predictor_id`, `task_id`, `issued_at`, `as_of`, `forecast_date`, `payload: ContinuousForecast`
 - `metadata: dict[str, Any]` — optional, defaults to `{}`. Free-form side-channel data the predictor wants to return alongside the forecast (token counts, source lists, Langfuse trace IDs, etc.). The evaluation harness never reads or validates this field — it passes through transparently into `BacktestResult.predictions` and `EvalResult.predictions`. Anything requiring richer structure should be stored externally and referenced here by ID.
 
@@ -581,29 +616,29 @@ Shared abstractions are extracted after both passes are working — not designed
 
 1. ✅ `ContinuousForecast` + `Prediction` Pydantic models — YAML-serializable
 2. ✅ `Predictor` ABC — `predict(task: ForecastingTask, context: ForecastContext) -> list[Prediction]` (**Apr 2026:** breaking change from `-> Prediction`; now returns one `Prediction` per horizon step)
-3. ✅ `DartsAutoARIMAPredictor` in `implementations/methods/darts_arima.py` — univariate Darts `AutoARIMA`; fits once to `n=max(task.horizons)`, extracts samples at each requested horizon step
+3. ✅ `DartsAutoARIMAPredictor` in `aieng/forecasting/methods/numerical/darts_arima.py` — univariate Darts `AutoARIMA`; fits once to `n=max(task.horizons)`, extracts samples at each requested horizon step
 4. ✅ `BacktestSpec` + `BacktestResult` Pydantic models
 5. ✅ `backtest()` function — iterates origins; for each origin, scores all `list[Prediction]` returned by the predictor; flat `(origin × horizon)` result list
 6. ✅ `released_at` fix for StatCan CPI (21-day approximation)
 7. ✅ Reference spec YAMLs (`reference_specs/`) — use `horizons: [N]` (canonical); old `horizon: N` still accepted via backward-compat validator
-8. ✅ Demo notebook (`implementations/experiments/getting_started/cpi_backtest_demo.ipynb` — retargeted Apr 17, 2026 from CPI All-items to CPI Gasoline for a visibly-hard hello-world story)
+8. ✅ Demo notebook (`implementations/getting_started/cpi_backtest_demo.ipynb` — retargeted Apr 17, 2026 from CPI All-items to CPI Gasoline for a visibly-hard hello-world story)
 9. ✅ `Prediction.metadata` — optional `dict[str, Any]` escape hatch for predictor side-channel data
 10. ✅ Eval mode — `EvalSpec`, `EvalResult`, `EvalTracker`, `EvalBudgetExceededError`, `evaluate()`, reference spec `reference_specs/cpi_gasoline_eval_2yr.yaml`
-11. ✅ `LastValuePredictor` — naive last-value baseline in `implementations/methods/naive.py`; returns one `Prediction` per horizon step (same flat value, persistence assumption)
+11. ✅ `LastValuePredictor` — naive last-value baseline in `aieng/forecasting/methods/baselines/naive.py`; returns one `Prediction` per horizon step (same flat value, persistence assumption)
 12. ✅ Two-predictor comparison in demo notebook — `LastValuePredictor` vs `DartsAutoARIMAPredictor` on `cpi_gasoline_12m`
 
 13. ✅ `MultiTargetBacktestSpec` + `multi_backtest()` — evaluate one predictor across many tasks with a shared window; in `backtest.py`
 14. ✅ `MultiTargetEvalSpec` + `multi_evaluate()` — budget-limited multi-target eval; single call costs one budget run; in `eval.py`
 15. ✅ `FREDAdapter` — fetches any FRED series via `fredapi`; disk-caching to `.parquet`; API key from `FRED_API_KEY` env var; in `data/adapters/fred.py`
 16. ✅ `scripts/fetch_fred.py` — populates 5 monthly FRED covariate series for the food price experiment
-17. ✅ `DartsLinearRegressionPredictor` + `DartsLightGBMPredictor` in `implementations/methods/darts_regression.py` — per-target quantile regression; optional past covariates; multi-horizon: `_fit_and_sample` returns `dict[int, ndarray]` keyed by horizon step
+17. ✅ `DartsLinearRegressionPredictor` + `DartsLightGBMPredictor` in `aieng/forecasting/methods/numerical/darts_regression.py` — per-target quantile regression; optional past covariates; multi-horizon: `_fit_and_sample` returns `dict[int, ndarray]` keyed by horizon step
 18. ✅ CFPR experiment (original) — single-category CFPR analysis with 12-step trajectory (horizons 6–17), avg/avg YoY, fast-mode flag, disaggregated error plots
 19. ✅ Reference specs for food CPI — `reference_specs/food_cpi/`
 20. ✅ `ForecastingTask.horizons: list[int]` — multi-horizon task definition; `horizon` (singular) accepted for backward compat; `task.horizon` property = `max(task.horizons)`
 21. ✅ Spec metadata — `spec_id` (required) + `description` on `MultiTargetBacktestSpec`; `description` on `BacktestSpec`, `EvalSpec`, `MultiTargetEvalSpec`, propagated through `.specs()`
 22. ✅ Artifact store — `aieng/forecasting/evaluation/artifacts.py` with YAML round-trip + `cached_backtest` / `cached_multi_backtest` under `data/predictions/<spec_id>/`
 23. ✅ Description helpers — `aieng/forecasting/evaluation/describe.py` (`describe_task`, `describe_spec`) for notebooks, docs, and LLM prompts
-24. ✅ CFPR refactor — canonical `food_cpi_cfpr_{backtest,eval}.yaml` across all 9 sub-indices (July origins, horizons 6–17); notebook rewritten as a narrative shell over `experiments.food_price_forecasting.{data,analysis,plots}`; FRED covariates removed from the canonical task (deferred pending a multivariate/agentic framing design)
+24. ✅ CFPR refactor — canonical `food_cpi_cfpr_{backtest,eval}.yaml` across all 9 sub-indices (July origins, horizons 6–17); notebook rewritten as a narrative shell over `food_price_forecasting.{data,analysis,plots}`; FRED covariates removed from the canonical task (deferred pending a multivariate/agentic framing design)
 
 **Next:** Pass 2 — `BinaryForecast`, `BinaryPredictor` ABC, binary evaluation loop, and the BoC reference experiment as the first concrete instantiation. Also in flight or queued: the S&P 500 reference experiment (active sprint, Behnoosh), the energy commodity data extension, and expansion of `methods/` with `SeasonalNaivePredictor` and a foundation model predictor. Deferred design threads: *Covariate framing for multivariate and agentic predictors* (futures prices as covariates are the primary motivating example for the financial markets experiment) and *Numeric predictors as agent skills* — both in the backlog holding queue.
 
@@ -613,8 +648,8 @@ The bootcamp-complete state of this repo is defined by a fixed set of five refer
 
 | # | Experiment | Payload | Datasets | Infra dependencies | Status |
 |---|---|---|---|---|---|
-| 1 | `getting_started` — CPI Gasoline, 12m | `ContinuousForecast` | StatCan | Pass 1 complete | ✅ done (`implementations/experiments/getting_started/`) |
-| 2 | CFPR — food CPI, 9 targets, 12-step trajectory | `ContinuousForecast` (multi-horizon, multi-target) | StatCan (targets), FRED (covariates, deferred) | Pass 1 + `MultiTargetBacktestSpec` + multi-horizon `predict()` + artifact store | ✅ framework done (`implementations/experiments/food_price_forecasting/`); LLMP/agent predictors pending Ali |
+| 1 | `getting_started` — CPI Gasoline, 12m | `ContinuousForecast` | StatCan | Pass 1 complete | ✅ done (`implementations/getting_started/`) |
+| 2 | CFPR — food CPI, 9 targets, 12-step trajectory | `ContinuousForecast` (multi-horizon, multi-target) | StatCan (targets), FRED (covariates, deferred) | Pass 1 + `MultiTargetBacktestSpec` + multi-horizon `predict()` + artifact store | ✅ framework done (`implementations/food_price_forecasting/`); LLMP/agent predictors pending Ali |
 | 3a | Financial Markets — S&P 500 (primary template) | `ContinuousForecast` (daily, multi-horizon: 1d/5d/14d/30d) | yfinance | Pass 1 + `yfinanceAdapter` + multi-horizon `BacktestSpec` + futures series registered as covariates + anti-leakage backtest design | 🟡 active sprint (Behnoosh) |
 | 3b | Financial Markets — Energy Commodities (extension) | `ContinuousForecast` (daily, same horizons as 3a) | FRED + yfinance | 3a template complete + `scripts/fetch_energy.py` | 🟡 holding queue (trivial once 3a done) |
 | 4 | Bank of Canada rate decisions | `BinaryForecast` | StatCan (rate history) + FRED (macro context) | **Pass 2**: `BinaryForecast`, `BinaryPredictor`, Brier scoring, binary `evaluate()` | 🟡 scoped in backlog |
