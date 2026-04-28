@@ -29,7 +29,7 @@ WORKDIR /home/${USER}
 ########################################################################
 
 # Copy the code into the container
-COPY --chown=${USER}:${USER} . /home/${USER}/aieng-template-implementation
+COPY --chown=${USER}:${USER} . /home/${USER}/agentic-forecasting
 
 # Start the container and run the project setup script
-CMD ["bash", "aieng-template-implementation/scripts/setup.sh"]
+CMD ["bash", "agentic-forecasting/scripts/setup.sh"]
