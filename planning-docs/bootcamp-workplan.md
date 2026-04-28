@@ -105,7 +105,7 @@ The likely decomposition is:
 
 ### 1. Documentation Consolidation (Small)
 
-Owner: Ethan / agent assistance  
+Owner: Ethan / agent assistance
 Target: immediate
 
 Status: done
@@ -117,7 +117,7 @@ Status: done
 
 ### 2. Environment Readiness (Medium)
 
-Owner: Franklin for execution service; broader repo environment owner TBD  
+Owner: Franklin for execution service; broader repo environment owner TBD
 Target: Franklin's code execution slice ASAP; full environment readiness by June 18
 
 Deliverables:
@@ -128,7 +128,7 @@ Deliverables:
 
 ### 3. Financial Markets S&P 500 Reference (Large)
 
-Owner: Behnoosh, with Ethan review  
+Owner: Behnoosh, with Ethan review
 Target: June 18 initial slice; polished by July 8
 
 Deliverables:
@@ -142,7 +142,7 @@ Deliverables:
 
 ### 4. Food Price Forecasting Polish (Small)
 
-Owner: Ethan  
+Owner: Ethan
 Target: June 18
 
 Deliverables:
@@ -154,7 +154,7 @@ Deliverables:
 
 ### 5. BoC Binary Reference (Medium)
 
-Owner: TBD  
+Owner: TBD
 Target: after S&P 500 slice unless staffing allows parallel work
 
 Deliverables:
@@ -167,7 +167,7 @@ Deliverables:
 
 ### 6. LLMP Baseline (Medium)
 
-Owner: Ali  
+Owner: Ali
 Target: before agentic architecture integration
 
 Deliverables:
@@ -179,7 +179,7 @@ Deliverables:
 
 ### 7. Agentic Forecasting Architecture (Very Large)
 
-Owner: Ali after Franklin's execution-service handoff  
+Owner: Ali after Franklin's execution-service handoff
 Target: staged through Learn Days and Build Days
 
 Deliverables:
@@ -193,7 +193,7 @@ Deliverables:
 
 ### 8. Energy/Oil Forecasting Analyst Demo (Large)
 
-Owner: Ethan / Ali, with Franklin's execution service as dependency  
+Owner: Ethan / Ali, with Franklin's execution service as dependency
 Target: May 21 for storytelling demo; polished later for Build Days
 
 Deliverables:
@@ -206,7 +206,7 @@ Deliverables:
 
 ### 9. Lecture And Learn Days Content (Large)
 
-Owner: Ethan  
+Owner: Ethan
 Target: July 8-9
 
 Track these as outstanding tasks but do not plan them in detail here:
@@ -219,7 +219,7 @@ Track these as outstanding tasks but do not plan them in detail here:
 ## Explicit Non-Goals For Cohort 1
 
 - No NYISO, IESO, or grid-operator reference build.
-- No ForecastBench reference experiment unless requested or time permitting. 
+- No ForecastBench reference experiment unless requested or time permitting.
 - No live scored evaluation for open-ended conversational or scenario agents.
 - No model fine-tuning or custom training runs.
 - No separate energy Track 1 infrastructure before the S&P 500 template lands.
