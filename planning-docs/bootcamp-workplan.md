@@ -203,6 +203,7 @@ Deliverables:
 - Add news-grounded context for the early-2026 energy/oil narrative.
 - Assemble a first scenario-analysis flow, such as Strait of Hormuz closure versus reopening.
 - Label the May 21 artifact as a demo, not a scored reference experiment.
+- Fast-follow the initial yfinance exploration with a futures-data review covering contract chains, roll rules, curve snapshots, open interest, volume, and licensing before depending on futures-curve semantics.
 
 ### 9. Lecture And Learn Days Content (Large)
 

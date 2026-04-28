@@ -55,7 +55,9 @@ implementations/           # Reference methods and experiments
     `-- food_price_forecasting/
 planning-docs/
 `-- bootcamp-workplan.md   # Single planning source of truth
-playground/                # Demo and exploration code, including news grounding
+playground/                # Demo and exploration code
+|-- energy_yfinance/       # Energy/oil yfinance market-data exploration
+`-- news_search/           # News grounding playground
 reference_specs/           # YAML backtest and eval specs
 scripts/                   # Data population scripts
 ```
@@ -78,6 +80,7 @@ Then start with:
 
 - `implementations/experiments/getting_started/` for the smallest end-to-end walkthrough.
 - `implementations/experiments/food_price_forecasting/` for the richer CFPR-style multivariate task.
+- `playground/energy_yfinance/` for the first energy/oil yfinance data exploration.
 - `planning-docs/bootcamp-workplan.md` for current scope, dates, ownership, and non-goals.
 
 ## Core Concepts

@@ -9,6 +9,9 @@ This package provides stable infrastructure used across reference implementation
 - Backtesting, evaluation, scoring, and artifact helpers.
 - Future reusable agent backbone components once they are promoted from experiments.
 
+Current data adapters cover StatCan tables, FRED series, and daily yfinance
+market series.
+
 Concrete forecasting methods live in `implementations/methods`. Use-case notebooks and task-specific configuration live in `implementations/experiments`.
 
 For current bootcamp scope, milestones, ownership, and non-goals, see `../planning-docs/bootcamp-workplan.md`.
