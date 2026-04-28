@@ -133,4 +133,4 @@ markers = [
 [tool.coverage]
     [tool.coverage.run]
     source=["aieng-forecasting/aieng"]
-    omit=["aieng-forecasting/aieng/tests/*", "implementations/tests/*", "*__init__.py"]
+    omit=["aieng-forecasting/tests/*", "implementations/tests/*", "*__init__.py"]
