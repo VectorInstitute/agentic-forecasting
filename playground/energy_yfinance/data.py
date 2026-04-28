@@ -9,8 +9,7 @@ from aieng.forecasting.data.adapters.yfinance import YFinanceDailyAdapter, YFina
 from pydantic import BaseModel, ConfigDict, Field
 
 
-DEFAULT_CACHE_DIR = Path("data/yfinance")
-"""Default repo-root yfinance parquet cache directory."""
+DEFAULT_CACHE_DIR = Path("data/yfinance")  # Default repo-root yfinance parquet cache directory.
 
 
 class EnergyMarketSeries(BaseModel):
@@ -26,6 +25,7 @@ class EnergyMarketSeries(BaseModel):
     field: YFinanceField = "Adj Close"
 
 
+# Initial energy-market and macro-financial context series.
 ENERGY_MARKET_SERIES: tuple[EnergyMarketSeries, ...] = (
     EnergyMarketSeries(
         series_id="wti_crude_oil_front_month",
@@ -76,11 +76,10 @@ ENERGY_MARKET_SERIES: tuple[EnergyMarketSeries, ...] = (
         description="S&P 500 index adjusted close from Yahoo Finance",
     ),
 )
-"""Initial energy-market and macro-financial context series."""
 
 
+# Short display labels for plots and tables.
 CATEGORY_LABELS: dict[str, str] = {series.series_id: series.label for series in ENERGY_MARKET_SERIES}
-"""Short display labels for plots and tables."""
 
 
 def build_energy_market_service(

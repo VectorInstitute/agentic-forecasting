@@ -34,12 +34,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from aieng.forecasting.data.adapters.base import BaseAdapter
 
 
+# Supported Yahoo Finance daily history fields.
 YFinanceField = Literal["Open", "High", "Low", "Close", "Adj Close", "Volume"]
-"""Supported Yahoo Finance daily history fields."""
 
 
+# Supported yfinance interval for this adapter.
 YFinanceInterval = Literal["1d"]
-"""Supported yfinance interval for this adapter."""
 
 
 _DEFAULT_FIELD: YFinanceField = "Adj Close"
