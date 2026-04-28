@@ -43,7 +43,7 @@ These are the experiments we plan to make runnable, documented, and suitable for
 | --------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------- |
 | Getting Started             | Smallest continuous forecasting walkthrough using CPI gasoline.                                  | StatCan                            | Implemented; polish only.                                                 |
 | Food Price Forecasting      | CFPR-style multivariate CPI task and flagship no-futures context-driven case.                    | StatCan; optional FRED extensions  | Implemented for canonical StatCan path; covariates remain extension work. |
-| Financial Markets - S&P 500 | First formal financial-markets Track 1 template with daily horizons and market-data conventions. | yfinance; optional FRED covariates | Planned.                                                                  |
+| Financial Markets - S&P 500 | First formal financial-markets Track 1 template with daily horizons and market-data conventions. | yfinance; optional FRED covariates | In progress.                                                              |
 | BoC Rate Decisions          | Sole binary/discrete-event reference experiment and validation surface for `BinaryForecast`.     | StatCan, FRED, public BoC material | Planned.                                                                  |
 
 
@@ -87,7 +87,7 @@ These are explicitly not required for cohort 1 readiness:
 
 ## Agent Ownership And Modes
 
-Franklin's agent-related scope is infrastructure: get E2B or an equivalent preconfigured Docker execution service running and plug it into an extremely basic agent. This proves that the execution service works; it is not the full agent product.
+Franklin's agent-related scope is a short infrastructure task: get a configurable Dockerized E2B sandbox running for a basic Google ADK agent. This should be treated as a 1-2 week handoff task at most, needed ASAP before Franklin rolls off the project. It proves that the execution service works; it is not the full agent product.
 
 Ali likely owns the broader agentic forecasting architecture after Franklin's handoff. This includes the Context Retrieval Agent, the Analyst Agent, agent skills, prompts, tool contracts, and experiment-specific configurations.
 
@@ -103,107 +103,108 @@ The likely decomposition is:
 
 ## Work Items
 
-### 1. Documentation Consolidation
+### 1. Documentation Consolidation (Small)
 
 Owner: Ethan / agent assistance  
 Target: immediate
 
-Exit criteria:
+Status: done
 
 - This workplan exists and is the only active planning source of truth.
 - Retired planning docs point here rather than competing with it.
 - READMEs describe the current project shape, setup, and reference experiments.
 - `AGENTS.md` points agents to this workplan and no longer requires updates to retired docs.
 
-### 2. Environment Readiness
+### 2. Environment Readiness (Medium)
 
 Owner: Franklin for execution service; broader repo environment owner TBD  
-Target: June 18
+Target: Franklin's code execution slice ASAP; full environment readiness by June 18
 
-Exit criteria:
+Deliverables:
 
-- `uv sync --group dev` works from a clean checkout.
-- Required data-fetch scripts and credential instructions are documented.
-- Smoke-test instructions exist for the implemented notebooks.
-- Code execution service is running in E2B or an equivalent preconfigured Docker environment.
-- A minimal basic agent can execute code through that service.
+- Get a configurable Dockerized E2B sandbox running for a basic Google ADK agent.
+- Document the minimum setup path for participants: dependency sync, credentials, and data-cache commands.
+- Write a short handoff note for Ali covering how to use and extend the code execution service.
 
-### 3. Financial Markets S&P 500 Reference
+### 3. Financial Markets S&P 500 Reference (Large)
 
 Owner: Behnoosh, with Ethan review  
 Target: June 18 initial slice; polished by July 8
 
-Exit criteria:
+Deliverables:
 
-- yfinance ingestion path exists and is reusable for other financial assets.
-- S&P 500 target and horizon choices are documented.
-- Reference specs exist for daily horizons such as 1d, 5d, 14d, and 30d, if feasible.
-- Demo notebook runs end-to-end with at least one strong numerical baseline.
-- Anti-leakage choices are explicit.
+- Define the S&P 500 target, horizons, and anti-leakage rules.
+- Add reusable yfinance ingestion for S&P 500 and related market covariates.
+- Add initial reference specs for daily horizons.
+- Build a demo notebook with at least one strong numerical baseline.
+- Expand with additional multivariate numerical baselines (statistical, ML, possibly deep NN or TS foundation model)
+- Document the experiment as the reusable financial-markets template.
 
-### 4. Food Price Forecasting Polish
+### 4. Food Price Forecasting Polish (Small)
 
 Owner: Ethan  
 Target: June 18
 
-Exit criteria:
+Deliverables:
 
-- CFPR README, notebooks, and specs are internally consistent.
-- Canonical experiment remains StatCan-only unless the covariate contract is resolved.
-- FRED covariates are documented as optional extension work.
-- The experiment is ready to receive LLMP and agentic predictors once those land.
+- Reconcile the CFPR README, notebooks, specs, and helper modules.
+- Keep the canonical experiment StatCan-only; document FRED covariates as extension work.
+- Clarify cached-artifact and rerun instructions for participants.
+- Add a brief note on where future LLMP and agentic predictors will plug in.
 
-### 5. BoC Binary Reference
+### 5. BoC Binary Reference (Medium)
 
 Owner: TBD  
 Target: after S&P 500 slice unless staffing allows parallel work
 
-Exit criteria:
+Deliverables:
 
-- `BinaryForecast` payload exists.
-- Binary predictor/evaluation path supports Brier scoring.
-- BoC task framing is documented with clear resolution criteria.
-- A minimal baseline runs end-to-end.
-- ForecastBench remains out of scope for the reference build.
+- Choose the first BoC event framing and resolution criteria.
+- Add `BinaryForecast` and minimal binary prediction interfaces.
+- Add Brier scoring and binary evaluation dispatch.
+- Source the minimal BoC and macro data needed for the reference task.
+- Build the first BoC spec, baseline predictor, and demo notebook.
 
-### 6. LLMP Baseline
+### 6. LLMP Baseline (Medium)
 
 Owner: Ali  
 Target: before agentic architecture integration
 
-Exit criteria:
+Deliverables:
 
-- Minimal Pydantic structured-output LLMP predictor exists.
-- It runs on at least one canonical continuous spec.
-- Results are compared against an existing numerical baseline.
-- Design decision is documented for direct LiteLLM usage versus ADK in a constrained mode.
+- Choose the minimal LLMP implementation path: direct LiteLLM or constrained ADK.
+- Implement a Pydantic structured-output LLMP predictor for one continuous spec.
+- Compare the LLMP predictor against an existing numerical baseline.
+- Document what changes are needed to support binary payloads later.
 
-### 7. Agentic Forecasting Architecture
+### 7. Agentic Forecasting Architecture (Very Large)
 
 Owner: Ali after Franklin's execution-service handoff  
 Target: staged through Learn Days and Build Days
 
-Exit criteria:
+Deliverables:
 
-- Agent skills explain how to use the repository's forecasting and backtesting code.
-- Context retrieval can use Gemini/Google Search where needed.
-- Analyst agent can use code execution and repository skills.
-- Track 1 configurations can emit `Prediction` objects.
-- Track 2 interactive configurations can support energy/oil scenario analysis.
+- Verify Franklin's code execution handoff in Ali's development environment.
+- Define the first repo forecasting/backtesting agent skills.
+- Specify the Context Retrieval Agent contract for Gemini/Google Search grounding.
+- Specify the Analyst Agent contract for code execution, skills, and provider flexibility.
+- Build one Track 1 agent configuration that emits standardized `Prediction` objects.
+- Build one Track 2 interactive analyst configuration for scenario exploration.
 
-### 8. Energy/Oil Forecasting Analyst Demo
+### 8. Energy/Oil Forecasting Analyst Demo (Large)
 
 Owner: Ethan / Ali, with Franklin's execution service as dependency  
 Target: May 21 for storytelling demo; polished later for Build Days
 
-Exit criteria:
+Deliverables:
 
-- Demo narrative is coherent for Vector Institute industry sponsors.
-- Energy/oil scenario includes univariate, futures-aware or multivariate, and agentic/news-grounded comparisons.
-- The May 21 artifact is clearly labeled as a demo/pitch artifact, not a scored reference experiment.
-- Later interactive analyst version supports scenario questions and code-backed analysis.
+- Lock the sponsor-facing scenario, horizon, and target series for the May 21 story.
+- Produce univariate and futures-aware comparison views.
+- Add news-grounded context for the early-2026 energy/oil narrative.
+- Assemble a first scenario-analysis flow, such as Strait of Hormuz closure versus reopening.
+- Label the May 21 artifact as a demo, not a scored reference experiment.
 
-### 9. Lecture And Learn Days Content
+### 9. Lecture And Learn Days Content (Large)
 
 Owner: Ethan  
 Target: July 8-9

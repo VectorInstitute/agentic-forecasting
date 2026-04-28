@@ -21,7 +21,7 @@ The formal cohort 1 reference experiments are:
 |---|---|---|
 | Getting Started | CPI gasoline hello-world for the evaluation loop. | Implemented. |
 | Food Price Forecasting | CFPR-style multivariate food CPI task. | Implemented for the canonical StatCan path. |
-| Financial Markets - S&P 500 | First formal financial-markets Track 1 template. | Planned. |
+| Financial Markets - S&P 500 | First formal financial-markets Track 1 template. | In progress. |
 | BoC Rate Decisions | Binary/discrete-event reference experiment. | Planned. |
 
 Energy/oil 2026 is a separate demo and storytelling surface for the May 21 information session and the later interactive Forecasting Analyst Agent. It should motivate the bootcamp with a realistic scenario around oil, fuel, logistics, transportation, and Persian Gulf conflict risk. It is not the first formal Track 1 financial-markets reference build; S&P 500 remains the clean first template for that path.

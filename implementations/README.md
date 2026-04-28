@@ -14,7 +14,7 @@ implementations/
     `-- food_price_forecasting/   # CFPR-style food CPI experiment
 ```
 
-Planned experiment directories include `sp500/` for the first formal financial-markets Track 1 template and `boc_rate_decisions/` for the binary reference experiment. Energy/oil work belongs either in `playground/` for the May 21 and interactive analyst demos, or later as a transposition of the S&P 500 template if it is pulled into scope.
+The `sp500/` experiment is in progress as the first formal financial-markets Track 1 template. The `boc_rate_decisions/` experiment is planned for the binary reference task. Energy/oil work belongs either in `playground/` for the May 21 and interactive analyst demos, or later as a transposition of the S&P 500 template if it is pulled into scope.
 
 ## Importing Methods
 

@@ -96,7 +96,7 @@ The bootcamp will provide a focused set of formal reference experiments.
 |---|---|---|---|
 | Getting Started - CPI Gasoline | Smallest end-to-end walkthrough of the evaluation framework. | StatCan | Implemented; polish only. |
 | Food Price Forecasting | CFPR-style multivariate food CPI forecasting task. | StatCan; optional FRED extensions | Implemented for the canonical StatCan path. |
-| Financial Markets - S&P 500 | First formal financial-markets Track 1 template with daily horizons and market-data conventions. | yfinance; optional FRED covariates | Planned. |
+| Financial Markets - S&P 500 | First formal financial-markets Track 1 template with daily horizons and market-data conventions. | yfinance; optional FRED covariates | In progress. |
 | Bank of Canada Rate Decisions | Binary/discrete-event reference experiment and validation surface for `BinaryForecast`. | StatCan, FRED, public BoC material | Planned. |
 
 ## 8. Energy/Oil 2026 Case Study
@@ -121,7 +121,7 @@ This case study is a demo and interaction surface, not the first formal Track 1 
 
 The agentic forecasting work will be developed in stages.
 
-Franklin's scope is the code execution service: get E2B or an equivalent preconfigured Docker execution service running, and connect it to a minimal basic agent. This validates the execution environment but does not define the full agent product.
+Franklin's scope is the short code execution service slice: get E2B or an equivalent preconfigured Docker execution service running, and connect it to a minimal basic reference agent. This is an ASAP 1-2 week handoff task. It validates the execution environment but does not define the full agent product.
 
 Ali is expected to own the broader agentic forecasting architecture after that handoff. The likely design separates:
 

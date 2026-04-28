@@ -32,7 +32,7 @@ The cohort 1 workplan currently tracks these formal reference experiments:
 |---|---|---|
 | `getting_started/` | Smallest end-to-end continuous forecasting walkthrough. | Implemented. |
 | `food_price_forecasting/` | CFPR-style multivariate food CPI task. | Implemented for the canonical StatCan path. |
-| `sp500/` | First formal financial-markets Track 1 template. | Planned. |
+| `sp500/` | First formal financial-markets Track 1 template. | In progress. |
 | `boc_rate_decisions/` | Binary/discrete-event reference experiment. | Planned. |
 
 Energy/oil 2026 is the May 21 information-session story and the flagship interactive Forecasting Analyst Agent demo. It should not be treated as the first formal Track 1 financial-markets build unless the workplan changes; S&P 500 remains the first formal template.
