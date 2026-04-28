@@ -1,3 +1,31 @@
+## Apr 28, 2026 — Repo restructure on `refactor/restructure_repo` (delta vs. `origin/main`) [Franklin & Agent]
+
+This branch folds a packaging and layout pass that was starting to fork the mental model (where predictors live vs. where notebooks live) into something closer to how we want participants to import code: **reusable predictors ship with the library**; **use-case folders stay beside notebooks** under `implementations/`.
+
+### What landed (commits ahead of `origin/main`)
+
+- **`refactor(implementations)` — methods into `aieng-forecasting`, experiments unpacked:** Concrete `Predictor` implementations previously under `implementations/methods/` now live under `aieng/forecasting/methods/` grouped by family (`baselines/`, `numerical/`, `llm_processes/`, `agentic/` placeholder). The old `implementations/experiments/<use-case>/` tree is flattened to `implementations/<use-case>/` (e.g. `getting_started/`, `food_price_forecasting/`). Notebooks and helper modules moved with the directories; `implementations/pyproject.toml` and test import paths were updated to match.
+- **`chore` — pre-commit:** Hook revisions bumped and repo changes applied to satisfy the updated hooks (formatting / EOF / small consistency fixes that show up as one-line churn across many modules).
+- **`docs` — READMEs and planning docs:** Root `README.md`, `aieng-forecasting/README.md`, `implementations/README.md`, and planning artefacts (`technical-design.md`, `backlog.md`, this file) were brought in line with the new paths, import examples, and optional-install story (`pip install "aieng-forecasting[numerical]"` etc.).
+- **`fix` — Dockerfile:** Paths and build context adjusted so the container matches the post-restructure layout (same intent as the notebook moves — no silent drift between local `uv` workflows and image builds).
+
+### Consequences
+
+- **Imports:** notebooks and tests should prefer `from aieng.forecasting.methods...` (and subpackages) for shared predictors; use-case helpers remain importable from their top-level package names under the implementations workspace member where `__init__.py` exists (e.g. `food_price_forecasting`).
+- **Dependencies:** method-family heavy deps are pushed behind `aieng-forecasting` optional extras so a minimal install stays light; the bootcamp root workspace still pulls what notebooks need by default via workspace wiring.
+
+### Hygiene / collateral
+
+- GitHub Actions workflow YAMLs picked up small path or config tweaks in the same pass.
+- Obsolete planning artefacts (e.g. archived duplicates, stale workplan files) were removed or superseded where they duplicated the live `planning-docs/` set — the authoritative surface remains charter + technical design + backlog + these notes.
+
+### Follow-ups not closed here
+
+- Sweep remaining historical sections in this file that still mention `implementations/methods/` or old import examples — some lines are intentionally archival but a few should be edited or annotated "historical" so readers do not copy-paste stale paths.
+- When `BaseLLMPredictor` lands, document the **actual** import path under `methods/llm_processes/` (or re-export from `methods/__init__.py`) and align all doc snippets in one pass.
+
+---
+
 ## Apr 22, 2026 — Canonical scope wording for financial markets [Ethan & Agent]
 
 Clarified the plan-of-record wording across charter, backlog, technical design, and READMEs so sprint reviewers see one consistent message:
