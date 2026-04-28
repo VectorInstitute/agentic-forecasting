@@ -54,9 +54,3 @@ jobs:
         uses: pypa/gh-action-pip-audit@1220774d901786e6f652ae159f7b6bc8fea6d266
         with:
           virtual-environment: .venv/
-          # GHSA-xm59-rqc7-hhvf: nbconvert Windows-only vulnerability (no fix available as of 2025-12-22)
-          # This is a Windows-specific code execution vulnerability via inkscape.bat path traversal
-          # CI runs on Linux, and no patch exists yet (published 2025-12-18)
-          # TODO: Remove this ignore once nbconvert releases a patched version
-          ignore-vulns: |
-            GHSA-xm59-rqc7-hhvf

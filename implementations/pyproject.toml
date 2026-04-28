@@ -1,17 +1,19 @@
+# Local-only install, not published. Notebook-only folders and tests/ are excluded
+# from packaging.
 [project]
-name = "aieng-implementations"
+name = "agentic-forecasting-implementations"
 version = "0.1.0"
 description = "Reference method implementations for the Agentic Forecasting Bootcamp"
 authors = [{name = "Vector AI Engineering", email = "ai_engineering@vectorinstitute.ai"}]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "aieng-forecasting",
-    "lightgbm>=4.6.0",
+    "aieng-forecasting[numerical,llm,agentic]",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]          # treat implementations/ as the src root
+exclude = ["tests*", "getting_started*"]
 
 [tool.uv.sources]
 aieng-forecasting = { workspace = true }
-
-[tool.setuptools.packages.find]
-include = ["methods*", "experiments*"]

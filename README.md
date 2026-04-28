@@ -7,8 +7,8 @@ The bootcamp teaches participants to build, evaluate, and compare forecasting sy
 ## What This Repo Provides
 
 - Core forecasting infrastructure in `aieng-forecasting` (`aieng.forecasting`): data services, cutoff enforcement, forecasting tasks, prediction payloads, backtesting, evaluation, and artifacts.
-- Reference methods in `implementations/methods`: reusable `Predictor` implementations such as naive and Darts baselines.
-- Reference experiments in `implementations/experiments`: notebooks, helpers, and task-specific configuration.
+- Reference methods in `aieng-forecasting/aieng/forecasting/methods`: reusable `Predictor` implementations such as naive and Darts baselines.
+- Reference experiments in `implementations`: notebooks, helpers, and task-specific configuration.
 - Canonical YAML specs in `reference_specs`.
 - Data population scripts in `scripts`.
 - Planning source of truth in `planning-docs/bootcamp-workplan.md`.
@@ -18,7 +18,7 @@ The bootcamp teaches participants to build, evaluate, and compare forecasting sy
 The formal cohort 1 reference experiments are:
 
 | Experiment | Role | Current state |
-|---|---|---|
+| --- | --- | --- |
 | Getting Started | CPI gasoline hello-world for the evaluation loop. | Implemented. |
 | Food Price Forecasting | CFPR-style multivariate food CPI task. | Implemented for the canonical StatCan path. |
 | Financial Markets - S&P 500 | First formal financial-markets Track 1 template. | In progress. |
@@ -48,11 +48,9 @@ Historical data is cached locally under `data/` and is not committed.
 
 ```text
 aieng-forecasting/         # Installable library package: import as aieng.forecasting
-implementations/           # Reference methods and experiments
-|-- methods/               # Reusable concrete Predictor implementations
-`-- experiments/           # Notebooks, helpers, and task-specific configs
-    |-- getting_started/
-    `-- food_price_forecasting/
+implementations/           # Reference experiments and helpers
+|-- getting_started/
+`-- food_price_forecasting/
 planning-docs/
 `-- bootcamp-workplan.md   # Single planning source of truth
 playground/                # Demo and exploration code
@@ -67,10 +65,22 @@ scripts/                   # Data population scripts
 Install dependencies from the repo root:
 
 ```bash
-uv sync --group dev
+git clone <repo-url>
+cd agentic-forecasting
+uv sync
 ```
 
-Populate the StatCan CPI cache:
+**macOS — LightGBM and OpenMP:** The library depends on **LightGBM** (used by `DartsLightGBMPredictor` and some notebooks). The PyPI wheel expects **OpenMP** at runtime. If you see `Library not loaded: @rpath/libomp.dylib` when importing or training, install Homebrew’s OpenMP once and restart your shell or Jupyter kernel:
+
+```bash
+brew install libomp
+```
+
+On Apple Silicon the dylib is typically under `/opt/homebrew/opt/libomp/lib/`; on Intel Homebrew, `/usr/local/opt/libomp/lib/`.
+
+### 2. Populate the data cache
+
+Data is fetched once and cached locally (gitignored). Run the relevant script before opening notebooks:
 
 ```bash
 uv run python scripts/fetch_cpi.py
@@ -78,10 +88,12 @@ uv run python scripts/fetch_cpi.py
 
 Then start with:
 
-- `implementations/experiments/getting_started/` for the smallest end-to-end walkthrough.
-- `implementations/experiments/food_price_forecasting/` for the richer CFPR-style multivariate task.
-- `playground/energy_yfinance/` for the first energy/oil yfinance data exploration.
-- `planning-docs/bootcamp-workplan.md` for current scope, dates, ownership, and non-goals.
+Each use case under `implementations` has a `README.md` with a recommended learning path.
+
+- **Start here:** `implementations/getting_started/` — the hello-world tour. Single series (CPI gasoline), 12-month horizon, naive + AutoARIMA baselines, one `BacktestSpec`, one `EvalSpec`. The smallest useful end-to-end walkthrough of the evaluation framework.
+- **Graduate to:** `implementations/food_price_forecasting/` — the CFPR reference experiment, flagship of the no-futures multivariate case. Nine correlated CPI sub-indices, a 12-step trajectory, the avg/avg YoY metric from the real Canada's Food Price Report, helper modules for analysis and plotting, and cached artefacts for fast iteration.
+- **Look ahead to:** the bootcamp centrepiece — the Track 1 + Track 2 convergence built on the S&P 500 template and then extended to energy commodities. See `planning-docs/bootcamp-workplan.md` for current scope and experiment sequencing.
+- **Optional demos:** `playground/energy_yfinance/` and `playground/energy_case_study/` for energy/oil exploration and the May 21 information-session narrative notebook.
 
 ## Core Concepts
 

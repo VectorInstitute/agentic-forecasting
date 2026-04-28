@@ -1,4 +1,4 @@
-"""Unit tests for ``experiments.food_price_forecasting.analysis``.
+"""Unit tests for ``food_price_forecasting.analysis``.
 
 These tests construct synthetic :class:`BacktestResult` objects with known
 predictions and call the analysis helpers directly — no network fetches, no
@@ -16,7 +16,7 @@ import pandas as pd
 from aieng.forecasting.evaluation.backtest import BacktestResult, BacktestSpec
 from aieng.forecasting.evaluation.prediction import ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.task import ForecastingTask
-from experiments.food_price_forecasting.analysis import (
+from food_price_forecasting.analysis import (
     compute_avgyoy,
     predictions_to_dataframe,
     rationales_table,

@@ -17,7 +17,7 @@ Use this as:
 
 Usage::
 
-    from methods.naive import LastValuePredictor
+    from aieng.forecasting.methods.naive import LastValuePredictor
     from aieng.forecasting.evaluation import backtest, BacktestSpec
 
     result = backtest(predictor=LastValuePredictor(), spec=spec, data_service=svc)
@@ -30,11 +30,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 from aieng.forecasting.data.context import ForecastContext
-from aieng.forecasting.evaluation.prediction import (
-    STANDARD_QUANTILES,
-    ContinuousForecast,
-    Prediction,
-)
+from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
 
@@ -100,7 +96,7 @@ class LastValuePredictor(Predictor):
         # Step 5: build the ContinuousForecast payload.
         # point_forecast: your central estimate (typically median).
         # quantiles: a dict mapping quantile level → forecast value.
-        #   STANDARD_QUANTILES = [0.05, 0.10, ..., 0.90, 0.95]
+        #   STANDARD_QUANTILES = [0.05, 0.10, ..., 0.90, 0.95]  # noqa: ERA001
         #   The evaluation engine uses these to compute CRPS.
         #   A naive predictor with no uncertainty puts the same value
         #   at every quantile — real models spread them out.

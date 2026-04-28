@@ -7,7 +7,6 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
-
 from aieng.forecasting.data.adapters.statcan import (
     StatCanAdapter,
     _normalize_table_id,
@@ -49,6 +48,7 @@ def _make_zip(tmp_path: Path, df: pd.DataFrame, normalized_id: str = "18100004")
 
 @pytest.fixture()
 def adapter(tmp_path: Path) -> StatCanAdapter:
+    """StatCanAdapter with Canada All-items filter and temp cache."""
     return StatCanAdapter(
         table_id="18-10-0004-13",
         member_filter={"GEO": "Canada", "Products and product groups": "All-items"},
@@ -57,6 +57,7 @@ def adapter(tmp_path: Path) -> StatCanAdapter:
 
 
 def test_normalize_table_id() -> None:
+    """Table ids normalize to digits-only canonical form."""
     assert _normalize_table_id("18-10-0004-13") == "18100004"
 
 
@@ -70,7 +71,7 @@ def test_read_zip_parses_dates(tmp_path: Path) -> None:
 
 
 def test_fetch_filters_and_returns_canonical_format(adapter: StatCanAdapter) -> None:
-    """fetch() filters to the configured series and returns (timestamp, value, released_at)."""
+    """fetch() returns configured series in canonical format."""
     raw = _make_raw_statcan_df()
     with (
         patch(f"{_MODULE}._read_zip", return_value=raw),
@@ -97,6 +98,7 @@ def test_fetch_released_at_is_21_days_after_timestamp(adapter: StatCanAdapter) -
 
 
 def test_fetch_drops_nan_values(adapter: StatCanAdapter) -> None:
+    """Rows with NaN values are dropped from the canonical result."""
     raw = _make_raw_statcan_df()
     raw.loc[raw["REF_DATE"] == pd.Timestamp("2022-02-01"), "VALUE"] = float("nan")
     with (
@@ -108,6 +110,7 @@ def test_fetch_drops_nan_values(adapter: StatCanAdapter) -> None:
 
 
 def test_fetch_raises_on_missing_filter_column(tmp_path: Path) -> None:
+    """Fetch raises when the filter references a missing column."""
     raw = pd.DataFrame({"REF_DATE": pd.to_datetime(["2022-01"]), "VALUE": [100.0]})
     bad_adapter = StatCanAdapter(table_id="18-10-0004-13", member_filter={"GEO": "Canada"}, cache_dir=tmp_path)
     with (
@@ -119,6 +122,7 @@ def test_fetch_raises_on_missing_filter_column(tmp_path: Path) -> None:
 
 
 def test_fetch_raises_when_no_rows_match(tmp_path: Path) -> None:
+    """Fetch raises when filters exclude every row."""
     raw = _make_raw_statcan_df()
     bad_adapter = StatCanAdapter(table_id="18-10-0004-13", member_filter={"GEO": "Narnia"}, cache_dir=tmp_path)
     with (

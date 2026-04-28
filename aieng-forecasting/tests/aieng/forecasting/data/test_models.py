@@ -3,7 +3,6 @@
 from datetime import datetime
 
 import pytest
-
 from aieng.forecasting.data.models import SeriesRecord
 
 

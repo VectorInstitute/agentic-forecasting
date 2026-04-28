@@ -1,4 +1,4 @@
-"""Smoke tests for ``methods.darts_regression``.
+"""Smoke tests for ``aieng.forecasting.methods.darts_regression``.
 
 One test per predictor.  Each fits with past covariates, which exercises the
 full covariate path (the univariate path is a subset of the same helper).
@@ -18,10 +18,7 @@ from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.adapters.base import BaseAdapter
 from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, Prediction
 from aieng.forecasting.evaluation.task import ForecastingTask
-from methods.darts_regression import (
-    DartsLightGBMPredictor,
-    DartsLinearRegressionPredictor,
-)
+from aieng.forecasting.methods.numerical import DartsLightGBMPredictor, DartsLinearRegressionPredictor
 
 
 HORIZON = 6
@@ -93,7 +90,7 @@ def _assert_valid_probabilistic(pred: Prediction, expected_id: str) -> None:
 
 
 def test_linear_regression_with_covariates(svc: DataService, task: ForecastingTask) -> None:
-    """LinearRegression predictor returns a valid probabilistic forecast with covariates."""
+    """Linear regression yields a valid forecast with covariates."""
     preds = DartsLinearRegressionPredictor(
         lags=12,
         lags_past_covariates=12,

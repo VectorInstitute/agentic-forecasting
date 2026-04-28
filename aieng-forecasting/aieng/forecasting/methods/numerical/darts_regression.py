@@ -38,7 +38,7 @@ Usage
 -----
 ::
 
-    from methods.darts_regression import (
+    from aieng.forecasting.methods.darts_regression import (
         DartsLinearRegressionPredictor,
         DartsLightGBMPredictor,
     )
@@ -52,7 +52,10 @@ Usage
     pred = DartsLinearRegressionPredictor(
         lags=12,
         lags_past_covariates=12,
-        covariate_series_ids=["fred_canada_us_exchange_rate", "fred_canada_10yr_bond_yield"],
+        covariate_series_ids=[
+            "fred_canada_us_exchange_rate",
+            "fred_canada_10yr_bond_yield",
+        ],
     )
 """
 
@@ -64,11 +67,7 @@ from typing import Any, Protocol
 import numpy as np
 import pandas as pd
 from aieng.forecasting.data.context import ForecastContext
-from aieng.forecasting.evaluation.prediction import (
-    STANDARD_QUANTILES,
-    ContinuousForecast,
-    Prediction,
-)
+from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
 
@@ -120,11 +119,7 @@ def _to_timeseries(df: pd.DataFrame, frequency: str) -> Any:
     )
 
 
-def _build_past_covariates(
-    context: ForecastContext,
-    series_ids: list[str],
-    frequency: str,
-) -> Any:
+def _build_past_covariates(context: ForecastContext, series_ids: list[str], frequency: str) -> Any:
     """Build a single multivariate ``TimeSeries`` of past covariates.
 
     Each covariate is converted to a Darts ``TimeSeries`` and stacked into one
@@ -147,9 +142,7 @@ def _build_past_covariates(
     return concatenate(pieces, axis=1)
 
 
-def _compute_forecast_payload(
-    samples: np.ndarray,
-) -> ContinuousForecast:
+def _compute_forecast_payload(samples: np.ndarray) -> ContinuousForecast:
     """Derive point forecast and STANDARD_QUANTILES from a 1-D sample vector."""
     point_forecast = float(np.median(samples))
     quantiles = {q: float(np.quantile(samples, q)) for q in STANDARD_QUANTILES}
@@ -280,7 +273,7 @@ class DartsLinearRegressionPredictor(Predictor):
         return f"darts_linreg{suffix}"
 
     def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
-        """Produce probabilistic linear-regression forecasts for every horizon in the task."""
+        """Probabilistic linear-regression forecasts for each task horizon."""
         from darts.models import LinearRegressionModel  # noqa: PLC0415
 
         model = LinearRegressionModel(

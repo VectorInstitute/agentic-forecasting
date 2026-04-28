@@ -6,7 +6,6 @@ from unittest.mock import MagicMock
 import numpy as np
 import pandas as pd
 import pytest
-
 from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.data.models import SeriesMetadata
 from aieng.forecasting.data.service import DataService
@@ -61,13 +60,16 @@ class ConstantPredictor(Predictor):
     """Test predictor that always returns a constant forecast."""
 
     def __init__(self, value: float = 100.0) -> None:
+        """Store the constant point forecast value."""
         self._value = value
 
     @property
     def predictor_id(self) -> str:
+        """Stable id used in backtest results."""
         return "constant"
 
     def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
+        """Emit one constant prediction per requested horizon step."""
         offset = pd.tseries.frequencies.to_offset(task.frequency)
         return [
             Prediction(
@@ -106,6 +108,8 @@ def _build_data_service(series_start: str = "2000-01-01", series_end: str = "202
 
 
 class TestBacktestSpec:
+    """Tests for ``BacktestSpec`` origin generation and validation."""
+
     def test_origins_count_stride_6(self) -> None:
         """With stride=6, 2-year window should yield origins every 6 months."""
         spec = _make_spec(start="2010-01-01", end="2012-01-01", stride=6)
@@ -114,11 +118,13 @@ class TestBacktestSpec:
         assert len(origins) == 5
 
     def test_origins_are_sorted_ascending(self) -> None:
+        """Origins list is strictly non-decreasing."""
         spec = _make_spec(stride=1)
         origins = spec.origins()
         assert origins == sorted(origins)
 
     def test_start_equal_to_end_raises(self) -> None:
+        """Reject a window where start equals end."""
         with pytest.raises(ValueError, match="start.*must be before end"):
             BacktestSpec(
                 task=_make_task(),
@@ -129,6 +135,7 @@ class TestBacktestSpec:
             )
 
     def test_start_after_end_raises(self) -> None:
+        """Reject a window where start follows end."""
         with pytest.raises(ValueError, match="start.*must be before end"):
             BacktestSpec(
                 task=_make_task(),
@@ -139,6 +146,7 @@ class TestBacktestSpec:
             )
 
     def test_yaml_roundtrip(self) -> None:
+        """Spec survives model_dump / model_validate unchanged."""
         spec = _make_spec()
         dumped = spec.model_dump()
         restored = BacktestSpec.model_validate(dumped)
@@ -153,7 +161,10 @@ class TestBacktestSpec:
 
 
 class TestBacktestResult:
+    """Tests for ``BacktestResult`` invariants."""
+
     def test_predictions_scores_length_mismatch_raises(self) -> None:
+        """Mismatched predictions and scores lengths raise ValueError."""
         with pytest.raises(ValueError, match="predictions.*scores.*same length"):
             BacktestResult(
                 spec=_make_spec(),
@@ -171,7 +182,10 @@ class TestBacktestResult:
 
 
 class TestBacktestFunction:
+    """Integration tests for ``backtest``."""
+
     def test_backtest_returns_result(self) -> None:
+        """Return a BacktestResult with the predictor id set."""
         svc = _build_data_service()
         spec = _make_spec(start="2010-01-01", end="2012-01-01", stride=6, warmup=0)
         result = backtest(ConstantPredictor(100.0), spec, svc)
@@ -199,6 +213,7 @@ class TestBacktestFunction:
         assert result_with.skipped_origins > result_no.skipped_origins
 
     def test_backtest_mean_crps_is_mean_of_scores(self) -> None:
+        """mean_crps equals the arithmetic mean of per-origin scores."""
         svc = _build_data_service()
         spec = _make_spec(start="2010-01-01", end="2012-01-01", stride=6, warmup=0)
         result = backtest(ConstantPredictor(), spec, svc)

@@ -21,9 +21,7 @@ from aieng.forecasting.evaluation.prediction import Prediction
 
 
 def predictions_to_dataframe(
-    results: dict[str, BacktestResult] | BacktestResult,
-    predictor_id: str | None = None,
-    task_id: str | None = None,
+    results: dict[str, BacktestResult] | BacktestResult, predictor_id: str | None = None, task_id: str | None = None
 ) -> pd.DataFrame:
     """Flatten predictions + CRPS scores into a tidy DataFrame.
 
@@ -76,10 +74,7 @@ def _prediction_row(pred: Prediction, score: float, pid: str, tid: str) -> dict[
     }
 
 
-def compute_avgyoy(
-    result: BacktestResult,
-    actual_df: pd.DataFrame,
-) -> pd.DataFrame:
+def compute_avgyoy(result: BacktestResult, actual_df: pd.DataFrame) -> pd.DataFrame:
     """Compute per-origin average-over-average YoY CPI change.
 
     For each forecast origin in ``result``:
@@ -190,10 +185,7 @@ def summarize_crps(results_by_predictor: dict[str, dict[str, BacktestResult]]) -
     return df
 
 
-def compute_mape(
-    results_by_predictor: dict[str, dict[str, BacktestResult]],
-    data_service: DataService,
-) -> pd.DataFrame:
+def compute_mape(results_by_predictor: dict[str, dict[str, BacktestResult]], data_service: DataService) -> pd.DataFrame:
     """Return mean absolute percentage error per (predictor, task).
 
     MAPE is computed against the observed value at each prediction's
