@@ -24,6 +24,7 @@ wheels/
 **.ipynb_checkpoints
 
 .env
+.cursor/
 
 # Local data cache (populated by scripts/fetch_*.py; not committed)
 # The leading slash anchors each entry to the repo root so it doesn't match

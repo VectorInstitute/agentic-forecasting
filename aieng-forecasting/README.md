@@ -1,12 +1,13 @@
-## aieng-forecasting
+# aieng-forecasting
 
-Core library for the Agentic Forecasting bootcamp and benchmark platform.
+Core library for the Agentic Forecasting Bootcamp.
 
-Provides:
+This package provides stable infrastructure used across reference implementations:
 
-- the data service layer (adapters, series store, cutoff enforcement)
-- the evaluation harness (forecasting tasks, prediction payloads, scoring)
-- reusable reference predictors under `aieng.forecasting.methods`
+- Data adapters, series storage, and cutoff-scoped forecast contexts.
+- Forecasting task and prediction payload models.
+- Backtesting, evaluation, scoring, and artifact helpers.
+- Reusable reference predictors under `aieng.forecasting.methods`.
 
 ## Install
 
@@ -26,6 +27,10 @@ pip install "aieng-forecasting[agentic]"
 
 Current extras:
 
-- `numerical` — Darts-based numerical predictors and related model dependencies
-- `llm` — LLM-process predictors and tracing support
-- `agentic` — ADK-based agentic predictors and tracing support
+- `numerical` - Darts-based numerical predictors and related model dependencies
+- `llm` - LLM-process predictors and tracing support
+- `agentic` - ADK-based agentic predictors and tracing support
+
+Use-case notebooks and task-specific configuration live in `../implementations`.
+
+For current bootcamp scope, milestones, ownership, and non-goals, see `../planning-docs/bootcamp-workplan.md`.

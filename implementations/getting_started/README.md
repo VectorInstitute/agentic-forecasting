@@ -119,16 +119,15 @@ sub-indices, a 12-step trajectory per origin, `MultiTargetBacktestSpec`,
 actually publishes.  Everything in `getting_started/` is the minimum
 viable subset of that story; CFPR is the full article.
 
-See `planning-docs/bootcamp-project-charter.md` for the full map of
-reference experiments, including Financial Markets 3a (S&P 500 primary
-template) and 3b (energy extension) that anchor the Track 1 + Track 2
-convergence.
+See `planning-docs/bootcamp-workplan.md` for the current reference
+experiment map, including the planned S&P 500 Track 1 template and the
+separate energy/oil interactive analyst demo.
 
 ---
 
 ## Directory layout
 
-```
+```text
 getting_started/                 # this directory
 ├── README.md
 ├── cpi_data_exploration.ipynb
@@ -143,7 +142,7 @@ Reference predictors live in the `aieng-forecasting` package under
 
 Reference specs (at the repo root, shared across use cases):
 
-```
+```text
 reference_specs/
 ├── cpi_gasoline_12m.yaml            # backtest spec - use freely
 └── cpi_gasoline_eval_2yr.yaml       # eval spec - 5 runs max
