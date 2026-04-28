@@ -1,78 +1,62 @@
 # implementations/experiments
 
-This directory contains **use-case experiments** — notebooks, reference specs,
-and task configuration for each forecasting use case in the bootcamp. Each
-subdirectory is a self-contained use case with its own `README.md` and learning
-path.
+This directory contains bootcamp use-case experiments: notebooks, helper modules, task-specific prompts, and configuration for each forecasting use case.
 
-This directory is **not** a Python package. Nothing here is imported by other
-code. All files are run or opened directly (Jupyter notebooks, Python scripts).
+Experiment notebooks are meant to be opened and run directly. Reusable predictor implementations belong in `implementations/methods`; stable infrastructure belongs in `aieng-forecasting`.
 
----
+## Current Layout
 
-## Directory layout
-
-```
+```text
 experiments/
-├── getting_started/             # Hello-world: single-series CPI gasoline backtest
-│   ├── README.md
-│   ├── cpi_data_exploration.ipynb
-│   └── cpi_backtest_demo.ipynb
-│
-├── food_price_forecasting/      # CFPR — flagship no-futures multivariate case
-│   ├── README.md
-│   ├── data.py                  #   build_food_cpi_service, canonical series
-│   ├── analysis.py              #   CFPR analysis helpers (avg/avg YoY, CRPS, MAPE)
-│   ├── plots.py                 #   trajectory fans, 3×3 YoY grid, etc.
-│   ├── food_data_exploration.ipynb
-│   └── food_cpi_experiment.ipynb
-│
-├── sp500/                       # Financial Markets 3a — primary template (planned — Behnoosh)
-├── energy_prices/               # Financial Markets 3b — energy extension of sp500 template (planned)
-├── boc_rate_decisions/          # Bank of Canada rate decisions (planned)
-└── ...
+|-- getting_started/             # CPI gasoline hello-world
+|   |-- README.md
+|   |-- cpi_data_exploration.ipynb
+|   `-- cpi_backtest_demo.ipynb
+|
+|-- food_price_forecasting/      # CFPR-style food CPI experiment
+|   |-- README.md
+|   |-- data.py
+|   |-- analysis.py
+|   |-- plots.py
+|   |-- food_data_exploration.ipynb
+|   `-- food_cpi_experiment.ipynb
+|
+`-- ...
 ```
 
-**Start with `getting_started/`.**  It is the intentional entry point —
-the smallest end-to-end walkthrough of the evaluation framework against
-a single volatile target.  `food_price_forecasting/` is the graduation
-step: same interfaces, much richer use case.  For the bootcamp's overall
-centrepiece — the Track 1 + Track 2 convergence — starts with `sp500/`
-as the primary template and extends to `energy_prices/` with minimal
-structural changes. See the charter's *Reference Experiments* section
-for the canonical framing.
+## Planned Reference Experiments
 
----
+The cohort 1 workplan currently tracks these formal reference experiments:
 
-## What belongs here
+| Experiment | Role | Status |
+|---|---|---|
+| `getting_started/` | Smallest end-to-end continuous forecasting walkthrough. | Implemented. |
+| `food_price_forecasting/` | CFPR-style multivariate food CPI task. | Implemented for the canonical StatCan path. |
+| `sp500/` | First formal financial-markets Track 1 template. | Planned. |
+| `boc_rate_decisions/` | Binary/discrete-event reference experiment. | Planned. |
 
-- Jupyter notebooks exploring data and demonstrating methods on a specific task
-- `ForecastingTask` definitions and reference spec YAMLs specific to a use case
-- Task-specific predictor configuration (e.g. prompts tuned for a particular
-  dataset or question)
+Energy/oil 2026 is the May 21 information-session story and the flagship interactive Forecasting Analyst Agent demo. It should not be treated as the first formal Track 1 financial-markets build unless the workplan changes; S&P 500 remains the first formal template.
 
-## What does NOT belong here
+## What Belongs Here
 
-- Reusable predictor implementations — those live in
-  `implementations/methods/` and are imported from there
-- Core infrastructure — that lives in `aieng-forecasting`
+- Jupyter notebooks demonstrating methods on a specific task.
+- Task-specific helper modules used by those notebooks.
+- Task-specific prompts and agent configuration.
+- Experiment READMEs with learning paths and data provenance.
 
----
+## What Does Not Belong Here
 
-## Adding a new use case
+- Reusable predictor implementations.
+- Core data or evaluation infrastructure.
+- General agent backbone code.
 
-1. Create `experiments/<use-case>/`
-2. Add a `README.md` with a learning path (see
-   `food_price_forecasting/README.md` as a richly-worked template, or
-   `getting_started/README.md` for a minimal single-series example)
-3. Add a data population script to `scripts/` if a new data source is needed
-4. Define a `ForecastingTask` and add a reference `BacktestSpec` YAML to
-   `reference_specs/`
-5. Write a demo notebook that walks through the task end-to-end
-6. If the experiment grows analysis or plotting helpers, put them in
-   sibling Python modules (`analysis.py`, `plots.py`, etc.) rather than
-   inside notebook cells — see `food_price_forecasting/` for the pattern.
+## Adding A New Use Case
 
-The second use case should take significantly less effort than the first — the
-adapter pattern, task definition, spec structure, and notebook scaffolding are
-all established.
+1. Create `experiments/<use-case>/`.
+2. Add a `README.md` with the task framing, data provenance, setup, and learning path.
+3. Add a data population script to `scripts/` if a new data source is needed.
+4. Define task specs under `reference_specs/`.
+5. Write a demo notebook that runs end-to-end.
+6. Move repeated analysis or plotting code into sibling Python modules.
+
+Keep the current scope in `planning-docs/bootcamp-workplan.md` before adding new formal reference experiments.

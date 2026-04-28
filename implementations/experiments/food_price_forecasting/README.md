@@ -14,12 +14,10 @@ agent-based predictors.  If this is your first session with the repo,
 start at `getting_started/` and come here once the single-series loop is
 familiar.
 
-> For the bootcamp's overall centrepiece — the Track 1 + Track 2
-> convergence on the S&P 500 primary template with energy as extension — see
-> `planning-docs/bootcamp-project-charter.md` → *Reference Experiments*
-> → *The convergence*.  CFPR remains the flagship of its own paradigm
-> (no-futures multivariate with context-driven agent retrieval) but is
-> not the convergence surface itself.
+> See `planning-docs/bootcamp-workplan.md` for the current cohort 1
+> scope. CFPR remains the flagship no-futures multivariate reference
+> experiment; S&P 500 is the first formal financial-markets Track 1
+> template, and energy/oil is the May 21 and interactive analyst demo.
 
 ---
 
@@ -112,11 +110,10 @@ Unit tests for the analysis helpers live under
 
 ## Covariates
 
-FRED macro covariates are **not** used in the canonical experiment.  Framing
-multivariate exogenous inputs for agentic and LLM-based predictors is an open
-design question tracked in `planning-docs/backlog.md` (see *covariate
-framing*).  Experiments that need FRED covariates should register their own
-via `FREDAdapter`.
+FRED macro covariates are **not** used in the canonical experiment. Framing
+multivariate exogenous inputs for agentic and LLM-based predictors remains
+extension work tracked in `planning-docs/bootcamp-workplan.md`. Experiments
+that need FRED covariates should register their own via `FREDAdapter`.
 
 ---
 

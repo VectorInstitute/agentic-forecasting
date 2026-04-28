@@ -1,27 +1,31 @@
 # aieng-implementations
 
-Reference method implementations and experiments for the Agentic Forecasting Bootcamp.
+Reference methods and experiments for the Agentic Forecasting Bootcamp.
 
-This is a uv workspace package. It is installed automatically when you run
-`uv sync` from the repo root.
+This is a uv workspace package. It is installed automatically when you run `uv sync` from the repository root.
 
 ## Layout
 
-```
+```text
 implementations/
-├── methods/              # importable reference Predictor implementations
-└── experiments/          # use-case notebooks, specs, task configs
-    ├── getting_started/          # hello-world: CPI gasoline backtest
-    └── food_price_forecasting/   # CFPR — flagship no-futures multivariate case
+|-- methods/              # Reusable concrete Predictor implementations
+`-- experiments/          # Use-case notebooks, helpers, prompts, and configs
+    |-- getting_started/          # CPI gasoline hello-world
+    `-- food_price_forecasting/   # CFPR-style food CPI experiment
 ```
 
-## Importing methods
+Planned experiment directories include `sp500/` for the first formal financial-markets Track 1 template and `boc_rate_decisions/` for the binary reference experiment. Energy/oil work belongs either in `playground/` for the May 21 and interactive analyst demos, or later as a transposition of the S&P 500 template if it is pulled into scope.
 
-Once installed, import reference predictor implementations from any notebook or script:
+## Importing Methods
+
+Once installed, import implemented predictors from notebooks or scripts:
 
 ```python
-from methods.base_llmp import BaseLLMPredictor
+from methods.darts_arima import DartsAutoARIMAPredictor
+from methods.darts_regression import DartsRegressionPredictor
+from methods.naive import LastValuePredictor
 ```
 
-See `methods/README.md` for what belongs in `methods/`.
-See `experiments/README.md` for the use-case experiment structure.
+LLMP and agentic predictors are planned work. Do not document them as implemented until the modules exist.
+
+See `methods/README.md` for what belongs in reusable methods. See `experiments/README.md` for the use-case experiment structure.

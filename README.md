@@ -1,83 +1,88 @@
 # Agentic Forecasting
 
-A research and learning platform for experimenting with forecasting agents on real-world economic, financial, and event prediction tasks. Built for the **Agentic Forecasting Bootcamp**.
+A research and learning platform for the Agentic Forecasting Bootcamp.
 
----
+The bootcamp teaches participants to build, evaluate, and compare forecasting systems on a focused set of economic, financial, and event-prediction tasks. The cohort 1 priority is a stable repo, clear reference implementations, and a compelling sponsor-facing story about what agentic forecasting can add.
 
-## What this is
+## What This Repo Provides
 
-This repository provides the infrastructure and reference implementations for a bootcamp that teaches participants to build, evaluate, and compare forecasting systems across four paradigms:
+- Core forecasting infrastructure in `aieng-forecasting` (`aieng.forecasting`): data services, cutoff enforcement, forecasting tasks, prediction payloads, backtesting, evaluation, and artifacts.
+- Reference methods in `implementations/methods`: reusable `Predictor` implementations such as naive and Darts baselines.
+- Reference experiments in `implementations/experiments`: notebooks, helpers, and task-specific configuration.
+- Canonical YAML specs in `reference_specs`.
+- Data population scripts in `scripts`.
+- Planning source of truth in `planning-docs/bootcamp-workplan.md`.
 
-- **Numerical forecasters** — statistical and ML models (ARIMA, gradient boosting, deep learning, time-series foundation models) applied to continuous series
-- **LLM Processes** — probabilistic forecasts conditioned on historical observations *and* natural language context, using the LLM itself as the forecasting engine
-- **Frontier agentic forecasters** — LLM-driven agents that invoke numerical methods as skills, retrieve context, and reason over evidence before emitting a structured prediction
-- **Discrete event forecasters** — probability estimates for binary/categorical outcomes (e.g. policy-decision questions), treated as information retrieval and reasoning problems
+## Bootcamp Scope
 
-A central objective is empirical comparison across methods on shared, standardized datasets (**Track 1**). A secondary, capability-only track (**Track 2**) showcases extended agent behaviour — scenario analysis, monitoring, open-ended Q&A — without building a new evaluation framework for it. The bootcamp's centrepiece is the **convergence**: a single flagship agent exercised in both modes on the S&P 500 financial-markets template first, then extended to energy commodities using the same experiment structure and agent backbone. One agent, two modes, one primary surface plus a near-zero-marginal extension. The backtest/eval infrastructure is identical for Track 1 backtesting and live evaluation — the same interfaces, the same scoring, the same result format.
+The formal cohort 1 reference experiments are:
 
-### Data sources
+| Experiment | Role | Current state |
+|---|---|---|
+| Getting Started | CPI gasoline hello-world for the evaluation loop. | Implemented. |
+| Food Price Forecasting | CFPR-style multivariate food CPI task. | Implemented for the canonical StatCan path. |
+| Financial Markets - S&P 500 | First formal financial-markets Track 1 template. | Planned. |
+| BoC Rate Decisions | Binary/discrete-event reference experiment. | Planned. |
 
-- **StatCan** — Canadian macroeconomic indicators (CPI, employment, trade)
-- **FRED** — US and international macroeconomic series; commodity prices (WTI, Brent crude, inventories, exchange rates)
-- **yfinance** — equities, indices, and commodity futures
+Energy/oil 2026 is a separate demo and storytelling surface for the May 21 information session and the later interactive Forecasting Analyst Agent. It should motivate the bootcamp with a realistic scenario around oil, fuel, logistics, transportation, and Persian Gulf conflict risk. It is not the first formal Track 1 financial-markets reference build; S&P 500 remains the clean first template for that path.
 
-Scope is intentionally narrow. See `planning-docs/bootcamp-project-charter.md` for the full set of reference experiments and the rationale for dataset selection.
+ForecastBench, energy as a formal Track 1 extension, additional financial assets, richer covariates, and time-series foundation models are participant extension ideas unless explicitly pulled into the workplan.
 
----
+## Forecasting Tracks
 
-## Repository layout
+Track 1 is the evaluated path. Numerical methods, LLM Processes, and agentic forecasters emit standardized `Prediction` objects and can be compared with the repository evaluation harness.
 
+Track 2 is the capability showcase. It covers scenario analysis, monitoring, open-ended Q&A, code-backed analysis, and reasoning over evidence. Track 2 is not scored head-to-head in this bootcamp.
+
+## Data Sources
+
+The reference data sources are:
+
+- StatCan for Canadian CPI and related macroeconomic series.
+- FRED for macroeconomic and commodity series.
+- yfinance for equities, indices, and commodity futures.
+
+Historical data is cached locally under `data/` and is not committed.
+
+## Repository Layout
+
+```text
+aieng-forecasting/         # Installable library package: import as aieng.forecasting
+implementations/           # Reference methods and experiments
+|-- methods/               # Reusable concrete Predictor implementations
+`-- experiments/           # Notebooks, helpers, and task-specific configs
+    |-- getting_started/
+    `-- food_price_forecasting/
+planning-docs/
+`-- bootcamp-workplan.md   # Single planning source of truth
+playground/                # Demo and exploration code, including news grounding
+reference_specs/           # YAML backtest and eval specs
+scripts/                   # Data population scripts
 ```
-aieng-forecasting/         # Installable library package (import as aieng.forecasting)
-                           # Interfaces, data layer, backtest + eval engines — core infrastructure
 
-implementations/           # Reference implementations (uv workspace package: aieng-implementations)
-├── methods/               # Importable reference Predictor implementations
-│                          #   from methods.base_llmp import BaseLLMPredictor
-└── experiments/           # Use-case notebooks, specs, task configs
-    ├── getting_started/            # hello-world: single-series CPI gasoline backtest
-    └── food_price_forecasting/     # CFPR — flagship no-futures multivariate case
+## Getting Started
 
-reference_specs/           # YAML specs for canonical backtest and eval tasks
-
-scripts/                   # Data population scripts (run before notebooks)
-
-planning-docs/             # Architecture decisions, project charter, planning notes
-```
-
----
-
-## Getting started
-
-### 1. Clone and sync dependencies
+Install dependencies from the repo root:
 
 ```bash
-git clone <repo-url>
-cd agentic-forecasting
 uv sync --group dev
 ```
 
-### 2. Populate the data cache
-
-Data is fetched once and cached locally (gitignored). Run the relevant script before opening notebooks:
+Populate the StatCan CPI cache:
 
 ```bash
-uv run python scripts/fetch_cpi.py   # StatCan CPI — 47 Canada-wide series
+uv run python scripts/fetch_cpi.py
 ```
 
-### 3. Open an experiment
+Then start with:
 
-Each use case under `implementations/experiments/` has a `README.md` with a recommended learning path.
+- `implementations/experiments/getting_started/` for the smallest end-to-end walkthrough.
+- `implementations/experiments/food_price_forecasting/` for the richer CFPR-style multivariate task.
+- `planning-docs/bootcamp-workplan.md` for current scope, dates, ownership, and non-goals.
 
-- **Start here:** `implementations/experiments/getting_started/` — the hello-world tour. Single series (CPI gasoline), 12-month horizon, naive + AutoARIMA baselines, one `BacktestSpec`, one `EvalSpec`. The smallest useful end-to-end walkthrough of the evaluation framework.
-- **Graduate to:** `implementations/experiments/food_price_forecasting/` — the CFPR reference experiment, flagship of the no-futures multivariate case. Nine correlated CPI sub-indices, a 12-step trajectory, the avg/avg YoY metric from the real Canada's Food Price Report, helper modules for analysis and plotting, and cached artefacts for fast iteration.
-- **Look ahead to:** the bootcamp centrepiece — the Track 1 + Track 2 convergence built on the S&P 500 template and then extended to energy commodities. See `planning-docs/bootcamp-project-charter.md` for the framing and the full map of reference experiments.
+## Core Concepts
 
----
-
-## Core concepts
-
-**`Predictor` ABC** — the single interface all forecasting models implement, whether statistical, ML, or agentic:
+`Predictor` is the interface every forecasting method implements:
 
 ```python
 class MyPredictor(Predictor):
@@ -86,51 +91,30 @@ class MyPredictor(Predictor):
         return "my_predictor"
 
     def predict(self, task: ForecastingTask, context: ForecastContext) -> Prediction:
-        series = context.get_series(task.target_series_id)  # cut off at context.as_of
+        series = context.get_series(task.target_series_id)
         ...
         return Prediction(...)
 ```
 
-**`ForecastContext`** — a read-only, cutoff-scoped data view passed to every predictor. All series data is automatically filtered to `context.as_of`, the forecast origin date, making information leakage structurally impossible.
+`ForecastContext` is cutoff-scoped. Predictors only see observations available as of the forecast origin, which keeps backtests honest.
 
-**Backtesting vs eval** — `backtest()` runs freely against the full historical window; `evaluate()` runs against a short protected window with a spend budget (`max_runs`). The split mirrors Kaggle's public/private leaderboard — iterate freely on backtest, spend eval runs deliberately.
+`backtest()` is the open iteration loop against historical data. `evaluate()` is the budgeted protected-window loop.
 
-```python
-from aieng.forecasting.evaluation import backtest, BacktestSpec
-import yaml
-
-with open("reference_specs/cpi_gasoline_12m.yaml") as f:
-    spec = BacktestSpec.model_validate(yaml.safe_load(f))
-
-result = backtest(predictor=my_predictor, spec=spec, data_service=svc)
-print(f"Mean CRPS: {result.mean_crps:.4f}")
-```
-
----
-
-## Code quality
+## Code Quality
 
 ```bash
-make lint        # Full CI suite: ruff format + ruff check + mypy + pre-commit hooks
-make format      # Format only (ruff format + Ruff import sorting), no mypy
+make lint
+make format
 ```
 
-A passing `make lint` means CI will accept the code. Strict **mypy** applies to the `aieng` package; `scripts/` and `implementations/` are linted but not typechecked.
+`make lint` runs the expected pre-push quality checks. Git commits do not run hooks locally. To mirror the full pre-commit suite, run:
 
----
+```bash
+uv run pre-commit run --all-files
+```
 
-## License
+## Documentation
 
-This project is licensed under the terms of the [LICENSE](LICENSE.md) file in the root directory.
+Use `planning-docs/bootcamp-workplan.md` for active planning. The other files in `planning-docs/` are retired redirects kept only for continuity.
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Contact
-
-| Contact                                  | Role/Team                         | Email                                                                                         |
-|-------------------------------------------|-----------------------------------|-----------------------------------------------------------------------------------------------|
-| Ethan Jackson                            | Technical Lead            | [ethan.jackson@vectorinstitute.ai](mailto:ethan.jackson@vectorinstitute.ai)                   |
-| Vector AI Engineering                    | Technical Team            | [ai_engineering@vectorinstitute.ai](mailto:ai_engineering@vectorinstitute.ai)                 |
-| Agentic Forecasting Bootcamp Team         | Project Team                     | [agentic-forecasting-bootcamp@vectorinstitute.ai](mailto:agentic-forecasting-bootcamp@vectorinstitute.ai) |
+When changing scope, architecture, setup, experiments, or datasets, update the workplan and the relevant README files in the same session.
