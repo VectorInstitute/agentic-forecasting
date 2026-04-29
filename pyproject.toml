@@ -8,6 +8,7 @@ repository = "https://github.com/VectorInstitute/agentic-forecasting"
 requires-python = ">=3.12"
 dependencies = [
     "agentic-forecasting-implementations",
+    "lightgbm>=4.0.0",
     "ipykernel>=7.2.0",
     "jupyter>=1.1.1",
     "news-search-playground",

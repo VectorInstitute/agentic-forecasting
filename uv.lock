@@ -48,6 +48,7 @@ dependencies = [
     { name = "agentic-forecasting-implementations" },
     { name = "ipykernel" },
     { name = "jupyter" },
+    { name = "lightgbm" },
     { name = "news-search-playground" },
 ]
 
@@ -70,6 +71,7 @@ requires-dist = [
     { name = "agentic-forecasting-implementations", editable = "implementations" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "lightgbm", specifier = ">=4.0.0" },
     { name = "news-search-playground", editable = "playground/news_search" },
 ]
 
@@ -109,6 +111,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "stats-can" },
+    { name = "yfinance" },
 ]
 
 [package.optional-dependencies]
@@ -124,7 +127,6 @@ numerical = [
     { name = "darts" },
     { name = "lightgbm" },
     { name = "statsforecast" },
-    { name = "yfinance" },
 ]
 
 [package.dev-dependencies]

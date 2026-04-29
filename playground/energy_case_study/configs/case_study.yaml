@@ -1,0 +1,84 @@
+id: energy_oil_information_session_v1
+display_label: Energy/Oil Information Session Case Study
+description: >
+  Demo-grade comparison of WTI forecasts for the information session: a simple
+  univariate level baseline vs engineered macro and futures-proxy models using
+  price-change targets. Default horizon is 20 business days; the notebook reads
+  the same cached artifacts as the experiment script.
+
+target:
+  series_id: wti_crude_oil_spot
+  source: fred
+  fred_id: DCOILWTICO
+  label: WTI crude spot
+  description: Cushing, OK WTI spot price from FRED.
+  units: USD per barrel
+  fallback_yfinance_series_id: wti_crude_oil_front_month
+
+date_range:
+  data_start: "2010-01-01"
+  model_selection_start: "2025-01-01"
+  model_selection_end: "2025-12-31"
+  demo_start: "2026-01-01"
+  demo_end: "2026-03-31"
+
+forecast:
+  frequency: B
+  default_horizon: 20
+  horizon_presets: [10, 20, 30]
+  origin_stride: 5
+  warmup: 260
+
+models:
+  univariate:
+    label: Univariate ridge (level baseline)
+    method: sklearn_residual
+    estimator: ridge
+    covariate_group: null
+    lags: 5
+    lags_past_covariates: null
+    num_samples: 150
+    target_strategy: level
+    feature_mode: raw_levels
+  multivariate_no_futures:
+    label: Multivariate Huber engineered (macro, no futures)
+    method: sklearn_residual
+    estimator: huber
+    covariate_group: no_futures
+    lags: 10
+    lags_past_covariates: 5
+    num_samples: 150
+    target_strategy: price_delta
+    feature_mode: engineered
+  multivariate_with_futures:
+    label: Multivariate ridge engineered (futures basis & spreads)
+    method: sklearn_residual
+    estimator: ridge
+    covariate_group: with_futures
+    lags: 10
+    lags_past_covariates: 5
+    num_samples: 150
+    target_strategy: price_delta
+    feature_mode: engineered
+
+covariate_groups:
+  no_futures:
+    - energy_select_sector_spdr
+    - us_dollar_index
+    - sp500_index
+  with_futures:
+    - energy_select_sector_spdr
+    - us_dollar_index
+    - sp500_index
+    - wti_crude_oil_front_month
+    - brent_crude_oil_front_month
+    - rbob_gasoline_front_month
+
+artifacts:
+  output_dir: playground/energy_case_study/artifacts
+  force_refresh_data: false
+  force_refresh_results: false
+
+alarm:
+  lower_quantile: 0.05
+  upper_quantile: 0.95
