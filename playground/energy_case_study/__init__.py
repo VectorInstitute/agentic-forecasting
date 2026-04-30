@@ -1,2 +1,1 @@
-"""Energy/oil information-session case study playground."""
-
+"""Energy/oil information-session story notebook for the Agentic Forecasting Bootcamp."""

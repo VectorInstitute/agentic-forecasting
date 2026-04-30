@@ -12,6 +12,8 @@ dependencies = [
     "ipykernel>=7.2.0",
     "jupyter>=1.1.1",
     "news-search-playground",
+    "prophet>=1.1",
+    "plotly>=5.0",
 ]
 
 [dependency-groups]
