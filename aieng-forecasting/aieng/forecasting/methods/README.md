@@ -11,7 +11,7 @@ methods/
 ├── baselines/       # simple floor baselines and teaching references
 ├── numerical/       # classical / ML numerical forecasters
 ├── llm_processes/   # planned LLM-process predictors
-└── agentic/         # planned tool-using / hybrid predictors
+└── agentic/         # ADK-based agentic runners and the analyst agent
 ```
 
 ---
@@ -53,6 +53,16 @@ from aieng.forecasting.methods.baselines import LastValuePredictor
 from aieng.forecasting.methods.numerical import DartsAutoARIMAPredictor
 ```
 
+Agentic runner and analyst agent:
+
+```python
+from aieng.forecasting.methods.agentic import AdkTextRunner, AdkTextRunnerConfig
+from aieng.forecasting.methods.agentic.analyst_agent import (
+    AnalystAgentConfig,
+    build_analyst_agent,
+)
+```
+
 ---
 
 ## Current contents
@@ -70,3 +80,12 @@ from aieng.forecasting.methods.numerical import DartsAutoARIMAPredictor
 | `numerical/darts_arima.py` | `DartsAutoARIMAPredictor` | Univariate Darts AutoARIMA with probabilistic multi-horizon output via Monte Carlo sampling. |
 | `numerical/darts_regression.py` | `DartsLinearRegressionPredictor` | Darts linear regression predictor with optional past covariates and probabilistic output. |
 | `numerical/darts_regression.py` | `DartsLightGBMPredictor` | Darts LightGBM quantile-regression predictor with optional past covariates. |
+
+### Agentic
+
+| Module | Class / Function | Description |
+|---|---|---|
+| `agentic/adk_runner.py` | `AdkTextRunner` | Async text-in / text-out wrapper around ADK `InMemoryRunner`. Manages ADK sessions (fresh-per-message or sticky) and optionally traces each turn to Langfuse via `propagate_attributes`. |
+| `agentic/adk_runner.py` | `AdkTextRunnerConfig` | Pydantic configuration for `AdkTextRunner` (session mode, Langfuse fields). |
+| `agentic/analyst_agent/` | `build_analyst_agent` | Factory that creates the analyst `LlmAgent` equipped with the E2B code interpreter and the `use-aieng-forecasting` skill. |
+| `agentic/analyst_agent/` | `AnalystAgentConfig` | Pydantic configuration for the analyst agent (model, sandbox timeouts, generation overrides, and instruction knobs). |
