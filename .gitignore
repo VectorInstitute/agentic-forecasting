@@ -35,3 +35,6 @@ wheels/
 # Guard against notebooks inadvertently creating a cache here if run with a
 # stale relative path (the canonical cache location is /data/ at repo root)
 /implementations/data/
+
+# google adk
+**/.adk/
