@@ -1,7 +1,18 @@
-"""Agentic predictor implementations.
+"""ADK-based agentic predictors.
 
-This package is reserved for concrete forecasting predictors that use tools,
-code execution, or hybrid numerical reasoning to produce forecasts.
+Concrete forecasting components that use tool execution, code interpreters,
+or hybrid numerical reasoning to produce forecasts.
+
+Public API
+----------
+AdkTextRunner : class
+    Async text-in / text-out wrapper around ADK ``InMemoryRunner`` with
+    session management and optional Langfuse tracing.
+AdkTextRunnerConfig : BaseModel
+    Pydantic configuration for :class:`AdkTextRunner`.
 """
 
-__all__: list[str] = []
+from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig
+
+
+__all__: list[str] = ["AdkTextRunner", "AdkTextRunnerConfig"]
