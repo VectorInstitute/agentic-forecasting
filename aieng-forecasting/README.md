@@ -8,6 +8,7 @@ This package provides stable infrastructure used across reference implementation
 - Forecasting task and prediction payload models.
 - Backtesting, evaluation, scoring, and artifact helpers.
 - Reusable reference predictors under `aieng.forecasting.methods`.
+- Langfuse / OpenTelemetry tracing bootstrap in `aieng.forecasting.langfuse_tracing`.
 
 Current data adapters cover StatCan tables, FRED series, and daily yfinance
 market series.
@@ -30,9 +31,12 @@ pip install "aieng-forecasting[agentic]"
 
 Current extras:
 
-- `numerical` - Darts-based numerical predictors and related model dependencies
-- `llm` - LLM-process predictors and tracing support
-- `agentic` - ADK-based agentic predictors and tracing support
+- `numerical` — Darts-based numerical predictors and related model dependencies
+- `llm` — LiteLLM-based LLM-process predictors; Langfuse tracing via `langfuse_otel`
+- `agentic` — Google ADK runner (`AdkTextRunner`), analyst agent (`build_analyst_agent`), E2B code interpreter, and Langfuse / OpenInference tracing
+
+> **E2B setup:** the `agentic` extra requires a one-time sandbox image build.
+> See [Getting Started — step 3](../README.md#3-agentic-track-only-build-the-e2b-sandbox-image) in the root README.
 
 Use-case notebooks and task-specific configuration live in `../implementations`.
 

@@ -7,10 +7,11 @@ The bootcamp teaches participants to build, evaluate, and compare forecasting sy
 ## What This Repo Provides
 
 - Core forecasting infrastructure in `aieng-forecasting` (`aieng.forecasting`): data services, cutoff enforcement, forecasting tasks, prediction payloads, backtesting, evaluation, and artifacts.
-- Reference methods in `aieng-forecasting/aieng/forecasting/methods`: reusable `Predictor` implementations such as naive and Darts baselines.
+- Reference methods in `aieng-forecasting/aieng/forecasting/methods`: reusable `Predictor` implementations including naive baselines, Darts numerical predictors, and an ADK-based analyst agent (`build_analyst_agent` / `AdkTextRunner`).
+- Langfuse / OpenTelemetry tracing bootstrap (`aieng.forecasting.langfuse_tracing`) for LiteLLM and Google ADK.
 - Reference experiments in `implementations`: notebooks, helpers, and task-specific configuration.
 - Canonical YAML specs in `reference_specs`.
-- Data population scripts in `scripts`.
+- Data population scripts in `scripts`, including `build_e2b_template.py` for building the E2B sandbox image.
 - Planning source of truth in `planning-docs/bootcamp-workplan.md`.
 
 ## Bootcamp Scope
@@ -86,6 +87,22 @@ Data is fetched once and cached locally (gitignored). Run the relevant script be
 ```bash
 uv run python scripts/fetch_cpi.py
 ```
+
+### 3. (Agentic track only) Build the E2B sandbox image
+
+The analyst agent runs code in an E2B cloud sandbox. Do this once before using `AdkTextRunner` / `build_analyst_agent`:
+
+1. Create a free account at [e2b.dev](https://e2b.dev) and copy your API key.
+2. Add it to your `.env` file alongside the other keys (see `.env.example`):
+   ```
+   E2B_API_KEY=your_e2b_api_key
+   ```
+3. Build the template (takes a few minutes on first run):
+   ```bash
+   uv run --env-file .env scripts/build_e2b_template.py
+   ```
+
+The template is named `agentic-forecasting-bootcamp` and is the default in `AnalystAgentConfig.e2b_template_name`.
 
 Then start with:
 
