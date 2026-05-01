@@ -1,7 +1,6 @@
 """E2B sandbox image: aieng-forecasting + repo scripts for data cache population."""
 
 import asyncio
-import os
 from pathlib import Path
 
 from e2b import AsyncTemplate, wait_for_url
@@ -46,7 +45,6 @@ _builder = (
         user="root",
     )
     .make_dir("/home/user/workspace/data")
-    .set_envs({"FRED_API_KEY": os.getenv("FRED_API_KEY") or ""})
 )
 
 for _py in _PY_SCRIPTS:
