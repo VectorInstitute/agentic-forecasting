@@ -140,4 +140,11 @@ def build_analyst_agent(config: AnalystAgentConfig) -> LlmAgent:
     )
 
 
-root_agent = build_analyst_agent(AnalystAgentConfig())
+def __getattr__(name: str) -> Any:
+    """Lazily expose ``root_agent`` without import-time initialization.
+
+    A ``root_agent`` variable at the module level is necessary for `adk web` to work.
+    """
+    if name == "root_agent":
+        return build_analyst_agent(AnalystAgentConfig())
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
