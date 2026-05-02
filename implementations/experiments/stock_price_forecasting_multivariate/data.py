@@ -18,6 +18,13 @@ Anti-leakage policy:
 - Every covariate is transformed and then lagged by one business day.
 - ``released_at`` is set conservatively for macro series before daily expansion.
 - The DataService cutoff then guarantees context views never include unavailable rows.
+
+FRED usage matches the CPI-side tooling: :class:`~aieng.forecasting.data.adapters.FREDAdapter`
+writes ``data/fred/{FRED_SERIES_ID}.parquet`` (see adapter docstring).  Run
+``uv run python scripts/fetch_fred.py`` to warm the same files the covariate
+builders read.  :func:`build_sp500_multivariate_service` loads ``FRED_API_KEY``
+from the repo-root ``.env`` via ``python-dotenv``, identical to ``fetch_fred.py``.
+Raw series ids and prefetch metadata live in :data:`FRED_PREFETCH_REGISTRY`.
 """
 
 from __future__ import annotations
@@ -27,10 +34,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.adapters import FREDAdapter
-from aieng.forecasting.data.adapters.base import BaseAdapter
+
 from implementations.experiments.stock_price_forecasting_single_variable.data import (
     SP500_LOG_RETURN_SERIES_ID,
     SP500_SERIES_ID,
@@ -41,12 +47,28 @@ from implementations.experiments.stock_price_forecasting_single_variable.data im
 )
 
 
+try:
+    from dotenv import load_dotenv as _load_dotenv
+except ImportError:
+    _load_dotenv = None
+
+
 def _repo_root() -> Path | None:
     here = Path(__file__).resolve()
     for p in (here, *here.parents):
         if (p / "aieng-forecasting").is_dir():
             return p
     return None
+
+
+def _load_fred_dotenv() -> None:
+    """Populate os.environ from repo-root ``.env`` (same pattern as ``scripts/fetch_fred.py``)."""
+    if _load_dotenv is None:
+        return
+    root = _repo_root()
+    if root is None:
+        return
+    _load_dotenv(root / ".env")
 
 
 def _as_absolute_cache(path: Path | None) -> Path | None:
@@ -68,6 +90,22 @@ def _default_cache_dir() -> Path:
 DEFAULT_CACHE_DIR = _default_cache_dir()
 DEFAULT_YAHOO_CACHE_DIR = DEFAULT_CACHE_DIR / "yahoo"
 DEFAULT_FRED_CACHE_DIR = DEFAULT_CACHE_DIR / "fred"
+
+# Keys are FRED series ids; values are (description, units, pandas frequency hint)
+# for ``scripts/fetch_fred.py`` registration — keep in sync with _fred_frame call sites below.
+FRED_PREFETCH_REGISTRY: dict[str, tuple[str, str, str]] = {
+    "DGS10": ("10-Year Treasury Constant Maturity Rate", "Percent", "D"),
+    "DGS2": ("2-Year Treasury Constant Maturity Rate", "Percent", "D"),
+    "DFF": ("Effective Federal Funds Rate", "Percent", "D"),
+    "CPIAUCSL": ("Consumer Price Index for All Urban Consumers: All Items in U.S. City Average", "Index 1982-84=100", "MS"),
+    "UNRATE": ("Unemployment Rate", "Percent", "MS"),
+    "DCOILWTICO": ("Crude Oil Prices: West Texas Intermediate (WTI)", "Dollars per Barrel", "D"),
+    "GOLDAMGBD228NLBM": ("Gold Fixing Price 10:30 A.M. (London time) in London Bullion Market", "U.S. Dollars per Troy Ounce", "D"),
+    "GOLDPMGBD228NLBM": ("Gold Fixing Price 3:00 P.M. (London time) in London Bullion Market", "U.S. Dollars per Troy Ounce", "D"),
+    "DTWEXBGS": ("Trade Weighted U.S. Dollar Index: Broad, Goods and Services", "Index Jan 2006=100", "D"),
+}
+
+FRED_SERIES_IDS_FOR_PREFETCH: tuple[str, ...] = tuple(FRED_PREFETCH_REGISTRY.keys())
 
 VIX_TICKER = "^VIX"
 NASDAQ_TICKER = "^IXIC"
@@ -285,6 +323,7 @@ def build_sp500_multivariate_service(
         If ``True``, any covariate fetch/build failure raises immediately.
         If ``False`` (default), unavailable covariates are skipped with a warning.
     """
+    _load_fred_dotenv()
     svc = build_sp500_log_return_service(
         refresh=refresh,
         start=start,
@@ -554,6 +593,8 @@ def build_sp500_multivariate_service(
 
 __all__ = [
     "DEFAULT_COVARIATE_SERIES_IDS",
+    "FRED_PREFETCH_REGISTRY",
+    "FRED_SERIES_IDS_FOR_PREFETCH",
     "SERIES_ID_10Y_YIELD",
     "SERIES_ID_2Y10Y_SPREAD",
     "SERIES_ID_CPI_INFLATION_CHANGE",

@@ -1,9 +1,20 @@
-"""Multivariate S&P 500 log-return experiment helpers."""
+"""S&P 500 multivariate log-return experiment — leak-safe covariates.
+
+The demo notebook is a narrative shell over the modules in this directory:
+
+- :mod:`data` — ``build_sp500_multivariate_service()`` and canonical covariate ids.
+- :mod:`analysis` — styled leaderboards for presentation.
+- :mod:`plots` — matplotlib context figures (target history, CRPS comparison).
+
+See ``README.md`` for the full experiment description.
+"""
 
 from .data import (
     DEFAULT_COVARIATE_SERIES_IDS,
-    SERIES_ID_10Y_YIELD,
+    FRED_PREFETCH_REGISTRY,
+    FRED_SERIES_IDS_FOR_PREFETCH,
     SERIES_ID_2Y10Y_SPREAD,
+    SERIES_ID_10Y_YIELD,
     SERIES_ID_CPI_INFLATION_CHANGE,
     SERIES_ID_DOLLAR_INDEX_RETURN,
     SERIES_ID_FED_FUNDS,
@@ -19,10 +30,13 @@ from .data import (
     build_sp500_multivariate_service,
 )
 
+
 __all__ = [
     "DEFAULT_COVARIATE_SERIES_IDS",
-    "SERIES_ID_10Y_YIELD",
+    "FRED_PREFETCH_REGISTRY",
+    "FRED_SERIES_IDS_FOR_PREFETCH",
     "SERIES_ID_2Y10Y_SPREAD",
+    "SERIES_ID_10Y_YIELD",
     "SERIES_ID_CPI_INFLATION_CHANGE",
     "SERIES_ID_DOLLAR_INDEX_RETURN",
     "SERIES_ID_FED_FUNDS",

@@ -1,35 +1,127 @@
 # S&P 500 multivariate forecasting (leak-safe covariates)
 
-Target remains identical to the single-variable experiment:
-**log return from prior session adjusted close to next session open** (`^GSPC`).
+Reference-quality experiment alongside
+`stock_price_forecasting_single_variable/` and
+`food_price_forecasting/`: same evaluation interfaces, richer feature set,
+and a **single narrative notebook** suitable for walkthroughs and slides.
 
-This variant adds optional covariates:
+The target is unchanged: **prior-session adjusted close to next-session open
+log return** on `^GSPC`, registered as `sp500_log_ret_1b`.
 
-- VIX level (`^VIX`) and VIX change
-- 10Y yield (`DGS10`)
-- 2Y-10Y spread (`DGS10 - DGS2`)
-- Fed funds rate (`DFF`)
-- CPI inflation change (`CPIAUCSL` MoM log-diff)
-- Unemployment rate (`UNRATE`)
-- Oil returns (`DCOILWTICO`)
-- Gold returns (`GOLDAMGBD228NLBM`)
-- Dollar index returns (`DTWEXBGS`)
-- NASDAQ returns (`^IXIC`)
+---
+
+## Forecasting task
+
+**Target (one business-day horizon):**
+
+$$
+r_t = \log\frac{O_{t}}{C^{\text{adj}}_{t-1}}
+$$
+
+where \(O_t\) is the **open** on session \(t\) and \(C^{\text{adj}}_{t-1}\) is
+the **adjusted close** on the prior session (Yahoo daily bars).
+
+**Frequency:** business (`B`). **Horizons:** `[1]` (next session).
+
+Covariates are optional exogenous **past** inputs; the baseline run uses the
+target series only via `build_sp500_multivariate_service(include_covariates=False)`.
+
+---
+
+## Canonical covariates (when enabled)
+
+| Series ID (registered) | Economic meaning |
+|------------------------|------------------|
+| `vix_level_l1b` | VIX level, lagged 1 business day |
+| `vix_log_ret_1b_l1b` | VIX log return, lagged |
+| `ust10y_level_l1b` | 10Y Treasury yield |
+| `ust2y10y_spread_l1b` | 2Y–10Y spread |
+| `fed_funds_level_l1b` | Fed funds effective rate |
+| `cpi_mom_logdiff_l1b` | CPI MoM log-diff |
+| `unemployment_rate_l1b` | Unemployment rate |
+| `oil_log_ret_1b_l1b` | Oil futures log return |
+| `gold_log_ret_1b_l1b` | Gold log return (skipped if FRED series unavailable) |
+| `dollar_index_log_ret_1b_l1b` | Broad dollar index log return |
+| `nasdaq_log_ret_1b_l1b` | NASDAQ composite log return |
+
+Exact adapters and transforms live in `data.py` (`DEFAULT_COVARIATE_SERIES_IDS`).
+
+---
 
 ## No-leakage design
 
-- All covariates are converted to canonical `timestamp/value/released_at`.
 - Every covariate is shifted by **one business day** before registration.
-- Macro series use conservative release proxies before daily expansion.
-- Backtest/evaluation cutoff enforcement uses `released_at <= as_of`.
+- Macro series use **conservative release proxies** before daily expansion;
+  rows carry `released_at` suitable for `ForecastContext` cutoffs.
+- Backtests enforce **information available at `as_of`** (no future macro or
+  price leakage through the service layer).
 
-Use `build_sp500_multivariate_service(include_covariates=False)` for baseline
-no-covariate runs, and default settings for full-covariate runs.
+Missing optional feeds are **skipped with warnings** by default
+(`strict_covariates=False` on the service builder). Set
+`strict_covariates=True` to fail fast during data setup.
 
-By default, missing optional covariate feeds are skipped with warnings
-(`strict_covariates=False`). Set `strict_covariates=True` to fail fast if any
-requested covariate cannot be built.
+---
 
-Notebook:
-- `sp500_multivariate_backtest_demo.ipynb` — compares no-covariate vs full-covariate
-  models with `DartsLinearRegressionPredictor` and optional `DartsLightGBMPredictor`.
+## Module layout
+
+```
+implementations/experiments/stock_price_forecasting_multivariate/
+├── data.py        # build_sp500_multivariate_service(); covariate series ids
+├── analysis.py    # style_results_dataframe() for notebook tables
+├── plots.py       # plot_sp500_log_return_recent, plot_mean_crps_leaderboard
+├── sp500_multivariate_backtest_demo.ipynb   # main narrative (numbered sections)
+└── README.md      # this file
+```
+
+---
+
+## Prerequisites
+
+The notebook builds `DataService` instances on demand; **first run** pulls
+Yahoo daily bars (and FRED macro series where configured) into `data/` at the
+repo root (gitignored). You do not need a separate S&P fetch script.
+
+Warm the FRED parquet cache the same way as the CPI / food notebooks (shared
+`FREDAdapter` layout under `data/fred/`). The script pulls **both** the food-side
+monthly series and the raw ids used by this experiment’s covariates (see
+`FRED_PREFETCH_REGISTRY` in `data.py`):
+
+```bash
+uv run python scripts/fetch_fred.py
+```
+
+Set **`FRED_API_KEY`** in the repo-root `.env` (or export it); the multivariate
+`build_sp500_multivariate_service()` also calls `load_dotenv(repo/.env)` before
+any FRED fetch, matching `scripts/fetch_fred.py`.
+
+Use the same environment as other experiments (`uv sync` at repo root). Yahoo
+history does not require a key. Ensure `yfinance` is installed (see
+`implementations/pyproject.toml`).
+
+---
+
+## Notebooks
+
+| Notebook | Purpose |
+|----------|---------|
+| `sp500_multivariate_backtest_demo.ipynb` | **Main demo.** Numbered sections (setup → data → spec description → backtests → formatted leaderboard + CRPS chart). Edit **DEMO CONFIG** for models, date window, and covariate subset; `describe_spec()` prints the active `BacktestSpec` like the food CPI notebook prints YAML-backed specs. |
+
+For a minimal single-target tour without covariates, see
+`stock_price_forecasting_single_variable/sp500_data_exploration.ipynb`.
+
+---
+
+## Key design decisions
+
+- **Parity with the single-variable target** so CRPS and direction metrics are
+  comparable across notebooks.
+- **Notebook stays thin:** plotting and table styling live in `plots.py` and
+  `analysis.py` (same separation as `food_price_forecasting/`).
+- **Unified `RESULTS_DF` leaderboard** — one sorted table per run: mean CRPS,
+  covariate usage, direction metrics (`dir_*` from point sign and `prob_up`),
+  and an `error` column on failure.
+- **LightGBM is opt-in** — `DartsLightGBMPredictor` sets single-thread defaults
+  and caps OpenMP/BLAS/joblib env vars before loading LightGBM (nested
+  parallelism otherwise segfaults on some macOS setups). Install **`brew install libomp`**
+  if the library fails to load; the demo still defaults LightGBM off in
+  `RUN_MODELS` so notebooks stay safe until you opt in.
