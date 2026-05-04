@@ -1,1 +1,1 @@
-"""Energy/oil information-session story notebook for the Agentic Forecasting Bootcamp."""
+"""Energy/oil information-session story for the Agentic Forecasting Bootcamp."""
