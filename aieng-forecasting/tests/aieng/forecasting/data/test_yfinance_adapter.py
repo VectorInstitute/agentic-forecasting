@@ -138,7 +138,7 @@ def test_timezone_index_normalizes_to_naive_datetime(tmp_path: Path) -> None:
 
 
 def test_cache_with_earlier_end_does_not_satisfy_later_end_request(tmp_path: Path) -> None:
-    """A cache built for an earlier end date is refreshed when a later end is requested."""
+    """A cache built for an earlier end date is refreshed for a later end date."""
     cache_dir = tmp_path / "yfinance"
     narrow = _raw_history().iloc[:2]  # 2024-01-02, 2024-01-03 only
     full = _raw_history()
