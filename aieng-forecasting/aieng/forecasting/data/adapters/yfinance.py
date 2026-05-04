@@ -8,9 +8,10 @@ Caching
 -------
 When ``cache_dir`` is provided, the adapter persists each ticker/field pair to
 ``{cache_dir}/{ticker}_{field}_1d.parquet`` on first fetch and reads from that
-parquet file on subsequent calls. The cached file may contain a broader history
-than a specific adapter instance requests; ``start`` and ``end`` filters are
-therefore applied after both cache reads and live downloads.
+parquet file on subsequent calls. The cache is only used when it fully covers the
+requested ``start``/``end`` window; if the cached data starts too late *or* ends too
+early, a fresh yfinance request is made and the cache is overwritten. Use
+``refresh=True`` to force a network fetch regardless of cache state.
 
 Information cutoff
 ------------------
@@ -179,7 +180,7 @@ class YFinanceDailyAdapter(BaseAdapter):
         cache_path = self.cache_path
         if cache_path is not None and cache_path.exists() and not self._refresh:
             cached = self._read_cache(cache_path)
-            if self._cache_covers_start(cached):
+            if self._cache_covers_range(cached):
                 return self._apply_date_range(cached)
 
         df = self._fetch_from_yfinance()
@@ -190,12 +191,27 @@ class YFinanceDailyAdapter(BaseAdapter):
 
         return self._apply_date_range(df)
 
-    def _cache_covers_start(self, df: pd.DataFrame) -> bool:
-        """Return whether cached data starts early enough for this request."""
-        if self._config.start is None or df.empty:
-            return True
-        cache_start = df["timestamp"].min()
-        return bool(cache_start <= pd.Timestamp(self._config.start))
+    def _cache_covers_range(self, df: pd.DataFrame) -> bool:
+        """Return whether cached data fully covers the requested date range.
+
+        Both the start and end boundaries are checked. If either falls outside
+        the cached window we fall through to a live yfinance fetch so the caller
+        always receives the exact rows they asked for.
+        """
+        if df.empty:
+            return False
+        if self._config.start is not None:
+            cache_start = df["timestamp"].min()
+            if cache_start > pd.Timestamp(self._config.start):
+                return False
+        if self._config.end is not None:
+            cache_end = df["timestamp"].max()
+            # end is exclusive, so the last row we expect is strictly before it.
+            # Allow one calendar day of slack to tolerate weekends/holidays at
+            # the boundary; any larger gap means the cache is genuinely short.
+            if cache_end < pd.Timestamp(self._config.end) - pd.Timedelta(days=1):
+                return False
+        return True
 
     def _fetch_from_yfinance(self) -> pd.DataFrame:
         """Fetch and normalize a daily history frame from yfinance."""

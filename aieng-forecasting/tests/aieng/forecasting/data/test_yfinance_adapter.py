@@ -137,6 +137,24 @@ def test_timezone_index_normalizes_to_naive_datetime(tmp_path: Path) -> None:
     assert pd.api.types.is_float_dtype(result["value"])
 
 
+def test_cache_with_earlier_end_does_not_satisfy_later_end_request(tmp_path: Path) -> None:
+    """A cache built for an earlier end date is refreshed when a later end is requested."""
+    cache_dir = tmp_path / "yfinance"
+    narrow = _raw_history().iloc[:2]  # 2024-01-02, 2024-01-03 only
+    full = _raw_history()
+
+    fake_narrow = _ticker_cls_returning(narrow)
+    with patch("yfinance.Ticker", fake_narrow):
+        YFinanceDailyAdapter("CL=F", start="2024-01-02", end="2024-01-04", cache_dir=cache_dir).fetch()
+
+    fake_full = _ticker_cls_returning(full)
+    with patch("yfinance.Ticker", fake_full):
+        result = YFinanceDailyAdapter("CL=F", start="2024-01-02", end="2024-01-05", cache_dir=cache_dir).fetch()
+
+    assert len(result) == 3
+    assert fake_full.return_value.history.call_count == 1
+
+
 def test_invalid_date_window_raises() -> None:
     """Adapter validation rejects an empty or inverted date window."""
     with pytest.raises(ValueError, match="must be after start"):
