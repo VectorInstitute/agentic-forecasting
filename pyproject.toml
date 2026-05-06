@@ -19,7 +19,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "codecov>=2.1.13",
-    "e2b>=2.20.3",
+    "e2b>=2.21.0",
     "mypy>=1.20.0",
     "nbqa>=1.9.1",
     "pip-audit>=2.10.0",

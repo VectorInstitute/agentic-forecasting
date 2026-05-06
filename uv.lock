@@ -83,7 +83,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "codecov", specifier = ">=2.1.13" },
-    { name = "e2b", specifier = ">=2.20.3" },
+    { name = "e2b", specifier = ">=2.21.0" },
     { name = "mypy", specifier = ">=1.20.0" },
     { name = "nbqa", specifier = ">=1.9.1" },
     { name = "pip-audit", specifier = ">=2.10.0" },
@@ -1167,11 +1167,12 @@ wheels = [
 
 [[package]]
 name = "e2b"
-version = "2.20.3"
+version = "2.21.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "dockerfile-parse" },
+    { name = "h2" },
     { name = "httpcore" },
     { name = "httpx" },
     { name = "packaging" },
@@ -1181,9 +1182,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wcmatch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/49/b0/a7d5347a5c2d0fe09bb5254c919b716f96217d6526235225f786f879dfbb/e2b-2.20.3.tar.gz", hash = "sha256:c6e91f71946755e1579b4ca1e175819d9f174b932b92e115cf36c2fd04674f3c", size = 157132, upload-time = "2026-04-30T15:15:21.117Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/97/5506630397ca074748e6f53bfdd92d5a9e362accec65dfef726a8b912d56/e2b-2.21.0.tar.gz", hash = "sha256:d39557d1f8b1fab52f5c8f2193da7559309d0671432cb1b6e4947b33cfd3f02e", size = 157165, upload-time = "2026-05-06T00:56:14.045Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9c/12/326db5df4d3e79bc794b3662a454fe1f68cb02c33985e623ece6e5e21395/e2b-2.20.3-py3-none-any.whl", hash = "sha256:46c6b5ffc45c9ca6dc270dd4d29427cef6a2600c55a895565657ff2bedc06303", size = 297072, upload-time = "2026-04-30T15:15:19.46Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/e6/bae4aa9bbd60fa819e3239afa2ca42019f02c39314b5e230a5de140fe8f9/e2b-2.21.0-py3-none-any.whl", hash = "sha256:360a55ff23335dd62ee5ca86c41dc55de597d73b846f5c2361f6eac6c712a371", size = 297109, upload-time = "2026-05-06T00:56:12.321Z" },
 ]
 
 [[package]]
@@ -2164,6 +2165,19 @@ wheels = [
 ]
 
 [[package]]
+name = "h2"
+version = "4.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "hpack" },
+    { name = "hyperframe" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1d/17/afa56379f94ad0fe8defd37d6eb3f89a25404ffc71d4d848893d270325fc/h2-4.3.0.tar.gz", hash = "sha256:6c59efe4323fa18b47a632221a1888bd7fde6249819beda254aeca909f221bf1", size = 2152026, upload-time = "2025-08-23T18:12:19.778Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/69/b2/119f6e6dcbd96f9069ce9a2665e0146588dc9f88f29549711853645e736a/h2-4.3.0-py3-none-any.whl", hash = "sha256:c438f029a25f7945c69e0ccf0fb951dc3f73a5f6412981daee861431b70e2bdd", size = 61779, upload-time = "2025-08-23T18:12:17.779Z" },
+]
+
+[[package]]
 name = "hf-xet"
 version = "1.4.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2205,6 +2219,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/af/ab/003a4edf31234a3bc92b74b7d8ef18d1c1f019ed02dedd440d5c05f367cc/holidays-0.95.tar.gz", hash = "sha256:3b79fdd141cbc740526a5184d1cd41fd264fac4aba383554359d4bb6d52937d3", size = 887562, upload-time = "2026-04-20T20:26:10.215Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/e2/3a605baf0025b8ea819eea3ec4ca4ecb4d8c371975c1ca4bebd9979fae4c/holidays-0.95-py3-none-any.whl", hash = "sha256:5a204ff6d2ac2fff82fb5ca2a55dbbf265c2f952ca225c16b9ce12755664256d", size = 1453540, upload-time = "2026-04-20T20:26:08.425Z" },
+]
+
+[[package]]
+name = "hpack"
+version = "4.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/48/71de9ed269fdae9c8057e5a4c0aa7402e8bb16f2c6e90b3aa53327b113f8/hpack-4.1.0.tar.gz", hash = "sha256:ec5eca154f7056aa06f196a557655c5b009b382873ac8d1e66e79e87535f1dca", size = 51276, upload-time = "2025-01-22T21:44:58.347Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/c6/80c95b1b2b94682a72cbdbfb85b81ae2daffa4291fbfa1b1464502ede10d/hpack-4.1.0-py3-none-any.whl", hash = "sha256:157ac792668d995c657d93111f46b4535ed114f0c9c8d672271bbec7eae1b496", size = 34357, upload-time = "2025-01-22T21:44:56.92Z" },
 ]
 
 [[package]]
@@ -2274,6 +2297,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/56/52/1b54cb569509c725a32c1315261ac9fd0e6b91bbbf74d86fca10d3376164/huggingface_hub-1.12.0.tar.gz", hash = "sha256:7c3fe85e24b652334e5d456d7a812cd9a071e75630fac4365d9165ab5e4a34b6", size = 763091, upload-time = "2026-04-24T13:32:08.674Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/2b/ef03ddb96bd1123503c2bd6932001020292deea649e9bf4caa2cb65a85bf/huggingface_hub-1.12.0-py3-none-any.whl", hash = "sha256:d74939969585ee35748bd66de09baf84099d461bda7287cd9043bfb99b0e424d", size = 646806, upload-time = "2026-04-24T13:32:06.717Z" },
+]
+
+[[package]]
+name = "hyperframe"
+version = "6.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/02/e7/94f8232d4a74cc99514c13a9f995811485a6903d48e5d952771ef6322e30/hyperframe-6.1.0.tar.gz", hash = "sha256:f630908a00854a7adeabd6382b43923a4c4cd4b821fcb527e6ab9e15382a3b08", size = 26566, upload-time = "2025-01-22T21:41:49.302Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/48/30/47d0bf6072f7252e6521f3447ccfa40b421b6824517f82854703d0f5a98b/hyperframe-6.1.0-py3-none-any.whl", hash = "sha256:b03380493a519fce58ea5af42e4a42317bf9bd425596f7a0835ffce80f1a42e5", size = 13007, upload-time = "2025-01-22T21:41:47.295Z" },
 ]
 
 [[package]]
