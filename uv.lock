@@ -172,7 +172,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aieng-agents", extras = ["code-interpreter"], marker = "extra == 'agentic'", specifier = ">=0.3.0" },
-    { name = "darts", marker = "extra == 'numerical'", specifier = ">=0.43.0" },
+    { name = "darts", marker = "extra == 'numerical'", specifier = ">=0.44.1" },
     { name = "fredapi", specifier = ">=0.5.2" },
     { name = "google-adk", marker = "extra == 'agentic'", specifier = ">=1.31.1" },
     { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=3.14.6" },
@@ -1064,7 +1064,7 @@ wheels = [
 
 [[package]]
 name = "darts"
-version = "0.43.0"
+version = "0.44.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "holidays" },
@@ -1085,9 +1085,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/89/16/28040fc8bc0e32ebf98b2657e2e63d0a4ad9ee5945682864601944319354/darts-0.43.0.tar.gz", hash = "sha256:439827c0f7a0aec1148e56722671cbb785cada722d31e7effac0a8264c6e3f8a", size = 653086, upload-time = "2026-03-23T10:03:05.589Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6c/78/3d603cf436208a343c89cb61aaea1d4a7e289de6fa0ef89996a31ec2c53d/darts-0.44.1.tar.gz", hash = "sha256:6d5bdcf1cfa98e29a0fa692e05c6c4660f998887b6c1c4fe6b6f3765808da883", size = 666262, upload-time = "2026-05-05T14:20:59.484Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/f8/7c3519f0f30ecf2d96bb59aff24441c28d89cf00662795a2e28e5d9cd1de/darts-0.43.0-py3-none-any.whl", hash = "sha256:2454e3b8491f1f9b38cedae5599d22d82f7419f1a8a887c736850926f826f206", size = 760462, upload-time = "2026-03-23T10:03:03.698Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/c9/9596249ebe6c00ad717c74e010c282e5b3495bf583f21da32bb92768952e/darts-0.44.1-py3-none-any.whl", hash = "sha256:eb32897e9cd2833d98c6f33a9afbd160e234180332c9dabe74555d2786e8db2c", size = 780858, upload-time = "2026-05-05T14:20:57.462Z" },
 ]
 
 [[package]]
