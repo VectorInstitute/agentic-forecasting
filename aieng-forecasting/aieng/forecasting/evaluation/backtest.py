@@ -13,19 +13,19 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 import properscoring as ps
-from pydantic import BaseModel, Field, model_validator
-
 from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.prediction import ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
+from pydantic import BaseModel, Field, model_validator
 
 
 def _compute_origins(start: datetime, end: datetime, frequency: str, stride: int) -> list[datetime]:
     """Compute strided forecast origin dates for a spec window.
 
-    Shared by :class:`BacktestSpec` and :class:`~aieng.forecasting.evaluation.eval.EvalSpec`
-    to avoid duplicating the striding logic.
+    Shared by :class:`BacktestSpec` and
+    :class:`~aieng.forecasting.evaluation.eval.EvalSpec` to avoid duplicating
+    the striding logic.
 
     Parameters
     ----------
@@ -212,11 +212,7 @@ def _crps_for_prediction(prediction: Prediction, actual: float) -> float:
     return float(ps.crps_ensemble(actual, ensemble))
 
 
-def _resolve(
-    task: ForecastingTask,
-    forecast_date: datetime,
-    data_service: DataService,
-) -> float | None:
+def _resolve(task: ForecastingTask, forecast_date: datetime, data_service: DataService) -> float | None:
     """Look up the observed value at a forecast date.
 
     Queries the data service with a sufficiently late ``as_of`` to ensure the
@@ -249,11 +245,7 @@ def _resolve(
 
 
 def run_eval_loop(
-    predictor: Predictor,
-    task: ForecastingTask,
-    origins: list[datetime],
-    warmup: int,
-    data_service: DataService,
+    predictor: Predictor, task: ForecastingTask, origins: list[datetime], warmup: int, data_service: DataService
 ) -> tuple[list[Prediction], list[float], int]:
     """Core evaluation loop shared by ``backtest()`` and ``evaluate()``.
 
@@ -322,11 +314,7 @@ def run_eval_loop(
     return predictions, scores, skipped
 
 
-def backtest(
-    predictor: Predictor,
-    spec: BacktestSpec,
-    data_service: DataService,
-) -> BacktestResult:
+def backtest(predictor: Predictor, spec: BacktestSpec, data_service: DataService) -> BacktestResult:
     """Run a backtest of a predictor against a BacktestSpec.
 
     Iterates over forecast origins derived from the spec, calls the predictor
@@ -434,7 +422,7 @@ class MultiTargetBacktestSpec(BaseModel):
     ...     stride=6,
     ...     warmup=24,
     ... )
-    >>> per_task_results = multi_backtest(predictor=my_predictor, spec=spec, data_service=svc)
+    >>> per_task_results = multi_backtest(my_predictor, spec, svc)
     >>> for task_id, result in per_task_results.items():
     ...     print(f"{task_id}: mean CRPS = {result.mean_crps:.4f}")
     """
@@ -485,9 +473,7 @@ class MultiTargetBacktestSpec(BaseModel):
 
 
 def multi_backtest(
-    predictor: Predictor,
-    spec: MultiTargetBacktestSpec,
-    data_service: DataService,
+    predictor: Predictor, spec: MultiTargetBacktestSpec, data_service: DataService
 ) -> dict[str, BacktestResult]:
     """Run a backtest of a predictor across all tasks in a MultiTargetBacktestSpec.
 

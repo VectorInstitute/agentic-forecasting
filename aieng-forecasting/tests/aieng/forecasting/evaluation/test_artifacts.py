@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 import numpy as np
 import pandas as pd
 import yaml
-
 from aieng.forecasting.data.models import SeriesMetadata
 from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.artifacts import (
@@ -91,10 +90,14 @@ class _RecordingConstantPredictor(Predictor):
 
 
 class TestSingleTargetArtifacts:
+    """Tests for single-target backtest artefact helpers."""
+
     def test_load_missing_returns_none(self, tmp_path: Path) -> None:
+        """load_backtest_result returns None when nothing is stored."""
         assert load_backtest_result("no_such_spec", "no_predictor", store_dir=tmp_path) is None
 
     def test_round_trip(self, tmp_path: Path) -> None:
+        """cached_backtest result reloads with identical scores and spec."""
         svc = _build_data_service("series_a")
         spec = BacktestSpec(
             task=_make_task(),
@@ -112,6 +115,7 @@ class TestSingleTargetArtifacts:
         assert loaded.spec.description == "round-trip test"
 
     def test_cache_hit_skips_compute(self, tmp_path: Path) -> None:
+        """Second cached_backtest call must not invoke predict again."""
         svc = _build_data_service("series_a")
         spec = BacktestSpec(
             task=_make_task(),
@@ -126,6 +130,7 @@ class TestSingleTargetArtifacts:
         assert predictor.call_count == first_count
 
     def test_force_refresh_recomputes(self, tmp_path: Path) -> None:
+        """force_refresh=True reruns the predictor despite an on-disk cache."""
         svc = _build_data_service("series_a")
         spec = BacktestSpec(
             task=_make_task(),
@@ -147,6 +152,7 @@ class TestSingleTargetArtifacts:
         assert predictor.call_count > first_count
 
     def test_saved_file_is_yaml(self, tmp_path: Path) -> None:
+        """Persisted artefact is YAML with predictor id and predictions."""
         svc = _build_data_service("series_a")
         spec = BacktestSpec(
             task=_make_task(),
@@ -164,6 +170,7 @@ class TestSingleTargetArtifacts:
         assert "predictions" in loaded and isinstance(loaded["predictions"], list)
 
     def test_save_backtest_result_returns_path(self, tmp_path: Path) -> None:
+        """save_backtest_result returns the written YAML path."""
         svc = _build_data_service("series_a")
         spec = BacktestSpec(
             task=_make_task(),
@@ -183,7 +190,10 @@ class TestSingleTargetArtifacts:
 
 
 class TestMultiTargetArtifacts:
+    """Tests for multi-target backtest artefact helpers."""
+
     def test_full_cache_hit(self, tmp_path: Path) -> None:
+        """Fully cached multi-backtest skips predictor work on second call."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetBacktestSpec(
             spec_id="mt_full",
@@ -199,6 +209,7 @@ class TestMultiTargetArtifacts:
         assert predictor.call_count == count_after_first
 
     def test_partial_cache_triggers_recompute(self, tmp_path: Path) -> None:
+        """Partial on-disk results force recompute then become loadable."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetBacktestSpec(
             spec_id="mt_partial",
@@ -220,6 +231,7 @@ class TestMultiTargetArtifacts:
         assert load_multi_backtest_results(spec, predictor.predictor_id, store_dir=tmp_path) is not None
 
     def test_force_refresh_recomputes(self, tmp_path: Path) -> None:
+        """force_refresh reruns multi-target backtest even when cache exists."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetBacktestSpec(
             spec_id="mt_force",
@@ -235,6 +247,7 @@ class TestMultiTargetArtifacts:
         assert predictor.call_count > count_after_first
 
     def test_save_multi_backtest_returns_paths(self, tmp_path: Path) -> None:
+        """save_multi_backtest_results writes one path per task id."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetBacktestSpec(
             spec_id="mt_paths",
@@ -257,7 +270,10 @@ class TestMultiTargetArtifacts:
 
 
 class TestEvalArtifacts:
+    """Tests for eval artefact persistence helpers."""
+
     def test_save_single_eval(self, tmp_path: Path) -> None:
+        """save_eval_result writes YAML including run_number in filename."""
         svc = _build_data_service("s_a")
         spec = EvalSpec(
             spec_id="eval_single",
@@ -272,6 +288,7 @@ class TestEvalArtifacts:
         assert path.name.endswith(f"eval_run{result.run_number}.yaml")
 
     def test_save_multi_eval(self, tmp_path: Path) -> None:
+        """save_multi_eval_results writes one file per evaluated task."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetEvalSpec(
             spec_id="eval_multi",
@@ -287,6 +304,7 @@ class TestEvalArtifacts:
             assert p.exists()
 
     def test_run_number_preserved_in_filename(self, tmp_path: Path) -> None:
+        """Different run_number values produce distinct filenames on disk."""
         svc = _build_data_service("s_a")
         spec = EvalSpec(
             spec_id="eval_run_nums",

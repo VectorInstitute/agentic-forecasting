@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
-
 from aieng.forecasting.data.adapters.fred import FREDAdapter
 
 
@@ -16,7 +15,7 @@ def _raw_fred_series() -> pd.Series:
 
 
 def _fred_cls_returning(raw: pd.Series) -> MagicMock:
-    """Build a MagicMock that mimics ``fredapi.Fred(api_key=...).get_series(series_id)``."""
+    """Build a mock for ``Fred(...).get_series(series_id)``."""
     instance = MagicMock()
     instance.get_series.return_value = raw
     return MagicMock(return_value=instance)

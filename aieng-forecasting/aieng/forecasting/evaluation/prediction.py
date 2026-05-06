@@ -11,7 +11,7 @@ STANDARD_QUANTILES: list[float] = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.7
 
 
 class ContinuousForecast(BaseModel):
-    """Probabilistic forecast payload for a continuous target at a single future time point.
+    """Probabilistic forecast payload for one continuous future target.
 
     Stores a point estimate and a set of quantile forecasts at standard levels.
     The quantile grid (0.05 … 0.95) is dense enough to compute a good CRPS
@@ -71,13 +71,15 @@ class Prediction(BaseModel):
     predictor_id : str
         Identifier for the predictor that issued this forecast.
     task_id : str
-        Identifier for the :class:`~aieng.forecasting.evaluation.task.ForecastingTask`
-        this prediction is for.
+        Identifier for the
+        :class:`~aieng.forecasting.evaluation.task.ForecastingTask` this
+        prediction is for.
     issued_at : datetime
         Wall-clock time when the prediction was generated.
     as_of : datetime
         Information cutoff used — the ``as_of`` date of the
-        :class:`~aieng.forecasting.data.context.ForecastContext` passed to the predictor.
+        :class:`~aieng.forecasting.data.context.ForecastContext` passed to the
+        predictor.
     forecast_date : datetime
         The future date being predicted (``as_of`` + horizon steps).
     payload : ContinuousForecast

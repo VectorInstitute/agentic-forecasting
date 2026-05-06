@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["news_search"]
+
+[project]
+name = "news-search-playground"
+version = "0.1.0"
+description = "Grounded news-search agent playground using Google ADK + Gemini"
+requires-python = ">=3.12"
+dependencies = [
+    "google-adk>=1.32.0",
+    "langfuse>=4.5.1",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+]

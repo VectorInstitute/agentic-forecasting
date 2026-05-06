@@ -29,8 +29,8 @@ Intended usage in a bootcamp session::
         spec = EvalSpec.model_validate(yaml.safe_load(f))
 
     tracker = EvalTracker(Path("eval_runs.yaml"))
-    result = evaluate(predictor=my_predictor, spec=spec, data_service=svc, tracker=tracker)
-    print(f"Eval mean CRPS: {result.mean_crps:.4f}  (run {result.run_number}/{spec.max_runs})")
+    result = evaluate(my_predictor, spec, svc, tracker=tracker)
+    print(f"Eval mean CRPS: {result.mean_crps:.4f}")
 
 If ``tracker`` is omitted, :func:`evaluate` runs unconditionally and sets
 ``run_number=1``.
@@ -43,13 +43,12 @@ from pathlib import Path
 
 import numpy as np
 import yaml
-from pydantic import BaseModel, Field, model_validator
-
 from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.backtest import _compute_origins, run_eval_loop
 from aieng.forecasting.evaluation.prediction import Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
+from pydantic import BaseModel, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -569,9 +568,9 @@ def multi_evaluate(
 
     Examples
     --------
-    >>> results = multi_evaluate(predictor=my_predictor, spec=spec, data_service=svc, tracker=tracker)
+    >>> results = multi_evaluate(my_predictor, spec, svc, tracker=tracker)
     >>> for task_id, result in results.items():
-    ...     print(f"{task_id}: mean CRPS = {result.mean_crps:.4f}  (run {result.run_number})")
+    ...     print(f"{task_id}: mean CRPS = {result.mean_crps:.4f}")
     """
     runs_used = tracker.runs_for(spec.spec_id) if tracker is not None else 0
 

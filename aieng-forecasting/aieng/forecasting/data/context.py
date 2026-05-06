@@ -3,7 +3,6 @@
 from datetime import datetime
 
 import pandas as pd
-
 from aieng.forecasting.data.cutoff import CutoffEnforcer
 from aieng.forecasting.data.models import SeriesMetadata
 from aieng.forecasting.data.store import SeriesStore
