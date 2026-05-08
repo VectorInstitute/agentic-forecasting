@@ -58,7 +58,6 @@ from aieng.forecasting.evaluation.backtest import (
     BacktestSpec,
     MultiTargetBacktestSpec,
     backtest,
-    multi_backtest,
 )
 from aieng.forecasting.evaluation.eval import EvalResult, MultiTargetEvalSpec
 from aieng.forecasting.evaluation.predictor import Predictor
@@ -324,12 +323,17 @@ def cached_multi_backtest(
     dict[str, BacktestResult]
         Results keyed by ``task_id``.
     """
-    if not force_refresh:
-        cached = load_multi_backtest_results(spec, predictor.predictor_id, store_dir=store_dir)
-        if cached is not None:
-            return cached
-    results = multi_backtest(predictor=predictor, spec=spec, data_service=data_service)
-    save_multi_backtest_results(results, spec, store_dir=store_dir)
+    store = _resolve_store(store_dir)
+    results: dict[str, BacktestResult] = {}
+    for single_spec in spec.specs():
+        task_id = single_spec.task.task_id
+        path = _backtest_path(store, spec.spec_id, predictor.predictor_id, task_id=task_id)
+        if not force_refresh and path.exists():
+            results[task_id] = BacktestResult.model_validate(_load_yaml(path))
+            continue
+        result = backtest(predictor=predictor, spec=single_spec, data_service=data_service)
+        _dump_yaml(result, path)
+        results[task_id] = result
     return results
 
 

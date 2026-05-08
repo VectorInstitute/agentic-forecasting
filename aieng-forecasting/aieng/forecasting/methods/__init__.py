@@ -11,6 +11,10 @@ implementations by method family:
 """
 
 from .baselines import LastValuePredictor
+from .llm_processes import (
+    ContinuousLLMPredictor,
+    ContinuousLLMPredictorConfig,
+)
 from .numerical import (
     DartsAutoARIMAPredictor,
     DartsLightGBMPredictor,
@@ -19,6 +23,8 @@ from .numerical import (
 
 
 __all__ = [
+    "ContinuousLLMPredictor",
+    "ContinuousLLMPredictorConfig",
     "DartsAutoARIMAPredictor",
     "DartsLightGBMPredictor",
     "DartsLinearRegressionPredictor",
