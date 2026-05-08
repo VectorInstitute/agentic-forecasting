@@ -36,5 +36,12 @@ wheels/
 # stale relative path (the canonical cache location is /data/ at repo root)
 /implementations/data/
 
+# workspace-specific agents
+.github/agents/
+.github/prompts/
+
 # google adk
 **/.adk/
+
+# local-only backup (not pushed)
+.local-backup/
