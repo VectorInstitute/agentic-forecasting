@@ -194,15 +194,19 @@ class YFinanceDailyAdapter(BaseAdapter):
     def _cache_covers_range(self, df: pd.DataFrame) -> bool:
         """Return whether cached data fully covers the requested date range.
 
-        Both the start and end boundaries are checked. If either falls outside
-        the cached window we fall through to a live yfinance fetch so the caller
-        always receives the exact rows they asked for.
+        Both the start and end boundaries are checked against the first / last
+        business day inside the requested window, since daily Yahoo bars are
+        business-day only and a requested ``start`` of e.g. a Saturday legitimately
+        has no row before the following Monday.
         """
         if df.empty:
             return False
         if self._config.start is not None:
             cache_start = df["timestamp"].min()
-            if cache_start > pd.Timestamp(self._config.start):
+            # Snap the requested start forward to the first business day; that is
+            # the earliest row yfinance could ever return for this window.
+            requested_start_bday = (pd.Timestamp(self._config.start) + pd.offsets.BDay(0)).normalize()
+            if cache_start > requested_start_bday:
                 return False
         if self._config.end is not None:
             cache_end = df["timestamp"].max()
