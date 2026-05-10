@@ -10,7 +10,7 @@ backtest:
     frequency: B
     description: >-
       Forecast next-session open vs prior close S&P500 log return.
-  start: "2020-04-01"
+  start: "2020-03-01"
   end: "2020-04-08"
   stride: 1
   warmup: 60
