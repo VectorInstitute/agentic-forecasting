@@ -19,30 +19,31 @@ Anti-leakage policy:
 - ``released_at`` is set conservatively for macro series before daily expansion.
 - The DataService cutoff then guarantees context views never include unavailable rows.
 
-FRED usage matches the CPI-side tooling: :class:`~aieng.forecasting.data.adapters.FREDAdapter`
-writes ``data/fred/{FRED_SERIES_ID}.parquet`` (see adapter docstring).  Run
+Macro series use :class:`~aieng.forecasting.data.adapters.fred.FREDAdapter`, which
+writes ``data/fred/{FRED_SERIES_ID}.parquet`` (see adapter docstring). Run
 ``uv run python scripts/fetch_fred.py`` to warm the same files the covariate
-builders read.  :func:`build_sp500_multivariate_service` loads ``FRED_API_KEY``
-from the repo-root ``.env`` via ``python-dotenv``, identical to ``fetch_fred.py``.
-Raw series ids and prefetch metadata live in :data:`FRED_PREFETCH_REGISTRY`.
+builders read. Yahoo covariates use :class:`~aieng.forecasting.data.adapters.yfinance.YFinanceDailyAdapter`
+under ``data/yfinance/`` (default adapter layout). :func:`build_sp500_multivariate_service`
+loads ``FRED_API_KEY`` from the repo-root ``.env`` via ``python-dotenv``, identical
+to ``fetch_fred.py``. Raw series ids and prefetch metadata live in :data:`FRED_PREFETCH_REGISTRY`.
 """
 
 from __future__ import annotations
 
 import warnings
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from aieng.forecasting.data import DataService, SeriesMetadata
-from aieng.forecasting.data.adapters import FREDAdapter
+from aieng.forecasting.data.adapters import FREDAdapter, YFinanceDailyAdapter
 
 from implementations.experiments.stock_price_forecasting_single_variable.data import (
     SP500_LOG_RETURN_SERIES_ID,
     SP500_SERIES_ID,
     SP500_TICKER,
     StaticFrameAdapter,
-    YahooFinanceDailyAdapter,
     build_sp500_log_return_service,
 )
 
@@ -88,7 +89,9 @@ def _default_cache_dir() -> Path:
 
 
 DEFAULT_CACHE_DIR = _default_cache_dir()
-DEFAULT_YAHOO_CACHE_DIR = DEFAULT_CACHE_DIR / "yahoo"
+# Matches :attr:`~aieng.forecasting.data.adapters.yfinance.YFinanceDailyAdapter.DEFAULT_CACHE_DIR`
+# resolved against repo ``data/`` (stem filenames like ``gspc_adj_close_1d.parquet`` per ticker).
+DEFAULT_YAHOO_CACHE_DIR = DEFAULT_CACHE_DIR / "yfinance"
 DEFAULT_FRED_CACHE_DIR = DEFAULT_CACHE_DIR / "fred"
 
 # Keys are FRED series ids; values are (description, units, pandas frequency hint)
@@ -147,19 +150,36 @@ def _canonical_three_col(df: pd.DataFrame) -> pd.DataFrame:
     return out[["timestamp", "value", "released_at"]].reset_index(drop=True)
 
 
+def _drop_weekend_timestamp_rows(df: pd.DataFrame) -> pd.DataFrame:
+    r"""Remove rows whose ``timestamp`` is Saturday or Sunday.
+
+    Some FRED daily series (notably effective fed funds ``DFF``) include
+    weekend dates in early vintages. Forecast tasks and Darts regression models
+    use ``freq="B"`` (pandas Mon--Fri business days); ``TimeSeries.from_dataframe``
+    with ``fill_missing_dates=True`` then raises if any input stamp is not on
+    that grid.
+    """
+    if df.empty:
+        return df
+    x = df.copy()
+    ts = pd.to_datetime(x["timestamp"])
+    return x.loc[ts.dt.dayofweek < 5].reset_index(drop=True)
+
+
 def _load_yahoo_close_frame(
     ticker: str,
     *,
     start: str,
     end: str | None,
-    cache_path: Path,
+    cache_dir: Path,
     refresh: bool,
 ) -> pd.DataFrame:
-    adapter = YahooFinanceDailyAdapter(
+    adapter = YFinanceDailyAdapter(
         ticker,
+        field="Adj Close",
         start=start,
         end=end,
-        cache_path=cache_path,
+        cache_dir=cache_dir,
         refresh=refresh,
     )
     raw = adapter.fetch()
@@ -263,6 +283,7 @@ def _build_daily_fred_level_feature(
     refresh: bool,
 ) -> pd.DataFrame:
     x = _fred_frame(fred_id, cache_dir=cache_dir, refresh=refresh)
+    x = _drop_weekend_timestamp_rows(x)
     x["released_at"] = pd.to_datetime(x["timestamp"]) + pd.offsets.BDay(1)
     return _apply_one_business_day_feature_lag(x)
 
@@ -274,6 +295,7 @@ def _build_daily_fred_return_feature(
     refresh: bool,
 ) -> pd.DataFrame:
     x = _fred_frame(fred_id, cache_dir=cache_dir, refresh=refresh)
+    x = _drop_weekend_timestamp_rows(x)
     x = x[x["value"] > 0].reset_index(drop=True)
     x["value"] = np.log(x["value"] / x["value"].shift(1))
     x = x.dropna(subset=["value"]).reset_index(drop=True)
@@ -324,12 +346,13 @@ def build_sp500_multivariate_service(
         If ``False`` (default), unavailable covariates are skipped with a warning.
     """
     _load_fred_dotenv()
-    svc = build_sp500_log_return_service(
-        refresh=refresh,
-        start=start,
-        end=end,
-        cache_path=sp500_cache_path,
-    )
+    # Only forward ``cache_path`` when the caller supplies one. Passing ``None``
+    # would shadow the single-variable default (repo ``data/yahoo/sp500_gspc.parquet``)
+    # and force every notebook run to hit Yahoo Finance live.
+    sp500_kwargs: dict[str, Any] = {"refresh": refresh, "start": start, "end": end}
+    if sp500_cache_path is not None:
+        sp500_kwargs["cache_path"] = sp500_cache_path
+    svc = build_sp500_log_return_service(**sp500_kwargs)
     if not include_covariates:
         return svc
 
@@ -357,7 +380,7 @@ def build_sp500_multivariate_service(
                 VIX_TICKER,
                 start=start,
                 end=end,
-                cache_path=yahoo_dir / "vix.parquet",
+                cache_dir=yahoo_dir,
                 refresh=refresh,
             )
             if SERIES_ID_VIX_LEVEL in desired_set:
@@ -400,7 +423,7 @@ def build_sp500_multivariate_service(
                 NASDAQ_TICKER,
                 start=start,
                 end=end,
-                cache_path=yahoo_dir / "nasdaq_ixic.parquet",
+                cache_dir=yahoo_dir,
                 refresh=refresh,
             )
             nasdaq_ret = _apply_one_business_day_feature_lag(_to_log_return_feature(nasdaq_close))

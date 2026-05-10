@@ -1,10 +1,12 @@
 """S&P 500 multivariate log-return experiment — leak-safe covariates.
 
-The demo notebook is a narrative shell over the modules in this directory:
+The demo notebooks are narrative shells over the modules in this directory:
 
 - :mod:`data` — ``build_sp500_multivariate_service()`` and canonical covariate ids.
+- :mod:`multivariate_backtest_grid` — ``run_multivariate_backtest_grid()`` for leaderboard rows.
 - :mod:`analysis` — styled leaderboards for presentation.
-- :mod:`plots` — matplotlib context figures (target history, CRPS comparison).
+- :mod:`plots` — matplotlib context figures (target history, CRPS, open vs forecast).
+- YAML specs — ``sp500_multivariate_backtest_smoke.yaml`` and ``sp500_multivariate_backtest_full.yaml``.
 
 See ``README.md`` for the full experiment description.
 """

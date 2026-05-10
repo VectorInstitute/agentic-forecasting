@@ -15,6 +15,9 @@ import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
+from implementations.experiments.stock_price_forecasting_multivariate.analysis import (
+    style_results_dataframe,
+)
 from implementations.experiments.stock_price_forecasting_multivariate.data import (
     SP500_LOG_RETURN_SERIES_ID,
 )
@@ -111,3 +114,110 @@ def plot_mean_crps_leaderboard(
     for yi, val in zip(y, d[value_col].to_numpy(dtype=float), strict=True):
         ax.text(val, yi, f"  {val:.5f}", va="center", fontsize=9, color="0.2")
     return fig, ax
+
+
+def plot_open_forecast_vs_actual(
+    compare_df: pd.DataFrame,
+    *,
+    title: str | None = None,
+    run_label: str = "",
+) -> tuple[Figure, Axes]:
+    """Line + fan chart: realised **open** vs median-implied open (5–95% band when available).
+
+    ``compare_df`` is typically from
+    :func:`~implementations.experiments.stock_price_forecasting_multivariate.multivariate_backtest_grid.build_open_price_compare_frame`.
+    """
+    fig, ax = plt.subplots(figsize=(11, 5), layout="constrained", facecolor="0.98")
+    ax.set_facecolor("#fafafa")
+
+    if compare_df.empty:
+        ax.text(0.5, 0.5, "No rows to plot (check price cache and backtest window).", ha="center", va="center")
+        ax.set_axis_off()
+        return fig, ax
+
+    d = compare_df.copy()
+    d["session"] = pd.to_datetime(d["session"])
+    x = d["session"].to_numpy()
+    y_act = d["actual_open"].to_numpy(dtype=float)
+    y_fc = d["forecast_open"].to_numpy(dtype=float)
+
+    has_band = "forecast_open_p05" in d.columns and "forecast_open_p95" in d.columns
+    if has_band:
+        lo = d["forecast_open_p05"].to_numpy(dtype=float)
+        hi = d["forecast_open_p95"].to_numpy(dtype=float)
+        m = np.isfinite(lo) & np.isfinite(hi)
+        lo2 = np.minimum(lo, hi)
+        hi2 = np.maximum(lo, hi)
+        ax.fill_between(
+            x[m],
+            lo2[m],
+            hi2[m],
+            color="#7e57c2",
+            alpha=0.22,
+            linewidth=0,
+            label="Implied open 5–95%",
+            zorder=1,
+        )
+
+    ax.plot(x, y_act, color="#0d47a1", linewidth=2.2, marker="o", markersize=4, label="Actual open", zorder=3)
+    ax.plot(
+        x,
+        y_fc,
+        color="#6a1b9a",
+        linewidth=1.8,
+        linestyle="--",
+        marker="s",
+        markersize=3.5,
+        label="Forecast open (median log-return)",
+        zorder=4,
+    )
+
+    err = y_fc - y_act
+    rmse = float(np.sqrt(np.mean(err**2))) if len(err) else float("nan")
+    bias = float(np.mean(err)) if len(err) else float("nan")
+    sub = f"RMSE = {rmse:,.2f} USD   mean error = {bias:+,.2f} USD   n = {len(d)} sessions"
+    if run_label:
+        sub = f"{run_label} · {sub}"
+
+    ttl = title or "S&P 500 — session open: forecast vs realised"
+    ax.set_title(ttl, fontsize=12, fontweight="600", color="0.15")
+    ax.set_xlabel("Session date (open print)", fontsize=10, color="0.25")
+    ax.set_ylabel("Open (USD)", fontsize=10, color="0.25")
+    ax.legend(loc="upper left", framealpha=0.92, fontsize=9)
+    ax.grid(True, alpha=0.28, linestyle="-", linewidth=0.6)
+    ax.tick_params(axis="both", labelsize=9, colors="0.35")
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    fig.text(0.02, 0.02, sub, fontsize=8.5, color="0.4", style="italic")
+    fig.autofmt_xdate()
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    return fig, ax
+
+
+_RESULTS_EMPTY_HINT = (
+    "RESULTS_DF is empty — set at least one run_models entry to true in the "
+    "active YAML (``sp500_multivariate_backtest_smoke.yaml`` or "
+    "``sp500_multivariate_backtest_full.yaml``)."
+)
+
+
+def display_multivariate_backtest_leaderboard(results_df: pd.DataFrame) -> None:
+    """Styled ``RESULTS_DF`` plus log-return and open-level mean CRPS bar charts."""
+    from IPython.display import display  # noqa: PLC0415 — optional notebook dependency
+
+    if results_df.empty:
+        print(_RESULTS_EMPTY_HINT)
+        return
+    display(style_results_dataframe(results_df))
+    fig, _ = plot_mean_crps_leaderboard(
+        results_df,
+        value_col="mean_crps",
+        title="Mean CRPS — log return (target scale)",
+    )
+    plt.show()
+    fig, _ = plot_mean_crps_leaderboard(
+        results_df,
+        value_col="mean_crps_open",
+        title="Mean CRPS — same-day open (USD, implied from log-return fan)",
+    )
+    plt.show()

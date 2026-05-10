@@ -45,6 +45,8 @@ target series only via `build_sp500_multivariate_service(include_covariates=Fals
 | `nasdaq_log_ret_1b_l1b` | NASDAQ composite log return |
 
 Exact adapters and transforms live in `data.py` (`DEFAULT_COVARIATE_SERIES_IDS`).
+Yahoo covariates use `aieng.forecasting.data.adapters.YFinanceDailyAdapter` (parquet
+under `data/yfinance/` at the repo root); FRED series use `FREDAdapter` (`data/fred/`).
 
 ---
 
@@ -66,11 +68,15 @@ Missing optional feeds are **skipped with warnings** by default
 
 ```
 implementations/experiments/stock_price_forecasting_multivariate/
-├── data.py        # build_sp500_multivariate_service(); covariate series ids
-├── analysis.py    # style_results_dataframe() for notebook tables
-├── plots.py       # plot_sp500_log_return_recent, plot_mean_crps_leaderboard
-├── sp500_multivariate_backtest_demo.ipynb   # main narrative (numbered sections)
-└── README.md      # this file
+├── data.py                              # build_sp500_multivariate_service(); covariate series ids
+├── analysis.py                          # style_results_dataframe() for notebook tables
+├── plots.py                             # figures, leaderboard display, ``plot_open_forecast_vs_actual()``
+├── multivariate_backtest_grid.py        # run_multivariate_backtest_grid(); open-level CRPS
+├── sp500_multivariate_backtest_smoke.yaml   # small window / laptop smoke settings
+├── sp500_multivariate_backtest_full.yaml   # main demo window + sample count
+├── sp500_multivariate_backtest_demo_smoke.ipynb   # smoke narrative (loads smoke YAML)
+├── sp500_multivariate_backtest_demo.ipynb         # main narrative (loads full YAML)
+└── README.md                            # this file
 ```
 
 ---
@@ -78,8 +84,9 @@ implementations/experiments/stock_price_forecasting_multivariate/
 ## Prerequisites
 
 The notebook builds `DataService` instances on demand; **first run** pulls
-Yahoo daily bars (and FRED macro series where configured) into `data/` at the
-repo root (gitignored). You do not need a separate S&P fetch script.
+Yahoo daily bars into `data/yfinance/` and FRED series into `data/fred/` at the
+repo root (gitignored). The S&P target still uses the single-variable Yahoo cache
+under `data/yahoo/` via `build_sp500_log_return_service()` unless you change that path.
 
 Warm the FRED parquet cache the same way as the CPI / food notebooks (shared
 `FREDAdapter` layout under `data/fred/`). The script pulls **both** the food-side
@@ -95,8 +102,8 @@ Set **`FRED_API_KEY`** in the repo-root `.env` (or export it); the multivariate
 any FRED fetch, matching `scripts/fetch_fred.py`.
 
 Use the same environment as other experiments (`uv sync` at repo root). Yahoo
-history does not require a key. Ensure `yfinance` is installed (see
-`implementations/pyproject.toml`).
+history does not require a key. Ensure `yfinance` is installed for
+`YFinanceDailyAdapter` (see `implementations/pyproject.toml` and `aieng-forecasting`).
 
 ---
 
@@ -104,7 +111,8 @@ history does not require a key. Ensure `yfinance` is installed (see
 
 | Notebook | Purpose |
 |----------|---------|
-| `sp500_multivariate_backtest_demo.ipynb` | **Main demo.** Numbered sections (setup → data → spec description → backtests → formatted leaderboard + CRPS chart). Edit **DEMO CONFIG** for models, date window, and covariate subset; `describe_spec()` prints the active `BacktestSpec` like the food CPI notebook prints YAML-backed specs. |
+| `sp500_multivariate_backtest_demo.ipynb` | **Main demo.** Loads **`sp500_multivariate_backtest_full.yaml`** (window, models, lags, covariates). `describe_spec()` prints the active `BacktestSpec`. Leaderboard includes log-return and open-level mean CRPS. |
+| `sp500_multivariate_backtest_demo_smoke.ipynb` | **Smoke / laptop run.** Same pipeline with **`sp500_multivariate_backtest_smoke.yaml`** (tiny window, fewer samples) so Run All finishes quickly. |
 
 For a minimal single-target tour without covariates, see
 `stock_price_forecasting_single_variable/sp500_data_exploration.ipynb`.
@@ -116,12 +124,13 @@ For a minimal single-target tour without covariates, see
 - **Parity with the single-variable target** so CRPS and direction metrics are
   comparable across notebooks.
 - **Notebook stays thin:** plotting and table styling live in `plots.py` and
-  `analysis.py` (same separation as `food_price_forecasting/`).
+  `analysis.py`; the backtest grid loop lives in `multivariate_backtest_grid.py`
+  (same separation as `food_price_forecasting/`).
 - **Unified `RESULTS_DF` leaderboard** — one sorted table per run: mean CRPS,
   covariate usage, direction metrics (`dir_*` from point sign and `prob_up`),
   and an `error` column on failure.
 - **LightGBM is opt-in** — `DartsLightGBMPredictor` sets single-thread defaults
   and caps OpenMP/BLAS/joblib env vars before loading LightGBM (nested
   parallelism otherwise segfaults on some macOS setups). Install **`brew install libomp`**
-  if the library fails to load; the demo still defaults LightGBM off in
-  `RUN_MODELS` so notebooks stay safe until you opt in.
+  if the library fails to load; set LightGBM entries to `false` under
+  `experiment.run_models` in the YAML until you opt in.
