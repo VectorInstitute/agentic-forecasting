@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.ticker import FuncFormatter
 
 from implementations.experiments.stock_price_forecasting_multivariate.analysis import (
     style_results_dataframe,
@@ -105,7 +106,8 @@ def plot_mean_crps_leaderboard(
 
     d = d.sort_values(value_col, ascending=True)
     y = np.arange(len(d))
-    colors = plt.cm.viridis(np.linspace(0.25, 0.85, len(d)))
+    viridis = plt.get_cmap("viridis")
+    colors = viridis(np.linspace(0.25, 0.85, len(d)))
     ax.barh(y, d[value_col].to_numpy(dtype=float), color=colors, height=0.65)
     ax.set_yticks(y, d[label_col].astype(str).to_list())
     ax.invert_yaxis()
@@ -113,7 +115,7 @@ def plot_mean_crps_leaderboard(
     ax.set_title(title, fontsize=11)
     ax.grid(True, axis="x", alpha=0.3)
     for yi, val in zip(y, d[value_col].to_numpy(dtype=float), strict=True):
-        ax.text(val, yi, f"  {val:.5f}", va="center", fontsize=9, color="0.2")
+        ax.text(float(val), float(yi), f"  {val:.5f}", va="center", fontsize=9, color="0.2")
     return fig, ax
 
 
@@ -187,7 +189,7 @@ def plot_open_forecast_vs_actual(
     ax.legend(loc="upper left", framealpha=0.92, fontsize=9)
     ax.grid(True, alpha=0.28, linestyle="-", linewidth=0.6)
     ax.tick_params(axis="both", labelsize=9, colors="0.35")
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
     fig.text(0.02, 0.02, sub, fontsize=8.5, color="0.4", style="italic")
     fig.autofmt_xdate()
     for spine in ("top", "right"):
@@ -279,7 +281,7 @@ def plot_open_forecast_vs_actual_multi(
     ax.legend(loc="upper left", framealpha=0.92, fontsize=8, ncol=2)
     ax.grid(True, alpha=0.28, linestyle="-", linewidth=0.6)
     ax.tick_params(axis="both", labelsize=9, colors="0.35")
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
     fig.text(0.02, 0.02, "  ·  ".join(rmse_bits), fontsize=8, color="0.4", style="italic")
     fig.autofmt_xdate()
     for spine in ("top", "right"):
@@ -301,7 +303,7 @@ def display_multivariate_backtest_leaderboard(results_df: pd.DataFrame) -> None:
     if results_df.empty:
         print(_RESULTS_EMPTY_HINT)
         return
-    display(style_results_dataframe(results_df))
+    display(style_results_dataframe(results_df))  # type: ignore[no-untyped-call]
     fig, _ = plot_mean_crps_leaderboard(
         results_df,
         value_col="mean_crps",

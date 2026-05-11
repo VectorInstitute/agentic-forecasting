@@ -31,14 +31,14 @@ to ``fetch_fred.py``. Raw series ids and prefetch metadata live in :data:`FRED_P
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.adapters import FREDAdapter, YFinanceDailyAdapter
-
 from implementations.experiments.stock_price_forecasting_single_variable.data import (
     SP500_LOG_RETURN_SERIES_ID,
     SP500_SERIES_ID,
@@ -48,6 +48,7 @@ from implementations.experiments.stock_price_forecasting_single_variable.data im
 )
 
 
+_load_dotenv: Callable[..., Any] | None
 try:
     from dotenv import load_dotenv as _load_dotenv
 except ImportError:
@@ -235,7 +236,7 @@ def _business_daily_expand_from_releases(
 
 
 def _apply_one_business_day_feature_lag(df: pd.DataFrame) -> pd.DataFrame:
-    """Final anti-leak lag: feature at t carries information from t-1."""
+    """Shift values so the feature at *t* only uses information through *t-1*."""
     x = df.copy().sort_values("timestamp").reset_index(drop=True)
     x["value"] = x["value"].shift(1)
     x = x.dropna(subset=["value"]).reset_index(drop=True)
@@ -325,7 +326,7 @@ def _build_first_available_daily_fred_return_feature(
     ) from last_error
 
 
-def build_sp500_multivariate_service(
+def build_sp500_multivariate_service(  # noqa: PLR0912, PLR0915
     *,
     include_covariates: bool = True,
     covariate_series_ids: list[str] | None = None,
@@ -354,7 +355,7 @@ def build_sp500_multivariate_service(
         sp500_kwargs["cache_path"] = sp500_cache_path
     svc = build_sp500_log_return_service(**sp500_kwargs)
     if not include_covariates:
-        return svc
+        return cast(DataService, svc)
 
     desired = covariate_series_ids or DEFAULT_COVARIATE_SERIES_IDS
     desired_set = set(desired)
@@ -611,7 +612,7 @@ def build_sp500_multivariate_service(
         except (RuntimeError, ValueError) as exc:
             _handle_covariate_error(SERIES_ID_DOLLAR_INDEX_RETURN, exc)
 
-    return svc
+    return cast(DataService, svc)
 
 
 __all__ = [

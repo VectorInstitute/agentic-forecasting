@@ -21,13 +21,13 @@ from aieng.forecasting.methods import (
     DartsLightGBMPredictor,
     DartsLinearRegressionPredictor,
 )
-
-from implementations.experiments.stock_price_forecasting_multivariate.data import (
-    SP500_LOG_RETURN_SERIES_ID,
-)
 from implementations.experiments.stock_price_forecasting_single_variable.analysis import (
     build_direction_eval_frame,
     direction_classification_metrics,
+)
+
+from implementations.experiments.stock_price_forecasting_multivariate.data import (
+    SP500_LOG_RETURN_SERIES_ID,
 )
 
 
