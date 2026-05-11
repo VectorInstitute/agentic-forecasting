@@ -30,9 +30,8 @@ from pathlib import Path
 from typing import Any, Literal
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
 from aieng.forecasting.data.adapters.base import BaseAdapter
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # Supported Yahoo Finance daily history fields.

@@ -1,11 +1,10 @@
-"""Tests for :class:`YFinanceDailyAdapter` disk-cache behaviour (no live network calls)."""
+"""Tests YFinanceDailyAdapter disk cache behaviour (mocks only; no network)."""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
-
 from aieng.forecasting.data.adapters.yfinance import YFinanceDailyAdapter
 
 
