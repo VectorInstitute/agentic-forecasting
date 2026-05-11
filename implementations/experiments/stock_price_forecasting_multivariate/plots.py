@@ -6,6 +6,7 @@ Keeps the notebook narrative-focused; style matches
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
@@ -188,6 +189,98 @@ def plot_open_forecast_vs_actual(
     ax.tick_params(axis="both", labelsize=9, colors="0.35")
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:,.0f}"))
     fig.text(0.02, 0.02, sub, fontsize=8.5, color="0.4", style="italic")
+    fig.autofmt_xdate()
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    return fig, ax
+
+
+def plot_open_forecast_vs_actual_multi(
+    compare_by_run: Mapping[str, pd.DataFrame],
+    *,
+    title: str | None = None,
+) -> tuple[Figure, Axes]:
+    """Single axes: realised **open** once; one line per run (median-implied open).
+
+    When ``forecast_open_p05`` / ``forecast_open_p95`` exist, draws a very light
+    band per model (same hue as the line). Insertion order of ``compare_by_run``
+    controls legend order.
+    """
+    fig, ax = plt.subplots(figsize=(12, 5.5), layout="constrained", facecolor="0.98")
+    ax.set_facecolor("#fafafa")
+
+    items = [(k, df) for k, df in compare_by_run.items() if df is not None and not df.empty]
+    if not items:
+        ax.text(0.5, 0.5, "No rows to plot (check price cache and backtest window).", ha="center", va="center")
+        ax.set_axis_off()
+        return fig, ax
+
+    base = items[0][1].copy()
+    base["session"] = pd.to_datetime(base["session"])
+    base = base.sort_values("session")
+    x_act = base["session"].to_numpy()
+    y_act = base["actual_open"].to_numpy(dtype=float)
+    ax.plot(
+        x_act,
+        y_act,
+        color="#0d47a1",
+        linewidth=2.2,
+        marker="o",
+        markersize=4,
+        label="Actual open",
+        zorder=5,
+    )
+
+    cmap = plt.get_cmap("tab10")
+    rmse_bits: list[str] = []
+    for i, (run_key, d0) in enumerate(items):
+        d = d0.copy()
+        d["session"] = pd.to_datetime(d["session"])
+        d = d.sort_values("session")
+        x = d["session"].to_numpy()
+        y_fc = d["forecast_open"].to_numpy(dtype=float)
+        color = cmap(i % 10)
+        label = run_key.replace("_", " ")
+        has_band = "forecast_open_p05" in d.columns and "forecast_open_p95" in d.columns
+        if has_band:
+            lo = d["forecast_open_p05"].to_numpy(dtype=float)
+            hi = d["forecast_open_p95"].to_numpy(dtype=float)
+            m = np.isfinite(lo) & np.isfinite(hi)
+            lo2 = np.minimum(lo, hi)
+            hi2 = np.maximum(lo, hi)
+            ax.fill_between(
+                x[m],
+                lo2[m],
+                hi2[m],
+                color=color,
+                alpha=0.14,
+                linewidth=0,
+                zorder=1 + i * 0.01,
+            )
+        ax.plot(
+            x,
+            y_fc,
+            color=color,
+            linewidth=1.65,
+            linestyle="--",
+            marker="s",
+            markersize=3,
+            label=f"{label} (median)",
+            zorder=4 + i * 0.01,
+        )
+        err = y_fc - d["actual_open"].to_numpy(dtype=float)
+        rmse = float(np.sqrt(np.mean(err**2))) if len(err) else float("nan")
+        rmse_bits.append(f"{label}: RMSE {rmse:,.1f}")
+
+    ttl = title or "S&P 500 — session open: forecasts vs realised (all models)"
+    ax.set_title(ttl, fontsize=12, fontweight="600", color="0.15")
+    ax.set_xlabel("Session date (open print)", fontsize=10, color="0.25")
+    ax.set_ylabel("Open (USD)", fontsize=10, color="0.25")
+    ax.legend(loc="upper left", framealpha=0.92, fontsize=8, ncol=2)
+    ax.grid(True, alpha=0.28, linestyle="-", linewidth=0.6)
+    ax.tick_params(axis="both", labelsize=9, colors="0.35")
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    fig.text(0.02, 0.02, "  ·  ".join(rmse_bits), fontsize=8, color="0.4", style="italic")
     fig.autofmt_xdate()
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)

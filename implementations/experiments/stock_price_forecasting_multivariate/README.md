@@ -70,7 +70,7 @@ Missing optional feeds are **skipped with warnings** by default
 implementations/experiments/stock_price_forecasting_multivariate/
 ├── data.py                              # build_sp500_multivariate_service(); covariate series ids
 ├── analysis.py                          # style_results_dataframe() for notebook tables
-├── plots.py                             # figures, leaderboard display, ``plot_open_forecast_vs_actual()``
+├── plots.py                             # figures, leaderboard; open vs actual (single or multi-model)
 ├── multivariate_backtest_grid.py        # run_multivariate_backtest_grid(); open-level CRPS
 ├── sp500_multivariate_backtest_smoke.yaml   # small window / laptop smoke settings
 ├── sp500_multivariate_backtest_full.yaml   # main demo window + sample count
