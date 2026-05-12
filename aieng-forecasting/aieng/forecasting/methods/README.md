@@ -11,7 +11,7 @@ methods/
 ├── baselines/       # simple floor baselines and teaching references
 ├── numerical/       # classical / ML numerical forecasters
 ├── llm_processes/   # planned LLM-process predictors
-└── agentic/         # ADK-based agentic runners and the analyst agent
+└── agentic/         # reusable ADK runners, agent factory, predictors, and output schemas
 ```
 
 ---
@@ -53,13 +53,16 @@ from aieng.forecasting.methods.baselines import LastValuePredictor
 from aieng.forecasting.methods.numerical import DartsAutoARIMAPredictor
 ```
 
-Agentic runner and analyst agent:
+Agentic runner, factory, and output schemas:
 
 ```python
-from aieng.forecasting.methods.agentic import AdkTextRunner, AdkTextRunnerConfig
-from aieng.forecasting.methods.agentic.analyst_agent import (
-    AnalystAgentConfig,
-    build_analyst_agent,
+from aieng.forecasting.methods.agentic import (
+    AdkTextRunner,
+    AdkTextRunnerConfig,
+    AgentConfig,
+    AgentPredictor,
+    ContinuousAgentForecastOutput,
+    build_adk_agent,
 )
 ```
 
@@ -87,5 +90,9 @@ from aieng.forecasting.methods.agentic.analyst_agent import (
 |---|---|---|
 | `agentic/adk_runner.py` | `AdkTextRunner` | Async text-in / text-out wrapper around ADK `InMemoryRunner`. Manages ADK sessions (fresh-per-message or sticky) and optionally traces each turn to Langfuse via `propagate_attributes`. |
 | `agentic/adk_runner.py` | `AdkTextRunnerConfig` | Pydantic configuration for `AdkTextRunner` (session mode, Langfuse fields). |
-| `agentic/analyst_agent/` | `build_analyst_agent` | Factory that creates the analyst `LlmAgent` equipped with the E2B code interpreter and the `use-aieng-forecasting` skill. |
-| `agentic/analyst_agent/` | `AnalystAgentConfig` | Pydantic configuration for the analyst agent (model, sandbox timeouts, generation overrides, and instruction knobs). |
+| `agentic/agent_factory.py` | `build_adk_agent` | Generic ADK `LlmAgent` factory with optional code execution, context retrieval, skills, generation controls, and structured output schema. |
+| `agentic/agent_factory.py` | `AgentConfig` | Pydantic configuration for reusable ADK agents. `output_schema=None` supports interactive/free-form agents; a structured `AgentForecastOutput` schema supports Track 1 predictors. Use-case-specific prompts and presets should live in `implementations/<use-case>/`. |
+| `agentic/outputs.py` | `AgentForecastOutput` | Abstract output adapter interface for converting structured agent JSON into evaluation `Prediction` objects. |
+| `agentic/outputs.py` | `ContinuousAgentForecastOutput` | Canonical continuous forecasting output schema. Declares `modality = "continuous"`, requires one forecast per task horizon and the standard quantile grid, then converts to `ContinuousForecast` payloads. |
+| `agentic/predictor.py` | `AgentPredictor` | Track 1 `Predictor` that builds prompts, runs an ADK agent through `AdkTextRunner`, validates structured JSON, and converts it to `Prediction` objects. Accepts an optional injected runner for tests or custom observability. |
+| `agentic/predictor.py` | `ForecastPromptBuilder` | Protocol for task-specific prompt builders that turn `(task, context)` into the text passed to the agent. |

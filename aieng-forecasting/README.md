@@ -33,7 +33,7 @@ Current extras:
 
 - `numerical` — Darts-based numerical predictors and related model dependencies
 - `llm` — LiteLLM-based LLM-process predictors; Langfuse tracing via `langfuse_otel`
-- `agentic` — Google ADK runner (`AdkTextRunner`), analyst agent (`build_analyst_agent`), E2B code interpreter, and Langfuse / OpenInference tracing
+- `agentic` — Google ADK runner (`AdkTextRunner`), generic agent factory (`build_adk_agent`), Track 1 predictor wrapper (`AgentPredictor`), structured agent output schemas, E2B code interpreter, and Langfuse / OpenInference tracing
 
 > **E2B setup:** the `agentic` extra requires a one-time sandbox image build.
 > See [Getting Started — step 3](../README.md#3-agentic-track-only-build-the-e2b-sandbox-image) in the root README.

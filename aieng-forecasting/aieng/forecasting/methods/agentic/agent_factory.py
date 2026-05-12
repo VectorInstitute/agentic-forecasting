@@ -1,0 +1,284 @@
+"""Factory functions for building Google ADK agents for forecasting.
+
+This module exposes :class:`AgentConfig` plus its nested
+:class:`CodeExecutionConfig` and :class:`ContextRetrievalConfig` configs,
+and the :func:`build_adk_agent` factory that turns a config into a fully
+configured :class:`google.adk.agents.LlmAgent` (with optional E2B-backed
+code execution and a Google Search context-retrieval sub-agent).
+
+This module requires the ``agentic`` extra; importing it without the extra
+raises :class:`ImportError` with installation guidance.
+"""
+
+from pathlib import Path
+from typing import Any, Sequence
+
+from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
+from google.adk.models.base_llm import BaseLlm
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+try:
+    from aieng.agents.tools.code_interpreter import CodeInterpreter
+    from google.adk.agents import LlmAgent
+    from google.adk.skills import load_skill_from_dir
+    from google.adk.skills.models import Skill
+    from google.adk.tools.google_search_agent_tool import GoogleSearchAgentTool
+    from google.adk.tools.google_search_tool import google_search
+    from google.adk.tools.skill_toolset import SkillToolset
+    from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel
+except ModuleNotFoundError as exc:
+    raise ImportError(
+        "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
+    ) from exc
+
+
+class ContextRetrievalConfig(BaseModel):
+    """Configuration for context retrieval sub-agent.
+
+    Attributes
+    ----------
+    enabled : bool, default=False
+        Whether to enable context retrieval. Disabled by default.
+    model : str, default="gemini-3-flash-preview"
+        Model to use for context retrieval.
+    instruction : str
+        Instruction for the context retrieval agent.
+    temperature : float | None, default=None
+        Sampling temperature for the context retrieval agent.
+    max_output_tokens : int | None, default=None
+        Maximum output tokens for the context retrieval agent.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    enabled: bool = False
+    model: str = "gemini-3-flash-preview"
+    instruction: str = """
+    You are a specialized Google search agent.
+
+    When given a search query, use the `google_search` tool to find the related information.
+    """
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    max_output_tokens: int | None = Field(default=None, ge=1)
+
+
+class CodeExecutionConfig(BaseModel):
+    """Configuration for code execution tool.
+
+    The code execution tool enables the agent to run code in a E2B-backed sandbox
+    environment. The sandbox is created and destroyed for each code execution request.
+
+    Attributes
+    ----------
+    enabled : bool, default=False
+        Whether to enable code execution. Disabled by default.
+    template_name : str | None, default="agentic-forecasting-bootcamp"
+        E2B template name for the code execution environment, if available.
+        If not provided, the agent will use the default E2B sandbox.
+    sandbox_timeout_seconds : int, default=3600
+        Sandbox timeout in seconds.
+    code_execution_timeout_seconds : float | None, default=3300
+        Code execution timeout in seconds. If not provided, the agent will use the
+        default E2B code execution timeout.
+    """
+
+    enabled: bool = False
+    template_name: str | None = "agentic-forecasting-bootcamp"
+    sandbox_timeout_seconds: int = Field(default=3600, ge=1, le=3600)
+    code_execution_timeout_seconds: float | None = Field(default=3300, gt=0)
+
+    @model_validator(mode="after")
+    def _timeouts_consistent(self) -> "CodeExecutionConfig":
+        """Ensure code execution cannot outlive the sandbox itself."""
+        if (
+            self.code_execution_timeout_seconds is not None
+            and self.code_execution_timeout_seconds > self.sandbox_timeout_seconds
+        ):
+            raise ValueError("code_execution_timeout_seconds cannot exceed sandbox_timeout_seconds")
+        return self
+
+
+class AgentConfig(BaseModel):
+    """Configuration for building an ADK agent for forecasting tasks.
+
+    Attributes
+    ----------
+    name : str, default="adk_forecasting_agent"
+        Name of the agent.
+    model : str | BaseLlm, default="gemini-3-flash-preview"
+        Gemini model identifier passed to :class:`~google.adk.agents.LlmAgent`
+        or a custom :class:`~google.adk.models.base_llm.BaseLlm` instance.
+        Using a custom model instance allows for more flexible model configuration,
+        such as using non-Gemini models via LiteLLM.
+    description : str, default=""
+        Description of the agent. This is useful when the agent is used as a sub-agent.
+    instruction : str, default=""
+        Instruction for the agent. This is useful for specializing the agent for
+        a specific use case.
+    skills_dirs : Sequence[Path], default=()
+        Sequence of paths to skill directories. Skills extend the agent's capabilities
+        with additional instructions.
+    output_schema : type[AgentForecastOutput] or None, default=None
+        Output schema for the agent. If provided, the agent will output a JSON object
+        with the schema. If not provided, the agent will output a free-form text
+        response.
+    seed : int or None, default=None
+        Generation seed forwarded to the model for reproducibility.
+    temperature : float or None, default=None
+        Sampling temperature; ``None`` uses the model default.
+    max_output_tokens : int or None, default=None
+        Maximum tokens per model response; ``None`` uses the model default.
+    thinking_budget : int or None, default=None
+        Token budget for extended thinking (Gemini thinking models only).
+    thinking_level : ThinkingLevel or None, default=None
+        Thinking-level preset; overrides ``thinking_budget`` when both are set.
+    code_execution : CodeExecutionConfig
+        Configuration for code execution. If enabled, the agent will be equipped with
+        the ability to run code in a E2B-backed sandbox environment. Disabled by
+        default.
+    context_retrieval : ContextRetrievalConfig
+        Configuration for context retrieval. If enabled, the agent will be equipped with
+        the ability to search the web for information using the `google_search` tool.
+        Disabled by default.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    name: str = "adk_forecasting_agent"
+    model: str | BaseLlm = "gemini-3-flash-preview"
+    description: str = ""
+    instruction: str = ""
+    skills_dirs: Sequence[Path] = ()
+    output_schema: type[AgentForecastOutput] | None = None
+
+    # Optional generation overrides (None = model/provider defaults).
+    seed: int | None = None
+    temperature: float | None = None
+    max_output_tokens: int | None = None
+    thinking_budget: int | None = None
+    thinking_level: ThinkingLevel | None = None
+
+    # Capabilities
+    code_execution: CodeExecutionConfig = Field(default_factory=CodeExecutionConfig)
+    context_retrieval: ContextRetrievalConfig = Field(default_factory=ContextRetrievalConfig)
+
+    @field_validator("skills_dirs")
+    @classmethod
+    def _skill_dirs_exist(cls, dirs: Sequence[Path]) -> Sequence[Path]:
+        """Reject skill directories that do not resolve to a real directory."""
+        missing = [p for p in dirs if not p.is_dir()]
+        if missing:
+            raise ValueError(f"Skill directories do not exist: {missing}")
+        return dirs
+
+    @model_validator(mode="after")
+    def _enabled_requires_instruction(self) -> "AgentConfig":
+        """Require non-empty instructions for the root and context-retrieval agents."""
+        if self.context_retrieval.enabled and not self.context_retrieval.instruction.strip():
+            raise ValueError(
+                "Expected non-empty instruction for context retrieval agent. "
+                "Please provide an instruction in the agent configuration."
+            )
+        if not self.instruction.strip():
+            raise ValueError(
+                "Expected non-empty instruction for root agent. "
+                "Please provide an instruction in the agent configuration."
+            )
+        return self
+
+
+def build_adk_agent(config: AgentConfig) -> LlmAgent:
+    """Build an ADK agent for forecasting tasks with the given configuration.
+
+    Code execution and the Google Search context-retrieval sub-agent are wired
+    only when the corresponding capability blocks in ``config`` are enabled.
+
+    Parameters
+    ----------
+    config : AgentConfig
+        Configuration for the agent. ``config.instruction`` must be
+        non-empty; if ``config.context_retrieval.enabled`` is ``True``,
+        ``config.context_retrieval.instruction`` must also be non-empty
+        (these are enforced by :class:`AgentConfig` itself).
+
+    Returns
+    -------
+    LlmAgent
+        Configured ADK agent with tools and skills attached.
+
+    Examples
+    --------
+    Minimal interactive agent with free-form output:
+
+    >>> from aieng.forecasting.methods.agentic import (
+    ...     AgentConfig,
+    ...     build_adk_agent,
+    ... )
+    >>> agent = build_adk_agent(
+    ...     AgentConfig(instruction="You are a helpful analyst."),
+    ... )
+
+    Agent with structured output for use by ``AgentPredictor``:
+
+    >>> from aieng.forecasting.methods.agentic import (
+    ...     AgentConfig,
+    ...     ContinuousAgentForecastOutput,
+    ...     build_adk_agent,
+    ... )
+    >>> agent = build_adk_agent(
+    ...     AgentConfig(
+    ...         instruction="Forecast the supplied series.",
+    ...         output_schema=ContinuousAgentForecastOutput,
+    ...     )
+    ... )
+    """
+    # Configure tools
+    tools: list[Any] = []
+    if config.code_execution.enabled:
+        tools.append(
+            CodeInterpreter(
+                template_name=config.code_execution.template_name,
+                sandbox_timeout_seconds=config.code_execution.sandbox_timeout_seconds,
+                code_execution_timeout_seconds=config.code_execution.code_execution_timeout_seconds,
+            ).run_code
+        )
+    if config.context_retrieval.enabled:
+        context_agent = LlmAgent(
+            name="context_agent",
+            model=config.context_retrieval.model,
+            description="An agent for performing Google search using the `google_search` tool",
+            instruction=config.context_retrieval.instruction,
+            tools=[google_search],
+            generate_content_config=GenerateContentConfig(
+                temperature=config.context_retrieval.temperature,
+                max_output_tokens=config.context_retrieval.max_output_tokens,
+            ),
+        )
+        tools.append(GoogleSearchAgentTool(agent=context_agent))
+
+    # Load skills
+    skills: list[Skill] = []
+    for skills_dir in config.skills_dirs:
+        skills.append(load_skill_from_dir(skills_dir))
+
+    if skills:
+        tools.append(SkillToolset(skills=skills))
+
+    # Build agent
+    return LlmAgent(
+        name=config.name,
+        description=config.description,
+        model=config.model,
+        instruction=config.instruction,
+        tools=tools,
+        generate_content_config=GenerateContentConfig(
+            seed=config.seed,
+            temperature=config.temperature,
+            max_output_tokens=config.max_output_tokens,
+            thinking_config=ThinkingConfig(
+                include_thoughts=True, thinking_budget=config.thinking_budget, thinking_level=config.thinking_level
+            ),
+        ),
+        output_schema=config.output_schema,
+    )

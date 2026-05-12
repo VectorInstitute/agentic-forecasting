@@ -1,15 +1,31 @@
-"""General-purpose ADK runner: text-in / text-out over ``InMemoryRunner``."""
+"""General-purpose ADK runner: text-in / text-out over ``InMemoryRunner``.
+
+This module provides :class:`AdkTextRunner`, a thin wrapper around Google
+ADK's :class:`~google.adk.runners.InMemoryRunner` that exposes a single
+``run_text_async(prompt) -> str`` method, manages per-user session lifecycle,
+and optionally propagates Langfuse trace attributes for each turn.
+
+This module requires the ``agentic`` extra; importing it without the extra
+raises :class:`ImportError`.
+"""
 
 from __future__ import annotations
 
 import types as py_types
 from typing import Any
 
-from google.adk.agents.base_agent import BaseAgent
-from google.adk.agents.run_config import RunConfig
-from google.adk.runners import InMemoryRunner
-from google.genai import types as genai_types
 from pydantic import BaseModel, Field
+
+
+try:
+    from google.adk.agents.base_agent import BaseAgent
+    from google.adk.agents.run_config import RunConfig
+    from google.adk.runners import InMemoryRunner
+    from google.genai import types as genai_types
+except ModuleNotFoundError as exc:
+    raise ImportError(
+        "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
+    ) from exc
 
 
 class AdkTextRunnerConfig(BaseModel):
@@ -118,19 +134,26 @@ class AdkTextRunner:
 
     Examples
     --------
-    >>> from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner
-    >>> from aieng.forecasting.methods.agentic.analyst_agent import (
-    ...     build_analyst_agent,
-    ...     AnalystAgentConfig,
-    ... )
-    >>> analyst_agent = build_analyst_agent(AnalystAgentConfig())
-    >>> cfg = AdkTextRunnerConfig(app_name="demo", enable_langfuse_tracing=True)
-    >>> runner = AdkTextRunner(analyst_agent, config=cfg)
-    >>> await runner.run_text_async("What is the trend in the data?")
+    Build a runner from an :class:`AgentConfig` and send one prompt:
 
+    >>> from aieng.forecasting.methods.agentic import (
+    ...     AgentConfig,
+    ...     build_adk_agent,
+    ... )
+    >>> from aieng.forecasting.methods.agentic.adk_runner import (
+    ...     AdkTextRunner,
+    ...     AdkTextRunnerConfig,
+    ... )
+    >>> agent = build_adk_agent(AgentConfig(instruction="You are a helpful assistant."))
+    >>> runner = AdkTextRunner(
+    ...     agent,
+    ...     config=AdkTextRunnerConfig(app_name="demo"),
+    ... )
+    >>> reply = await runner.run_text_async("Hello.")
     """
 
     def __init__(self, agent: BaseAgent, *, config: AdkTextRunnerConfig) -> None:
+        """Construct the runner and optionally initialise Langfuse tracing."""
         self._config = config
         self._runner = InMemoryRunner(agent=agent, app_name=config.app_name)
         # Sticky ADK session per user when ``fresh_session_per_message`` is False.
@@ -144,6 +167,11 @@ class AdkTextRunner:
     def runner(self) -> InMemoryRunner:
         """Underlying ADK runner (session, artifact, memory services)."""
         return self._runner
+
+    @property
+    def agent(self) -> BaseAgent:
+        """Underlying ADK agent driving this runner."""
+        return self._runner.agent
 
     async def _resolve_session_id(self, user_id: str | None, session_id: str | None) -> str:
         """Return the ADK session id to use for a single turn.
