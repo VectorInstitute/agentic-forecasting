@@ -12,9 +12,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar, Literal
 
 import pandas as pd
+from pydantic import BaseModel, ConfigDict, Field
+
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.methods.llm_processes._client import bootstrap_litellm
-from pydantic import BaseModel, ConfigDict, Field
 
 
 if TYPE_CHECKING:

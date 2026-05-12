@@ -1,6 +1,7 @@
 """In-memory series store."""
 
 import pandas as pd
+
 from aieng.forecasting.data.models import SeriesMetadata
 
 

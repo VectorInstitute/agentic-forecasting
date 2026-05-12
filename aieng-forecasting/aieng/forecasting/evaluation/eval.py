@@ -43,12 +43,13 @@ from pathlib import Path
 
 import numpy as np
 import yaml
+from pydantic import BaseModel, Field, model_validator
+
 from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.backtest import _compute_origins, run_eval_loop
 from aieng.forecasting.evaluation.prediction import Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
-from pydantic import BaseModel, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
