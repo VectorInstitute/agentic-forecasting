@@ -101,11 +101,23 @@ FRED_PREFETCH_REGISTRY: dict[str, tuple[str, str, str]] = {
     "DGS10": ("10-Year Treasury Constant Maturity Rate", "Percent", "D"),
     "DGS2": ("2-Year Treasury Constant Maturity Rate", "Percent", "D"),
     "DFF": ("Effective Federal Funds Rate", "Percent", "D"),
-    "CPIAUCSL": ("Consumer Price Index for All Urban Consumers: All Items in U.S. City Average", "Index 1982-84=100", "MS"),
+    "CPIAUCSL": (
+        "Consumer Price Index for All Urban Consumers: All Items in U.S. City Average",
+        "Index 1982-84=100",
+        "MS",
+    ),
     "UNRATE": ("Unemployment Rate", "Percent", "MS"),
     "DCOILWTICO": ("Crude Oil Prices: West Texas Intermediate (WTI)", "Dollars per Barrel", "D"),
-    "GOLDAMGBD228NLBM": ("Gold Fixing Price 10:30 A.M. (London time) in London Bullion Market", "U.S. Dollars per Troy Ounce", "D"),
-    "GOLDPMGBD228NLBM": ("Gold Fixing Price 3:00 P.M. (London time) in London Bullion Market", "U.S. Dollars per Troy Ounce", "D"),
+    "GOLDAMGBD228NLBM": (
+        "Gold Fixing Price 10:30 A.M. (London time) in London Bullion Market",
+        "U.S. Dollars per Troy Ounce",
+        "D",
+    ),
+    "GOLDPMGBD228NLBM": (
+        "Gold Fixing Price 3:00 P.M. (London time) in London Bullion Market",
+        "U.S. Dollars per Troy Ounce",
+        "D",
+    ),
     "DTWEXBGS": ("Trade Weighted U.S. Dollar Index: Broad, Goods and Services", "Index Jan 2006=100", "D"),
 }
 
@@ -270,9 +282,7 @@ def _build_monthly_unemployment_feature(
 ) -> pd.DataFrame:
     unrate = _fred_frame("UNRATE", cache_dir=cache_dir, refresh=refresh)
     # Conservative publication proxy: 10 business days after month end.
-    unrate["released_at"] = (
-        pd.to_datetime(unrate["timestamp"]) + pd.offsets.MonthEnd(1) + pd.offsets.BDay(10)
-    )
+    unrate["released_at"] = pd.to_datetime(unrate["timestamp"]) + pd.offsets.MonthEnd(1) + pd.offsets.BDay(10)
     daily = _business_daily_expand_from_releases(unrate, start=start, end=end)
     return _apply_one_business_day_feature_lag(daily)
 
