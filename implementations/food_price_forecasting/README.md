@@ -99,6 +99,7 @@ implementations/food_price_forecasting/
 ├── plots.py       # plot_trajectory_fan, plot_avgyoy_grid,
 │                  # plot_crps_disaggregated, plot_mape_distribution,
 │                  # plot_food_cpi_small_multiples
+├── analyst_agent/ # task-specific ADK agent config, prompt builder, and skills
 ├── food_cpi_experiment.ipynb      # 26-cell narrative over the helpers above
 └── food_data_exploration.ipynb    # 9-cell warm-up tour of the 9 series
 ```
@@ -138,6 +139,48 @@ uv run python scripts/fetch_cpi.py
 ```
 
 No FRED API key is required for the canonical experiment.
+
+---
+
+## Agentic Predictor
+
+The concrete food CPI agent lives in `analyst_agent/`. It uses the reusable
+`aieng.forecasting.methods.agentic` helpers with food-task-specific
+configuration and exposes two entry points:
+
+- `build_food_price_agent_config(...)` returns an `AgentConfig` for either
+  interactive ADK use (`output_schema=None`) or structured forecasting
+  (`output_schema=ContinuousAgentForecastOutput` or another
+  `AgentForecastOutput` subclass).
+- `build_food_price_agent_predictor(...)` returns a ready-to-use
+  `AgentPredictor` for Track 1 evaluation. It requires a structured output
+  schema; the forecast modality is derived from `output_schema.modality`, so
+  schema and modality cannot drift.
+
+```python
+from food_price_forecasting.analyst_agent import (
+    build_food_price_agent_predictor,
+)
+
+predictor = build_food_price_agent_predictor(
+    enable_code_execution=True,
+    # Keep off for historical backtests unless bounded evidence is needed.
+    enable_news_search=False,
+)
+```
+
+By default, the predictor asks the agent to emit
+`ContinuousAgentForecastOutput`, which converts into the same `Prediction`
+objects as the numerical predictors. This keeps food CPI agents comparable in
+`backtest`, `multi_backtest`, `evaluate`, and `multi_evaluate`.
+
+For interactive analyst sessions, use `adk web` against `analyst_agent/` (or
+call `build_food_price_agent_config(output_schema=None)`) so the agent can
+produce free-form analysis rather than Track 1 JSON.
+
+Task-specific skills live under `analyst_agent/skills/forecast-food-cpi/`.
+The skill encodes CFPR framing, CPI-level output requirements, code-execution
+discipline, and news-search leakage rules.
 
 ---
 
