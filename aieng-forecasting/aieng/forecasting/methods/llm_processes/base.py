@@ -53,8 +53,20 @@ class LLMPredictorConfig(BaseModel):
 
 
 def serialize_history(df: pd.DataFrame, precision: int) -> str:
-    """Render a cutoff-filtered series as one ``YYYY-MM: value`` line per row."""
-    lines = [f"{pd.Timestamp(ts).strftime('%Y-%m')}: {v:.{precision}f}" for ts, v in zip(df["timestamp"], df["value"])]
+    """Render a cutoff-filtered series as one ``<date>: value`` line per row.
+
+    Uses ``YYYY-MM-DD`` format when any timestamp falls on a day other than 1
+    (i.e. the series is sub-monthly), and ``YYYY-MM`` format otherwise.
+
+    .. TODO(history-format): the day-!= 1 heuristic handles monthly vs daily but
+       breaks for quarterly, weekly, or truly irregular series.  A future revision
+       should accept an explicit ``fmt`` or ``frequency`` parameter so callers
+       have full control over the date representation sent to the LLM.
+    """
+    timestamps = [pd.Timestamp(ts) for ts in df["timestamp"]]
+    is_sub_monthly = any(ts.day != 1 for ts in timestamps)
+    fmt = "%Y-%m-%d" if is_sub_monthly else "%Y-%m"
+    lines = [f"{ts.strftime(fmt)}: {v:.{precision}f}" for ts, v in zip(timestamps, df["value"])]
     return "\n".join(lines)
 
 
