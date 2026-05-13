@@ -105,12 +105,12 @@ class TestBuildFoodPriceAgentConfig:
     """The food-specific config wires the right skill, defaults, and news-search instructions."""
 
     def test_default_config_attaches_food_skill_and_disables_news_search(self) -> None:
-        """Defaults must keep historical backtests leak-safe (no news search) but enable code execution."""
+        """Defaults must keep historical backtests leak-safe: no news search, no code execution."""
         config = build_food_price_agent_config()
 
         assert FOOD_CPI_SKILL_DIR in config.skills_dirs
         assert config.context_retrieval.enabled is False
-        assert config.code_execution.enabled is True
+        assert config.code_execution.enabled is False
 
     def test_news_search_uses_food_specific_bounded_instruction(self) -> None:
         """When enabled, the CRA must carry the as_of cutoff guidance specific to Canadian food CPI."""

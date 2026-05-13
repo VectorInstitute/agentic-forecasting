@@ -51,24 +51,18 @@ Your job is to produce calibrated probabilistic forecasts, not a narrative-only 
 ## Forecasting contract
 - The user prompt contains a cutoff-filtered target CPI series, task horizons, frequency, and optional peer-series summaries.
 - Treat `as_of` as the information cutoff. Do not use observations, sources, or search results published after that date.
-- Return only JSON that validates against `ContinuousAgentForecastOutput`.
+- Return only a JSON object in the exact shape described in the user message. Do not include any prose outside the JSON object.
 - Emit one forecast object for every requested horizon and no extra horizons.
-- Use the standard quantile grid exactly: 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95.
+- Use the quantile grid specified in the user message exactly.
 - The `point_forecast` must equal the 0.50 quantile.
 - Quantile values must be non-decreasing as quantile levels increase.
 
 ## Analysis discipline
-- Use code execution for arithmetic, time-series transforms, baselines, residual scales, and quantile construction when available.
-- Prefer simple, inspectable forecasting logic over elaborate models that cannot be checked under the time budget.
-- Good default workflow: parse the supplied CSV, inspect trend/seasonality/recent YoY changes, fit one or more simple baselines, widen uncertainty over farther horizons, then adjust only when evidence supports it.
+- Prefer simple, inspectable forecasting logic over elaborate models that cannot be verified.
+- Good default workflow: inspect the supplied history for trend, seasonality, and recent YoY changes; estimate one or more simple baselines; widen uncertainty over farther horizons; then adjust only when evidence supports it.
+- Consult the `forecast-food-cpi` skill for Canadian food CPI domain knowledge, seasonal patterns, and uncertainty priors by category.
 - If news search is available, use it sparingly for recent food-price drivers and only when publication dates are consistent with `as_of`.
 - Document methods, assumptions, and any searched evidence in `rationale` or `metadata`; do not include prose outside the JSON object.
-
-## Code execution environment
-Each code execution starts a fresh sandbox. Submit self-contained Python programs that include all imports and data literals needed for that run.
-
-## Skill
-Use the `forecast-food-cpi` skill for task-specific conventions, package usage, and Canada's Food Price Report framing.
 """
 
 
@@ -269,7 +263,7 @@ def _output_schema_example(horizons: list[int]) -> str:
 def build_food_price_agent_config(
     *,
     model: str | BaseLlm = "gemini-3-flash-preview",
-    enable_code_execution: bool = True,
+    enable_code_execution: bool = False,
     enable_news_search: bool = False,
     news_search_model: str = "gemini-3-flash-preview",
     output_schema: type[AgentForecastOutput] | None = None,
@@ -286,8 +280,10 @@ def build_food_price_agent_config(
     model : str or BaseLlm, default="gemini-3-flash-preview"
         Model identifier or :class:`~google.adk.models.base_llm.BaseLlm`
         instance. Pass a ``LiteLlm(...)`` instance for non-Gemini providers.
-    enable_code_execution : bool, default=True
+    enable_code_execution : bool, default=False
         If ``True``, equip the agent with the E2B-backed code interpreter.
+        Disabled by default for v1; activate in later phases when the sandbox
+        is pre-loaded with the required packages and data.
     enable_news_search : bool, default=False
         If ``True``, attach the bounded Google Search context-retrieval
         sub-agent. Disabled by default to avoid leakage during historical
@@ -339,7 +335,7 @@ def build_food_price_agent_config(
 def build_food_price_agent_predictor(
     *,
     model: str | BaseLlm = "gemini-3-flash-preview",
-    enable_code_execution: bool = True,
+    enable_code_execution: bool = False,
     enable_news_search: bool = False,
     news_search_model: str = "gemini-3-flash-preview",
     output_schema: type[AgentForecastOutput] = ContinuousAgentForecastOutput,
@@ -358,7 +354,7 @@ def build_food_price_agent_predictor(
     model : str or BaseLlm, default="gemini-3-flash-preview"
         Model identifier or :class:`~google.adk.models.base_llm.BaseLlm`
         instance for the analyst agent.
-    enable_code_execution : bool, default=True
+    enable_code_execution : bool, default=False
         Whether to equip the agent with the code interpreter.
     enable_news_search : bool, default=False
         Whether to attach the bounded news-search sub-agent. Leave off
