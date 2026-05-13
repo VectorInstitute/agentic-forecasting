@@ -185,6 +185,58 @@ def summarize_crps(results_by_predictor: dict[str, dict[str, BacktestResult]]) -
     return df
 
 
+def compute_ape_long(
+    results_by_predictor: dict[str, dict[str, BacktestResult]], data_service: DataService
+) -> pd.DataFrame:
+    """Return per-prediction absolute percentage error in long format.
+
+    Unlike :func:`compute_mape`, which collapses to a per-(predictor, task)
+    mean, this function returns one row per (predictor, task, origin, horizon)
+    so that callers can draw box plots or other distributional summaries.
+    Predictions whose ``forecast_date`` has no observed value are silently
+    dropped.
+
+    Parameters
+    ----------
+    results_by_predictor : dict[str, dict[str, BacktestResult]]
+        Nested mapping: ``predictor_id -> {task_id -> BacktestResult}``.
+    data_service : DataService
+        Data service used to fetch observed values.  Uses ``as_of=utcnow()``
+        so all available data is visible.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: ``predictor_id``, ``task_id``, ``origin``, ``origin_year``,
+        ``horizon``, ``forecast_date``, ``ape``.
+    """
+    as_of = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+    rows: list[dict[str, object]] = []
+
+    for pid, task_results in results_by_predictor.items():
+        for tid, result in task_results.items():
+            actual_df = data_service.get_series(result.spec.task.target_series_id, as_of=as_of)
+            actual_long = actual_df.assign(forecast_date=pd.to_datetime(actual_df["timestamp"])).rename(
+                columns={"value": "actual"}
+            )[["forecast_date", "actual"]]
+            preds_df = predictions_to_dataframe(result, predictor_id=pid, task_id=tid)
+            merged = preds_df.merge(actual_long, on="forecast_date", how="inner")
+            for _, row in merged.iterrows():
+                rows.append(
+                    {
+                        "predictor_id": pid,
+                        "task_id": tid,
+                        "origin": row["origin"],
+                        "origin_year": row["origin_year"],
+                        "horizon": row["horizon"],
+                        "forecast_date": row["forecast_date"],
+                        "ape": abs(row["median"] - row["actual"]) / abs(row["actual"]) * 100,
+                    }
+                )
+
+    return pd.DataFrame(rows)
+
+
 def compute_mape(results_by_predictor: dict[str, dict[str, BacktestResult]], data_service: DataService) -> pd.DataFrame:
     """Return mean absolute percentage error per (predictor, task).
 
@@ -272,6 +324,7 @@ def rationales_table(result: BacktestResult) -> pd.DataFrame:
 
 
 __all__ = [
+    "compute_ape_long",
     "compute_avgyoy",
     "compute_mape",
     "predictions_to_dataframe",
