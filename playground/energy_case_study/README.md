@@ -34,6 +34,30 @@ news/social, analyst scenarios) and four method families (statistical models, ML
 multivariate, time-series foundation models, LLM processes + agentic forecasters) that
 a more capable forecaster could exploit.
 
+## Companion notebook — LLMP context comparison
+
+[`energy_llmp_context_comparison.ipynb`](notebooks/energy_llmp_context_comparison.ipynb)
+picks up where Act 4 leaves off. It asks: **could a context-aware LLM forecaster have
+done better at the three key 2026 origins?**
+
+It evaluates three methods — Prophet, LLMP (history only), and LLMP (with
+plausibly-knowable geopolitical context) — across three question types:
+
+- **Act 5 — Trajectory:** 30-day fan-chart comparison at Jan 5, Feb 2, and Mar 2 2026 origins.
+- **Act 6 — Binary:** P(WTI > threshold in 30 days), compared across methods and scored
+  with Brier score.
+- **Act 7 — Causal:** Signal-audit of the context provided at each origin; comparison
+  of median-forecast shift (bare vs. context); argument for the Track 2 Analyst Agent.
+
+This notebook uses `ContinuousLLMPredictor` with the `context_text` field introduced in
+`aieng-forecasting` to inject curated context snippets into the LLM prompt. Results are
+cached to `data/energy_llmp_context_forecasts.parquet` — the first run makes 6 real
+Gemini API calls (Gemini 3 Flash, ~$0.02 total); subsequent runs are instant.
+
+**This notebook is a prototype candidate for the Track 1 LLMP reference build.**
+When promoted to a formal reference implementation it will move to `implementations/`
+and gain a proper YAML spec and DataService adapter for WTI.
+
 ## Setup
 
 ```bash
