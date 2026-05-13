@@ -272,14 +272,20 @@ def build_food_price_agent_config(
     enable_code_execution: bool = False,
     enable_news_search: bool = False,
     news_search_model: str = "gemini-3-flash-preview",
-    output_schema: type[AgentForecastOutput] | None = None,
 ) -> AgentConfig:
     """Build the reusable :class:`AgentConfig` for the food CPI agent.
 
-    The returned config is wired with the food CPI instructions, the
-    ``forecast-food-cpi`` skill directory, and the requested capability
-    toggles. It is suitable for both when ``output_schema`` is
-    set and when ``output_schema`` is ``None``.
+    The returned config captures the agent's *identity*: the food CPI
+    forecaster instruction, the ``forecast-food-cpi`` skill, and the
+    requested capability toggles. It does **not** include an output
+    schema — the output format is a concern of the caller:
+
+    - Pass the config to :func:`~aieng.forecasting.methods.agentic.build_adk_agent`
+      without an ``output_schema`` for a free-form interactive analyst
+      (e.g. ``adk web``).
+    - Pass it to :class:`~aieng.forecasting.methods.agentic.AgentPredictor`
+      (or :func:`build_food_price_agent_predictor`) with an
+      ``output_schema`` to run in a standardised forecasting experiment.
 
     Parameters
     ----------
@@ -297,27 +303,17 @@ def build_food_price_agent_config(
     news_search_model : str, default="gemini-3-flash-preview"
         Model used by the context-retrieval sub-agent. Ignored unless
         ``enable_news_search`` is ``True``.
-    output_schema : type[AgentForecastOutput] or None, default=None
-        Output schema that the agent must adhere to. Pass a subclass of
-        :class:`~aieng.forecasting.methods.agentic.outputs.AgentForecastOutput`
-        to make the agent emit structured forecasts; leave as ``None`` for free-form chat.
 
     Returns
     -------
     AgentConfig
-        Configured :class:`AgentConfig` ready to pass to
-        :func:`~aieng.forecasting.methods.agentic.build_adk_agent` or
-        :class:`~aieng.forecasting.methods.agentic.AgentPredictor`.
+        Agent identity config. Pass to :func:`build_adk_agent` for
+        interactive use or to :class:`AgentPredictor` / :func:`build_food_price_agent_predictor`
+        to participate in a forecasting experiment.
 
     Examples
     --------
-    >>> from aieng.forecasting.methods.agentic import (
-    ...     ContinuousAgentForecastOutput,
-    ... )
-    >>> config = build_food_price_agent_config(
-    ...     enable_news_search=True,
-    ...     output_schema=ContinuousAgentForecastOutput,
-    ... )
+    >>> config = build_food_price_agent_config()
     """
     return AgentConfig(
         name="food_price_forecasting_agent",
@@ -325,7 +321,6 @@ def build_food_price_agent_config(
         description="Canadian food CPI forecasting agent.",
         instruction=FOOD_PRICE_FORECASTER_INSTRUCTION,
         skills_dirs=(FOOD_CPI_SKILL_DIR,),
-        output_schema=output_schema,
         code_execution=CodeExecutionConfig(
             enabled=enable_code_execution,
             template_name="agentic-forecasting-bootcamp",
@@ -402,9 +397,13 @@ def build_food_price_agent_predictor(
         enable_code_execution=enable_code_execution,
         enable_news_search=enable_news_search,
         news_search_model=news_search_model,
-        output_schema=output_schema,
     )
-    return AgentPredictor(config, prompt_builder or FoodPriceForecastPromptBuilder(), runner=runner)
+    return AgentPredictor(
+        config,
+        prompt_builder or FoodPriceForecastPromptBuilder(),
+        output_schema=output_schema,
+        runner=runner,
+    )
 
 
 def __getattr__(name: str) -> Any:
@@ -419,7 +418,7 @@ def __getattr__(name: str) -> Any:
 
         init_langfuse_tracing()
 
-        config = build_food_price_agent_config(enable_news_search=False, output_schema=None)
+        config = build_food_price_agent_config(enable_news_search=False)
         return build_adk_agent(config)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

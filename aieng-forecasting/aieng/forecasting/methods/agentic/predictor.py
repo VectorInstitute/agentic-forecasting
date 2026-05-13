@@ -111,8 +111,7 @@ class AgentPredictor(Predictor):
     1. Builds a prompt with ``prompt_builder(task=task, context=context)``.
     2. Runs the prompt through the ADK runner (synchronously, even from
        inside a running event loop).
-    3. Validates the agent's JSON response against
-       ``agent_config.output_schema``.
+    3. Validates the agent's JSON response against ``output_schema``.
     4. Converts the validated output to a list of
        :class:`~aieng.forecasting.evaluation.prediction.Prediction` via
        :meth:`AgentForecastOutput.to_predictions`.
@@ -121,14 +120,27 @@ class AgentPredictor(Predictor):
     so a single bad agent response does not abort a backtest loop. Schema
     validation errors are *not* swallowed.
 
+    The ``output_schema`` is separate from ``agent_config`` by design:
+    ``AgentConfig`` captures the agent's *identity* (instruction, model,
+    skills), while ``output_schema`` declares the agent's *role* in a
+    specific experiment. The same config can be used to build a free-form
+    interactive analyst (via :func:`build_adk_agent` with no schema) or
+    wired into different predictors with different output contracts.
+
     Parameters
     ----------
     agent_config : AgentConfig
-        Configuration for the underlying ADK agent. ``output_schema`` is
-        required; the forecast modality is read from ``output_schema.modality``.
+        Configuration for the underlying ADK agent — instruction, model,
+        skills, and capability toggles. The output format is *not* part
+        of the agent config; it is declared via ``output_schema``.
     prompt_builder : ForecastPromptBuilder
         Callable that produces the prompt text for one ``(task, context)``
         pair. See :class:`ForecastPromptBuilder` for the contract.
+    output_schema : type[AgentForecastOutput]
+        Structured output schema the agent must satisfy. The forecast
+        modality is derived from ``output_schema.modality``. Supplied at
+        predictor instantiation time so the same agent config can be reused
+        with different schemas or in interactive (schema-free) mode.
     enable_langfuse_tracing : bool, optional
         Whether to wrap each turn in Langfuse ``propagate_attributes``.
         ``None`` (default) auto-detects: enabled when the ``langfuse``
@@ -140,11 +152,6 @@ class AgentPredictor(Predictor):
         a runner for tests (with a stub agent) or to share one runner
         across predictors.
 
-    Raises
-    ------
-    ValueError
-        If ``agent_config.output_schema`` is ``None``.
-
     Examples
     --------
     >>> from aieng.forecasting.methods.agentic import (
@@ -153,11 +160,9 @@ class AgentPredictor(Predictor):
     ...     ContinuousAgentForecastOutput,
     ... )
     >>> predictor = AgentPredictor(
-    ...     AgentConfig(
-    ...         instruction="Forecast the supplied series.",
-    ...         output_schema=ContinuousAgentForecastOutput,
-    ...     ),
+    ...     AgentConfig(instruction="Forecast the supplied series."),
     ...     my_prompt_builder,
+    ...     output_schema=ContinuousAgentForecastOutput,
     ... )
     >>> predictions = predictor.predict(task, context)
     """
@@ -167,16 +172,11 @@ class AgentPredictor(Predictor):
         agent_config: AgentConfig,
         prompt_builder: ForecastPromptBuilder,
         *,
+        output_schema: type[AgentForecastOutput],
         enable_langfuse_tracing: bool | None = None,
         runner: AdkTextRunner | None = None,
     ) -> None:
-        """Validate the schema, derive the modality, and build or accept a runner."""
-        output_schema = agent_config.output_schema
-        if output_schema is None:
-            raise ValueError(
-                "AgentPredictor requires `agent_config.output_schema` so agent output can be converted to predictions."
-            )
-
+        """Store the schema, derive the modality, and build or accept a runner."""
         if enable_langfuse_tracing is None:
             # Auto-detect: enable Langfuse tracing iff the package is importable.
             try:
@@ -188,13 +188,13 @@ class AgentPredictor(Predictor):
 
         self.prompt_builder = prompt_builder
         self.agent_config = agent_config
+        self.output_schema: type[AgentForecastOutput] = output_schema
         self.enable_langfuse_tracing = enable_langfuse_tracing
 
-        self._output_schema: type[AgentForecastOutput] = output_schema
         self._forecast_output_modality = output_schema.modality
 
         if runner is None:
-            built_agent = build_adk_agent(agent_config)
+            built_agent = build_adk_agent(agent_config, output_schema=output_schema)
             self._agent: BaseAgent = built_agent
             self._runner = AdkTextRunner(
                 agent=built_agent,
@@ -258,9 +258,13 @@ class AgentPredictor(Predictor):
         # responses wrapped in a fenced block that ``model_validate_json``
         # cannot parse but ``json.loads`` + ``model_validate`` can.
         try:
-            output = self._output_schema.model_validate_json(output_str)
+            output = self.output_schema.model_validate_json(output_str)
         except ValidationError:
-            output = self._output_schema.model_validate(json.loads(output_str))
+            try:
+                output = self.output_schema.model_validate(json.loads(output_str))
+            except Exception:
+                logger.warning("Raw agent response (schema validation failed):\n%s", output_str)
+                raise
 
         # Convert output to list of predictions
         try:

@@ -40,11 +40,12 @@ Building a predictor from a config::
         ContinuousAgentForecastOutput,
     )
 
-    config = AgentConfig(
-        instruction="Forecast the target series.",
+    config = AgentConfig(instruction="Forecast the target series.")
+    predictor = AgentPredictor(
+        config,
+        my_prompt_builder,
         output_schema=ContinuousAgentForecastOutput,
     )
-    predictor = AgentPredictor(config, my_prompt_builder)
 """
 
 from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig

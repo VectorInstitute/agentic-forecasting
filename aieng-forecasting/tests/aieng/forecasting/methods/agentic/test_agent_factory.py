@@ -54,11 +54,10 @@ class TestAgentConfig:
             )
 
     def test_minimal_instruction_only_config_is_valid(self) -> None:
-        """Tools and structured output remain optional for Track 2 agents."""
+        """Tools remain optional; output schema lives on AgentPredictor, not config."""
         config = AgentConfig(instruction="Analyze the supplied forecasting question.")
 
         assert config.instruction == "Analyze the supplied forecasting question."
-        assert config.output_schema is None
 
     def test_skill_dirs_must_resolve_to_real_directories(self, tmp_path: Path) -> None:
         """Misspelled skill paths fail loudly at config time."""

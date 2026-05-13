@@ -166,7 +166,7 @@ class TestBuildFoodPriceAgentPredictor:
         """The boring path must produce a continuous predictor with the food prompt builder."""
         predictor = build_food_price_agent_predictor(runner=_StubRunner())  # type: ignore[arg-type]
 
-        assert predictor.agent_config.output_schema is ContinuousAgentForecastOutput
+        assert predictor.output_schema is ContinuousAgentForecastOutput
         assert isinstance(predictor.prompt_builder, FoodPriceForecastPromptBuilder)
 
     def test_custom_prompt_builder_is_passed_through(self) -> None:

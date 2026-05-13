@@ -27,7 +27,7 @@ from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, Prediction
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic.agent_factory import AgentConfig
-from aieng.forecasting.methods.agentic.outputs import ContinuousAgentForecastOutput
+from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput, ContinuousAgentForecastOutput
 from aieng.forecasting.methods.agentic.predictor import AgentPredictor
 from pydantic import ValidationError
 
@@ -92,9 +92,9 @@ def _output_json(horizons: list[int]) -> str:
     )
 
 
-def _config(output_schema: type | None = ContinuousAgentForecastOutput) -> AgentConfig:
+def _config() -> AgentConfig:
     """Build an ``AgentConfig`` with a non-empty instruction."""
-    return AgentConfig(instruction="Forecast the supplied series.", output_schema=output_schema)
+    return AgentConfig(instruction="Forecast the supplied series.")
 
 
 def _task(horizons: list[int] | None = None) -> ForecastingTask:
@@ -121,7 +121,7 @@ def _prompt_builder(prompt: str = "PROMPT") -> Any:
 def _make_predictor(
     *,
     response: str = "",
-    output_schema: type | None = ContinuousAgentForecastOutput,
+    output_schema: type[AgentForecastOutput] = ContinuousAgentForecastOutput,
     model: Any = "stub-model",
     agent_name: str = "stub_agent",
     prompt_builder: Any | None = None,
@@ -130,8 +130,9 @@ def _make_predictor(
     runner = _StubRunner(response, agent_name=agent_name, model=model)
     builder = prompt_builder if prompt_builder is not None else _prompt_builder()
     predictor = AgentPredictor(
-        _config(output_schema=output_schema),
+        _config(),
         builder,
+        output_schema=output_schema,
         runner=runner,  # type: ignore[arg-type]
     )
     return predictor, builder
@@ -145,11 +146,11 @@ def _make_predictor(
 class TestConstruction:
     """Construction-time validation of the predictor's invariants."""
 
-    def test_missing_output_schema_raises_with_actionable_message(self) -> None:
-        """Structured schema is needed; the error should name the field."""
-        with pytest.raises(ValueError, match="output_schema"):
-            AgentPredictor(
-                _config(output_schema=None),
+    def test_output_schema_is_required(self) -> None:
+        """``output_schema`` is required; omitting it raises ``TypeError``."""
+        with pytest.raises(TypeError, match="output_schema"):
+            AgentPredictor(  # type: ignore[call-arg]
+                _config(),
                 _prompt_builder(),
                 runner=_StubRunner(),  # type: ignore[arg-type]
             )

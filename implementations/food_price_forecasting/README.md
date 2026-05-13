@@ -146,41 +146,67 @@ No FRED API key is required for the canonical experiment.
 
 The concrete food CPI agent lives in `analyst_agent/`. It uses the reusable
 `aieng.forecasting.methods.agentic` helpers with food-task-specific
-configuration and exposes two entry points:
+configuration.
 
-- `build_food_price_agent_config(...)` returns an `AgentConfig` for either
-  interactive ADK use (`output_schema=None`) or structured forecasting
-  (`output_schema=ContinuousAgentForecastOutput` or another
-  `AgentForecastOutput` subclass).
-- `build_food_price_agent_predictor(...)` returns a ready-to-use
-  `AgentPredictor` for Track 1 evaluation. It requires a structured output
-  schema; the forecast modality is derived from `output_schema.modality`, so
-  schema and modality cannot drift.
+### Identity vs. role
+
+`AgentConfig` captures the agent's **identity** — instruction, model, skills,
+capability toggles. It says nothing about output format.
+
+`AgentPredictor` (and `build_food_price_agent_predictor`) captures the agent's
+**role** in a specific experiment — including the `output_schema` it must
+satisfy. The same config can be reused across roles.
+
+### Three instantiation patterns
+
+**Pattern 1 — experiment predictor (one-liner)**
 
 ```python
+from food_price_forecasting.analyst_agent import build_food_price_agent_predictor
+
+predictor = build_food_price_agent_predictor(model="gemini-3-flash-preview")
+# output_schema defaults to ContinuousAgentForecastOutput
+```
+
+**Pattern 2 — explicit construction (shows the split)**
+
+```python
+from aieng.forecasting.methods.agentic import AgentPredictor, ContinuousAgentForecastOutput
 from food_price_forecasting.analyst_agent import (
-    build_food_price_agent_predictor,
+    FoodPriceForecastPromptBuilder,
+    build_food_price_agent_config,
 )
 
-predictor = build_food_price_agent_predictor(
-    enable_code_execution=True,
-    # Keep off for historical backtests unless bounded evidence is needed.
-    enable_news_search=False,
+config = build_food_price_agent_config()            # identity
+predictor = AgentPredictor(                         # role in this experiment
+    config,
+    FoodPriceForecastPromptBuilder(),
+    output_schema=ContinuousAgentForecastOutput,
 )
 ```
 
-By default, the predictor asks the agent to emit
-`ContinuousAgentForecastOutput`, which converts into the same `Prediction`
-objects as the numerical predictors. This keeps food CPI agents comparable in
-`backtest`, `multi_backtest`, `evaluate`, and `multi_evaluate`.
+**Pattern 3 — interactive analyst via `adk web`**
 
-For interactive analyst sessions, use `adk web` against `analyst_agent/` (or
-call `build_food_price_agent_config(output_schema=None)`) so the agent can
-produce free-form analysis rather than Track 1 JSON.
+```bash
+# From the repo root — opens a chat UI; no JSON constraint.
+uv run adk web implementations/food_price_forecasting/analyst_agent
+```
 
-Task-specific skills live under `analyst_agent/skills/forecast-food-cpi/`.
-The skill encodes CFPR framing, CPI-level output requirements, code-execution
-discipline, and news-search leakage rules.
+`analyst_agent/agent.py` exposes a `root_agent` lazily via `__getattr__`,
+calling `build_adk_agent(config)` with no `output_schema`.  The agent reasons
+freely without being forced into Track 1 JSON.
+
+### Notes
+
+- `output_schema` is supplied to `AgentPredictor`, not to `AgentConfig`. This
+  means the schema is determined at predictor instantiation time, not baked
+  into the agent definition.
+- News search is **off by default** to prevent information leakage in historical
+  backtests. Enable with `enable_news_search=True` only when the `as_of` date
+  is the actual present.
+- Task-specific skills live under `analyst_agent/skills/forecast-food-cpi/`.
+  The skill provides CFPR domain knowledge, seasonal priors, and uncertainty
+  calibration guidance.
 
 ---
 
