@@ -22,6 +22,7 @@ from aieng.forecasting.methods.llm_processes.base import serialize_history
 from aieng.forecasting.methods.llm_processes.continuous import (
     ContinuousLLMPredictor,
     ContinuousLLMPredictorConfig,
+    _build_system_prompt,
     _build_user_prompt,
     _quantiles_per_step,
     _stack_trajectories,
@@ -280,3 +281,105 @@ def test_predict_raises_when_all_samples_malformed(svc: DataService, task: Forec
         predictor = ContinuousLLMPredictor(cfg)
         with pytest.raises(RuntimeError, match="No valid trajectories"):
             predictor.predict(task, svc.context(AS_OF))
+
+
+# ---------------------------------------------------------------------------
+# Recipe seams: variant_tag and prompt / history overrides
+# ---------------------------------------------------------------------------
+
+
+def test_variant_tag_flows_into_predictor_id() -> None:
+    """``variant_tag`` is folded into ``predictor_id`` between method tag and model."""
+    bare = ContinuousLLMPredictor(ContinuousLLMPredictorConfig(model="m"))
+    tagged = ContinuousLLMPredictor(
+        ContinuousLLMPredictorConfig(model="m", variant_tag="direct_flash"),
+    )
+    assert bare.predictor_id == "llmp_continuous[m]"
+    assert tagged.predictor_id == "llmp_continuous_direct_flash[m]"
+
+
+def test_system_prompt_override_replaces_base() -> None:
+    """When set, ``system_prompt_override`` is returned verbatim."""
+    assert _build_system_prompt(None) != "REPLACED"
+    assert _build_system_prompt("REPLACED") == "REPLACED"
+
+
+def test_user_prompt_suffix_is_appended(task: ForecastingTask) -> None:
+    """``suffix`` is appended after the standard prompt body."""
+    out = _build_user_prompt(
+        task=task,
+        history_str="2020-01: 100.00",
+        series_meta=None,
+        forecast_start=pd.Timestamp("2021-01-01"),
+        forecast_end=pd.Timestamp("2021-06-01"),
+        n_steps=HORIZON,
+        suffix="Domain note: non-negative.",
+    )
+    assert out.rstrip().endswith("Domain note: non-negative.")
+
+
+def test_series_description_override_replaces_metadata_block(task: ForecastingTask) -> None:
+    """``series_description_override`` replaces the metadata-derived block entirely."""
+    meta = SeriesMetadata(
+        series_id="target",
+        description="Synthetic monthly series",
+        source="test",
+        units="index",
+        frequency="MS",
+    )
+    override = "Custom framing for this experiment."
+    out = _build_user_prompt(
+        task=task,
+        history_str="2020-01: 100.00",
+        series_meta=meta,
+        forecast_start=pd.Timestamp("2021-01-01"),
+        forecast_end=pd.Timestamp("2021-06-01"),
+        n_steps=HORIZON,
+        series_description_override=override,
+    )
+    assert override in out
+    assert "Synthetic monthly series" not in out
+    assert "Units: index" not in out
+
+
+def test_history_window_truncates_serialized_history(svc: DataService, task: ForecastingTask) -> None:
+    """``history_window`` keeps only the last N observations in the prompt."""
+    window = 12
+    cfg = ContinuousLLMPredictorConfig(n_samples=2, history_window=window)
+
+    captured: dict[str, str] = {}
+
+    def _capture(*, cfg: Any, system_prompt: str, user_prompt: str) -> tuple[list[_Trajectory], float, int, int, int]:
+        captured["user_prompt"] = user_prompt
+        return _mock_sampler_return([[100.0] * HORIZON, [101.0] * HORIZON])
+
+    with (
+        patch(_PATCH_BOOTSTRAP),
+        patch(_PATCH_SAMPLER, side_effect=_capture),
+    ):
+        ContinuousLLMPredictor(cfg).predict(task, svc.context(AS_OF))
+
+    # History block sits between "History:" and the blank line before "Forecast".
+    body = captured["user_prompt"].split("History:\n", 1)[1].split("\n\nForecast", 1)[0]
+    history_lines = [ln for ln in body.splitlines() if ln.strip()]
+    assert len(history_lines) == window
+    # Last serialized month is as_of itself (cutoff discipline preserved).
+    assert history_lines[-1].startswith("2020-12:")
+
+
+def test_history_window_surfaced_in_prediction_metadata(svc: DataService, task: ForecastingTask) -> None:
+    """Non-default recipe fields surface in ``Prediction.metadata`` for traceability."""
+    cfg = ContinuousLLMPredictorConfig(
+        n_samples=2,
+        history_window=24,
+        variant_tag="direct_flash",
+    )
+    sampler_return = _mock_sampler_return([[100.0] * HORIZON, [101.0] * HORIZON])
+    with (
+        patch(_PATCH_BOOTSTRAP),
+        patch(_PATCH_SAMPLER, return_value=sampler_return),
+    ):
+        preds = ContinuousLLMPredictor(cfg).predict(task, svc.context(AS_OF))
+
+    assert preds[0].metadata["variant_tag"] == "direct_flash"
+    assert preds[0].metadata["history_window"] == 24

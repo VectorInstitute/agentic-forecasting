@@ -50,6 +50,16 @@ class LLMPredictorConfig(BaseModel):
             "default — unsafe for calibration-critical work."
         ),
     )
+    variant_tag: str | None = Field(
+        default=None,
+        description=(
+            "Optional short identifier for a method recipe (e.g. ``'direct_flash'``, "
+            "``'short_history'``). When set, it is folded into :attr:`predictor_id` "
+            "as ``<method_tag>_<variant_tag>[<model>]`` so artifact storage, cached "
+            "backtests, and leaderboards keep recipes distinct. ``None`` preserves "
+            "the bare ``<method_tag>[<model>]`` form used by ad-hoc construction."
+        ),
+    )
 
 
 def serialize_history(df: pd.DataFrame, precision: int) -> str:
@@ -118,8 +128,20 @@ class LLMPredictor(Predictor):
 
     @property
     def predictor_id(self) -> str:
-        """Stable identifier: ``<method_tag>[<model>]``.
+        """Stable identifier folding method tag, optional variant tag, and model.
 
-        Example: ``llmp_continuous[anthropic/claude-sonnet-4-5]``.
+        Format:
+
+        - ``<method_tag>[<model>]`` when ``cfg.variant_tag`` is ``None`` (default).
+        - ``<method_tag>_<variant_tag>[<model>]`` otherwise.
+
+        Recipes (see ``implementations/<use-case>/predictors/``) set
+        ``variant_tag`` so their cached backtests and leaderboard rows stay
+        distinct from ad-hoc bare-config runs.  Examples:
+
+        - ``llmp_continuous[anthropic/claude-sonnet-4-5]``
+        - ``llmp_continuous_direct_flash[gemini/gemini-2.5-flash-lite]``
         """
+        if self.cfg.variant_tag:
+            return f"{self._method_tag}_{self.cfg.variant_tag}[{self.cfg.model}]"
         return f"{self._method_tag}[{self.cfg.model}]"

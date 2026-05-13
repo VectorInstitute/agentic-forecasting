@@ -65,12 +65,54 @@ class ContinuousLLMPredictorConfig(LLMPredictorConfig):
     """Frozen configuration for :class:`ContinuousLLMPredictor`.
 
     Quantile levels are fixed to :data:`STANDARD_QUANTILES` and not exposed.
+
+    The string overrides (``series_description``, ``system_prompt_override``,
+    ``user_prompt_suffix``) plus ``history_window`` are the degrees of freedom
+    intended for use-case recipes under ``implementations/<use-case>/predictors/``
+    — they reshape what the LLM sees without changing the predictor's
+    statistical contract (sampled trajectories → empirical quantiles).
     """
 
     model_config = ConfigDict(frozen=True)
 
     n_samples: int = Field(default=20, ge=1, description="Number of trajectory samples per forecast origin.")
     precision: int = Field(default=2, ge=0, le=10, description="Decimal places used when serializing values.")
+    history_window: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "If set, only the last ``history_window`` cutoff-filtered observations "
+            "are serialized into the prompt. ``None`` (default) sends the full "
+            "available history. Useful for keeping prompts short on larger models "
+            "(Sonnet, Gemini Pro) where per-call cost dominates."
+        ),
+    )
+    series_description: str | None = Field(
+        default=None,
+        description=(
+            "Optional override for the metadata-derived series description block. "
+            "When set, replaces the ``Series: ... / Units: ... / Frequency: ...`` "
+            "lines in the user prompt. Use to inject task-specific economic or "
+            "domain framing that the bare adapter metadata does not capture."
+        ),
+    )
+    system_prompt_override: str | None = Field(
+        default=None,
+        description=(
+            "Full replacement for the built-in system prompt. ``None`` (default) "
+            "uses the calibration-tuned base prompt. Recipes that change the "
+            "output contract or impose domain rules should set this."
+        ),
+    )
+    user_prompt_suffix: str | None = Field(
+        default=None,
+        description=(
+            "Free-form text appended to the user prompt after the standard "
+            "task / history / forecast-window blocks. Use for recipe-specific "
+            "hints (non-negativity, plausible-range anchors, known events) "
+            "without rewriting the system prompt."
+        ),
+    )
 
 
 class _Trajectory(BaseModel):
@@ -89,8 +131,15 @@ _TRAJECTORY_JSON_SCHEMA: dict[str, Any] = {
 }
 
 
-def _build_system_prompt() -> str:
-    """Stable, cacheable system prompt carrying the output contract and rules."""
+def _build_system_prompt(override: str | None = None) -> str:
+    """Stable, cacheable system prompt carrying the output contract and rules.
+
+    When ``override`` is provided, it replaces the built-in prompt verbatim.
+    Recipes pass the override through
+    :attr:`ContinuousLLMPredictorConfig.system_prompt_override`.
+    """
+    if override is not None:
+        return override
     return (
         "You are a probabilistic time-series forecaster. Given a historical series and a "
         "task description, return a single numerical trajectory covering the requested "
@@ -115,19 +164,30 @@ def _build_user_prompt(
     forecast_start: pd.Timestamp,
     forecast_end: pd.Timestamp,
     n_steps: int,
+    series_description_override: str | None = None,
+    suffix: str | None = None,
 ) -> str:
-    """Task description + series metadata + history + explicit forecast window."""
-    meta_lines: list[str] = []
-    if series_meta is not None:
-        meta_lines.append(f"Series: {series_meta.description} (source: {series_meta.source})")
-        meta_lines.append(f"Units: {series_meta.units}")
-    else:
-        meta_lines.append(f"Series: {task.target_series_id}")
-    meta_lines.append(f"Frequency: {task.frequency}")
+    """Task description + series metadata + history + explicit forecast window.
 
-    return (
+    ``series_description_override`` replaces the metadata-derived series block;
+    ``suffix`` is appended verbatim at the end of the prompt. Both are
+    surfaced to recipes via :class:`ContinuousLLMPredictorConfig`.
+    """
+    if series_description_override is not None:
+        meta_block = series_description_override
+    else:
+        meta_lines: list[str] = []
+        if series_meta is not None:
+            meta_lines.append(f"Series: {series_meta.description} (source: {series_meta.source})")
+            meta_lines.append(f"Units: {series_meta.units}")
+        else:
+            meta_lines.append(f"Series: {task.target_series_id}")
+        meta_lines.append(f"Frequency: {task.frequency}")
+        meta_block = "\n".join(meta_lines)
+
+    base = (
         f"Task: {task.description}\n"
-        "\n" + "\n".join(meta_lines) + "\n"
+        "\n" + meta_block + "\n"
         "\n"
         "History:\n"
         f"{history_str}\n"
@@ -138,6 +198,9 @@ def _build_user_prompt(
         # TODO(covariates): when multivariate inputs land, append labeled
         # covariate blocks here per Context-is-Key §5.4. v1 is target-only.
     )
+    if suffix:
+        base = f"{base}\n\n{suffix.lstrip(chr(10))}"
+    return base
 
 
 def _stack_trajectories(trajectories: list[list[float]], n_steps: int) -> np.ndarray:
@@ -246,6 +309,10 @@ def _build_predictions(
             "output_tokens": out_tokens,
             "parse_failures": parse_failures,
         }
+        if cfg.variant_tag is not None:
+            metadata["variant_tag"] = cfg.variant_tag
+        if cfg.history_window is not None:
+            metadata["history_window"] = cfg.history_window
         if trace_id is not None:
             metadata["langfuse_trace_id"] = trace_id
         if trace_url is not None:
@@ -315,6 +382,8 @@ class ContinuousLLMPredictor(LLMPredictor):
             with ``point_forecast`` equal to the sample median at that step.
         """
         series_df, series_meta = get_history_and_meta(task, context)
+        if self.cfg.history_window is not None:
+            series_df = series_df.tail(self.cfg.history_window).reset_index(drop=True)
 
         offset = pd.tseries.frequencies.to_offset(task.frequency)
         n_steps = task.horizon
@@ -322,7 +391,7 @@ class ContinuousLLMPredictor(LLMPredictor):
         forecast_end = (pd.Timestamp(context.as_of) + offset * n_steps).normalize()
 
         history_str = serialize_history(series_df, precision=self.cfg.precision)
-        system_prompt = _build_system_prompt()
+        system_prompt = _build_system_prompt(self.cfg.system_prompt_override)
         user_prompt = _build_user_prompt(
             task,
             history_str,
@@ -330,6 +399,8 @@ class ContinuousLLMPredictor(LLMPredictor):
             forecast_start,
             forecast_end,
             n_steps,
+            series_description_override=self.cfg.series_description,
+            suffix=self.cfg.user_prompt_suffix,
         )
 
         parsed, cost_usd, in_tokens, out_tokens, parse_failures = _sample_trajectories(
