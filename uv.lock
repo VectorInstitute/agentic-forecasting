@@ -175,11 +175,11 @@ requires-dist = [
     { name = "darts", marker = "extra == 'numerical'", specifier = ">=0.44.1" },
     { name = "fredapi", specifier = ">=0.5.2" },
     { name = "google-adk", marker = "extra == 'agentic'", specifier = ">=1.32.0" },
-    { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.6.1" },
-    { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.6.1" },
+    { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.5.1" },
+    { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
     { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.83.14" },
-    { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
+    { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.12" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
     { name = "pydantic", specifier = ">=2.0" },
@@ -3680,7 +3680,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "google-adk", specifier = ">=1.32.0" },
-    { name = "langfuse", specifier = ">=4.6.1" },
+    { name = "langfuse", specifier = ">=4.5.1" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pydantic-settings", specifier = ">=2.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
@@ -3866,7 +3866,7 @@ wheels = [
 
 [[package]]
 name = "openinference-instrumentation"
-version = "0.1.48"
+version = "0.1.50"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openinference-semantic-conventions" },
@@ -3874,14 +3874,14 @@ dependencies = [
     { name = "opentelemetry-sdk" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/6b/2f5bf4bb23f96f62d774af3edd2437de99fa70639eb755e4692d922a67f3/openinference_instrumentation-0.1.48.tar.gz", hash = "sha256:7682bf713a653f02e4d7c3cd3087482fa543f69d1f610418fae6f346327d25b0", size = 23936, upload-time = "2026-04-29T00:34:06.372Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/bc/9126db2e991304d05e777c3cd107580cc1e721f2db91586dda09db7600f2/openinference_instrumentation-0.1.50.tar.gz", hash = "sha256:3ce2e19bc832cbfc5e141a1a78d6f5f9547b98ddfaecf8128edd2b5e6ed5c6e6", size = 24788, upload-time = "2026-05-11T22:04:18.14Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/9f/e6fd710e214e85181077e21ee593c92f274ff3cddf5b32866c903c156003/openinference_instrumentation-0.1.48-py3-none-any.whl", hash = "sha256:aea9ca69abf11fb5a19195a16be81e2d2ca1f3a90b73b8f67df3006665f5d2b2", size = 30121, upload-time = "2026-04-29T00:34:05.318Z" },
+    { url = "https://files.pythonhosted.org/packages/02/0f/1eba26ef9599a69e08c60df0d9826a7530fa019ad4da66a9d6d9f1841ff1/openinference_instrumentation-0.1.50-py3-none-any.whl", hash = "sha256:e757e308df590f393d02b1cfcbd934d728cf876fca2f4432b2e7052ae9b64622", size = 31002, upload-time = "2026-05-11T22:04:17.12Z" },
 ]
 
 [[package]]
 name = "openinference-instrumentation-google-adk"
-version = "0.1.11"
+version = "0.1.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openinference-instrumentation" },
@@ -3892,9 +3892,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/79/7e/a6a6c7dc7bd01e098374cdee69b10b6586d2f7a481ed34f8a283fcbfd830/openinference_instrumentation_google_adk-0.1.11.tar.gz", hash = "sha256:b36310d4e8b8143d41fe5c74be04c09f367710ec8019471f232bb721ede143b1", size = 14473, upload-time = "2026-05-05T06:43:34.828Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/60/eb0ff825485463474a22fbfda7e894e13792d6be04f62970d98f7dfdd0c0/openinference_instrumentation_google_adk-0.1.12.tar.gz", hash = "sha256:6c8fcda2b53e6bdda2393cbb6697725eb4bb30e84982060238730b76f4a95ca5", size = 14475, upload-time = "2026-05-10T03:58:08.637Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/51/0d4df97fd0fb3ac2282dc268e9a11f82523f881e623264291d6abf2fd5ed/openinference_instrumentation_google_adk-0.1.11-py3-none-any.whl", hash = "sha256:8dd546f9db3a6589106287b8a99b99f06361ac95e6e0b32305e6ce1a76f98630", size = 16384, upload-time = "2026-05-05T06:43:33.836Z" },
+    { url = "https://files.pythonhosted.org/packages/35/15/150f82b5dfe25f82dfd35e9348e5d33de47654809cafb2a913e0442ce59a/openinference_instrumentation_google_adk-0.1.12-py3-none-any.whl", hash = "sha256:0998a6bb7883fb6d7c9d552014cf812750c33a74e95127dda73be58f1408766f", size = 16385, upload-time = "2026-05-10T03:58:07.429Z" },
 ]
 
 [[package]]
