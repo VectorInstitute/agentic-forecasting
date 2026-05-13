@@ -1,62 +1,47 @@
 # Energy/Oil Case Study
 
-Story notebook for the May 21 information session. Simulates what it would have looked
-like to maintain a daily 14-day-ahead Prophet forecast of WTI crude oil prices from
-January 2025 through April 2026 — a period that started looking workable and ended in a
-dramatic regime break driven by Persian Gulf escalation.
+A two-part case study for the May 21 information session, telling a single story:
 
-The notebook is the only artifact here. There is no separate experiment runner, YAML
-config, or CLI script. Everything runs in order and caches its outputs under `data/` at
-the repo root.
+> *A strong statistical model (Prophet) is caught completely off-guard by a geopolitical
+> shock — and an agentic forecaster that can read the news does better.*
 
-## What the notebook shows
+There is no separate experiment runner, YAML config, or CLI script. Everything runs in
+order and caches its outputs under `data/` at the repo root.
+
+## Notebooks
+
+### [`01_energy_oil_case_study.ipynb`](notebooks/01_energy_oil_case_study.ipynb) — The Baseline
+
+Simulates maintaining a daily 30-day-ahead Prophet forecast of WTI crude from January
+2025 through April 2026 — a period that started looking workable and ended in a dramatic
+regime break driven by Persian Gulf escalation.
 
 **Act 1 — Context.** Annotated WTI price history from 2021 through the start of the
 simulation. Sets the stage: oil markets have regime breaks; 2024 felt relatively calm.
 
 **Act 2 — The rolling backtest animation.** An interactive Plotly animation that steps
-through the simulation day by day. Each frame shows:
-
-- The realized WTI price line (reveals itself as time passes)
-- A 14-day-ahead forecast fan (95% CI + point estimate)
-- Green dots for resolutions that landed inside the CI; red ✕ marks for misses
-- A running coverage scorecard
-
-Play through 2025 at speed; slow down as you enter 2026.
+through the simulation day by day. Each frame shows the realized price line, a 30-day
+forecast fan (95% CI + point estimate), and a running coverage scorecard.
 
 **Act 3 — The punchline.** Coverage dropped from ~79% in 2025 to ~42% in Q1/Q2 2026.
-By late March and early April 2026 the model was forecasting $60–70/bbl while prices
-surged to $100–113 — a $40–50/bbl miss driven by conflict in the Persian Gulf that
-no historical pattern could anticipate.
+By late March the model was forecasting $60–70/bbl while prices surged to $100+.
 
-**Act 4 — The teaser.** Four information sources (futures curve, prediction markets,
-news/social, analyst scenarios) and four method families (statistical models, ML
-multivariate, time-series foundation models, LLM processes + agentic forecasters) that
-a more capable forecaster could exploit.
+**Act 4 — The setup.** Four information sources and four forecasting method families
+that a more capable forecaster could exploit — closing with the question: *can an agent
+that reads the news do better?*
 
-## Companion notebook — LLMP context comparison
+### [`02_energy_agentic_forecasting.ipynb`](notebooks/02_energy_agentic_forecasting.ipynb) — The Agent
 
-[`energy_llmp_context_comparison.ipynb`](notebooks/energy_llmp_context_comparison.ipynb)
-picks up where Act 4 leaves off. It asks: **could a context-aware LLM forecaster have
-done better at the three key 2026 origins?**
+Picks up where Notebook 1 leaves off. A single Analyst Agent — backed by a Context
+Agent with live Google Search — is given the same origins and asked to answer three tasks:
 
-It evaluates three methods — Prophet, LLMP (history only), and LLMP (with
-plausibly-knowable geopolitical context) — across three question types:
+- **Task A — Trajectory:** 5/10/21-day-ahead price forecasts (fan chart comparison vs. Prophet)
+- **Task B — Binary:** P(WTI closes > $5/bbl higher in 5 days) — scored with Brier score
+- **Task C — Scenario analysis:** what are the top scenarios experts are watching for
+  summer 2026, and what are conditional price forecasts for each?
 
-- **Act 5 — Trajectory:** 30-day fan-chart comparison at Jan 5, Feb 2, and Mar 2 2026 origins.
-- **Act 6 — Binary:** P(WTI > threshold in 30 days), compared across methods and scored
-  with Brier score.
-- **Act 7 — Causal:** Signal-audit of the context provided at each origin; comparison
-  of median-forecast shift (bare vs. context); argument for the Track 2 Analyst Agent.
-
-This notebook uses `ContinuousLLMPredictor` with the `context_text` field introduced in
-`aieng-forecasting` to inject curated context snippets into the LLM prompt. Results are
-cached to `data/energy_llmp_context_forecasts.parquet` — the first run makes 6 real
-Gemini API calls (Gemini 3 Flash, ~$0.02 total); subsequent runs are instant.
-
-**This notebook is a prototype candidate for the Track 1 LLMP reference build.**
-When promoted to a formal reference implementation it will move to `implementations/`
-and gain a proper YAML spec and DataService adapter for WTI.
+The single agent uses one system prompt; different tasks are defined entirely in the user
+message (including the JSON output schema). Results are cached under `data/`.
 
 ## Setup
 
@@ -70,18 +55,21 @@ Delete that file to force a refresh.
 
 ## Run
 
-Open the notebook and run all cells:
+Run the notebooks in order:
 
 ```
-playground/energy_case_study/notebooks/energy_oil_case_study.ipynb
+playground/energy_case_study/notebooks/01_energy_oil_case_study.ipynb
+playground/energy_case_study/notebooks/02_energy_agentic_forecasting.ipynb
 ```
 
-**First run: 2–4 minutes** (Prophet fits ~16 monthly models; results cached to
+**Notebook 1 first run: 2–4 minutes** (Prophet fits ~450 daily models; results cached to
 `data/energy_case_study_forecasts.parquet`). Subsequent runs are instant.
 
 The animation cell also exports a standalone HTML file —
-`notebooks/oil_forecast_animation.html` — that works in any browser without a
-running kernel.
+`notebooks/oil_forecast_animation.html` — that works in any browser without a running kernel.
+
+**Notebook 2 first run:** requires a `GEMINI_API_KEY` in your `.env`. Results are cached
+under `data/energy_agent_*.json`; re-running without deleting the cache is instant.
 
 ## Data notes
 
