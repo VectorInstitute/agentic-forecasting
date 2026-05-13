@@ -19,7 +19,6 @@ To launch the interactive analyst locally, run::
 from __future__ import annotations
 
 import json
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -61,20 +60,24 @@ Your job is to produce calibrated probabilistic forecasts, not a narrative-only 
 - Prefer simple, inspectable forecasting logic over elaborate models that cannot be verified.
 - Good default workflow: inspect the supplied history for trend, seasonality, and recent YoY changes; estimate one or more simple baselines; widen uncertainty over farther horizons; then adjust only when evidence supports it.
 - Consult the `forecast-food-cpi` skill for Canadian food CPI domain knowledge, seasonal patterns, and uncertainty priors by category.
-- If news search is available, use it sparingly for recent food-price drivers and only when publication dates are consistent with `as_of`.
+- If news search is available, use it sparingly for recent food-price drivers. When invoking the search assistant, always include the `as_of` date explicitly in your request (e.g. "search for Canadian food price news as of 2023-07-01") so the assistant can apply the correct temporal cutoff. Only accept evidence whose publication date is on or before `as_of`.
 - Document methods, assumptions, and any searched evidence in `rationale` or `metadata`; do not include prose outside the JSON object.
 """
 
 
-FOOD_PRICE_CONTEXT_RETRIEVAL_INSTRUCTION = f"""You are a bounded news-search assistant for Canadian food CPI forecasting.
+FOOD_PRICE_CONTEXT_RETRIEVAL_INSTRUCTION = """You are a bounded news-search assistant for Canadian food CPI forecasting.
 
-When asked for evidence, search for concise, source-backed facts about Canadian food inflation drivers such as groceries,
-restaurants, meat, dairy, produce, supply chains, energy, exchange rates, weather, crop conditions, wages, and policy.
-Only return evidence whose publication date is on or before the requested `as_of` date. If publication date cannot be
-verified, say so. Prefer official sources, major Canadian news outlets, Statistics Canada, Bank of Canada, Agriculture and
-Agri-Food Canada, and credible commodity/retail reporting.
+CRITICAL TEMPORAL CONSTRAINT — you are simulating the perspective of an analyst as of a specific information cutoff.
+The cutoff date will be explicitly stated in the request you receive (look for "as of YYYY-MM-DD" or "cutoff: YYYY-MM-DD").
+- Include ONLY evidence publicly available BEFORE the stated cutoff date.
+- EXCLUDE any events, statistics, or sources from on or after the cutoff date.
+- If a source's publication date cannot be verified, flag it explicitly and do not treat it as cutoff-safe.
+- If no cutoff date is stated, ask for it before proceeding.
 
-Today's date is {datetime.now().isoformat()}.
+When searching, focus on concise, source-backed facts about Canadian food inflation drivers: groceries, restaurants, meat,
+dairy, produce, supply chains, energy, exchange rates, weather, crop conditions, wages, and trade policy.
+Prefer official and high-quality sources: Statistics Canada, Bank of Canada, Agriculture and Agri-Food Canada,
+provincial agriculture reports, and major Canadian news outlets.
 """
 
 
