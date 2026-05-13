@@ -164,10 +164,6 @@ class AgentConfig(BaseModel):
     skills_dirs : Sequence[Path], default=()
         Sequence of paths to skill directories. Skills extend the agent's capabilities
         with additional instructions.
-    output_schema : type[AgentForecastOutput] or None, default=None
-        Output schema for the agent. If provided, the agent will output a JSON object
-        with the schema. If not provided, the agent will output a free-form text
-        response.
     seed : int or None, default=None
         Generation seed forwarded to the model for reproducibility.
     temperature : float or None, default=None
@@ -195,8 +191,6 @@ class AgentConfig(BaseModel):
     description: str = ""
     instruction: str = ""
     skills_dirs: Sequence[Path] = ()
-    output_schema: type[AgentForecastOutput] | None = None
-
     # Optional generation overrides (None = model/provider defaults).
     seed: int | None = None
     temperature: float | None = None
@@ -233,7 +227,11 @@ class AgentConfig(BaseModel):
         return self
 
 
-def build_adk_agent(config: AgentConfig) -> LlmAgent:
+def build_adk_agent(
+    config: AgentConfig,
+    *,
+    output_schema: type[AgentForecastOutput] | None = None,
+) -> LlmAgent:
     """Build an ADK agent for forecasting tasks with the given configuration.
 
     Code execution and the Google Search context-retrieval sub-agent are wired
@@ -246,6 +244,13 @@ def build_adk_agent(config: AgentConfig) -> LlmAgent:
         non-empty; if ``config.context_retrieval.enabled`` is ``True``,
         ``config.context_retrieval.instruction`` must also be non-empty
         (these are enforced by :class:`AgentConfig` itself).
+    output_schema : type[AgentForecastOutput] or None, default=None
+        When provided, configures the agent to return JSON constrained to this
+        schema via Gemini's native ``response_schema`` / ``response_mime_type``
+        in ``GenerateContentConfig``. Leave ``None`` for free-form interactive
+        use. Typically supplied by :class:`AgentPredictor` rather than
+        called directly — callers that only want an interactive agent should
+        omit this argument.
 
     Returns
     -------
@@ -254,17 +259,12 @@ def build_adk_agent(config: AgentConfig) -> LlmAgent:
 
     Examples
     --------
-    Minimal interactive agent with free-form output:
+    Interactive analyst — free-form output, no schema constraint:
 
-    >>> from aieng.forecasting.methods.agentic import (
-    ...     AgentConfig,
-    ...     build_adk_agent,
-    ... )
-    >>> agent = build_adk_agent(
-    ...     AgentConfig(instruction="You are a helpful analyst."),
-    ... )
+    >>> from aieng.forecasting.methods.agentic import AgentConfig, build_adk_agent
+    >>> agent = build_adk_agent(AgentConfig(instruction="You are a helpful analyst."))
 
-    Agent with structured output for use by ``AgentPredictor``:
+    Predictor role — structured JSON output constrained to a schema:
 
     >>> from aieng.forecasting.methods.agentic import (
     ...     AgentConfig,
@@ -272,10 +272,8 @@ def build_adk_agent(config: AgentConfig) -> LlmAgent:
     ...     build_adk_agent,
     ... )
     >>> agent = build_adk_agent(
-    ...     AgentConfig(
-    ...         instruction="Forecast the supplied series.",
-    ...         output_schema=ContinuousAgentForecastOutput,
-    ...     )
+    ...     AgentConfig(instruction="Forecast the supplied series."),
+    ...     output_schema=ContinuousAgentForecastOutput,
     ... )
     """
     # Configure tools
@@ -315,13 +313,45 @@ def build_adk_agent(config: AgentConfig) -> LlmAgent:
     if skills:
         tools.append(SkillToolset(skills=skills))
 
-    # Build agent
+    # TODO(skills+output_schema): On Google AI Studio (non-Vertex), ADK's
+    # _OutputSchemaRequestProcessor falls back to a synthetic set_model_response
+    # tool when output_schema and any other tool are combined.  That tool's
+    # function-declaration builder cannot represent complex nested Pydantic
+    # schemas like list[ContinuousAgentHorizonForecast], so predict() currently
+    # fails with a ValueError before the model is called.
+    #
+    # Root cause: can_use_output_schema_with_tools() returns True only for
+    # Vertex AI + Gemini 2+ (or LiteLlm). On AI Studio the fallback path is
+    # used, and SkillToolset counts as a "tool" that triggers it.
+    #
+    # The workaround below omits output_schema when native support is absent,
+    # falling back to the prompt-injected JSON skeleton + model_validate_json.
+    # This means the model is not API-level constrained on AI Studio, so
+    # responses may be free-form rather than strict JSON.
+    #
+    # Proper fix options to investigate:
+    #   A) Use Vertex AI for backtests (native schema + tools support).
+    #   B) ADK skill loading without SkillToolset (e.g. embed at build time)
+    #      so the tools list is empty and output_schema works natively even on
+    #      AI Studio — but this breaks the intended skill primitive semantics.
+    #   C) Wait for ADK to support the set_model_response tool with complex
+    #      schemas, or contribute a fix upstream.
+    #   D) Use a flatter output schema that the function-declaration builder
+    #      can represent (e.g. replace list[HorizonForecast] with a top-level
+    #      list[ContinuousAgentForecastOutput] schema).
+    from google.adk.utils.output_schema_utils import can_use_output_schema_with_tools  # noqa: PLC0415
+
+    schema_for_agent = (
+        output_schema if output_schema is not None and can_use_output_schema_with_tools(config.model) else None
+    )
+
     return LlmAgent(
         name=config.name,
         description=config.description,
         model=config.model,
         instruction=config.instruction,
         tools=tools,
+        output_schema=schema_for_agent,
         generate_content_config=GenerateContentConfig(
             seed=config.seed,
             temperature=config.temperature,
@@ -330,5 +360,4 @@ def build_adk_agent(config: AgentConfig) -> LlmAgent:
                 include_thoughts=True, thinking_budget=config.thinking_budget, thinking_level=config.thinking_level
             ),
         ),
-        output_schema=config.output_schema,
     )

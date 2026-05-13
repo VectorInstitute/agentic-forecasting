@@ -39,6 +39,7 @@ sys.path.insert(0, str(ROOT / "implementations"))
 
 from dotenv import load_dotenv
 
+
 load_dotenv(ROOT / ".env")
 
 
@@ -90,7 +91,7 @@ def _bar(value: float, lo: float, hi: float, width: int = 20) -> str:
     return "".join(bar)
 
 
-def _run_single(
+def _run_single(  # noqa: PLR0912, PLR0915
     *,
     task_id: str,
     origin: datetime,
@@ -99,9 +100,9 @@ def _run_single(
     verbose: bool,
 ) -> bool:
     """Run one predict() call and print the results. Returns True on success."""
-    from aieng.forecasting.evaluation.task import ForecastingTask
-    from food_price_forecasting.analyst_agent import build_food_price_agent_predictor
-    from food_price_forecasting.data import build_food_cpi_service
+    from aieng.forecasting.evaluation.task import ForecastingTask  # noqa: PLC0415
+    from food_price_forecasting.analyst_agent import build_food_price_agent_predictor  # noqa: PLC0415
+    from food_price_forecasting.data import build_food_cpi_service  # noqa: PLC0415
 
     series_id = TASK_SERIES[task_id]
     label = TASK_LABELS[task_id]
@@ -143,7 +144,7 @@ def _run_single(
 
     if verbose:
         # Show the prompt that will be sent
-        from food_price_forecasting.analyst_agent import FoodPriceForecastPromptBuilder
+        from food_price_forecasting.analyst_agent import FoodPriceForecastPromptBuilder  # noqa: PLC0415
 
         builder = FoodPriceForecastPromptBuilder()
         prompt = builder(task=task, context=context)
@@ -152,7 +153,12 @@ def _run_single(
         if len(prompt) > 1500:
             print(f"  ... [{len(prompt) - 1500} chars truncated]")
 
-    # Run predict
+    # Run predict — enable WARNING-level logging so raw agent output is printed
+    # on schema-validation failures, making it easy to see what the LLM returned.
+    import logging  # noqa: PLC0415
+
+    logging.basicConfig(level=logging.WARNING, format="%(message)s")
+
     print("\n  Calling predict() ...", end=" ", flush=True)
     t0 = time.perf_counter()
     try:
@@ -176,7 +182,9 @@ def _run_single(
 
     # Print forecast table
     print(f"  {'Horizon':>7}  {'Forecast date':>14}  {'q05':>7}  {'Point':>7}  {'q95':>7}  {'Spread':>7}  Distribution")
-    print(f"  {'──────':>7}  {'─────────────':>14}  {'───':>7}  {'─────':>7}  {'───':>7}  {'──────':>7}  ────────────────────")
+    print(
+        f"  {'──────':>7}  {'─────────────':>14}  {'───':>7}  {'─────':>7}  {'───':>7}  {'──────':>7}  ────────────────────"
+    )
 
     q05_values = [p.payload.quantiles[0.05] for p in predictions]
     q95_values = [p.payload.quantiles[0.95] for p in predictions]
@@ -196,7 +204,7 @@ def _run_single(
     # Print rationale if present
     rationale = predictions[0].metadata.get("agent_rationale") if predictions else None
     if rationale:
-        print(f"\n  Rationale:")
+        print("\n  Rationale:")
         for line in textwrap.wrap(rationale, width=70):
             print(f"    {line}")
 
