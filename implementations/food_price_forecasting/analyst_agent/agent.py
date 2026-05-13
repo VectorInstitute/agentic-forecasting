@@ -60,24 +60,27 @@ Your job is to produce calibrated probabilistic forecasts, not a narrative-only 
 - Prefer simple, inspectable forecasting logic over elaborate models that cannot be verified.
 - Good default workflow: inspect the supplied history for trend, seasonality, and recent YoY changes; estimate one or more simple baselines; widen uncertainty over farther horizons; then adjust only when evidence supports it.
 - Consult the `forecast-food-cpi` skill for Canadian food CPI domain knowledge, seasonal patterns, and uncertainty priors by category.
-- If news search is available, use it sparingly for recent food-price drivers. When invoking the search assistant, always include the `as_of` date explicitly in your request (e.g. "search for Canadian food price news as of 2023-07-01") so the assistant can apply the correct temporal cutoff. Only accept evidence whose publication date is on or before `as_of`.
+- If news search is available, use it sparingly for recent food-price drivers. When invoking the search assistant, supply `cutoff_date` as the `as_of` date from the task payload (YYYY-MM-DD) and `query` as the topic to research. Only accept evidence whose publication date is on or before `as_of`.
 - Document methods, assumptions, and any searched evidence in `rationale` or `metadata`; do not include prose outside the JSON object.
 """
 
 
 FOOD_PRICE_CONTEXT_RETRIEVAL_INSTRUCTION = """You are a bounded news-search assistant for Canadian food CPI forecasting.
 
-CRITICAL TEMPORAL CONSTRAINT — you are simulating the perspective of an analyst as of a specific information cutoff.
-The cutoff date will be explicitly stated in the request you receive (look for "as of YYYY-MM-DD" or "cutoff: YYYY-MM-DD").
-- Include ONLY evidence publicly available BEFORE the stated cutoff date.
-- EXCLUDE any events, statistics, or sources from on or after the cutoff date.
-- If a source's publication date cannot be verified, flag it explicitly and do not treat it as cutoff-safe.
-- If no cutoff date is stated, ask for it before proceeding.
+You will receive a JSON object with two fields:
+- "cutoff_date": the information cutoff in YYYY-MM-DD format
+- "query": the research topic to investigate
 
-When searching, focus on concise, source-backed facts about Canadian food inflation drivers: groceries, restaurants, meat,
-dairy, produce, supply chains, energy, exchange rates, weather, crop conditions, wages, and trade policy.
+CRITICAL TEMPORAL CONSTRAINT — you are simulating the perspective of an analyst as of `cutoff_date`.
+- Include ONLY evidence publicly available BEFORE `cutoff_date`.
+- EXCLUDE any events, statistics, or sources from on or after `cutoff_date`.
+- If a source's publication date cannot be verified, flag it explicitly and do not treat it as cutoff-safe.
+
+Search for concise, source-backed facts relevant to the `query` about Canadian food inflation drivers: groceries,
+restaurants, meat, dairy, produce, supply chains, energy, exchange rates, weather, crop conditions, wages, and trade policy.
 Prefer official and high-quality sources: Statistics Canada, Bank of Canada, Agriculture and Agri-Food Canada,
 provincial agriculture reports, and major Canadian news outlets.
+Return a concise structured markdown summary of the evidence found.
 """
 
 

@@ -52,6 +52,7 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     AgentConfig,
     CodeExecutionConfig,
     ContextRetrievalConfig,
+    ContextRetrievalRequest,
     build_adk_agent,
 )
 from aieng.forecasting.methods.agentic.outputs import (
@@ -74,6 +75,7 @@ __all__: list[str] = [
     "ContinuousAgentForecastOutput",
     "ContinuousAgentHorizonForecast",
     "ContextRetrievalConfig",
+    "ContextRetrievalRequest",
     "ForecastPromptBuilder",
     "build_adk_agent",
 ]

@@ -2,6 +2,7 @@
 
 This module exposes :class:`AgentConfig` plus its nested
 :class:`CodeExecutionConfig` and :class:`ContextRetrievalConfig` configs,
+the :class:`ContextRetrievalRequest` input schema used by the context sub-agent,
 and the :func:`build_adk_agent` factory that turns a config into a fully
 configured :class:`google.adk.agents.LlmAgent` (with optional E2B-backed
 code execution and a Google Search context-retrieval sub-agent).
@@ -33,8 +34,48 @@ except ModuleNotFoundError as exc:
     ) from exc
 
 
+class ContextRetrievalRequest(BaseModel):
+    """Typed input schema for the context retrieval sub-agent.
+
+    When this model is set as ``input_schema`` on the context
+    :class:`~google.adk.agents.LlmAgent`, the ADK ``AgentTool`` generates a
+    typed ``FunctionDeclaration`` from it. The calling agent is then required to
+    supply both fields — it cannot invoke the tool with a free-form string —
+    which prevents accidental omission of the temporal cutoff in historical
+    backtests.
+
+    The validated arguments are serialised with ``model_dump_json()`` and
+    forwarded as the user message to the context sub-agent.
+
+    Attributes
+    ----------
+    cutoff_date : str
+        Information cutoff in ``YYYY-MM-DD`` format. The context sub-agent
+        must only return evidence published strictly before this date.
+    query : str
+        The research question or topic to search for.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    cutoff_date: str = Field(
+        description=(
+            "Information cutoff date in YYYY-MM-DD format. "
+            "Include ONLY evidence published strictly before this date. "
+            "This is the forecast origin date; post-cutoff sources must be excluded."
+        )
+    )
+    query: str = Field(description="The research question or topic to search for.")
+
+
 class ContextRetrievalConfig(BaseModel):
     """Configuration for context retrieval sub-agent.
+
+    When enabled, :func:`build_adk_agent` wires a Google Search sub-agent with
+    :class:`ContextRetrievalRequest` as its ``input_schema``. This forces the
+    calling agent to supply a ``cutoff_date`` and ``query`` with every
+    invocation, preventing accidental omission of the temporal cutoff in
+    historical backtests.
 
     Attributes
     ----------
@@ -43,7 +84,9 @@ class ContextRetrievalConfig(BaseModel):
     model : str, default="gemini-3-flash-preview"
         Model to use for context retrieval.
     instruction : str
-        Instruction for the context retrieval agent.
+        Instruction for the context retrieval agent. Should tell the agent
+        to expect a JSON payload with ``cutoff_date`` and ``query`` fields
+        (the format produced by :class:`ContextRetrievalRequest`).
     temperature : float | None, default=None
         Sampling temperature for the context retrieval agent.
     max_output_tokens : int | None, default=None
@@ -57,7 +100,9 @@ class ContextRetrievalConfig(BaseModel):
     instruction: str = """
     You are a specialized Google search agent.
 
-    When given a search query, use the `google_search` tool to find the related information.
+    You will receive a JSON object with "cutoff_date" and "query" fields.
+    Use the `google_search` tool to find information relevant to "query"
+    published before "cutoff_date". Return a concise summary of what you find.
     """
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
     max_output_tokens: int | None = Field(default=None, ge=1)
@@ -247,9 +292,14 @@ def build_adk_agent(config: AgentConfig) -> LlmAgent:
         context_agent = LlmAgent(
             name="context_agent",
             model=config.context_retrieval.model,
-            description="An agent for performing Google search using the `google_search` tool",
+            description=(
+                "Performs a bounded web search and returns evidence published "
+                "before the specified cutoff_date. Requires cutoff_date (YYYY-MM-DD) "
+                "and query fields."
+            ),
             instruction=config.context_retrieval.instruction,
             tools=[google_search],
+            input_schema=ContextRetrievalRequest,
             generate_content_config=GenerateContentConfig(
                 temperature=config.context_retrieval.temperature,
                 max_output_tokens=config.context_retrieval.max_output_tokens,
