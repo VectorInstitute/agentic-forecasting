@@ -13,6 +13,7 @@ use-case recipes (here).
 """
 
 from .llmp_direct_flash import build_llmp_direct_flash
+from .llmp_direct_quantiles_flash import build_llmp_direct_quantiles_flash
 
 
-__all__ = ["build_llmp_direct_flash"]
+__all__ = ["build_llmp_direct_flash", "build_llmp_direct_quantiles_flash"]

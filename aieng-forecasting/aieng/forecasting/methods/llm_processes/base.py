@@ -1,10 +1,10 @@
 """Abstract base class and shared config for LLM-process predictors.
 
 ``LLMPredictor`` is the abstract parent shared by every concrete predictor in
-this package (today: :class:`ContinuousLLMPredictor`; planned:
-``BinaryLLMPredictor``).  It is **never instantiated directly** — users
-instantiate one of the concrete subclasses re-exported from
-:mod:`aieng.forecasting.methods`.
+this package (today: :class:`ContinuousLLMPredictor` and
+:class:`DirectQuantilesLLMPredictor`; planned: ``BinaryLLMPredictor``). It is
+**never instantiated directly** — users instantiate one of the concrete
+subclasses re-exported from :mod:`aieng.forecasting.methods`.
 """
 
 from __future__ import annotations
@@ -153,6 +153,7 @@ class LLMPredictor(Predictor):
 
         - ``llmp_continuous[anthropic/claude-sonnet-4-5]``
         - ``llmp_continuous_direct_flash[gemini/gemini-2.5-flash-lite]``
+        - ``llmp_direct_quantiles_flash[gemini/gemini-2.5-flash-lite]``
         """
         if self.cfg.variant_tag:
             return f"{self._method_tag}_{self.cfg.variant_tag}[{self.cfg.model}]"

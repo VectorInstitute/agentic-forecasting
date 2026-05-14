@@ -14,6 +14,8 @@ from .baselines import LastValuePredictor
 from .llm_processes import (
     ContinuousLLMPredictor,
     ContinuousLLMPredictorConfig,
+    DirectQuantilesLLMPredictor,
+    DirectQuantilesLLMPredictorConfig,
 )
 from .numerical import (
     DartsAutoARIMAPredictor,
@@ -25,6 +27,8 @@ from .numerical import (
 __all__ = [
     "ContinuousLLMPredictor",
     "ContinuousLLMPredictorConfig",
+    "DirectQuantilesLLMPredictor",
+    "DirectQuantilesLLMPredictorConfig",
     "DartsAutoARIMAPredictor",
     "DartsLightGBMPredictor",
     "DartsLinearRegressionPredictor",

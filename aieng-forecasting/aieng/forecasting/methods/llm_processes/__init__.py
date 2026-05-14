@@ -1,10 +1,13 @@
 """LLM-process predictor implementations.
 
 Predictors that use an LLM directly as the forecasting engine (no agent loop,
-no tool use).  Concrete subclasses are organised by output modality:
+no tool use). Concrete subclasses are organised by target type and elicitation
+strategy:
 
 - :class:`ContinuousLLMPredictor` — sample-based empirical quantiles for
   continuous targets (Gruver / Context-is-Key Direct Prompt path).
+- :class:`DirectQuantilesLLMPredictor` — direct elicitation of the standard
+  quantile grid for continuous targets.
 - ``BinaryLLMPredictor`` — discrete-event probability forecaster.  See the
   design note below; not yet implemented.
 
@@ -17,8 +20,8 @@ sibling classes here, **not** as configurations of an existing class.
 Binary predictor design note (TODO)
 -----------------------------------
 
-A future ``BinaryLLMPredictor`` will live alongside :class:`ContinuousLLMPredictor`
-under this package, sharing infrastructure cleanly:
+A future ``BinaryLLMPredictor`` will live alongside the continuous-target LLMP
+predictors under this package, sharing infrastructure cleanly:
 
 - **Shared via** :mod:`aieng.forecasting.methods.llm_processes._client`:
   LiteLLM bootstrap, the async single-completion seam, retry policy, the
@@ -28,11 +31,12 @@ under this package, sharing infrastructure cleanly:
   ``LLMPredictor`` parent class, ``LLMPredictorConfig`` (model, temperature,
   max_tokens, timeout, cache, reasoning_effort), ``serialize_history``,
   ``get_history_and_meta``.
-- **Modality-specific (``binary.py``):**
+- **Binary direct-probability class (``binary.py``):**
 
-  - ``BinaryLLMPredictorConfig(LLMPredictorConfig)`` adding
-    ``elicitation_mode: Literal["direct_probability", "sample_outcome"]``
-    and a sampling N if applicable.
+  - ``BinaryLLMPredictorConfig(LLMPredictorConfig)`` adding only
+    binary-task prompt controls that preserve the direct-probability contract.
+    Sampled-outcome, logprob, or conformal variants should be sibling classes,
+    not config modes.
   - JSON schema with a single ``probability: float`` field constrained to
     ``[0, 1]``.  No ``values`` array, no per-step quantiles.
   - System prompt framed as resolution of a binary question rather than
@@ -55,11 +59,17 @@ from aieng.forecasting.methods.llm_processes.continuous import (
     ContinuousLLMPredictor,
     ContinuousLLMPredictorConfig,
 )
+from aieng.forecasting.methods.llm_processes.direct_quantiles import (
+    DirectQuantilesLLMPredictor,
+    DirectQuantilesLLMPredictorConfig,
+)
 
 
 __all__ = [
     "ContinuousLLMPredictor",
     "ContinuousLLMPredictorConfig",
+    "DirectQuantilesLLMPredictor",
+    "DirectQuantilesLLMPredictorConfig",
     "LLMPredictor",
     "LLMPredictorConfig",
 ]

@@ -10,7 +10,7 @@ The package is organized by method family:
 methods/
 ├── baselines/       # simple floor baselines and teaching references
 ├── numerical/       # classical / ML numerical forecasters
-├── llm_processes/   # planned LLM-process predictors
+├── llm_processes/   # LLM-process predictors
 └── agentic/         # ADK-based agentic runners and the analyst agent
 ```
 
@@ -80,6 +80,13 @@ from aieng.forecasting.methods.agentic.analyst_agent import (
 | `numerical/darts_arima.py` | `DartsAutoARIMAPredictor` | Univariate Darts AutoARIMA with probabilistic multi-horizon output via Monte Carlo sampling. |
 | `numerical/darts_regression.py` | `DartsLinearRegressionPredictor` | Darts linear regression predictor with optional past covariates and probabilistic output. |
 | `numerical/darts_regression.py` | `DartsLightGBMPredictor` | Darts LightGBM quantile-regression predictor with optional past covariates. |
+
+### LLM Processes
+
+| Module | Class | Description |
+|---|---|---|
+| `llm_processes/continuous.py` | `ContinuousLLMPredictor` | Direct numerical prompting: samples full trajectories from an LLM, then computes empirical quantiles per horizon. |
+| `llm_processes/direct_quantiles.py` | `DirectQuantilesLLMPredictor` | Direct quantile elicitation: asks an LLM for the standard quantile grid in one structured completion. |
 
 ### Agentic
 
