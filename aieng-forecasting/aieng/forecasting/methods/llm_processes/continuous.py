@@ -77,6 +77,7 @@ class ContinuousLLMPredictorConfig(LLMPredictorConfig):
 
     n_samples: int = Field(default=20, ge=1, description="Number of trajectory samples per forecast origin.")
     precision: int = Field(default=2, ge=0, le=10, description="Decimal places used when serializing values.")
+<<<<<<< HEAD
     history_window: int | None = Field(
         default=None,
         ge=1,
@@ -111,6 +112,23 @@ class ContinuousLLMPredictorConfig(LLMPredictorConfig):
             "task / history / forecast-window blocks. Use for recipe-specific "
             "hints (non-negativity, plausible-range anchors, known events) "
             "without rewriting the system prompt."
+=======
+    context_text: str | None = Field(
+        default=None,
+        description=(
+            "Optional domain context injected into the user prompt after the history block "
+            "and before the forecast instruction.  Use this to supply plausibly-knowable "
+            "information at the time of the prediction (e.g. news headlines, futures curve "
+            "shape, policy statements) that the raw price series cannot encode."
+        ),
+    )
+    context_tag: str | None = Field(
+        default=None,
+        description=(
+            "Short label appended to the predictor_id when context_text is set, "
+            "e.g. 'geopolitical'.  Allows cached results for context-aware runs to "
+            "coexist with vanilla runs in the artefact store."
+>>>>>>> main
         ),
     )
 
@@ -164,6 +182,7 @@ def _build_user_prompt(
     forecast_start: pd.Timestamp,
     forecast_end: pd.Timestamp,
     n_steps: int,
+<<<<<<< HEAD
     series_description_override: str | None = None,
     suffix: str | None = None,
 ) -> str:
@@ -186,14 +205,35 @@ def _build_user_prompt(
         meta_block = "\n".join(meta_lines)
 
     base = (
+=======
+    context_text: str | None = None,
+) -> str:
+    """Build the user prompt.
+
+    Combines task description, series metadata, history, optional domain context,
+    and an explicit forecast window instruction.
+    """
+    meta_lines: list[str] = []
+    if series_meta is not None:
+        meta_lines.append(f"Series: {series_meta.description} (source: {series_meta.source})")
+        meta_lines.append(f"Units: {series_meta.units}")
+    else:
+        meta_lines.append(f"Series: {task.target_series_id}")
+    meta_lines.append(f"Frequency: {task.frequency}")
+
+    context_block = f"\nCurrent context:\n{context_text}\n" if context_text else ""
+
+    return (
+>>>>>>> main
         f"Task: {task.description}\n"
         "\n" + meta_block + "\n"
         "\n"
         "History:\n"
         f"{history_str}\n"
+        f"{context_block}"
         "\n"
         f"Forecast the next {n_steps} {task.frequency} values "
-        f"({forecast_start.strftime('%Y-%m')} through {forecast_end.strftime('%Y-%m')}).\n"
+        f"({forecast_start.strftime('%Y-%m-%d')} through {forecast_end.strftime('%Y-%m-%d')}).\n"
         f"Return a JSON object with a single 'values' array of length {n_steps}."
         # TODO(covariates): when multivariate inputs land, append labeled
         # covariate blocks here per Context-is-Key §5.4. v1 is target-only.
@@ -355,6 +395,14 @@ class ContinuousLLMPredictor(LLMPredictor):
     def __init__(self, cfg: ContinuousLLMPredictorConfig | None = None) -> None:
         super().__init__(cfg)
 
+    @property
+    def predictor_id(self) -> str:
+        """Stable identifier, extended with ``context_tag`` when set."""
+        base = f"{self._method_tag}[{self.cfg.model}]"
+        if self.cfg.context_tag:
+            return f"{base}[{self.cfg.context_tag}]"
+        return base
+
     @classmethod
     def _default_config(cls) -> ContinuousLLMPredictorConfig:
         return ContinuousLLMPredictorConfig()
@@ -399,8 +447,12 @@ class ContinuousLLMPredictor(LLMPredictor):
             forecast_start,
             forecast_end,
             n_steps,
+<<<<<<< HEAD
             series_description_override=self.cfg.series_description,
             suffix=self.cfg.user_prompt_suffix,
+=======
+            context_text=self.cfg.context_text,
+>>>>>>> main
         )
 
         parsed, cost_usd, in_tokens, out_tokens, parse_failures = _sample_trajectories(

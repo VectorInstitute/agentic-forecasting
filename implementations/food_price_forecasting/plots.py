@@ -339,6 +339,75 @@ def plot_mape_distribution(mape_df: pd.DataFrame, colors: dict[str, str] | None 
 
 
 # ---------------------------------------------------------------------------
+# MAPE per-category small-multiples box plot
+# ---------------------------------------------------------------------------
+
+
+def plot_mape_by_category(
+    ape_long_df: pd.DataFrame,
+    task_to_category: dict[str, str],
+    colors: dict[str, str] | None = None,
+) -> tuple[Figure, np.ndarray]:
+    """Small-multiples box plot of raw per-prediction APE, one panel per category.
+
+    Each panel shows the distribution of absolute percentage error across all
+    (origin, horizon) prediction pairs for that category, with one box per
+    predictor.  This gives a richer picture than the single-number MAPE table
+    and makes it easy to see which predictor is consistently tighter within
+    each sub-index.
+
+    Parameters
+    ----------
+    ape_long_df : pd.DataFrame
+        Long-format APE DataFrame returned by :func:`compute_ape_long`.
+        Must have ``predictor_id``, ``task_id``, and ``ape`` columns.
+    task_to_category : dict[str, str]
+        Mapping from ``task_id`` to the underlying ``series_id``, used to
+        look up display labels.
+    colors : dict[str, str] or None
+        Optional predictor_id -> matplotlib colour mapping.
+
+    Returns
+    -------
+    (Figure, np.ndarray)
+        Figure and a flat array of axes.
+    """
+    task_ids = list(task_to_category.keys())
+    predictor_ids = sorted(ape_long_df["predictor_id"].unique())
+    color_map = _resolve_colors(predictor_ids, colors)
+
+    n = len(task_ids)
+    ncols = 3
+    nrows = (n + ncols - 1) // ncols
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows), sharey=False)
+    axes_flat: list[Axes] = list(axes.flatten()) if n > 1 else [axes]
+
+    for ax, task_id in zip(axes_flat, task_ids):
+        series_id = task_to_category[task_id]
+        label = CATEGORY_LABELS.get(series_id, series_id)
+
+        task_df = ape_long_df[ape_long_df["task_id"] == task_id]
+        data: list[Any] = [task_df[task_df["predictor_id"] == pid]["ape"].dropna().values for pid in predictor_ids]
+
+        bp = ax.boxplot(data, patch_artist=True, tick_labels=predictor_ids)
+        for patch, pid in zip(bp["boxes"], predictor_ids):
+            patch.set_facecolor(color_map[pid])
+            patch.set_alpha(0.6)
+
+        ax.set_title(label, fontsize=10)
+        ax.set_ylabel("APE (%)", fontsize=8)
+        ax.tick_params(axis="x", labelrotation=20, labelsize=7)
+        ax.grid(axis="y", alpha=0.3)
+
+    for ax in axes_flat[n:]:
+        ax.axis("off")
+
+    fig.suptitle("Per-prediction APE distribution by category", fontsize=12)
+    fig.tight_layout()
+    return fig, axes
+
+
+# ---------------------------------------------------------------------------
 # Exploration plot — overall food CPI + 9-category small multiples
 # ---------------------------------------------------------------------------
 
@@ -372,6 +441,7 @@ __all__ = [
     "plot_avgyoy_grid",
     "plot_crps_disaggregated",
     "plot_food_cpi_small_multiples",
+    "plot_mape_by_category",
     "plot_mape_distribution",
     "plot_trajectory_fan",
 ]

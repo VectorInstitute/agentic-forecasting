@@ -45,3 +45,5 @@ wheels/
 
 # local-only backup (not pushed)
 .local-backup/
+
+**/presentations
