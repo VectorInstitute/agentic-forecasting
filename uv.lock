@@ -83,7 +83,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "codecov", specifier = ">=2.1.13" },
-    { name = "e2b", specifier = ">=2.21.0" },
+    { name = "e2b", specifier = ">=2.21.1" },
     { name = "mypy", specifier = ">=2.1.0" },
     { name = "nbqa", specifier = ">=1.9.1" },
     { name = "pip-audit", specifier = ">=2.10.0" },
@@ -179,10 +179,10 @@ requires-dist = [
     { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
     { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.83.14" },
-    { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.13" },
+    { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
-    { name = "pydantic", specifier = ">=2.13.4" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "stats-can", specifier = ">=3.1.0" },
     { name = "statsforecast", marker = "extra == 'numerical'", specifier = ">=2.0.1" },
@@ -1205,7 +1205,7 @@ wheels = [
 
 [[package]]
 name = "e2b"
-version = "2.21.0"
+version = "2.21.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1220,9 +1220,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wcmatch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9c/97/5506630397ca074748e6f53bfdd92d5a9e362accec65dfef726a8b912d56/e2b-2.21.0.tar.gz", hash = "sha256:d39557d1f8b1fab52f5c8f2193da7559309d0671432cb1b6e4947b33cfd3f02e", size = 157165, upload-time = "2026-05-06T00:56:14.045Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/97/0e86ccb9e05c18e6e795e0808f14e2dc9f5c9ffb7be2a5cb77afd6d9f59e/e2b-2.21.1.tar.gz", hash = "sha256:2eff473ca03173cee1ccd9f9ec9e90c2b4705cca418e080e3104753d7ec33490", size = 157458, upload-time = "2026-05-14T17:36:02.318Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/e6/bae4aa9bbd60fa819e3239afa2ca42019f02c39314b5e230a5de140fe8f9/e2b-2.21.0-py3-none-any.whl", hash = "sha256:360a55ff23335dd62ee5ca86c41dc55de597d73b846f5c2361f6eac6c712a371", size = 297109, upload-time = "2026-05-06T00:56:12.321Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/d4/8b6a9a120e724dd8f91aededa89348a667a01fffbba28ae1a42cb397b0f0/e2b-2.21.1-py3-none-any.whl", hash = "sha256:9ec4646f3dba4a6da855baa8adeab239aa988e15904611e38bf12aeec2562ac9", size = 297476, upload-time = "2026-05-14T17:36:00.351Z" },
 ]
 
 [[package]]
@@ -3681,7 +3681,7 @@ dependencies = [
 requires-dist = [
     { name = "google-adk", specifier = ">=1.32.0" },
     { name = "langfuse", specifier = ">=4.5.1" },
-    { name = "pydantic", specifier = ">=2.13.4" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "pydantic-settings", specifier = ">=2.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
