@@ -18,6 +18,9 @@ uv run python scripts/smoke_test_food_agent.py --all-tasks
 # Show the full prompt and raw agent JSON:
 uv run python scripts/smoke_test_food_agent.py --verbose
 
+# Print L1 skill XML (what list_skills should return; no API call):
+uv run python scripts/smoke_test_food_agent.py --show-skill-l1
+
 Prerequisites
 -------------
 - .env with GEMINI_API_KEY set
@@ -76,6 +79,20 @@ TASK_LABELS: dict[str, str] = {
 PASS = "\033[92m✓\033[0m"
 FAIL = "\033[91m✗\033[0m"
 WARN = "\033[93m!\033[0m"
+
+
+def _print_skill_l1_xml() -> None:
+    """Print L1 metadata XML for the food CPI skill (reference for list_skills)."""
+    from food_price_forecasting.analyst_agent import FOOD_CPI_SKILL_DIR  # noqa: PLC0415
+    from google.adk.skills import load_skill_from_dir  # noqa: PLC0415
+    from google.adk.skills.prompt import format_skills_as_xml  # noqa: PLC0415
+
+    skill = load_skill_from_dir(FOOD_CPI_SKILL_DIR)
+    print(f"\n{'═' * 60}")
+    print("  L1 skill metadata (format_skills_as_xml — expected list_skills output)")
+    print(f"{'═' * 60}\n")
+    print(format_skills_as_xml([skill]))
+    print()
 
 
 def _run_single(  # noqa: PLR0912, PLR0915
@@ -218,7 +235,19 @@ def main() -> None:
         action="store_true",
         help="Print the full prompt sent to the agent and raw metadata.",
     )
+    parser.add_argument(
+        "--show-skill-l1",
+        action="store_true",
+        help=(
+            "Print L1 skill name/description XML from SKILL.md frontmatter and exit "
+            "(no API call; reference for list_skills output)."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.show_skill_l1:
+        _print_skill_l1_xml()
+        return
 
     try:
         origin = datetime.strptime(args.origin, "%Y-%m-%d")

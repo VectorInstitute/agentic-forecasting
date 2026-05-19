@@ -26,6 +26,7 @@ Build a ready-to-use predictor with default settings:
 
 from food_price_forecasting.analyst_agent.agent import (
     FOOD_CPI_SKILL_DIR,
+    FOOD_PRICE_FORECASTER_INSTRUCTION,
     FoodPriceForecastPromptBuilder,
     build_food_price_agent_config,
     build_food_price_agent_predictor,
@@ -34,6 +35,7 @@ from food_price_forecasting.analyst_agent.agent import (
 
 __all__ = [
     "FOOD_CPI_SKILL_DIR",
+    "FOOD_PRICE_FORECASTER_INSTRUCTION",
     "FoodPriceForecastPromptBuilder",
     "build_food_price_agent_config",
     "build_food_price_agent_predictor",

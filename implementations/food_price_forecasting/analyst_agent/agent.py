@@ -58,8 +58,7 @@ Your job is to produce calibrated probabilistic forecasts, not a narrative-only 
 
 ## Analysis discipline
 - Prefer simple, inspectable forecasting logic over elaborate models that cannot be verified.
-- Load and follow the `forecast-food-cpi` skill (`load_skill`) for use-case context and calibration discipline.
-- When the `context_agent` tool is available, invoke it with JSON `{"cutoff_date": "<as_of YYYY-MM-DD>", "query": "<topic>"}` where `cutoff_date` is the task `as_of`. Use its reply as cutoff-safe supplemental evidence only; see the skill for search discipline.
+- When the `context_agent` tool is available, invoke it with JSON `{"cutoff_date": "<as_of YYYY-MM-DD>", "query": "<topic>"}` where `cutoff_date` is the task `as_of`. Use its reply as cutoff-safe supplemental evidence only; respect `as_of` and do not replace the series history.
 - Document methods, assumptions, and any searched evidence in `rationale` or `metadata` fields within the structured response.
 """
 
@@ -248,8 +247,9 @@ def build_food_price_agent_config(
     """Build the reusable :class:`AgentConfig` for the food CPI agent.
 
     The returned config captures the agent's *identity*: the food CPI
-    forecaster instruction, the ``forecast-food-cpi`` skill, and the
-    requested capability toggles. It does **not** include an output
+    forecaster instruction, the ``forecast-food-cpi`` skill directory
+    (via ``skills_dirs`` / ADK ``SkillToolset``), and the requested
+    capability toggles. It does **not** include an output
     schema — the output format is a concern of the caller:
 
     - Pass the config to :func:`~aieng.forecasting.methods.agentic.build_adk_agent`

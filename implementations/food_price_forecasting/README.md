@@ -206,8 +206,44 @@ freely without being forced into Track 1 JSON.
   `enable_news_search=True` only when `as_of` is the real present, or you accept
   leakage risk in historical runs. The experiment notebook exposes this switch.
 - Task-specific skill: `analyst_agent/skills/forecast-food-cpi/SKILL.md` —
-  **informational only** (markdown, no `scripts/`). Load via ADK `load_skill`;
-  explains how the forecaster relates to the optional `context_agent` tool.
+  **informational only** (markdown, no `scripts/`). Wired via ADK
+  `load_skill_from_dir` + `SkillToolset` on `AgentConfig.skills_dirs`; the
+  forecaster instruction does **not** name the skill (ADK handles discovery).
+
+### Skills and L1 verification
+
+Skills follow the [ADK skills guide](https://developers.googleblog.com/developers-guide-to-building-adk-agents-with-skills/):
+
+- **Wiring:** `build_food_price_agent_config()` sets `skills_dirs` to
+  `analyst_agent/skills/forecast-food-cpi/`; `build_adk_agent()` loads it with
+  `load_skill_from_dir` and attaches `SkillToolset`.
+- **L1 (name + description):** YAML frontmatter in `SKILL.md`. ADK serialises
+  this to `<available_skills>` XML via `format_skills_as_xml`.
+- **What reaches the model:**
+  - Every model call: ADK appends a generic skills capability block to system
+    instructions (not duplicated in `FOOD_PRICE_FORECASTER_INSTRUCTION`).
+  - L1 XML: typically in the **`list_skills` tool response** after the model
+    calls that tool.
+  - L2 domain body: **`load_skill`** response when the model loads
+    `forecast-food-cpi`.
+
+**Local reference (no API key):**
+
+```bash
+uv run python scripts/smoke_test_food_agent.py --show-skill-l1
+```
+
+**Runtime checklist (Langfuse enabled):**
+
+1. On the first forecaster model span, inspect appended system instructions —
+   expect ADK skills preamble, not `forecast-food-cpi` copied from our hand-written
+   instruction.
+2. Find a **`list_skills`** span — response should include `<available_skills>`,
+   `<name>forecast-food-cpi</name>`, and the YAML `description`.
+3. Optionally find **`load_skill`** with `skill_name=forecast-food-cpi` for the
+   full domain brief (L2).
+
+Automated guards: `implementations/tests/food_price_forecasting/test_agent_skills.py`.
 
 ---
 
