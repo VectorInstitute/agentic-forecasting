@@ -19,7 +19,7 @@ Usage::
     )
 
     predictor = SampledTrajectoryLLMPredictor(
-        SampledTrajectoryLLMPredictorConfig(model="gemini/gemini-2.5-flash", n_samples=20),
+        SampledTrajectoryLLMPredictorConfig(model="gemini/gemini-2.5-flash"),
     )
 """
 
