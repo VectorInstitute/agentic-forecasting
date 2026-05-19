@@ -161,7 +161,7 @@ def _run_single(  # noqa: PLR0912, PLR0915
 
     from food_price_forecasting.smoke_report import summarize_agent_predictions  # noqa: PLC0415
 
-    ok = summarize_agent_predictions(predictions, expected_horizons=CFPR_HORIZONS)
+    ok: bool = summarize_agent_predictions(predictions, expected_horizons=CFPR_HORIZONS)
 
     if verbose and predictions:
         meta = {k: v for k, v in predictions[0].metadata.items() if k != "agent_rationale"}
