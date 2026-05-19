@@ -1,4 +1,4 @@
-"""Tests for ``aieng.forecasting.methods.llm_processes.direct_quantiles``."""
+"""Tests for ``aieng.forecasting.methods.llm_processes.quantile_grid``."""
 
 from __future__ import annotations
 
@@ -9,13 +9,18 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-from aieng.forecasting.data import DataService, SeriesMetadata
-from aieng.forecasting.data.adapters.base import BaseAdapter
+from aieng.forecasting.data import DataService
 from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES
 from aieng.forecasting.evaluation.task import ForecastingTask
-from aieng.forecasting.methods.llm_processes.direct_quantiles import (
-    DirectQuantilesLLMPredictor,
-    DirectQuantilesLLMPredictorConfig,
+from aieng.forecasting.methods import (
+    QuantileGridLLMPredictor as PublicQuantileGridLLMPredictor,
+)
+from aieng.forecasting.methods import (
+    QuantileGridLLMPredictorConfig as PublicQuantileGridLLMPredictorConfig,
+)
+from aieng.forecasting.methods.llm_processes.quantile_grid import (
+    QuantileGridLLMPredictor,
+    QuantileGridLLMPredictorConfig,
     _build_system_prompt,
     _build_user_prompt,
     _quantile_grid_from_response,
@@ -27,54 +32,6 @@ from pydantic import ValidationError
 
 AS_OF = datetime(2020, 12, 1)
 HORIZON = 6
-
-
-class _InMemoryAdapter(BaseAdapter):
-    """Adapter that returns a supplied DataFrame unchanged."""
-
-    def __init__(self, df: pd.DataFrame) -> None:
-        self._df = df.copy()
-
-    def fetch(self) -> pd.DataFrame:
-        """Return the cached DataFrame."""
-        return self._df.copy()
-
-
-def _synthetic_series(periods: int = 300) -> pd.DataFrame:
-    dates = pd.date_range("2000-01-01", periods=periods, freq="MS")
-    t = np.arange(periods, dtype=float)
-    values = 100.0 + 0.5 * t + 10.0 * np.sin(2 * np.pi * t / 12)
-    return pd.DataFrame({"timestamp": dates, "value": values})
-
-
-@pytest.fixture
-def svc() -> DataService:
-    """DataService with a single synthetic monthly target series."""
-    service = DataService()
-    service.register(
-        "target",
-        _InMemoryAdapter(_synthetic_series()),
-        SeriesMetadata(
-            series_id="target",
-            description="Synthetic monthly series",
-            source="test",
-            units="index",
-            frequency="MS",
-        ),
-    )
-    return service
-
-
-@pytest.fixture
-def task() -> ForecastingTask:
-    """Build a 6-month single-horizon task against the synthetic target."""
-    return ForecastingTask(
-        task_id="synthetic_6m",
-        target_series_id="target",
-        horizons=[HORIZON],
-        frequency="MS",
-        description="Synthetic 6-month forecast for unit tests.",
-    )
 
 
 def _step(center: float) -> _QuantileStep:
@@ -94,32 +51,27 @@ def _step(center: float) -> _QuantileStep:
 
 
 def test_config_rejects_invalid_values() -> None:
-    """``DirectQuantilesLLMPredictorConfig`` validates bounds on construction."""
+    """``QuantileGridLLMPredictorConfig`` validates bounds on construction."""
     with pytest.raises(ValidationError):
-        DirectQuantilesLLMPredictorConfig(precision=-1)
+        QuantileGridLLMPredictorConfig(precision=-1)
     with pytest.raises(ValidationError):
-        DirectQuantilesLLMPredictorConfig(history_window=0)
+        QuantileGridLLMPredictorConfig(history_window=0)
 
 
 def test_variant_tag_flows_into_predictor_id() -> None:
     """``variant_tag`` is folded into ``predictor_id`` by the base class."""
-    bare = DirectQuantilesLLMPredictor(DirectQuantilesLLMPredictorConfig(model="m"))
-    tagged = DirectQuantilesLLMPredictor(
-        DirectQuantilesLLMPredictorConfig(model="m", variant_tag="flash"),
+    bare = QuantileGridLLMPredictor(QuantileGridLLMPredictorConfig(model="m"))
+    tagged = QuantileGridLLMPredictor(
+        QuantileGridLLMPredictorConfig(model="m", variant_tag="flash"),
     )
-    assert bare.predictor_id == "llmp_direct_quantiles[m]"
-    assert tagged.predictor_id == "llmp_direct_quantiles_flash[m]"
+    assert bare.predictor_id == "llmp_quantile_grid[m]"
+    assert tagged.predictor_id == "llmp_quantile_grid_flash[m]"
 
 
-def test_public_methods_package_exports_direct_quantiles() -> None:
-    """The top-level methods package exposes the direct-quantile sibling."""
-    from aieng.forecasting.methods import (
-        DirectQuantilesLLMPredictor as PublicPredictor,
-        DirectQuantilesLLMPredictorConfig as PublicConfig,
-    )
-
-    assert PublicPredictor is DirectQuantilesLLMPredictor
-    assert PublicConfig is DirectQuantilesLLMPredictorConfig
+def test_public_methods_package_exports_quantile_grid() -> None:
+    """The top-level methods package exposes the quantile-grid sibling."""
+    assert PublicQuantileGridLLMPredictor is QuantileGridLLMPredictor
+    assert PublicQuantileGridLLMPredictorConfig is QuantileGridLLMPredictorConfig
 
 
 def test_system_prompt_override_replaces_base() -> None:
@@ -129,7 +81,7 @@ def test_system_prompt_override_replaces_base() -> None:
 
 
 def test_user_prompt_suffix_and_series_override(task: ForecastingTask) -> None:
-    """Prompt-level config fields shape the direct-quantile prompt."""
+    """Prompt-level config fields shape the quantile-grid prompt."""
     out = _build_user_prompt(
         task=task,
         history_str="2020-01: 100.00",
@@ -175,15 +127,15 @@ def test_quantile_grid_sorts_each_step_and_checks_length() -> None:
 
 
 _PATCH_BOOTSTRAP = "aieng.forecasting.methods.llm_processes.base.bootstrap_litellm"
-_PATCH_SAMPLER = "aieng.forecasting.methods.llm_processes.direct_quantiles._sample_direct_quantiles"
+_PATCH_SAMPLER = "aieng.forecasting.methods.llm_processes.quantile_grid._sample_quantile_grid"
 
 
 def test_predict_end_to_end_with_mocked_sampler(
     svc: DataService,
     task: ForecastingTask,
 ) -> None:
-    """Mock the LLM-call seam and check direct-quantile predictor invariants."""
-    cfg = DirectQuantilesLLMPredictorConfig(
+    """Mock the LLM-call seam and check quantile-grid predictor invariants."""
+    cfg = QuantileGridLLMPredictorConfig(
         model="gemini/gemini-2.5-flash-lite",
         history_window=12,
         variant_tag="flash",
@@ -206,11 +158,11 @@ def test_predict_end_to_end_with_mocked_sampler(
         patch(_PATCH_BOOTSTRAP),
         patch(_PATCH_SAMPLER, side_effect=_capture),
     ):
-        preds = DirectQuantilesLLMPredictor(cfg).predict(task, svc.context(AS_OF))
+        preds = QuantileGridLLMPredictor(cfg).predict(task, svc.context(AS_OF))
 
     assert len(preds) == 1
     pred = preds[0]
-    assert pred.predictor_id == "llmp_direct_quantiles_flash[gemini/gemini-2.5-flash-lite]"
+    assert pred.predictor_id == "llmp_quantile_grid_flash[gemini/gemini-2.5-flash-lite]"
     assert pred.forecast_date == (pd.Timestamp(AS_OF) + pd.DateOffset(months=HORIZON)).to_pydatetime()
     assert pred.payload.point_forecast == 155.0
     assert pred.payload.quantiles[0.05] == 150.0

@@ -85,8 +85,10 @@ from aieng.forecasting.methods.agentic.analyst_agent import (
 
 | Module | Class | Description |
 |---|---|---|
-| `llm_processes/continuous.py` | `ContinuousLLMPredictor` | Direct numerical prompting: samples full trajectories from an LLM, then computes empirical quantiles per horizon. |
-| `llm_processes/direct_quantiles.py` | `DirectQuantilesLLMPredictor` | Direct quantile elicitation: asks an LLM for the standard quantile grid in one structured completion. |
+| `llm_processes/sampled_trajectory.py` | `SampledTrajectoryLLMPredictor` | Samples full trajectories from an LLM, then computes empirical quantiles per horizon. |
+| `llm_processes/quantile_grid.py` | `QuantileGridLLMPredictor` | Asks an LLM for the standard quantile grid in one structured completion. |
+| `llm_processes/point_intervals.py` | — | Placeholder for a compact point-plus-interval contract; may become configurable sparse quantile-grid elicitation. |
+| `llm_processes/binary_probability.py` | — | Placeholder for a future binary event probability forecaster. |
 
 ### Agentic
 

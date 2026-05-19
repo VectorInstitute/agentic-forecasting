@@ -1,12 +1,12 @@
-"""LLMP recipe: direct numerical prompting with Gemini 2.5 Flash-Lite.
+"""LLMP recipe: sampled trajectory prompting with Gemini 2.5 Flash-Lite.
 
-Pairs :class:`~aieng.forecasting.methods.llm_processes.ContinuousLLMPredictor`
+Pairs :class:`~aieng.forecasting.methods.llm_processes.SampledTrajectoryLLMPredictor`
 with food-CPI-specific prompt framing, a bounded history window, and a
 ``variant_tag`` so cached backtests and leaderboards distinguish this
 recipe from ad-hoc bare-config runs of the same method.
 
 The recipe is intentionally thin: no new predictor class, no callable
-seams. It is a tuned :class:`ContinuousLLMPredictorConfig` plus a tiny
+seams. It is a tuned :class:`SampledTrajectoryLLMPredictorConfig` plus a tiny
 factory. Recipes that need behaviour beyond what the config exposes
 should be discussed before adding new seams to the method.
 """
@@ -14,12 +14,12 @@ should be discussed before adding new seams to the method.
 from __future__ import annotations
 
 from aieng.forecasting.methods.llm_processes import (
-    ContinuousLLMPredictor,
-    ContinuousLLMPredictorConfig,
+    SampledTrajectoryLLMPredictor,
+    SampledTrajectoryLLMPredictorConfig,
 )
 
 
-_VARIANT_TAG = "direct_flash"
+_VARIANT_TAG = "food_cpi_flash_lite"
 
 _SERIES_DESCRIPTION = (
     "Series: Canadian food Consumer Price Index sub-component (Statistics Canada "
@@ -39,13 +39,13 @@ _USER_PROMPT_SUFFIX = (
 )
 
 
-def build_llmp_direct_flash(
+def build_llmp_sampled_trajectory_flash_lite(
     *,
     model: str = "gemini/gemini-2.5-flash-lite",
     n_samples: int = 20,
     history_window: int | None = 120,
-) -> ContinuousLLMPredictor:
-    """Return a food-CPI-tuned :class:`ContinuousLLMPredictor`.
+) -> SampledTrajectoryLLMPredictor:
+    """Return a food-CPI-tuned :class:`SampledTrajectoryLLMPredictor`.
 
     Parameters
     ----------
@@ -64,11 +64,11 @@ def build_llmp_direct_flash(
 
     Returns
     -------
-    ContinuousLLMPredictor
+    SampledTrajectoryLLMPredictor
         Instantiated predictor whose :attr:`predictor_id` is
-        ``llmp_continuous_direct_flash[<model>]``.
+        ``llmp_sampled_trajectories_food_cpi_flash_lite[<model>]``.
     """
-    cfg = ContinuousLLMPredictorConfig(
+    cfg = SampledTrajectoryLLMPredictorConfig(
         model=model,
         n_samples=n_samples,
         history_window=history_window,
@@ -76,7 +76,7 @@ def build_llmp_direct_flash(
         user_prompt_suffix=_USER_PROMPT_SUFFIX,
         variant_tag=_VARIANT_TAG,
     )
-    return ContinuousLLMPredictor(cfg)
+    return SampledTrajectoryLLMPredictor(cfg)
 
 
-__all__ = ["build_llmp_direct_flash"]
+__all__ = ["build_llmp_sampled_trajectory_flash_lite"]

@@ -1,16 +1,16 @@
-"""LLMP recipe: direct quantile elicitation with Gemini 2.5 Flash-Lite."""
+"""LLMP recipe: quantile-grid elicitation with Gemini 2.5 Flash-Lite."""
 
 from __future__ import annotations
 
 from typing import Literal
 
 from aieng.forecasting.methods.llm_processes import (
-    DirectQuantilesLLMPredictor,
-    DirectQuantilesLLMPredictorConfig,
+    QuantileGridLLMPredictor,
+    QuantileGridLLMPredictorConfig,
 )
 
 
-_VARIANT_TAG = "flash"
+_VARIANT_TAG = "food_cpi_flash_lite"
 
 _SERIES_DESCRIPTION = (
     "Series: Canadian food Consumer Price Index sub-component (Statistics Canada "
@@ -29,13 +29,13 @@ _USER_PROMPT_SUFFIX = (
 )
 
 
-def build_llmp_direct_quantiles_flash(
+def build_llmp_quantile_grid_flash_lite(
     *,
     model: str = "gemini/gemini-2.5-flash-lite",
     history_window: int | None = 120,
     reasoning_effort: Literal["disable", "low", "medium", "high"] | None = "low",
-) -> DirectQuantilesLLMPredictor:
-    """Return a food-CPI-tuned direct-quantile LLMP predictor.
+) -> QuantileGridLLMPredictor:
+    """Return a food-CPI-tuned quantile-grid LLMP predictor.
 
     Parameters
     ----------
@@ -51,11 +51,11 @@ def build_llmp_direct_quantiles_flash(
 
     Returns
     -------
-    DirectQuantilesLLMPredictor
+    QuantileGridLLMPredictor
         Instantiated predictor whose :attr:`predictor_id` is
-        ``llmp_direct_quantiles_flash[<model>]``.
+        ``llmp_quantile_grid_food_cpi_flash_lite[<model>]``.
     """
-    cfg = DirectQuantilesLLMPredictorConfig(
+    cfg = QuantileGridLLMPredictorConfig(
         model=model,
         history_window=history_window,
         reasoning_effort=reasoning_effort,
@@ -63,7 +63,7 @@ def build_llmp_direct_quantiles_flash(
         user_prompt_suffix=_USER_PROMPT_SUFFIX,
         variant_tag=_VARIANT_TAG,
     )
-    return DirectQuantilesLLMPredictor(cfg)
+    return QuantileGridLLMPredictor(cfg)
 
 
-__all__ = ["build_llmp_direct_quantiles_flash"]
+__all__ = ["build_llmp_quantile_grid_flash_lite"]

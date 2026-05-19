@@ -1,9 +1,9 @@
-"""DirectQuantilesLLMPredictor — one-shot quantile forecaster.
+"""QuantileGridLLMPredictor — one-shot quantile forecaster.
 
 Asks an LLM for the full standard quantile grid in a single structured
 completion, then converts the returned grid into one :class:`Prediction` per
 requested horizon. This is a sibling elicitation strategy to
-:class:`~aieng.forecasting.methods.llm_processes.continuous.ContinuousLLMPredictor`:
+:class:`~aieng.forecasting.methods.llm_processes.sampled_trajectory.SampledTrajectoryLLMPredictor`:
 continuous sampled trajectories estimate quantiles empirically; this class
 elicits the quantiles directly.
 """
@@ -21,7 +21,6 @@ from aieng.forecasting.evaluation.prediction import (
     Prediction,
 )
 from aieng.forecasting.methods.llm_processes._client import (
-    current_trace_info,
     langfuse_observe,
     make_json_schema_response_format,
     run_async,
@@ -42,8 +41,8 @@ if TYPE_CHECKING:
     from aieng.forecasting.evaluation.task import ForecastingTask
 
 
-class DirectQuantilesLLMPredictorConfig(LLMPredictorConfig):
-    """Frozen configuration for :class:`DirectQuantilesLLMPredictor`.
+class QuantileGridLLMPredictorConfig(LLMPredictorConfig):
+    """Frozen configuration for :class:`QuantileGridLLMPredictor`.
 
     Quantile levels are fixed to :data:`STANDARD_QUANTILES` and not exposed.
     This method makes one structured completion per forecast origin; it does
@@ -64,7 +63,7 @@ class DirectQuantilesLLMPredictorConfig(LLMPredictorConfig):
     )
     system_prompt_override: str | None = Field(
         default=None,
-        description="Full replacement for the built-in direct-quantile system prompt.",
+        description="Full replacement for the built-in quantile-grid system prompt.",
     )
     user_prompt_suffix: str | None = Field(
         default=None,
@@ -141,7 +140,7 @@ _FIELD_BY_QUANTILE: dict[float, str] = {
 
 
 def _build_system_prompt(override: str | None = None) -> str:
-    """Return the direct-quantile system prompt, or ``override`` verbatim."""
+    """Return the quantile-grid system prompt, or ``override`` verbatim."""
     if override is not None:
         return override
     return (
@@ -160,20 +159,6 @@ def _build_system_prompt(override: str | None = None) -> str:
     )
 
 
-def _series_block(series_meta: SeriesMetadata | None, task: ForecastingTask, override: str | None) -> str:
-    """Return either the override block or the metadata-derived series block."""
-    if override is not None:
-        return override
-    meta_lines: list[str] = []
-    if series_meta is not None:
-        meta_lines.append(f"Series: {series_meta.description} (source: {series_meta.source})")
-        meta_lines.append(f"Units: {series_meta.units}")
-    else:
-        meta_lines.append(f"Series: {task.target_series_id}")
-    meta_lines.append(f"Frequency: {task.frequency}")
-    return "\n".join(meta_lines)
-
-
 def _build_user_prompt(
     task: ForecastingTask,
     history_str: str,
@@ -184,11 +169,23 @@ def _build_user_prompt(
     series_description_override: str | None = None,
     suffix: str | None = None,
 ) -> str:
-    """Build the direct-quantile user prompt."""
+    """Build the quantile-grid user prompt."""
+    if series_description_override is not None:
+        meta_block = series_description_override
+    else:
+        meta_lines: list[str] = []
+        if series_meta is not None:
+            meta_lines.append(f"Series: {series_meta.description} (source: {series_meta.source})")
+            meta_lines.append(f"Units: {series_meta.units}")
+        else:
+            meta_lines.append(f"Series: {task.target_series_id}")
+        meta_lines.append(f"Frequency: {task.frequency}")
+        meta_block = "\n".join(meta_lines)
+
     base = (
         f"Task: {task.description}\n"
         "\n"
-        f"{_series_block(series_meta, task, series_description_override)}\n"
+        f"{meta_block}\n"
         "\n"
         "History:\n"
         f"{history_str}\n"
@@ -204,10 +201,10 @@ def _build_user_prompt(
 
 
 def _quantile_grid_from_response(response: _QuantileTrajectory, n_steps: int) -> np.ndarray:
-    """Convert a parsed direct-quantile response into a monotone quantile grid."""
+    """Convert a parsed LLM response into a monotone quantile grid."""
     if len(response.forecasts) != n_steps:
         raise RuntimeError(
-            f"Direct-quantile response had {len(response.forecasts)} forecast steps; expected {n_steps}.",
+            f"Quantile-grid response had {len(response.forecasts)} forecast steps; expected {n_steps}.",
         )
     rows = [[float(getattr(step, _FIELD_BY_QUANTILE[q])) for q in STANDARD_QUANTILES] for step in response.forecasts]
     q_grid = np.asarray(rows, dtype=float)
@@ -215,9 +212,9 @@ def _quantile_grid_from_response(response: _QuantileTrajectory, n_steps: int) ->
     return q_grid
 
 
-def _sample_direct_quantiles(
+def _sample_quantile_grid(
     *,
-    cfg: DirectQuantilesLLMPredictorConfig,
+    cfg: QuantileGridLLMPredictorConfig,
     system_prompt: str,
     user_prompt: str,
 ) -> tuple[_QuantileTrajectory, float, int, int, int]:
@@ -242,82 +239,25 @@ def _sample_direct_quantiles(
         ),
     )
     if not parsed:
-        raise RuntimeError("No valid direct-quantile response returned by LLM.")
+        raise RuntimeError("No valid quantile-grid response returned by LLM.")
     return parsed[0], cost_usd, in_tokens, out_tokens, parse_failures
 
 
-def _build_predictions(
-    *,
-    task: ForecastingTask,
-    context: ForecastContext,
-    q_grid: np.ndarray,
-    cfg: DirectQuantilesLLMPredictorConfig,
-    predictor_id: str,
-    cost_usd: float,
-    in_tokens: int,
-    out_tokens: int,
-    parse_failures: int,
-) -> list[Prediction]:
-    """Fan the directly elicited quantile grid into ``Prediction`` objects."""
-    issued_at = datetime.now(tz=timezone.utc).replace(tzinfo=None)
-    trace_id, trace_url = current_trace_info()
-    offset = pd.tseries.frequencies.to_offset(task.frequency)
-    median_idx = STANDARD_QUANTILES.index(0.50)
+class QuantileGridLLMPredictor(LLMPredictor):
+    """Continuous-target LLM forecaster using quantile-grid elicitation."""
 
-    predictions: list[Prediction] = []
-    for h in task.horizons:
-        row = q_grid[h - 1]
-        quantiles = {q: float(row[i]) for i, q in enumerate(STANDARD_QUANTILES)}
-        payload = ContinuousForecast(
-            point_forecast=float(row[median_idx]),
-            quantiles=quantiles,
-        )
-        metadata: dict[str, Any] = {
-            "model": cfg.model,
-            "temperature": cfg.temperature,
-            "reasoning_effort": cfg.reasoning_effort,
-            "cost_usd": cost_usd,
-            "input_tokens": in_tokens,
-            "output_tokens": out_tokens,
-            "parse_failures": parse_failures,
-        }
-        if cfg.variant_tag is not None:
-            metadata["variant_tag"] = cfg.variant_tag
-        if cfg.history_window is not None:
-            metadata["history_window"] = cfg.history_window
-        if trace_id is not None:
-            metadata["langfuse_trace_id"] = trace_id
-        if trace_url is not None:
-            metadata["langfuse_trace_url"] = trace_url
-        predictions.append(
-            Prediction(
-                predictor_id=predictor_id,
-                task_id=task.task_id,
-                issued_at=issued_at,
-                as_of=context.as_of,
-                forecast_date=(pd.Timestamp(context.as_of) + offset * h).to_pydatetime(),
-                payload=payload,
-                metadata=metadata,
-            ),
-        )
-    return predictions
+    _method_tag: ClassVar[str] = "llmp_quantile_grid"
 
+    cfg: QuantileGridLLMPredictorConfig
 
-class DirectQuantilesLLMPredictor(LLMPredictor):
-    """Continuous-target LLM forecaster using direct quantile elicitation."""
-
-    _method_tag: ClassVar[str] = "llmp_direct_quantiles"
-
-    cfg: DirectQuantilesLLMPredictorConfig
-
-    def __init__(self, cfg: DirectQuantilesLLMPredictorConfig | None = None) -> None:
+    def __init__(self, cfg: QuantileGridLLMPredictorConfig | None = None) -> None:
         super().__init__(cfg)
 
     @classmethod
-    def _default_config(cls) -> DirectQuantilesLLMPredictorConfig:
-        return DirectQuantilesLLMPredictorConfig()
+    def _default_config(cls) -> QuantileGridLLMPredictorConfig:
+        return QuantileGridLLMPredictorConfig()
 
-    @langfuse_observe("DirectQuantilesLLMPredictor.predict")
+    @langfuse_observe("QuantileGridLLMPredictor.predict")
     def predict(
         self,
         task: ForecastingTask,
@@ -346,26 +286,44 @@ class DirectQuantilesLLMPredictor(LLMPredictor):
             suffix=self.cfg.user_prompt_suffix,
         )
 
-        parsed, cost_usd, in_tokens, out_tokens, parse_failures = _sample_direct_quantiles(
+        parsed, cost_usd, in_tokens, out_tokens, parse_failures = _sample_quantile_grid(
             cfg=self.cfg,
             system_prompt=system_prompt,
             user_prompt=user_prompt,
         )
         q_grid = _quantile_grid_from_response(parsed, n_steps=n_steps)
-        return _build_predictions(
-            task=task,
-            context=context,
-            q_grid=q_grid,
-            cfg=self.cfg,
-            predictor_id=self.predictor_id,
-            cost_usd=cost_usd,
-            in_tokens=in_tokens,
-            out_tokens=out_tokens,
-            parse_failures=parse_failures,
-        )
+
+        issued_at = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+        median_idx = STANDARD_QUANTILES.index(0.50)
+        predictions: list[Prediction] = []
+        for h in task.horizons:
+            row = q_grid[h - 1]
+            quantiles = {q: float(row[i]) for i, q in enumerate(STANDARD_QUANTILES)}
+            payload = ContinuousForecast(
+                point_forecast=float(row[median_idx]),
+                quantiles=quantiles,
+            )
+            predictions.append(
+                Prediction(
+                    predictor_id=self.predictor_id,
+                    task_id=task.task_id,
+                    issued_at=issued_at,
+                    as_of=context.as_of,
+                    forecast_date=(pd.Timestamp(context.as_of) + offset * h).to_pydatetime(),
+                    payload=payload,
+                    metadata=self._build_metadata(
+                        cost_usd=cost_usd,
+                        in_tokens=in_tokens,
+                        out_tokens=out_tokens,
+                        parse_failures=parse_failures,
+                        history_window=self.cfg.history_window,
+                    ),
+                ),
+            )
+        return predictions
 
 
 __all__ = [
-    "DirectQuantilesLLMPredictor",
-    "DirectQuantilesLLMPredictorConfig",
+    "QuantileGridLLMPredictor",
+    "QuantileGridLLMPredictorConfig",
 ]

@@ -12,10 +12,10 @@ implementations by method family:
 
 from .baselines import LastValuePredictor
 from .llm_processes import (
-    ContinuousLLMPredictor,
-    ContinuousLLMPredictorConfig,
-    DirectQuantilesLLMPredictor,
-    DirectQuantilesLLMPredictorConfig,
+    QuantileGridLLMPredictor,
+    QuantileGridLLMPredictorConfig,
+    SampledTrajectoryLLMPredictor,
+    SampledTrajectoryLLMPredictorConfig,
 )
 from .numerical import (
     DartsAutoARIMAPredictor,
@@ -25,10 +25,10 @@ from .numerical import (
 
 
 __all__ = [
-    "ContinuousLLMPredictor",
-    "ContinuousLLMPredictorConfig",
-    "DirectQuantilesLLMPredictor",
-    "DirectQuantilesLLMPredictorConfig",
+    "SampledTrajectoryLLMPredictor",
+    "SampledTrajectoryLLMPredictorConfig",
+    "QuantileGridLLMPredictor",
+    "QuantileGridLLMPredictorConfig",
     "DartsAutoARIMAPredictor",
     "DartsLightGBMPredictor",
     "DartsLinearRegressionPredictor",

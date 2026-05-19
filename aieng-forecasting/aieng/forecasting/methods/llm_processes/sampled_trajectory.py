@@ -1,4 +1,4 @@
-"""ContinuousLLMPredictor — sample-based quantile forecaster.
+"""SampledTrajectoryLLMPredictor — sample-based quantile forecaster.
 
 Asks an LLM for ``N`` numerical trajectories spanning ``max(task.horizons)``
 steps, stacks them, and computes per-step empirical quantiles at
@@ -14,12 +14,12 @@ configurations of this class.
 Usage::
 
     from aieng.forecasting.methods import (
-        ContinuousLLMPredictor,
-        ContinuousLLMPredictorConfig,
+        SampledTrajectoryLLMPredictor,
+        SampledTrajectoryLLMPredictorConfig,
     )
 
-    predictor = ContinuousLLMPredictor(
-        ContinuousLLMPredictorConfig(model="gemini/gemini-2.5-flash", n_samples=20),
+    predictor = SampledTrajectoryLLMPredictor(
+        SampledTrajectoryLLMPredictorConfig(model="gemini/gemini-2.5-flash", n_samples=20),
     )
 """
 
@@ -37,7 +37,6 @@ from aieng.forecasting.evaluation.prediction import (
     Prediction,
 )
 from aieng.forecasting.methods.llm_processes._client import (
-    current_trace_info,
     langfuse_observe,
     make_json_schema_response_format,
     run_async,
@@ -61,8 +60,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ContinuousLLMPredictorConfig(LLMPredictorConfig):
-    """Frozen configuration for :class:`ContinuousLLMPredictor`.
+class SampledTrajectoryLLMPredictorConfig(LLMPredictorConfig):
+    """Frozen configuration for :class:`SampledTrajectoryLLMPredictor`.
 
     Quantile levels are fixed to :data:`STANDARD_QUANTILES` and not exposed.
 
@@ -136,7 +135,7 @@ def _build_system_prompt(override: str | None = None) -> str:
 
     When ``override`` is provided, it replaces the built-in prompt verbatim.
     Recipes pass the override through
-    :attr:`ContinuousLLMPredictorConfig.system_prompt_override`.
+    :attr:`SampledTrajectoryLLMPredictorConfig.system_prompt_override`.
     """
     if override is not None:
         return override
@@ -171,7 +170,7 @@ def _build_user_prompt(
 
     ``series_description_override`` replaces the metadata-derived series block;
     ``suffix`` is appended verbatim at the end of the prompt. Both are
-    surfaced to recipes via :class:`ContinuousLLMPredictorConfig`.
+    surfaced to recipes via :class:`SampledTrajectoryLLMPredictorConfig`.
     """
     if series_description_override is not None:
         meta_block = series_description_override
@@ -241,7 +240,7 @@ def _quantiles_per_step(samples: np.ndarray) -> np.ndarray:
 
 def _sample_trajectories(
     *,
-    cfg: ContinuousLLMPredictorConfig,
+    cfg: SampledTrajectoryLLMPredictorConfig,
     system_prompt: str,
     user_prompt: str,
 ) -> tuple[list[_Trajectory], float, int, int, int]:
@@ -272,66 +271,7 @@ def _sample_trajectories(
     return result
 
 
-def _build_predictions(
-    *,
-    task: ForecastingTask,
-    context: ForecastContext,
-    q_grid: np.ndarray,
-    cfg: ContinuousLLMPredictorConfig,
-    predictor_id: str,
-    cost_usd: float,
-    in_tokens: int,
-    out_tokens: int,
-    parse_failures: int,
-) -> list[Prediction]:
-    """Fan the per-step quantile grid into one ``Prediction`` per horizon step."""
-    issued_at = datetime.now(tz=timezone.utc).replace(tzinfo=None)
-    trace_id, trace_url = current_trace_info()
-    offset = pd.tseries.frequencies.to_offset(task.frequency)
-    median_idx = STANDARD_QUANTILES.index(0.50)
-
-    predictions: list[Prediction] = []
-    for h in task.horizons:
-        row = q_grid[h - 1]
-        quantiles = {q: float(row[i]) for i, q in enumerate(STANDARD_QUANTILES)}
-        payload = ContinuousForecast(
-            point_forecast=float(row[median_idx]),
-            quantiles=quantiles,
-        )
-        forecast_date: datetime = (pd.Timestamp(context.as_of) + offset * h).to_pydatetime()
-        metadata: dict[str, Any] = {
-            "model": cfg.model,
-            "n_samples": cfg.n_samples,
-            "temperature": cfg.temperature,
-            "reasoning_effort": cfg.reasoning_effort,
-            "cost_usd": cost_usd,
-            "input_tokens": in_tokens,
-            "output_tokens": out_tokens,
-            "parse_failures": parse_failures,
-        }
-        if cfg.variant_tag is not None:
-            metadata["variant_tag"] = cfg.variant_tag
-        if cfg.history_window is not None:
-            metadata["history_window"] = cfg.history_window
-        if trace_id is not None:
-            metadata["langfuse_trace_id"] = trace_id
-        if trace_url is not None:
-            metadata["langfuse_trace_url"] = trace_url
-        predictions.append(
-            Prediction(
-                predictor_id=predictor_id,
-                task_id=task.task_id,
-                issued_at=issued_at,
-                as_of=context.as_of,
-                forecast_date=forecast_date,
-                payload=payload,
-                metadata=metadata,
-            ),
-        )
-    return predictions
-
-
-class ContinuousLLMPredictor(LLMPredictor):
+class SampledTrajectoryLLMPredictor(LLMPredictor):
     """Continuous-modality LLM forecaster (sample-based empirical quantiles).
 
     Issues ``cfg.n_samples`` completion calls in parallel via
@@ -348,18 +288,18 @@ class ContinuousLLMPredictor(LLMPredictor):
       defaults to ``"disable"`` per the calibration evidence.
     """
 
-    _method_tag: ClassVar[str] = "llmp_continuous"
+    _method_tag: ClassVar[str] = "llmp_sampled_trajectories"
 
-    cfg: ContinuousLLMPredictorConfig  # type narrowing for static checkers
+    cfg: SampledTrajectoryLLMPredictorConfig  # type narrowing for static checkers
 
-    def __init__(self, cfg: ContinuousLLMPredictorConfig | None = None) -> None:
+    def __init__(self, cfg: SampledTrajectoryLLMPredictorConfig | None = None) -> None:
         super().__init__(cfg)
 
     @classmethod
-    def _default_config(cls) -> ContinuousLLMPredictorConfig:
-        return ContinuousLLMPredictorConfig()
+    def _default_config(cls) -> SampledTrajectoryLLMPredictorConfig:
+        return SampledTrajectoryLLMPredictorConfig()
 
-    @langfuse_observe("ContinuousLLMPredictor.predict")
+    @langfuse_observe("SampledTrajectoryLLMPredictor.predict")
     def predict(
         self,
         task: ForecastingTask,
@@ -411,14 +351,32 @@ class ContinuousLLMPredictor(LLMPredictor):
         samples = _stack_trajectories([t.values for t in parsed], n_steps=n_steps)
         q_grid = _quantiles_per_step(samples)
 
-        return _build_predictions(
-            task=task,
-            context=context,
-            q_grid=q_grid,
-            cfg=self.cfg,
-            predictor_id=self.predictor_id,
-            cost_usd=cost_usd,
-            in_tokens=in_tokens,
-            out_tokens=out_tokens,
-            parse_failures=parse_failures,
-        )
+        issued_at = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+        median_idx = STANDARD_QUANTILES.index(0.50)
+        predictions: list[Prediction] = []
+        for h in task.horizons:
+            row = q_grid[h - 1]
+            quantiles = {q: float(row[i]) for i, q in enumerate(STANDARD_QUANTILES)}
+            payload = ContinuousForecast(
+                point_forecast=float(row[median_idx]),
+                quantiles=quantiles,
+            )
+            predictions.append(
+                Prediction(
+                    predictor_id=self.predictor_id,
+                    task_id=task.task_id,
+                    issued_at=issued_at,
+                    as_of=context.as_of,
+                    forecast_date=(pd.Timestamp(context.as_of) + offset * h).to_pydatetime(),
+                    payload=payload,
+                    metadata=self._build_metadata(
+                        cost_usd=cost_usd,
+                        in_tokens=in_tokens,
+                        out_tokens=out_tokens,
+                        parse_failures=parse_failures,
+                        history_window=self.cfg.history_window,
+                        extra={"n_samples": self.cfg.n_samples},
+                    ),
+                ),
+            )
+        return predictions
