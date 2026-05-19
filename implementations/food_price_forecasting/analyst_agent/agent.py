@@ -19,7 +19,6 @@ To launch the interactive analyst locally, run::
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -37,10 +36,6 @@ from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput, Conti
 from aieng.forecasting.methods.agentic.predictor import AgentPredictor
 from google.adk.models.base_llm import BaseLlm
 from pydantic import BaseModel, Field
-
-
-FOOD_CPI_SKILL_DIR = Path(__file__).resolve().parent / "skills" / "forecast-food-cpi"
-"""Task-specific ADK skill directory for the food CPI forecasting agent."""
 
 
 FOOD_PRICE_FORECASTER_INSTRUCTION = """## Role
@@ -61,8 +56,6 @@ Your job is to produce calibrated probabilistic forecasts, not a narrative-only 
 - When the `context_agent` tool is available, invoke it with JSON `{"cutoff_date": "<as_of YYYY-MM-DD>", "query": "<topic>"}` where `cutoff_date` is the task `as_of`. Use its reply as cutoff-safe supplemental evidence only; respect `as_of` and do not replace the series history.
 - Document methods, assumptions, and any searched evidence in `rationale` or `metadata` fields within the structured response.
 
-## Skills
-- Call `list_skills` before invoking any skill to see what is available. Do not call `load_skill` for a skill name that has not appeared in a `list_skills` response you have seen in this conversation.
 """
 
 
@@ -162,9 +155,6 @@ class FoodPriceForecastPromptBuilder(BaseModel):
         }
 
         return f"""Create a calibrated continuous forecast for this Canadian food CPI task.
-
-Use the supplied cutoff-safe data as the source of truth for historical observations. You may use code execution to parse
-the CSV and compute forecasts. If news search is enabled, only use sources published on or before `as_of`.
 
 Payload:
 {json.dumps(prompt_payload, indent=2)}
@@ -295,7 +285,6 @@ def build_food_price_agent_config(
         model=model,
         description="Canadian food CPI forecasting agent.",
         instruction=FOOD_PRICE_FORECASTER_INSTRUCTION,
-        skills_dirs=(FOOD_CPI_SKILL_DIR,),
         code_execution=CodeExecutionConfig(
             enabled=enable_code_execution,
             template_name="agentic-forecasting-bootcamp",
@@ -399,7 +388,6 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [
-    "FOOD_CPI_SKILL_DIR",
     "FOOD_PRICE_FORECASTER_INSTRUCTION",
     "FoodPriceForecastPromptBuilder",
     "build_food_price_agent_config",

@@ -99,7 +99,7 @@ implementations/food_price_forecasting/
 ├── plots.py       # plot_trajectory_fan, plot_avgyoy_grid,
 │                  # plot_crps_disaggregated, plot_mape_distribution,
 │                  # plot_food_cpi_small_multiples
-├── analyst_agent/ # task-specific ADK agent config, prompt builder, and skills
+├── analyst_agent/ # task-specific ADK agent config and prompt builder
 ├── food_cpi_experiment.ipynb      # 26-cell narrative over the helpers above
 └── food_data_exploration.ipynb    # 9-cell warm-up tour of the 9 series
 ```
@@ -150,7 +150,7 @@ configuration.
 
 ### Identity vs. role
 
-`AgentConfig` captures the agent's **identity** — instruction, model, skills,
+`AgentConfig` captures the agent's **identity** — instruction, model, and
 capability toggles. It says nothing about output format.
 
 `AgentPredictor` (and `build_food_price_agent_predictor`) captures the agent's
@@ -205,35 +205,12 @@ freely without being forced into Track 1 JSON.
   forecaster, **off by default** (`enable_news_search=False`). Enable with
   `enable_news_search=True` only when `as_of` is the real present, or you accept
   leakage risk in historical runs. The experiment notebook exposes this switch.
-- Task-specific skill: `analyst_agent/skills/forecast-food-cpi/SKILL.md` —
-  **informational only** (markdown, no `scripts/`). Wired via ADK
-  `load_skill_from_dir` + `SkillToolset` on `AgentConfig.skills_dirs`; the
-  forecaster instruction does **not** name the skill (ADK handles discovery).
-
-### Skills and L1 verification
-
-Skills follow the [ADK skills guide](https://developers.googleblog.com/developers-guide-to-building-adk-agents-with-skills/):
-
-- **Wiring:** `build_food_price_agent_config()` sets `skills_dirs` to
-  `analyst_agent/skills/forecast-food-cpi/`; `build_adk_agent()` loads it with
-  `load_skill_from_dir` and attaches `SkillToolset`.
-- **L1 (name + description):** YAML frontmatter in `SKILL.md`. ADK serialises
-  this to `<available_skills>` XML via `format_skills_as_xml`.
-- **What reaches the model:**
-  - Turn 1: the agent calls **`list_skills`** to discover available skills —
-    this is the standard ADK flow. The forecaster instruction includes a reminder
-    to call `list_skills` before invoking any skill.
-  - L2 domain body: **`load_skill`** response when the model loads
-    `forecast-food-cpi`.
-
-**Runtime checklist (Langfuse enabled):**
-
-1. On the first turn, find a **`list_skills`** tool call — the response should
-   include `forecast-food-cpi` and its YAML `description`.
-2. Find **`load_skill`** with `skill_name=forecast-food-cpi` for the full
-   domain brief (L2).
-
-Automated guards: `implementations/tests/food_price_forecasting/test_agent_skills.py`.
+- **No skills in v1.** The v1 baseline does not use ADK `SkillToolset`. Attaching
+  a skill toolset unconditionally injects an ADK system-prompt description of
+  executable scripts, which causes the model to hallucinate script names even when
+  the skill contains none. Skills will be reintroduced once we have genuine
+  reference data to put in them. See [`docs/adk-skills-guide.md`](../../docs/adk-skills-guide.md)
+  for the design rationale and a concrete spec for the next skill.
 
 ---
 

@@ -13,7 +13,6 @@ from aieng.forecasting.data.adapters.base import BaseAdapter
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic.outputs import ContinuousAgentForecastOutput
 from food_price_forecasting.analyst_agent import (
-    FOOD_CPI_SKILL_DIR,
     FOOD_PRICE_FORECASTER_INSTRUCTION,
     FoodPriceForecastPromptBuilder,
     build_food_price_agent_config,
@@ -103,13 +102,12 @@ def _make_task() -> ForecastingTask:
 
 
 class TestBuildFoodPriceAgentConfig:
-    """The food-specific config wires the right skill, defaults, and news-search instructions."""
+    """The food-specific config wires the right defaults and news-search instructions."""
 
-    def test_default_config_attaches_food_skill_and_disables_news_search(self) -> None:
+    def test_default_config_disables_news_search_and_code_execution(self) -> None:
         """Defaults must keep historical backtests leak-safe: no news search, no code execution."""
         config = build_food_price_agent_config()
 
-        assert FOOD_CPI_SKILL_DIR in config.skills_dirs
         assert config.context_retrieval.enabled is False
         assert config.code_execution.enabled is False
 
@@ -120,12 +118,6 @@ class TestBuildFoodPriceAgentConfig:
         assert config.context_retrieval.enabled is True
         assert "Canadian food" in config.context_retrieval.instruction
         assert "publication date" in config.context_retrieval.instruction
-
-    def test_forecaster_instruction_does_not_name_skills(self) -> None:
-        """Skill discovery is ADK's job; the hand-written instruction must not name skills or load_skill."""
-        lowered = FOOD_PRICE_FORECASTER_INSTRUCTION.lower()
-        assert "forecast-food-cpi" not in lowered
-        assert "load_skill" not in lowered
 
 
 # ---------------------------------------------------------------------------
