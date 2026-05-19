@@ -4,19 +4,14 @@ Call :func:`init_langfuse_tracing` once at process startup when using the
 ``llm`` or ``agentic`` extras and Langfuse credentials are set in the
 environment.
 
-Use :func:`print_langfuse_trace_url` after an agent ``predict()`` call to flush spans
-and print a Langfuse UI link (no trace fetch). :func:`print_agent_langfuse_trace`
-fetches the full observation tree via the API (can be slow).
+Call :func:`print_langfuse_trace_url` after a ``predict()`` call to flush
+pending spans and print a clickable Langfuse UI link.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import os
-import time
-from collections.abc import Sequence
-from typing import Any, cast
 
 
 logger = logging.getLogger(__name__)
@@ -137,105 +132,6 @@ def init_langfuse_tracing() -> None:
     _bootstrap.init()
 
 
-def _truncate(value: Any, *, max_len: int = 400) -> str:
-    """Serialize *value* for display and cap length."""
-    if value is None:
-        return ""
-    if isinstance(value, str):
-        text = value
-    else:
-        try:
-            text = json.dumps(value, indent=2, default=str)
-        except TypeError:
-            text = str(value)
-    text = text.strip()
-    if len(text) <= max_len:
-        return text
-    return text[: max_len - 3] + "..."
-
-
-def _observation_duration_ms(obs: Any) -> float | None:
-    start = getattr(obs, "start_time", None)
-    end = getattr(obs, "end_time", None)
-    if start is None or end is None:
-        return None
-    return float((end - start).total_seconds() * 1000.0)
-
-
-def _format_observation_line(obs: Any, *, depth: int) -> list[str]:
-    """Return display lines for one observation."""
-    indent = "  " * depth
-    name = getattr(obs, "name", None) or "(unnamed)"
-    obs_type = getattr(obs, "type", None) or "?"
-    duration = _observation_duration_ms(obs)
-    dur = f"  {duration:.0f}ms" if duration is not None else ""
-    lines = [f"{indent}[{obs_type}] {name}{dur}"]
-
-    for label, attr in (("in", "input"), ("out", "output")):
-        payload = getattr(obs, attr, None)
-        if payload:
-            snippet = _truncate(payload, max_len=350)
-            if snippet:
-                lines.append(f"{indent}  {label}: {snippet}")
-
-    return lines
-
-
-def _build_observation_tree(observations: list[Any]) -> list[tuple[Any, int]]:
-    """Return observations in depth-first order with indentation depth."""
-    children: dict[str | None, list[Any]] = {}
-    for obs in observations:
-        parent = getattr(obs, "parent_observation_id", None)
-        children.setdefault(parent, []).append(obs)
-
-    for sibs in children.values():
-        sibs.sort(key=lambda o: getattr(o, "start_time", None) or 0)
-
-    ordered: list[tuple[Any, int]] = []
-
-    def walk(parent_id: str | None, depth: int) -> None:
-        for obs in children.get(parent_id, []):
-            ordered.append((obs, depth))
-            obs_id = getattr(obs, "id", None)
-            if obs_id is not None:
-                walk(obs_id, depth + 1)
-
-    walk(None, 0)
-    if not ordered and observations:
-        for obs in sorted(observations, key=lambda o: getattr(o, "start_time", None) or 0):
-            ordered.append((obs, 0))
-    return ordered
-
-
-def _resolve_trace_id(
-    client: Any,
-    *,
-    trace_id: str | None,
-    trace_name: str | None,
-    tags: Sequence[str],
-) -> str | None:
-    """Return a trace id from explicit value or Langfuse list filters."""
-    if trace_id is not None:
-        return trace_id
-    try:
-        if trace_name:
-            listed = client.api.trace.list(limit=5, name=trace_name, order_by="timestamp.desc")
-        else:
-            listed = client.api.trace.list(
-                limit=5,
-                tags=list(tags) if tags else None,
-                order_by="timestamp.desc",
-            )
-    except Exception as exc:
-        print(f"Langfuse: could not list traces ({exc}).")
-        return None
-
-    if not listed.data:
-        print("Langfuse: no matching trace yet. Open the UI or retry after a few seconds.")
-        return None
-    return cast("str", listed.data[0].id)
-
-
 def print_langfuse_trace_url(
     trace_id: str | None = None,
     *,
@@ -288,92 +184,3 @@ def print_langfuse_trace_url(
     if trace_name:
         print(f"  Filter by trace name: {trace_name!r}")
     return None
-
-
-def print_agent_langfuse_trace(
-    trace_id: str | None = None,
-    *,
-    trace_name: str | None = None,
-    tags: Sequence[str] = ("agent_predictor",),
-    wait_seconds: float = 2.0,
-) -> str | None:
-    """Flush Langfuse, resolve a trace, and print a readable run timeline.
-
-    Parameters
-    ----------
-    trace_id : str, optional
-        Explicit trace id. When omitted, the most recent trace matching
-        ``trace_name`` or ``tags`` is used.
-    trace_name : str, optional
-        ``trace_name`` passed to ``propagate_attributes`` (set on the runner
-        config before ``predict()`` for a precise lookup).
-    tags : sequence of str, default (``agent_predictor``,)
-        Fallback filter when ``trace_name`` is not set.
-    wait_seconds : float, default=2.0
-        Seconds to wait after ``flush()`` so the trace is queryable.
-
-    Returns
-    -------
-    str or None
-        Resolved trace id, or ``None`` when Langfuse is not configured or no
-        trace was found.
-    """
-    if not _langfuse_credentials_present():
-        print("Langfuse: set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY in .env to fetch traces.")
-        return None
-
-    try:
-        from langfuse import get_client  # noqa: PLC0415
-    except ImportError:
-        print("Langfuse package not installed.")
-        return None
-
-    init_langfuse_tracing()
-    client = get_client()
-    client.flush()
-    if wait_seconds > 0:
-        time.sleep(wait_seconds)
-
-    trace_id = _resolve_trace_id(client, trace_id=trace_id, trace_name=trace_name, tags=tags)
-    if trace_id is None:
-        return None
-
-    try:
-        trace = client.api.trace.get(trace_id)
-        obs_page = client.api.observations.get_many(
-            trace_id=trace_id,
-            limit=200,
-            fields="core,basic,io,metadata",
-        )
-    except Exception as exc:
-        print(f"Langfuse: could not fetch trace {trace_id!r} ({exc}).")
-        return trace_id
-
-    observations = list(obs_page.data or [])
-    url = client.get_trace_url(trace_id=trace_id)
-
-    print("═" * 60)
-    print(f"Trace: {trace_id}")
-    if url:
-        print(f"URL:   {url}")
-    trace_name_val = getattr(trace, "name", None)
-    if trace_name_val:
-        print(f"Name:  {trace_name_val}")
-    print(f"Observations: {len(observations)}")
-    print("─" * 60)
-
-    for obs, depth in _build_observation_tree(observations):
-        for line in _format_observation_line(obs, depth=depth):
-            print(line)
-
-    # Highlight structured agent output (set_model_response path).
-    for obs in observations:
-        name = (getattr(obs, "name", None) or "").lower()
-        if "set_model_response" in name or name == "set_model_response":
-            print("─" * 60)
-            print("Structured output (set_model_response):")
-            print(_truncate(getattr(obs, "output", None), max_len=1200))
-            break
-
-    print("═" * 60)
-    return trace_id

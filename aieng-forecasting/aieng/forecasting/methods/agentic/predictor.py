@@ -275,7 +275,7 @@ class AgentPredictor(Predictor):
             )
         except Exception as e:
             # Log the error and return an empty list of predictions
-            logger.error(f"Error converting output to list of predictions: {e}")
+            logger.error("Error converting output to list of predictions: %s", e)
             return []
 
         return predictions

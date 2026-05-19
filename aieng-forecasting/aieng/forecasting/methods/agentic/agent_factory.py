@@ -14,7 +14,7 @@ raises :class:`ImportError` with installation guidance.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import Any, Sequence
 
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
 from google.adk.models.base_llm import BaseLlm
@@ -25,61 +25,15 @@ try:
     from aieng.agents.tools.code_interpreter import CodeInterpreter
     from google.adk.agents import LlmAgent
     from google.adk.skills import load_skill_from_dir
-    from google.adk.skills import prompt as skills_prompt
     from google.adk.skills.models import Skill
     from google.adk.tools.google_search_agent_tool import GoogleSearchAgentTool
     from google.adk.tools.google_search_tool import google_search
-    from google.adk.tools.skill_toolset import (
-        _DEFAULT_SKILL_SYSTEM_INSTRUCTION as _ADK_SKILL_SYSTEM_INSTRUCTION,
-    )
     from google.adk.tools.skill_toolset import SkillToolset
     from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel
 except ModuleNotFoundError as exc:
     raise ImportError(
         "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
     ) from exc
-
-if TYPE_CHECKING:
-    from google.adk.models.llm_request import LlmRequest
-    from google.adk.tools.tool_context import ToolContext
-
-
-# Opinionated skills UX for this codebase: inject L1 metadata on every model call so
-# the agent does not need to call list_skills before load_skill on turn 1.
-_SKILL_DISCIPLINE_INSTRUCTION = (
-    "Available skills for this agent are listed below (name and description only). "
-    "You may call list_skills again to refresh that list. "
-    "Never call load_skill, load_skill_resource, or run_skill_script for a skill name "
-    "unless it already appears in an available-skills list you have seen in this "
-    "conversation (including the list below)."
-)
-
-
-class EagerL1SkillToolset(SkillToolset):
-    """SkillToolset that always injects L1 skill metadata into each LLM request.
-
-    ADK's default :class:`~google.adk.tools.skill_toolset.SkillToolset` only
-    appends ``format_skills_as_xml`` when ``list_skills`` is absent; with the
-    default tools the model must call ``list_skills`` before it sees skill names.
-    This subclass always appends the L1 XML block plus a short discipline note.
-    """
-
-    async def process_llm_request(
-        self,
-        *,
-        tool_context: ToolContext,
-        llm_request: LlmRequest,
-    ) -> None:
-        """Append ADK skills preamble, discipline note, and L1 XML to the request."""
-        del tool_context  # unused; signature matches ADK base
-        instructions = [
-            _ADK_SKILL_SYSTEM_INSTRUCTION,
-            _SKILL_DISCIPLINE_INSTRUCTION,
-        ]
-        skills_xml = skills_prompt.format_skills_as_xml(self._list_skills())
-        if skills_xml.strip():
-            instructions.append(skills_xml)
-        llm_request.append_instructions(instructions)
 
 
 class ContextRetrievalRequest(BaseModel):
@@ -175,6 +129,8 @@ class CodeExecutionConfig(BaseModel):
         Code execution timeout in seconds. If not provided, the agent will use the
         default E2B code execution timeout.
     """
+
+    model_config = {"extra": "forbid"}
 
     enabled: bool = False
     template_name: str | None = "agentic-forecasting-bootcamp"
@@ -300,6 +256,10 @@ def build_adk_agent(
         called directly — callers that only want an interactive agent should
         omit this argument.
 
+        Note: avoid ``str | None`` optional fields on schemas that also contain
+        ``list[BaseModel]`` fields; use string defaults (e.g. ``rationale=""``)
+        instead to stay compatible with ADK's ``set_model_response`` tool.
+
     Returns
     -------
     LlmAgent
@@ -359,20 +319,17 @@ def build_adk_agent(
         skills.append(load_skill_from_dir(skills_dir))
 
     if skills:
-        tools.append(EagerL1SkillToolset(skills=skills))
+        tools.append(SkillToolset(skills=skills))
 
-    if output_schema is not None and tools:
-        from google.adk.tools.set_model_response_tool import SetModelResponseTool  # noqa: PLC0415
-
-        try:
-            SetModelResponseTool(output_schema)._get_declaration()
-        except Exception as exc:
-            raise ValueError(
-                f"output_schema {output_schema.__name__!r} is incompatible with ADK tools: "
-                "set_model_response could not build a function declaration. "
-                "Avoid str | None optional fields on models that also contain "
-                'list[BaseModel] fields; use str defaults (e.g. rationale="") instead.'
-            ) from exc
+    thinking_config = (
+        ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=config.thinking_budget,
+            thinking_level=config.thinking_level,
+        )
+        if config.thinking_budget is not None or config.thinking_level is not None
+        else None
+    )
 
     return LlmAgent(
         name=config.name,
@@ -385,8 +342,6 @@ def build_adk_agent(
             seed=config.seed,
             temperature=config.temperature,
             max_output_tokens=config.max_output_tokens,
-            thinking_config=ThinkingConfig(
-                include_thoughts=True, thinking_budget=config.thinking_budget, thinking_level=config.thinking_level
-            ),
+            thinking_config=thinking_config,
         ),
     )

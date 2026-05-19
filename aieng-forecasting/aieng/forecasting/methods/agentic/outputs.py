@@ -17,7 +17,7 @@ median.
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime
 from math import isclose, isfinite
 from typing import Any, ClassVar, Literal
 
@@ -310,7 +310,7 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
                 f"Continuous agent output must contain exactly the task horizons. Missing: {missing}; extra: {extra}"
             )
 
-        issued_at = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+        issued_at = datetime.utcnow()  # naive UTC; Prediction.issued_at expects timezone-naive
         offset = pd.tseries.frequencies.to_offset(task.frequency)
         base_metadata = dict(self.metadata)
         if self.rationale.strip():

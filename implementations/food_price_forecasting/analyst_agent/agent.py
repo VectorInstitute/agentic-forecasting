@@ -60,6 +60,9 @@ Your job is to produce calibrated probabilistic forecasts, not a narrative-only 
 - Prefer simple, inspectable forecasting logic over elaborate models that cannot be verified.
 - When the `context_agent` tool is available, invoke it with JSON `{"cutoff_date": "<as_of YYYY-MM-DD>", "query": "<topic>"}` where `cutoff_date` is the task `as_of`. Use its reply as cutoff-safe supplemental evidence only; respect `as_of` and do not replace the series history.
 - Document methods, assumptions, and any searched evidence in `rationale` or `metadata` fields within the structured response.
+
+## Skills
+- Call `list_skills` before invoking any skill to see what is available. Do not call `load_skill` for a skill name that has not appeared in a `list_skills` response you have seen in this conversation.
 """
 
 
@@ -397,6 +400,8 @@ def __getattr__(name: str) -> Any:
 
 __all__ = [
     "FOOD_CPI_SKILL_DIR",
+    "FOOD_PRICE_FORECASTER_INSTRUCTION",
     "FoodPriceForecastPromptBuilder",
     "build_food_price_agent_config",
+    "build_food_price_agent_predictor",
 ]
