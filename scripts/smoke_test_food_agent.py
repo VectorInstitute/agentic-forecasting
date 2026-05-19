@@ -78,19 +78,6 @@ FAIL = "\033[91m✗\033[0m"
 WARN = "\033[93m!\033[0m"
 
 
-def _bar(value: float, lo: float, hi: float, width: int = 20) -> str:
-    """ASCII interval bar centred on value within [lo, hi]."""
-    if hi <= lo:
-        return "-" * width
-    frac = (value - lo) / (hi - lo)
-    pos = max(0, min(width - 1, int(frac * width)))
-    bar = ["-"] * width
-    bar[0] = "|"
-    bar[-1] = "|"
-    bar[pos] = "●"
-    return "".join(bar)
-
-
 def _run_single(  # noqa: PLR0912, PLR0915
     *,
     task_id: str,
@@ -172,65 +159,20 @@ def _run_single(  # noqa: PLR0912, PLR0915
 
     print(f"{PASS}  ({elapsed:.1f}s)")
 
-    # Validate prediction count
-    expected = len(CFPR_HORIZONS)
-    if len(predictions) != expected:
-        print(f"\n  {FAIL} Got {len(predictions)} predictions, expected {expected}")
-        return False
+    from food_price_forecasting.smoke_report import summarize_agent_predictions  # noqa: PLC0415
 
-    print(f"\n  {PASS} {len(predictions)} predictions, one per horizon\n")
+    ok = summarize_agent_predictions(predictions, expected_horizons=CFPR_HORIZONS)
 
-    # Print forecast table
-    print(f"  {'Horizon':>7}  {'Forecast date':>14}  {'q05':>7}  {'Point':>7}  {'q95':>7}  {'Spread':>7}  Distribution")
-    print(
-        f"  {'──────':>7}  {'─────────────':>14}  {'───':>7}  {'─────':>7}  {'───':>7}  {'──────':>7}  ────────────────────"
-    )
-
-    q05_values = [p.payload.quantiles[0.05] for p in predictions]
-    q95_values = [p.payload.quantiles[0.95] for p in predictions]
-    lo_all = min(q05_values)
-    hi_all = max(q95_values)
-
-    for pred in predictions:
-        h_label = f"h={CFPR_HORIZONS[predictions.index(pred)]}"
-        date_str = pred.forecast_date.strftime("%Y-%m")
-        q05 = pred.payload.quantiles[0.05]
-        q95 = pred.payload.quantiles[0.95]
-        pt = pred.payload.point_forecast
-        spread = q95 - q05
-        bar = _bar(pt, lo_all, hi_all)
-        print(f"  {h_label:>7}  {date_str:>14}  {q05:>7.1f}  {pt:>7.1f}  {q95:>7.1f}  {spread:>7.1f}  {bar}")
-
-    # Print rationale if present
-    rationale = predictions[0].metadata.get("agent_rationale") if predictions else None
-    if rationale:
-        print("\n  Rationale:")
-        for line in textwrap.wrap(rationale, width=70):
-            print(f"    {line}")
-
-    if verbose:
-        # Show raw metadata from first prediction
+    if verbose and predictions:
         meta = {k: v for k, v in predictions[0].metadata.items() if k != "agent_rationale"}
         if meta:
-            print(f"\n  Metadata (h=6): {meta}")
+            print(f"\n  Metadata (first horizon): {meta}")
 
-    # Quick sanity checks
-    issues: list[str] = []
-    for pred in predictions:
-        qs = list(pred.payload.quantiles.values())
-        if any(qs[i] > qs[i + 1] for i in range(len(qs) - 1)):
-            issues.append(f"Non-monotone quantiles at {pred.forecast_date.strftime('%Y-%m')}")
-        if abs(pred.payload.point_forecast - pred.payload.quantiles[0.50]) > 0.01:
-            issues.append(f"point_forecast != q50 at {pred.forecast_date.strftime('%Y-%m')}")
-
-    if issues:
-        print(f"\n  {FAIL} Sanity check failures:")
-        for issue in issues:
-            print(f"    - {issue}")
-        return False
-
-    print(f"\n  {PASS} All sanity checks passed (monotone quantiles, point_forecast == q50)")
-    return True
+    if ok:
+        print(f"\n  {PASS} Smoke check passed")
+    else:
+        print(f"\n  {FAIL} Smoke check failed — see messages above")
+    return ok
 
 
 # ---------------------------------------------------------------------------

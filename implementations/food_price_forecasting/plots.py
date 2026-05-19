@@ -17,7 +17,6 @@ import numpy as np
 import pandas as pd
 from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.backtest import BacktestResult
-from aieng.forecasting.evaluation.prediction import Prediction
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
@@ -157,97 +156,6 @@ def plot_trajectory_fan(
     )
     fig.tight_layout()
     return fig, axes
-
-
-def plot_agent_predictions(
-    predictions: list[Prediction],
-    *,
-    series_id: str,
-    data_service: DataService,
-    history_months: int = 24,
-    color: str = "#ff7f0e",
-    predictor_label: str | None = None,
-) -> tuple[Figure, Axes]:
-    """Plot cutoff-safe history plus a median/quantile fan for one agent run.
-
-    Intended for notebook smoke tests: pass the ``list[Prediction]`` returned
-    by :meth:`~aieng.forecasting.evaluation.predictor.Predictor.predict` for a
-    single task/origin. Draws the same 90%/50% bands as
-    :func:`plot_trajectory_fan` (q05–q95 and q20–q80).
-
-    Parameters
-    ----------
-    predictions : list[Prediction]
-        Predictions from one ``predict()`` call (one ``as_of``, sorted by
-        ``forecast_date`` internally).
-    series_id : str
-        Observed series to show as context.
-    data_service : DataService
-        Service used to load observed history up to each prediction's ``as_of``.
-    history_months : int, default=24
-        Months of observed history before ``as_of`` to display.
-    color : str, default="#ff7f0e"
-        Fan colour.
-    predictor_label : str or None
-        Legend label; defaults to ``predictions[0].predictor_id``.
-
-    Returns
-    -------
-    (Figure, Axes)
-        The created figure and axes.
-    """
-    if not predictions:
-        raise ValueError("predictions must be non-empty")
-
-    preds = sorted(predictions, key=lambda p: p.forecast_date)
-    as_of = pd.Timestamp(preds[0].as_of)
-    label = predictor_label or preds[0].predictor_id
-
-    actual_df = data_service.get_series(series_id, as_of=as_of.to_pydatetime())
-    actual_df["timestamp"] = pd.to_datetime(actual_df["timestamp"])
-
-    fig, ax = plt.subplots(figsize=(11, 4.5))
-    hist_start = as_of - pd.DateOffset(months=history_months)
-    hist = actual_df[(actual_df["timestamp"] >= hist_start) & (actual_df["timestamp"] <= as_of)]
-    ax.plot(hist["timestamp"], hist["value"], color="k", linewidth=1.8, label="Observed", zorder=5)
-
-    max_date = pd.Timestamp(preds[-1].forecast_date)
-    fut_actual = actual_df[(actual_df["timestamp"] > as_of) & (actual_df["timestamp"] <= max_date)]
-    if not fut_actual.empty:
-        ax.plot(
-            fut_actual["timestamp"],
-            fut_actual["value"],
-            color="k",
-            linewidth=1.8,
-            linestyle="--",
-            alpha=0.6,
-            label="Actual (post-cutoff)",
-            zorder=4,
-        )
-
-    dates = np.array([pd.Timestamp(p.forecast_date) for p in preds])
-    medians = np.array([p.payload.point_forecast for p in preds], dtype=float)
-    q05 = np.array([p.payload.quantiles[0.05] for p in preds], dtype=float)
-    q25 = np.array([p.payload.quantiles[0.20] for p in preds], dtype=float)
-    q75 = np.array([p.payload.quantiles[0.80] for p in preds], dtype=float)
-    q95 = np.array([p.payload.quantiles[0.95] for p in preds], dtype=float)
-
-    ax.fill_between(dates, q05, q95, alpha=0.15, color=color, label="90% interval")
-    ax.fill_between(dates, q25, q75, alpha=0.28, color=color, label="50% interval")
-    ax.plot(dates, medians, color=color, linewidth=1.8, marker="o", markersize=4, label=label)
-
-    ax.axvline(as_of, color="navy", linewidth=1.2, linestyle=":", alpha=0.7)
-    cat_label = CATEGORY_LABELS.get(series_id, series_id)
-    fig.suptitle(
-        f"{cat_label} — agent forecast from origin {as_of.date()} ({len(preds)} horizon(s))",
-        fontsize=11,
-        y=1.02,
-    )
-    ax.set_ylabel("CPI (2002=100)", fontsize=9)
-    ax.grid(axis="y", alpha=0.3)
-    ax.legend(fontsize=8, loc="upper left")
-    fig.tight_layout()
-    return fig, ax
 
 
 # ---------------------------------------------------------------------------
@@ -530,7 +438,6 @@ def plot_food_cpi_small_multiples(data_service: DataService) -> tuple[Figure, np
 
 __all__ = [
     "DEFAULT_PREDICTOR_PALETTE",
-    "plot_agent_predictions",
     "plot_avgyoy_grid",
     "plot_crps_disaggregated",
     "plot_food_cpi_small_multiples",
