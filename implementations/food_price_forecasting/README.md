@@ -201,12 +201,13 @@ freely without being forced into Track 1 JSON.
 - `output_schema` is supplied to `AgentPredictor`, not to `AgentConfig`. This
   means the schema is determined at predictor instantiation time, not baked
   into the agent definition.
-- News search is **off by default** to prevent information leakage in historical
-  backtests. Enable with `enable_news_search=True` only when the `as_of` date
-  is the actual present.
-- Task-specific skills live under `analyst_agent/skills/forecast-food-cpi/`.
-  The skill provides CFPR domain knowledge, seasonal priors, and uncertainty
-  calibration guidance.
+- **`context_agent`** (bounded news search) is a separate optional tool on the
+  forecaster, **off by default** (`enable_news_search=False`). Enable with
+  `enable_news_search=True` only when `as_of` is the real present, or you accept
+  leakage risk in historical runs. The experiment notebook exposes this switch.
+- Task-specific skill: `analyst_agent/skills/forecast-food-cpi/SKILL.md` —
+  **informational only** (markdown, no `scripts/`). Load via ADK `load_skill`;
+  explains how the forecaster relates to the optional `context_agent` tool.
 
 ---
 

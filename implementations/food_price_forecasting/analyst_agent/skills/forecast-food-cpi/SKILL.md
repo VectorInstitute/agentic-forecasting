@@ -1,54 +1,61 @@
 ---
 name: forecast-food-cpi
 description: >-
-  Domain knowledge and forecasting discipline for Canadian food CPI,
-  including series definitions, seasonal patterns, key price drivers,
-  CFPR methodology, and uncertainty calibration priors by category.
+  Informational domain brief for the Canadian food CPI forecasting agent.
+  Markdown only — no scripts or executable assets.
 ---
 
-# Canadian Food CPI Forecasting
+# Canadian Food CPI Forecasting (informational skill)
 
-Use this skill when producing forecasts for the Food Price Forecasting
-implementation. The target tasks forecast monthly Canadian food CPI index
-levels from Statistics Canada table 18-10-0004-11.
+## How to use this skill (ADK)
 
-## Task Contract
+- Call `load_skill` with `skill_name="forecast-food-cpi"` once before you forecast,
+  then follow the instructions below.
+- This skill folder contains **only** this `SKILL.md` file. There is no `scripts/`,
+  `assets/`, or `references/` directory.
+- **Do not** call `run_skill_script` for this skill — there is nothing to execute.
+- **Do not** call `load_skill_resource` for this skill — all content is in this file.
 
-- Forecast CPI index levels, not percent changes, unless the user explicitly
-  asks for an average-over-average YoY calculation as analysis metadata.
-- The canonical CFPR trajectory uses a July origin and horizons 6–17, covering
-  January through December of the following year.
-- Treat any provided information cutoff (`as_of`) as a hard cutoff. Do not use
-  any observation, price, or news published after that date.
-- If the user prompt already contains cutoff-filtered target history, use it
-  directly as the source of truth for historical observations.
+## Your role vs the context agent
 
-## Uncertainty Calibration
+You are the **food CPI forecasting agent** (`food_price_forecasting_agent`). This
+skill adds use-case context and calibration discipline to your reasoning. It does
+**not** run web searches or produce forecasts by itself.
 
-- Widen prediction intervals as horizon increases — uncertainty compounds over
-  longer forecast windows.
-- Anchor the 0.50 quantile (median) to your point estimate; the point forecast
-  must equal the median.
-- Use category-specific volatility priors from [REFERENCE.md](references/REFERENCE.md)
-  to scale interval width. Categories with high historical volatility (vegetables,
-  fruit) warrant wider intervals than low-volatility categories (dairy, restaurants).
-- Avoid mechanical constant-width intervals across all horizons and categories;
-  vary interval width based on recent residual scale and category volatility tier.
+You may also have a separate tool named **`context_agent`**. That is a different
+LLM (bounded Google Search) wrapped as a tool — **not** part of this skill. It is
+**disabled by default** in backtests (`enable_news_search=False`).
 
-## News Search Discipline
+| `context_agent` | What to do |
+|-----------------|------------|
+| **Unavailable** | Use the cutoff-safe CPI history in the user prompt and this skill only. Do not attempt web search. |
+| **Available** | Invoke with JSON `{"cutoff_date": "<as_of YYYY-MM-DD>", "query": "<topic>"}`. Use its markdown reply as supplemental evidence only; respect `as_of`; do not replace the series history. |
 
-- News search is optional and should usually be disabled for historical
-  backtests because live search can leak future information.
-- If search is enabled, use only evidence with publication dates on or before
-  the information cutoff.
-- Prefer official and high-quality sources: Statistics Canada, Bank of Canada,
-  Agriculture and Agri-Food Canada, provincial agriculture reports, commodity
-  data providers, and major Canadian news outlets.
-- Use news as a calibrated adjustment to trend/seasonal baselines, not a
-  substitute for reasoning from the CPI history.
+The forecaster system instruction defines the exact tool arguments when search is
+enabled.
 
-## Domain Reference
+## Use case (brief)
 
-See [REFERENCE.md](references/REFERENCE.md) for the nine StatCan series
-definitions, seasonal patterns, key price drivers, CFPR methodology, and
-uncertainty priors by category.
+- **Target:** monthly Canadian food CPI **index levels** (Statistics Canada table
+  18-10-0004-11), not percent changes unless noted as analysis metadata.
+- **Tasks:** nine grocery/restaurant sub-categories (meat, dairy, vegetables,
+  fruit, bakery, fish, restaurants, other food, and food overall). Series IDs and
+  peer summaries are in the user prompt (`target_series_id`, `peer_series_summaries`).
+- **Cutoff:** treat `as_of` in the prompt as a hard information cutoff — no data
+  or sources after that date.
+- **CFPR-style runs:** a July origin often forecasts horizons 6–17 (January–December
+  of the following year); the prompt’s `task.horizons` list is authoritative.
+- **Output:** structured forecast JSON is enforced by the agent’s output schema
+  (`set_model_response` when tools are enabled), not by this skill.
+
+## Forecasting discipline
+
+- Inspect the supplied history for trend, seasonality, and recent changes; prefer
+  simple baselines you can explain in `rationale` / `metadata`.
+- The `point_forecast` must equal the 0.50 quantile; quantiles must be
+  non-decreasing; widen intervals for farther horizons.
+- **Volatility:** vegetables and fruit tend to need wider intervals than dairy or
+  restaurants; scale to recent residual behaviour.
+- **News (only if `context_agent` is available):** use sparingly; official Canadian
+  sources; cutoff-safe publication dates only; adjust baselines modestly rather
+  than overriding the CPI history.
