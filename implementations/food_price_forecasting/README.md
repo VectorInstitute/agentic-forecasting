@@ -220,10 +220,12 @@ Skills follow the [ADK skills guide](https://developers.googleblog.com/developer
 - **L1 (name + description):** YAML frontmatter in `SKILL.md`. ADK serialises
   this to `<available_skills>` XML via `format_skills_as_xml`.
 - **What reaches the model:**
-  - Every model call: ADK appends a generic skills capability block to system
-    instructions (not duplicated in `FOOD_PRICE_FORECASTER_INSTRUCTION`).
-  - L1 XML: typically in the **`list_skills` tool response** after the model
-    calls that tool.
+  - Every model call: ADK’s generic skills capability block plus **L1 XML**
+    (skill names and descriptions from frontmatter) are appended by
+    `EagerL1SkillToolset` in `build_adk_agent` — turn 1 does not require
+    `list_skills` first. The model may still call `list_skills` to refresh the
+    list; it must not call `load_skill` for a name that has not appeared in an
+    available-skills list it has already seen.
   - L2 domain body: **`load_skill`** response when the model loads
     `forecast-food-cpi`.
 
@@ -236,12 +238,11 @@ uv run python scripts/smoke_test_food_agent.py --show-skill-l1
 **Runtime checklist (Langfuse enabled):**
 
 1. On the first forecaster model span, inspect appended system instructions —
-   expect ADK skills preamble, not `forecast-food-cpi` copied from our hand-written
-   instruction.
-2. Find a **`list_skills`** span — response should include `<available_skills>`,
-   `<name>forecast-food-cpi</name>`, and the YAML `description`.
-3. Optionally find **`load_skill`** with `skill_name=forecast-food-cpi` for the
-   full domain brief (L2).
+   expect `<available_skills>` with `forecast-food-cpi` and the YAML
+   `description` (injected by `EagerL1SkillToolset`), not copied from
+   `FOOD_PRICE_FORECASTER_INSTRUCTION`.
+2. Optionally find **`list_skills`** (refresh) or **`load_skill`** with
+   `skill_name=forecast-food-cpi` for the full domain brief (L2).
 
 Automated guards: `implementations/tests/food_price_forecasting/test_agent_skills.py`.
 

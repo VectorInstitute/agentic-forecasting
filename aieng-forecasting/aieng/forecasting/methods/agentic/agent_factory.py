@@ -11,8 +11,10 @@ This module requires the ``agentic`` extra; importing it without the extra
 raises :class:`ImportError` with installation guidance.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
 from google.adk.models.base_llm import BaseLlm
@@ -23,15 +25,61 @@ try:
     from aieng.agents.tools.code_interpreter import CodeInterpreter
     from google.adk.agents import LlmAgent
     from google.adk.skills import load_skill_from_dir
+    from google.adk.skills import prompt as skills_prompt
     from google.adk.skills.models import Skill
     from google.adk.tools.google_search_agent_tool import GoogleSearchAgentTool
     from google.adk.tools.google_search_tool import google_search
+    from google.adk.tools.skill_toolset import (
+        _DEFAULT_SKILL_SYSTEM_INSTRUCTION as _ADK_SKILL_SYSTEM_INSTRUCTION,
+    )
     from google.adk.tools.skill_toolset import SkillToolset
     from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel
 except ModuleNotFoundError as exc:
     raise ImportError(
         "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
     ) from exc
+
+if TYPE_CHECKING:
+    from google.adk.models.llm_request import LlmRequest
+    from google.adk.tools.tool_context import ToolContext
+
+
+# Opinionated skills UX for this codebase: inject L1 metadata on every model call so
+# the agent does not need to call list_skills before load_skill on turn 1.
+_SKILL_DISCIPLINE_INSTRUCTION = (
+    "Available skills for this agent are listed below (name and description only). "
+    "You may call list_skills again to refresh that list. "
+    "Never call load_skill, load_skill_resource, or run_skill_script for a skill name "
+    "unless it already appears in an available-skills list you have seen in this "
+    "conversation (including the list below)."
+)
+
+
+class EagerL1SkillToolset(SkillToolset):
+    """SkillToolset that always injects L1 skill metadata into each LLM request.
+
+    ADK's default :class:`~google.adk.tools.skill_toolset.SkillToolset` only
+    appends ``format_skills_as_xml`` when ``list_skills`` is absent; with the
+    default tools the model must call ``list_skills`` before it sees skill names.
+    This subclass always appends the L1 XML block plus a short discipline note.
+    """
+
+    async def process_llm_request(
+        self,
+        *,
+        tool_context: ToolContext,
+        llm_request: LlmRequest,
+    ) -> None:
+        """Append ADK skills preamble, discipline note, and L1 XML to the request."""
+        del tool_context  # unused; signature matches ADK base
+        instructions = [
+            _ADK_SKILL_SYSTEM_INSTRUCTION,
+            _SKILL_DISCIPLINE_INSTRUCTION,
+        ]
+        skills_xml = skills_prompt.format_skills_as_xml(self._list_skills())
+        if skills_xml.strip():
+            instructions.append(skills_xml)
+        llm_request.append_instructions(instructions)
 
 
 class ContextRetrievalRequest(BaseModel):
@@ -311,7 +359,7 @@ def build_adk_agent(
         skills.append(load_skill_from_dir(skills_dir))
 
     if skills:
-        tools.append(SkillToolset(skills=skills))
+        tools.append(EagerL1SkillToolset(skills=skills))
 
     if output_schema is not None and tools:
         from google.adk.tools.set_model_response_tool import SetModelResponseTool  # noqa: PLC0415

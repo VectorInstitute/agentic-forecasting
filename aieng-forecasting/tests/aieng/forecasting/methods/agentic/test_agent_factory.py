@@ -1,14 +1,17 @@
 """Tests for generic ADK agent configuration helpers."""
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from aieng.forecasting.methods.agentic.agent_factory import (
     AgentConfig,
     CodeExecutionConfig,
     ContextRetrievalConfig,
+    EagerL1SkillToolset,
     build_adk_agent,
 )
+from google.adk.skills import load_skill_from_dir
 from aieng.forecasting.methods.agentic.outputs import ContinuousAgentForecastOutput
 from pydantic import ValidationError
 
@@ -89,3 +92,44 @@ class TestBuildAdkAgent:
         )
 
         assert agent.output_schema is ContinuousAgentForecastOutput
+
+    def test_build_adk_agent_uses_eager_l1_skill_toolset(self, tmp_path: Path) -> None:
+        """Agents with skills_dirs get L1 metadata injected on every model call."""
+        skill_dir = tmp_path / "test-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("---\nname: test-skill\ndescription: test\n---\n", encoding="utf-8")
+        agent = build_adk_agent(AgentConfig(instruction="Forecast.", skills_dirs=[skill_dir]))
+
+        eager_toolsets = [tool for tool in agent.tools if isinstance(tool, EagerL1SkillToolset)]
+        assert len(eager_toolsets) == 1
+
+
+class TestEagerL1SkillToolset:
+    """EagerL1SkillToolset prepends L1 XML so turn 1 does not require list_skills first."""
+
+    @pytest.mark.asyncio
+    async def test_process_llm_request_injects_l1_xml_and_discipline(self, tmp_path: Path) -> None:
+        skill_dir = tmp_path / "demo-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: demo-skill\ndescription: Demo skill for eager L1 tests.\n---\n",
+            encoding="utf-8",
+        )
+        toolset = EagerL1SkillToolset(skills=[load_skill_from_dir(skill_dir)])
+
+        class _LlmRequest:
+            def __init__(self) -> None:
+                self.instructions: list[str] = []
+
+            def append_instructions(self, blocks: list[str]) -> None:
+                self.instructions.extend(blocks)
+
+        request = _LlmRequest()
+        await toolset.process_llm_request(tool_context=MagicMock(), llm_request=request)
+
+        merged = "\n".join(request.instructions)
+        assert "demo-skill" in merged
+        assert "Demo skill for eager L1 tests." in merged
+        assert "<available_skills>" in merged
+        assert "list_skills" in merged
+        assert "Never call load_skill" in merged
