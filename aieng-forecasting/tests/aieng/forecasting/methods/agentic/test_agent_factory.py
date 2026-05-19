@@ -7,7 +7,9 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     AgentConfig,
     CodeExecutionConfig,
     ContextRetrievalConfig,
+    build_adk_agent,
 )
+from aieng.forecasting.methods.agentic.outputs import ContinuousAgentForecastOutput
 from pydantic import ValidationError
 
 
@@ -71,3 +73,19 @@ class TestAgentConfig:
         config = AgentConfig(instruction="Forecast.", skills_dirs=[tmp_path])
 
         assert tmp_path in config.skills_dirs
+
+
+class TestBuildAdkAgent:
+    """build_adk_agent keeps output_schema when tools are present."""
+
+    def test_output_schema_retained_with_skills(self, tmp_path: Path) -> None:
+        """Skills + output_schema must build (set_model_response declaration check)."""
+        skill_dir = tmp_path / "test-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("---\nname: test-skill\ndescription: test\n---\n", encoding="utf-8")
+        agent = build_adk_agent(
+            AgentConfig(instruction="Forecast the supplied series.", skills_dirs=[skill_dir]),
+            output_schema=ContinuousAgentForecastOutput,
+        )
+
+        assert agent.output_schema is ContinuousAgentForecastOutput

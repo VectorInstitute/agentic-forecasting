@@ -313,37 +313,18 @@ def build_adk_agent(
     if skills:
         tools.append(SkillToolset(skills=skills))
 
-    # TODO(skills+output_schema): On Google AI Studio (non-Vertex), ADK's
-    # _OutputSchemaRequestProcessor falls back to a synthetic set_model_response
-    # tool when output_schema and any other tool are combined.  That tool's
-    # function-declaration builder cannot represent complex nested Pydantic
-    # schemas like list[ContinuousAgentHorizonForecast], so predict() currently
-    # fails with a ValueError before the model is called.
-    #
-    # Root cause: can_use_output_schema_with_tools() returns True only for
-    # Vertex AI + Gemini 2+ (or LiteLlm). On AI Studio the fallback path is
-    # used, and SkillToolset counts as a "tool" that triggers it.
-    #
-    # The workaround below omits output_schema when native support is absent,
-    # falling back to the prompt-injected JSON skeleton + model_validate_json.
-    # This means the model is not API-level constrained on AI Studio, so
-    # responses may be free-form rather than strict JSON.
-    #
-    # Proper fix options to investigate:
-    #   A) Use Vertex AI for backtests (native schema + tools support).
-    #   B) ADK skill loading without SkillToolset (e.g. embed at build time)
-    #      so the tools list is empty and output_schema works natively even on
-    #      AI Studio — but this breaks the intended skill primitive semantics.
-    #   C) Wait for ADK to support the set_model_response tool with complex
-    #      schemas, or contribute a fix upstream.
-    #   D) Use a flatter output schema that the function-declaration builder
-    #      can represent (e.g. replace list[HorizonForecast] with a top-level
-    #      list[ContinuousAgentForecastOutput] schema).
-    from google.adk.utils.output_schema_utils import can_use_output_schema_with_tools  # noqa: PLC0415
+    if output_schema is not None and tools:
+        from google.adk.tools.set_model_response_tool import SetModelResponseTool  # noqa: PLC0415
 
-    schema_for_agent = (
-        output_schema if output_schema is not None and can_use_output_schema_with_tools(config.model) else None
-    )
+        try:
+            SetModelResponseTool(output_schema)._get_declaration()
+        except Exception as exc:
+            raise ValueError(
+                f"output_schema {output_schema.__name__!r} is incompatible with ADK tools: "
+                "set_model_response could not build a function declaration. "
+                "Avoid str | None optional fields on models that also contain "
+                'list[BaseModel] fields; use str defaults (e.g. rationale="") instead.'
+            ) from exc
 
     return LlmAgent(
         name=config.name,
@@ -351,7 +332,7 @@ def build_adk_agent(
         model=config.model,
         instruction=config.instruction,
         tools=tools,
-        output_schema=schema_for_agent,
+        output_schema=output_schema,
         generate_content_config=GenerateContentConfig(
             seed=config.seed,
             temperature=config.temperature,

@@ -129,22 +129,18 @@ class TestBuildFoodPriceAgentConfig:
 class TestFoodPriceForecastPromptBuilder:
     """The prompt builder constructs a cutoff-safe payload with task, history, and peer context."""
 
-    def test_prompt_includes_cutoff_history_peer_summary_and_schema_skeleton(self) -> None:
-        """One assertion per major payload contract: the agent must see all of these to forecast."""
+    def test_prompt_includes_cutoff_history_and_peer_summary(self) -> None:
+        """The agent must see task payload, history, and peer context; schema is enforced by ADK."""
         context = _make_service().context(as_of=datetime(2024, 6, 1))
         prompt = FoodPriceForecastPromptBuilder(max_history_rows=24)(task=_make_task(), context=context)
 
-        # Task descriptor and cutoff are present.
         assert '"target_series_id": "cpi_food_canada"' in prompt
         assert '"as_of": "2024-06-01T00:00:00"' in prompt
-        # Cutoff-safe target history is embedded as CSV with the latest in-cutoff row.
         assert "target_history_csv" in prompt
         assert "2024-06-01,129.0" in prompt
-        # Peer-series context exists for cross-category framing.
         assert '"series_id": "cpi_meat_canada"' in prompt
-        # Output-schema skeleton (one block per requested horizon).
-        assert '"horizon": 6' in prompt
-        assert '"quantile": 0.95' in prompt
+        assert "standard_quantiles" in prompt
+        assert "Return only a JSON object with this shape" not in prompt
 
     def test_raises_when_target_has_no_cutoff_safe_observations(self) -> None:
         """An as_of before every observation should fail loudly, not silently produce an empty prompt."""

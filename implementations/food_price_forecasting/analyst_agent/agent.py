@@ -50,9 +50,9 @@ Your job is to produce calibrated probabilistic forecasts, not a narrative-only 
 ## Forecasting contract
 - The user prompt contains a cutoff-filtered target CPI series, task horizons, frequency, and optional peer-series summaries.
 - Treat `as_of` as the information cutoff. Do not use observations, sources, or search results published after that date.
-- Return only a JSON object in the exact shape described in the user message. Do not include any prose outside the JSON object.
+- Finish with structured output matching the agent output schema (via `set_model_response` when tools are enabled).
 - Emit one forecast object for every requested horizon and no extra horizons.
-- Use the quantile grid specified in the user message exactly.
+- Use the quantile grid from `standard_quantiles` in the payload exactly.
 - The `point_forecast` must equal the 0.50 quantile.
 - Quantile values must be non-decreasing as quantile levels increase.
 
@@ -61,7 +61,7 @@ Your job is to produce calibrated probabilistic forecasts, not a narrative-only 
 - Good default workflow: inspect the supplied history for trend, seasonality, and recent YoY changes; estimate one or more simple baselines; widen uncertainty over farther horizons; then adjust only when evidence supports it.
 - Consult the `forecast-food-cpi` skill for Canadian food CPI domain knowledge, seasonal patterns, and uncertainty priors by category.
 - If news search is available, use it sparingly for recent food-price drivers. When invoking the search assistant, supply `cutoff_date` as the `as_of` date from the task payload (YYYY-MM-DD) and `query` as the topic to research. Only accept evidence whose publication date is on or before `as_of`.
-- Document methods, assumptions, and any searched evidence in `rationale` or `metadata`; do not include prose outside the JSON object.
+- Document methods, assumptions, and any searched evidence in `rationale` or `metadata` fields within the structured response.
 """
 
 
@@ -90,9 +90,9 @@ class FoodPriceForecastPromptBuilder(BaseModel):
     This is the concrete
     :class:`~aieng.forecasting.methods.agentic.predictor.ForecastPromptBuilder`
     used by the food CPI agent. It serializes cutoff-safe target history
-    as CSV, includes compact peer-series summaries for the other food
-    CPI categories, and embeds an output-schema skeleton that mirrors
-    :class:`~aieng.forecasting.methods.agentic.outputs.ContinuousAgentForecastOutput`.
+    as CSV and includes compact peer-series summaries for the other food
+    CPI categories. Structured output shape is enforced by the agent's
+    ADK ``output_schema``, not duplicated in the prompt.
 
     Attributes
     ----------
@@ -137,8 +137,7 @@ class FoodPriceForecastPromptBuilder(BaseModel):
         Returns
         -------
         str
-            Prompt text containing the cutoff-filtered payload and an
-            output-schema skeleton for the agent to fill in.
+            Prompt text containing the cutoff-filtered task payload.
 
         Raises
         ------
@@ -168,9 +167,6 @@ the CSV and compute forecasts. If news search is enabled, only use sources publi
 
 Payload:
 {json.dumps(prompt_payload, indent=2)}
-
-Return only a JSON object with this shape:
-{_output_schema_example(task.horizons)}
 """
 
     def _peer_summaries(self, *, task: ForecastingTask, context: ForecastContext) -> list[dict[str, Any]]:
@@ -241,29 +237,6 @@ def _last_pct_change(values: pd.Series, *, periods: int) -> float | None:
     if previous == 0:
         return None
     return float((clean.iloc[-1] / previous - 1.0) * 100.0)
-
-
-def _output_schema_example(horizons: list[int]) -> str:
-    """Return a concrete JSON skeleton matching ``ContinuousAgentForecastOutput``."""
-    forecast_examples = []
-    for horizon in horizons:
-        forecast_examples.append(
-            {
-                "horizon": horizon,
-                "point_forecast": "same numeric value as the 0.50 quantile",
-                "quantiles": [{"quantile": quantile, "value": "numeric forecast"} for quantile in STANDARD_QUANTILES],
-                "rationale": "brief horizon-specific rationale",
-                "metadata": {"method": "brief method label"},
-            }
-        )
-    return json.dumps(
-        {
-            "forecasts": forecast_examples,
-            "rationale": "brief overall rationale",
-            "metadata": {"notes": "optional structured metadata"},
-        },
-        indent=2,
-    )
 
 
 def build_food_price_agent_config(

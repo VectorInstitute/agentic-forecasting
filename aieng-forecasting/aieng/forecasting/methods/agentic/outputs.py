@@ -121,9 +121,9 @@ class ContinuousAgentHorizonForecast(BaseModel):
         Forecast values at every level of
         :data:`~aieng.forecasting.evaluation.prediction.STANDARD_QUANTILES`,
         with no duplicates and non-decreasing values.
-    rationale : str or None
+    rationale : str
         Optional horizon-specific explanation propagated to
-        ``Prediction.metadata["horizon_rationale"]``.
+        ``Prediction.metadata["horizon_rationale"]`` when non-empty.
     metadata : dict
         Optional horizon-specific metadata merged into ``Prediction.metadata``.
     """
@@ -139,7 +139,7 @@ class ContinuousAgentHorizonForecast(BaseModel):
         max_length=len(STANDARD_QUANTILES),
         description="Forecast values for every standard quantile level.",
     )
-    rationale: str | None = Field(default=None, description="Optional horizon-specific explanation.")
+    rationale: str = Field(default="", description="Optional horizon-specific explanation; omit when not needed.")
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Optional horizon-specific metadata to pass through to Prediction.metadata.",
@@ -214,9 +214,9 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
         One forecast per requested task horizon. Horizon values must be
         unique; :meth:`to_predictions` additionally requires the set of
         horizons to match ``task.horizons`` exactly.
-    rationale : str or None
+    rationale : str
         Optional overall explanation propagated to
-        ``Prediction.metadata["agent_rationale"]``.
+        ``Prediction.metadata["agent_rationale"]`` when non-empty.
     metadata : dict
         Optional metadata copied into every generated ``Prediction.metadata``.
 
@@ -242,7 +242,9 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
         min_length=1,
         description="One forecast object for each requested task horizon.",
     )
-    rationale: str | None = Field(default=None, description="Optional overall explanation for the forecast.")
+    rationale: str = Field(
+        default="", description="Optional overall explanation for the forecast; omit when not needed."
+    )
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Optional metadata copied into each generated Prediction.",
@@ -311,7 +313,7 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
         issued_at = datetime.now(tz=timezone.utc).replace(tzinfo=None)
         offset = pd.tseries.frequencies.to_offset(task.frequency)
         base_metadata = dict(self.metadata)
-        if self.rationale is not None:
+        if self.rationale.strip():
             base_metadata["agent_rationale"] = self.rationale
         if metadata is not None:
             base_metadata.update(metadata)
@@ -321,7 +323,7 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
             forecast = by_horizon[horizon]
             prediction_metadata = dict(base_metadata)
             prediction_metadata.update(forecast.metadata)
-            if forecast.rationale is not None:
+            if forecast.rationale.strip():
                 prediction_metadata["horizon_rationale"] = forecast.rationale
 
             quantiles = forecast.quantile_dict()
