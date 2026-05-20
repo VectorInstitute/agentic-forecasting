@@ -87,7 +87,6 @@ def _output_json(horizons: list[int]) -> str:
         {
             "forecasts": [_horizon_dict(h, center=100.0 + h) for h in horizons],
             "rationale": "overall rationale",
-            "metadata": {"source": "stub"},
         }
     )
 
@@ -201,7 +200,6 @@ class TestPredictHappyPath:
         prediction = predictor.predict(_task([1]), _context())[0]
 
         assert prediction.metadata["agent_rationale"] == "overall rationale"
-        assert prediction.metadata["source"] == "stub"
         assert prediction.metadata["horizon_rationale"] == "horizon 1 rationale"
 
     def test_prompt_builder_is_invoked_with_task_and_context(self) -> None:

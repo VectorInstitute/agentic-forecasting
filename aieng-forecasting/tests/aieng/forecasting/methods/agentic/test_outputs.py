@@ -53,7 +53,6 @@ class TestContinuousAgentForecastOutput:
         output = ContinuousAgentForecastOutput(
             forecasts=[_make_horizon(1, 100.0), _make_horizon(3, 110.0)],
             rationale="overall rationale",
-            metadata={"source": "agent"},
         )
 
         predictions = output.to_predictions(
@@ -73,7 +72,6 @@ class TestContinuousAgentForecastOutput:
         }
         assert predictions[0].metadata["agent_rationale"] == "overall rationale"
         assert predictions[0].metadata["horizon_rationale"] == "horizon 1 rationale"
-        assert predictions[0].metadata["source"] == "agent"
         assert predictions[0].metadata["trace_id"] == "abc"
 
     def test_quantiles_must_include_exact_standard_grid(self) -> None:

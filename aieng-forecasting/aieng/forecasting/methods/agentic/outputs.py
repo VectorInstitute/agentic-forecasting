@@ -45,9 +45,11 @@ class AgentForecastOutput(BaseModel, ABC):
 
     Notes
     -----
-    Subclasses are typically Pydantic models (with
-    ``model_config = {"extra": "forbid"}``) so that agent JSON is
-    validated strictly before conversion.
+    Subclasses must use ``model_config = {"extra": "ignore"}`` (not
+    ``"forbid"``) so that Pydantic does not emit ``additionalProperties:
+    false`` in the JSON schema — that key is rejected by the Gemini API
+    when the schema is used as a response constraint.  All field-level
+    validations (types, constraints, required presence) still apply.
     """
 
     modality: ClassVar[Literal["continuous", "discrete"]]
@@ -93,7 +95,7 @@ class AgentQuantileForecast(BaseModel):
         Forecast value at this quantile level. Must be finite.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "ignore"}
 
     quantile: float = Field(gt=0.0, lt=1.0, description="Quantile level in (0, 1), e.g. 0.50.")
     value: float = Field(description="Forecast value at this quantile level.")
@@ -124,11 +126,9 @@ class ContinuousAgentHorizonForecast(BaseModel):
     rationale : str
         Optional horizon-specific explanation propagated to
         ``Prediction.metadata["horizon_rationale"]`` when non-empty.
-    metadata : dict
-        Optional horizon-specific metadata merged into ``Prediction.metadata``.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "ignore"}
 
     horizon: int = Field(ge=1, description="Forecast horizon step from the task, e.g. 1 for one period ahead.")
     point_forecast: float = Field(
@@ -140,10 +140,6 @@ class ContinuousAgentHorizonForecast(BaseModel):
         description="Forecast values for every standard quantile level.",
     )
     rationale: str = Field(default="", description="Optional horizon-specific explanation; omit when not needed.")
-    metadata: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Optional horizon-specific metadata to pass through to Prediction.metadata.",
-    )
 
     @field_validator("point_forecast")
     @classmethod
@@ -217,8 +213,6 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
     rationale : str
         Optional overall explanation propagated to
         ``Prediction.metadata["agent_rationale"]`` when non-empty.
-    metadata : dict
-        Optional metadata copied into every generated ``Prediction.metadata``.
 
     Examples
     --------
@@ -236,7 +230,7 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
 
     modality: ClassVar[Literal["continuous", "discrete"]] = "continuous"
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "ignore"}
 
     forecasts: list[ContinuousAgentHorizonForecast] = Field(
         min_length=1,
@@ -244,10 +238,6 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
     )
     rationale: str = Field(
         default="", description="Optional overall explanation for the forecast; omit when not needed."
-    )
-    metadata: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Optional metadata copied into each generated Prediction.",
     )
 
     @model_validator(mode="after")
@@ -285,9 +275,9 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
         predictor_id : str
             Identifier of the predictor that produced this output.
         metadata : dict, optional
-            Extra metadata merged into every generated ``Prediction.metadata``,
-            taking precedence over ``self.metadata`` but not over horizon-level
-            metadata or ``rationale`` keys.
+            Extra metadata merged into every generated ``Prediction.metadata``.
+            ``rationale`` keys are written after this merge and cannot be
+            overridden here.
 
         Returns
         -------
@@ -312,17 +302,14 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
 
         issued_at = datetime.utcnow()  # naive UTC; Prediction.issued_at expects timezone-naive
         offset = pd.tseries.frequencies.to_offset(task.frequency)
-        base_metadata = dict(self.metadata)
+        base_metadata: dict[str, Any] = dict(metadata) if metadata is not None else {}
         if self.rationale.strip():
             base_metadata["agent_rationale"] = self.rationale
-        if metadata is not None:
-            base_metadata.update(metadata)
 
         predictions: list[Prediction] = []
         for horizon in task.horizons:
             forecast = by_horizon[horizon]
             prediction_metadata = dict(base_metadata)
-            prediction_metadata.update(forecast.metadata)
             if forecast.rationale.strip():
                 prediction_metadata["horizon_rationale"] = forecast.rationale
 
