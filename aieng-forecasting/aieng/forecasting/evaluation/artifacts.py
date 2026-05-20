@@ -49,6 +49,7 @@ matters more than disk footprint at bootcamp scale.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import yaml
@@ -291,19 +292,31 @@ def load_multi_backtest_results(
     return results
 
 
+_log = logging.getLogger(__name__)
+
+
 def cached_multi_backtest(
     predictor: Predictor,
     spec: MultiTargetBacktestSpec,
     data_service: DataService,
     store_dir: Path | None = None,
     force_refresh: bool = False,
+    max_retries: int = 2,
+    retry_delay: float = 2.0,
 ) -> dict[str, BacktestResult]:
-    """Run :func:`multi_backtest` with a load-or-compute cache.
+    """Run :func:`multi_backtest` with a per-task load-or-compute cache.
 
-    Cached results are only returned when *all* tasks in ``spec`` have a
-    corresponding artefact file.  If any task is missing, the full
-    :func:`multi_backtest` is re-run and the complete result set is persisted
-    (overwriting any stale per-task files).
+    Each task is cached independently under
+    ``<store>/<spec_id>/<predictor_id>__<task_id>.yaml``.  On a fresh run a
+    completed task's file is written immediately so a crash mid-run leaves all
+    prior tasks intact.  Re-running after a crash skips every already-cached
+    task and only retries the ones that didn't complete.
+
+    If a task fails even after the retry logic inside :func:`run_eval_loop`
+    has been exhausted, the failure is logged at WARNING level and the task is
+    omitted from the returned dict rather than propagating the exception.  This
+    keeps the outer experiment loop running so all other predictors still
+    complete.
 
     Parameters
     ----------
@@ -317,11 +330,17 @@ def cached_multi_backtest(
         Store root.  Defaults to :data:`DEFAULT_STORE_DIR`.
     force_refresh : bool
         When ``True`` always recompute even if cached files exist.
+    max_retries : int, default=2
+        Passed through to :func:`~aieng.forecasting.evaluation.backtest.backtest`.
+        Number of retry attempts per failing origin.
+    retry_delay : float, default=2.0
+        Seconds to wait between per-origin retry attempts.
 
     Returns
     -------
     dict[str, BacktestResult]
-        Results keyed by ``task_id``.
+        Results keyed by ``task_id``.  Tasks that failed are absent from the
+        dict; a WARNING log entry is emitted for each failure.
     """
     store = _resolve_store(store_dir)
     results: dict[str, BacktestResult] = {}
@@ -331,7 +350,22 @@ def cached_multi_backtest(
         if not force_refresh and path.exists():
             results[task_id] = BacktestResult.model_validate(_load_yaml(path))
             continue
-        result = backtest(predictor=predictor, spec=single_spec, data_service=data_service)
+        try:
+            result = backtest(
+                predictor=predictor,
+                spec=single_spec,
+                data_service=data_service,
+                max_retries=max_retries,
+                retry_delay=retry_delay,
+            )
+        except Exception as exc:
+            _log.warning(
+                "Backtest failed for predictor=%s task=%s — skipping task: %s",
+                predictor.predictor_id,
+                task_id,
+                exc,
+            )
+            continue
         _dump_yaml(result, path)
         results[task_id] = result
     return results
