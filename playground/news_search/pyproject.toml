@@ -11,7 +11,7 @@ version = "0.1.0"
 description = "Grounded news-search agent playground using Google ADK + Gemini"
 requires-python = ">=3.12"
 dependencies = [
-    "google-adk>=1.32.0",
+    "google-adk>=2.0.0",
     "langfuse>=4.5.1",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
