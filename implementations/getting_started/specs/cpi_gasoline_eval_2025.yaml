@@ -21,7 +21,7 @@
 #   from pathlib import Path
 #   from aieng.forecasting.evaluation import EvalSpec, EvalTracker, evaluate
 #
-#   with open("reference_specs/cpi_gasoline_eval_2025.yaml") as f:
+#   with open("implementations/getting_started/specs/cpi_gasoline_eval_2025.yaml") as f:
 #       spec = EvalSpec.model_validate(yaml.safe_load(f))
 #
 #   tracker = EvalTracker(Path("data/eval_runs.yaml"))

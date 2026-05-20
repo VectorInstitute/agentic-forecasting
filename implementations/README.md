@@ -13,14 +13,16 @@ Some use cases are notebook-only. Others expose a small importable helper packag
 ```text
 implementations/
 |-- getting_started/          # CPI gasoline hello-world
+|   `-- specs/                # backtest and eval YAML
 |-- food_price_forecasting/   # CFPR-style food CPI experiment
+|   `-- specs/                # backtest YAML
 |-- tests/                    # tests for implementation-specific helper modules
 `-- pyproject.toml            # local workspace packaging
 ```
 
-**Start with `getting_started/`.** It is the intentional entry point and smallest end-to-end walkthrough of the evaluation framework. Then move to `food_price_forecasting/` for the richer multivariate setup.
+YAML backtest and eval specs live under each use case in `specs/`.
 
-The S&P 500 experiment is the first formal financial-markets Track 1 template and is in progress. The BoC rate-decision experiment is planned. Energy/oil work is the May 21 and interactive analyst demo surface unless explicitly pulled into formal Track 1 scope.
+The S&P 500 experiment (Behnoosh) is in progress as a net-new financial-markets reference. Energy/oil promotion to a formal reference experiment (Ethan) and the BoC rate-decision experiment (Ethan, after energy) are planned next on the reference-experiment track.
 
 ---
 
@@ -37,9 +39,10 @@ If code becomes broadly reusable across use cases, promote it into `aieng-foreca
 
 1. Create `implementations/<use-case>/`.
 2. Add a `README.md` with the learning path and task framing.
-3. Start with notebooks as the primary user surface.
-4. If notebook code becomes bulky or repeated, extract small helper modules into that use-case directory.
-5. Add tests under `implementations/tests/<use-case>/` for non-trivial helper logic.
-6. Promote code into `aieng-forecasting` once it is clearly reusable across more than one use case.
+3. Add YAML specs under `implementations/<use-case>/specs/`.
+4. Start with notebooks as the primary user surface.
+5. If notebook code becomes bulky or repeated, extract small helper modules into that use-case directory.
+6. Add tests under `implementations/tests/<use-case>/` for non-trivial helper logic.
+7. Promote code into `aieng-forecasting` once it is clearly reusable across more than one use case.
 
 For active scope, dates, and non-goals, use `planning-docs/bootcamp-workplan.md`.

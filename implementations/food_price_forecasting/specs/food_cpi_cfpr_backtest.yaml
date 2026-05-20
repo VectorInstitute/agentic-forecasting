@@ -31,16 +31,17 @@
 #
 # Predictors
 # ----------
-# This is the *open* backtesting resource — run it as many times as you
-# like to tune predictors and build intuition.  Use the companion
-# `food_cpi_cfpr_eval.yaml` for the budget-limited protected evaluation.
+# This is the open backtesting resource — run it as many times as you
+# like to tune predictors and build intuition.  There is no protected eval
+# spec for this experiment: historical LLM/agent scores are upper bounds
+# on live performance (see the food CPI experiment notebook).
 #
 # Prerequisites
 # -------------
 #   uv run python scripts/fetch_cpi.py    # StatCan food CPI cache
 #
 # (FRED covariates are deliberately NOT part of this canonical spec — see
-# `planning-docs/backlog.md` for the deferred "covariate framing" design
+# `planning-docs/bootcamp-workplan.md` for the deferred "covariate framing" design
 # discussion.  Predictors that want exogenous inputs should be evaluated
 # on a separate experiment.)
 #
@@ -50,7 +51,7 @@
 #   import yaml
 #   from aieng.forecasting.evaluation import MultiTargetBacktestSpec, multi_backtest
 #
-#   with open("reference_specs/food_cpi/food_cpi_cfpr_backtest.yaml") as f:
+#   with open("implementations/food_price_forecasting/specs/food_cpi_cfpr_backtest.yaml") as f:
 #       spec = MultiTargetBacktestSpec.model_validate(yaml.safe_load(f))
 #   results = multi_backtest(predictor=my_predictor, spec=spec, data_service=svc)
 

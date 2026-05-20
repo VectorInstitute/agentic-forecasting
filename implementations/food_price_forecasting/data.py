@@ -3,11 +3,11 @@
 The CFPR canonical experiment uses a fixed set of 9 Canadian food CPI
 sub-indices from StatCan table 18-10-0004-11.  :data:`FOOD_CPI_SERIES` is the
 single source of truth for this list; both the reference YAML specs under
-``reference_specs/food_cpi/`` and the notebook/helpers here reference the
+``implementations/food_price_forecasting/specs/`` and the notebook/helpers here reference the
 same nine ``series_id`` values via this module.
 
 FRED macro covariates are *not* part of the canonical experiment — see
-``planning-docs/backlog.md`` for the deferred covariate-framing design work.
+``planning-docs/bootcamp-workplan.md`` for the deferred covariate-framing design work.
 Other experiments that want FRED covariates should register them via their
 own helpers.
 """

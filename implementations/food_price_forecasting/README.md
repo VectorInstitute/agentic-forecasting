@@ -82,7 +82,7 @@ preparation discipline at every origin:
 ## Reference specs
 
 ```
-reference_specs/food_cpi/
+specs/
 ├── food_cpi_cfpr_backtest.yaml      # MultiTargetBacktestSpec — 9 tasks × 16 origins (full)
 ├── food_cpi_recent_backtest.yaml    # MultiTargetBacktestSpec — 9 tasks × 6 recent origins
 └── food_cpi_single_mini_backtest.yaml  # MultiTargetBacktestSpec — 1 task × 6 origins (dev/smoke)
@@ -99,6 +99,7 @@ smoke-testing during development.
 
 ```
 implementations/food_price_forecasting/
+├── specs/         # backtest YAML (full, mini_recent, mini_single)
 ├── data.py        # build_food_cpi_service(); FOOD_CPI_SERIES; CATEGORY_LABELS
 ├── analysis.py    # predictions_to_dataframe, compute_avgyoy, summarize_crps,
 │                  # compute_mape, rationales_table
@@ -239,7 +240,7 @@ freely without being forced into Track 1 JSON.
   returns all twelve steps in one call, a naive baseline repeats its last
   value, and an LLM can emit a full trajectory in a single structured output.
 - **YAML specs are the source of truth.** Notebook code never hard-codes task
-  definitions; everything comes from `reference_specs/food_cpi/*.yaml`.
+  definitions; everything comes from `specs/*.yaml`.
 - **CRPS is the primary metric.**  MAPE on the median is a secondary,
   point-estimate sanity check.
 - **No ensemble model selection.** The leaderboard compares individual

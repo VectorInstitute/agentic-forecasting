@@ -67,7 +67,7 @@ you can see what the YAML spec turns into.
 
 Ten cells.  Walks through the full cycle:
 
-1. Load `reference_specs/cpi_gasoline_1m.yaml` into a `BacktestSpec`.
+1. Load `specs/cpi_gasoline_1m.yaml` into a `BacktestSpec`.
 2. Construct a `LastValuePredictor` (the floor) and a
    `DartsAutoARIMAPredictor` (a real baseline).
 3. Run `backtest()` for both, print a CRPS comparison table.
@@ -109,7 +109,7 @@ the `BacktestResult.mean_crps` values are directly comparable.
 ### 5. Spend an eval run
 
 Once you have a predictor you're confident about, run `evaluate()`
-against [`cpi_gasoline_eval_2025.yaml`](../../reference_specs/cpi_gasoline_eval_2025.yaml)
+against [`cpi_gasoline_eval_2025.yaml`](specs/cpi_gasoline_eval_2025.yaml)
 — monthly origins from Jan 2025 through Mar 2026, all currently resolved.
 `max_runs: 5` — spend deliberately.
 
@@ -137,6 +137,7 @@ separate energy/oil interactive analyst demo.
 ```text
 getting_started/                 # this directory
 ├── README.md
+├── specs/                       # backtest and eval YAML
 ├── cpi_data_exploration.ipynb
 └── cpi_backtest_demo.ipynb
 ```
@@ -147,10 +148,10 @@ Reference predictors live in the `aieng-forecasting` package under
 - `baselines/` for floor baselines such as `LastValuePredictor`
 - `numerical/` for Darts-based numerical predictors
 
-Reference specs (at the repo root, shared across use cases):
+Reference specs (co-located with this use case):
 
 ```text
-reference_specs/
+getting_started/specs/
 ├── cpi_gasoline_1m.yaml             # backtest spec (2000–2025) - use freely
 └── cpi_gasoline_eval_2025.yaml      # eval spec (Jan 2025–Mar 2026) - 5 runs max
 ```
@@ -164,8 +165,8 @@ from aieng.forecasting.evaluation import (
     Predictor,          # ABC - implement this
     backtest,           # run a backtest, returns BacktestResult
     evaluate,           # run against the held-out eval window
-    BacktestSpec,       # loaded from reference_specs/ YAML
-    EvalSpec,           # loaded from reference_specs/ YAML
+    BacktestSpec,       # loaded from specs/ YAML
+    EvalSpec,           # loaded from specs/ YAML
     EvalTracker,        # file-backed run counter
     ContinuousForecast, # forecast payload (point + quantiles)
     Prediction,         # full prediction record (payload + metadata)

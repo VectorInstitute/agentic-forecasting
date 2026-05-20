@@ -10,7 +10,7 @@ The package is organized by method family:
 methods/
 ├── baselines/       # simple floor baselines and teaching references
 ├── numerical/       # classical / ML numerical forecasters
-├── llm_processes/   # planned LLM-process predictors
+├── llm_processes/   # LLM-process predictors (ContinuousLLMPredictor; refinement in flight)
 └── agentic/         # reusable ADK runners, agent factory, predictors, and output schemas
 ```
 
@@ -83,6 +83,13 @@ from aieng.forecasting.methods.agentic import (
 | `numerical/darts_arima.py` | `DartsAutoARIMAPredictor` | Univariate Darts AutoARIMA with probabilistic multi-horizon output via Monte Carlo sampling. |
 | `numerical/darts_regression.py` | `DartsLinearRegressionPredictor` | Darts linear regression predictor with optional past covariates and probabilistic output. |
 | `numerical/darts_regression.py` | `DartsLightGBMPredictor` | Darts LightGBM quantile-regression predictor with optional past covariates. |
+
+### LLM Processes
+
+| Module | Class | Description |
+|---|---|---|
+| `llm_processes/continuous.py` | `ContinuousLLMPredictor` | LiteLLM-based sample trajectory predictor with empirical quantiles. Integrated in the food CPI experiment; Ali is refining the implementation in a follow-up PR. |
+| `llm_processes/base.py` | `LLMPredictor` | Abstract base for LLM-process predictors. |
 
 ### Agentic
 

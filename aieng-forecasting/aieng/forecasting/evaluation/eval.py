@@ -6,7 +6,8 @@ differences from a backtest are:
 
 - **Protected window** — the evaluation window should cover recent data that
   has not been used for tuning or learning.  By convention, reference eval
-  specs live in ``reference_specs/`` and are not modified by participants.
+  specs live in ``implementations/<use-case>/specs/`` and are not modified
+  by participants.
 
 - **Run-budget control** — ``EvalSpec.max_runs`` optionally caps how many
   times a participant is allowed to run a given eval.  When an
@@ -25,7 +26,7 @@ Intended usage in a bootcamp session::
     from pathlib import Path
     from aieng.forecasting.evaluation import EvalSpec, EvalTracker, evaluate
 
-    with open("reference_specs/cpi_gasoline_eval_2yr.yaml") as f:
+    with open("implementations/getting_started/specs/cpi_gasoline_eval_2025.yaml") as f:
         spec = EvalSpec.model_validate(yaml.safe_load(f))
 
     tracker = EvalTracker(Path("eval_runs.yaml"))
@@ -98,8 +99,9 @@ class EvalSpec(BaseModel):
       evaluated by a single participant.  ``None`` means unlimited.
 
     Like ``BacktestSpec``, ``EvalSpec`` is fully YAML-serializable.  Reference
-    eval specs live in ``reference_specs/`` and are versioned in the repo so
-    that the exact window used for evaluation is always reproducible.
+    eval specs live in ``implementations/<use-case>/specs/`` and are
+    versioned in the repo so that the exact window used for evaluation is
+    always reproducible.
 
     Parameters
     ----------
@@ -123,17 +125,17 @@ class EvalSpec(BaseModel):
     Examples
     --------
     >>> spec = EvalSpec(
-    ...     spec_id="cpi_gasoline_eval_2yr",
+    ...     spec_id="cpi_gasoline_eval_2025",
     ...     task=ForecastingTask(
-    ...         task_id="cpi_gasoline_canada_12m",
+    ...         task_id="cpi_gasoline_canada_1m",
     ...         target_series_id="cpi_gasoline_canada",
-    ...         horizon=12,
+    ...         horizon=1,
     ...         frequency="MS",
-    ...         description="CPI Gasoline Canada, 12-month ahead forecast",
+    ...         description="CPI Gasoline Canada, 1-month ahead forecast",
     ...     ),
-    ...     start=datetime(2024, 1, 1),
-    ...     end=datetime(2026, 1, 1),
-    ...     stride=6,
+    ...     start=datetime(2025, 1, 1),
+    ...     end=datetime(2026, 3, 1),
+    ...     stride=1,
     ...     warmup=24,
     ...     max_runs=5,
     ... )
@@ -247,7 +249,7 @@ class EvalTracker:
 
     Tracking file format::
 
-        cpi_gasoline_eval_2yr:
+        cpi_gasoline_eval_2025:
           runs: 2
           last_run_at: "2026-04-02T10:00:00"
 
