@@ -159,7 +159,7 @@ def plot_trajectory_fan(
 
 
 # ---------------------------------------------------------------------------
-# Avg/avg YoY 3x3 grid across all 9 categories
+# Avg/avg YoY grid across categories
 # ---------------------------------------------------------------------------
 
 
@@ -167,8 +167,9 @@ def plot_avgyoy_grid(
     yoy_by_predictor_by_task: dict[str, dict[str, pd.DataFrame]],
     task_to_category: dict[str, str],
     colors: dict[str, str] | None = None,
+    ncols: int = 3,
 ) -> tuple[Figure, np.ndarray]:
-    """Plot a 3x3 grid of avg/avg YoY fan charts, one per food category.
+    """Plot a grid of avg/avg YoY fan charts, one panel per category.
 
     Parameters
     ----------
@@ -180,6 +181,8 @@ def plot_avgyoy_grid(
         ``series_id``.  The series_id is used to look up a display label.
     colors : dict[str, str] or None
         Optional predictor_id -> matplotlib colour mapping.
+    ncols : int
+        Number of columns in the subplot grid (default 3).
 
     Returns
     -------
@@ -190,10 +193,10 @@ def plot_avgyoy_grid(
     color_map = _resolve_colors(predictor_ids, colors)
 
     task_ids = list(task_to_category.keys())
-    if len(task_ids) > 9:
-        raise ValueError(f"plot_avgyoy_grid expects <=9 tasks; got {len(task_ids)}")
+    n = len(task_ids)
+    nrows = (n + ncols - 1) // ncols
 
-    fig, axes = plt.subplots(3, 3, figsize=(16, 10), sharey=False)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(16 * ncols // 3, 10 * nrows // 3), sharey=False, squeeze=False)
     axes_flat = axes.flatten()
 
     for ax, task_id in zip(axes_flat, task_ids):
@@ -250,7 +253,7 @@ def plot_avgyoy_grid(
     for ax in axes_flat[len(task_ids) :]:
         ax.axis("off")
 
-    fig.suptitle("Avg/avg YoY predictions vs actuals — all 9 food CPI categories", fontsize=12)
+    fig.suptitle(f"Avg/avg YoY predictions vs actuals — {n} categor{'y' if n == 1 else 'ies'}", fontsize=12)
     fig.tight_layout()
     return fig, axes
 
@@ -379,8 +382,8 @@ def plot_mape_by_category(
     n = len(task_ids)
     ncols = 3
     nrows = (n + ncols - 1) // ncols
-    fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows), sharey=False)
-    axes_flat: list[Axes] = list(axes.flatten()) if n > 1 else [axes]
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows), sharey=False, squeeze=False)
+    axes_flat: list[Axes] = list(axes.flatten())
 
     for ax, task_id in zip(axes_flat, task_ids):
         series_id = task_to_category[task_id]
@@ -408,19 +411,22 @@ def plot_mape_by_category(
 
 
 # ---------------------------------------------------------------------------
-# Exploration plot — overall food CPI + 9-category small multiples
+# Exploration plot — overall food CPI small multiples
 # ---------------------------------------------------------------------------
 
 
-def plot_food_cpi_small_multiples(data_service: DataService) -> tuple[Figure, np.ndarray]:
-    """Small-multiples overview of all 9 food CPI categories.
+def plot_food_cpi_small_multiples(data_service: DataService, ncols: int = 3) -> tuple[Figure, np.ndarray]:
+    """Small-multiples overview of all food CPI categories defined in :data:`FOOD_CPI_SERIES`.
 
     Each subplot shows the full history of one category, with the y-axis
     free-scaled.  Useful as the notebook's single exploration figure.
     """
     as_of = pd.Timestamp.utcnow().tz_localize(None).to_pydatetime()
 
-    fig, axes = plt.subplots(3, 3, figsize=(15, 9), sharex=True)
+    n = len(FOOD_CPI_SERIES)
+    nrows = (n + ncols - 1) // ncols
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 3 * nrows), sharex=True, squeeze=False)
     axes_flat = axes.flatten()
 
     for ax, (series_id, _, _desc, _units) in zip(axes_flat, FOOD_CPI_SERIES):
@@ -431,7 +437,10 @@ def plot_food_cpi_small_multiples(data_service: DataService) -> tuple[Figure, np
         ax.grid(axis="y", alpha=0.3)
         ax.tick_params(labelsize=8)
 
-    fig.suptitle("Canada food CPI — 9 category sub-indices (index, 2002=100)", fontsize=12)
+    for ax in axes_flat[n:]:
+        ax.axis("off")
+
+    fig.suptitle(f"Canada food CPI — {n} category sub-indices (index, 2002=100)", fontsize=12)
     fig.tight_layout()
     return fig, axes
 
