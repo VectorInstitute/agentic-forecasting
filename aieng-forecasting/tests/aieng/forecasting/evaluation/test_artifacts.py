@@ -298,9 +298,7 @@ class TestMultiTargetArtifacts:
                     for h in task.horizons
                 ]
 
-        results = cached_multi_backtest(
-            FailOnTaskBPredictor(), spec, svc, store_dir=tmp_path, retry_delay=0.0
-        )
+        results = cached_multi_backtest(FailOnTaskBPredictor(), spec, svc, store_dir=tmp_path, retry_delay=0.0)
         assert "b" not in results
         assert "a" in results
         assert "c" in results
@@ -349,7 +347,8 @@ class TestMultiTargetArtifacts:
         max_retries = 2
         cached_multi_backtest(predictor, spec, svc, store_dir=tmp_path, max_retries=max_retries, retry_delay=0.0)
         calls_after_first = predictor.call_count
-        # First run: task a = origins_per_task calls; task b = origins × (max_retries+1) calls
+        # First run: task a = origins_per_task calls;
+        # task b = origins × (max_retries + 1) calls
         expected_b_calls = origins_per_task * (max_retries + 1)
         assert calls_after_first == origins_per_task + expected_b_calls
 

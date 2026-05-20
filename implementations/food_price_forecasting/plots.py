@@ -251,7 +251,9 @@ def plot_avgyoy_grid(
             yrs = df["origin_year"] + 1
             ax.fill_between(yrs, df["yoy_q05"] * 100, df["yoy_q95"] * 100, alpha=0.10, color=color)
             ax.fill_between(yrs, df["yoy_q25"] * 100, df["yoy_q75"] * 100, alpha=0.20, color=color)
-            ax.plot(yrs, df["yoy_median"] * 100, color=color, linewidth=1.3, marker="^", markersize=4, label=label_map[pid])
+            ax.plot(
+                yrs, df["yoy_median"] * 100, color=color, linewidth=1.3, marker="^", markersize=4, label=label_map[pid]
+            )
 
         ax.axhline(0, color="#aaa", linewidth=0.8, linestyle="--")
         ax.set_title(label, fontsize=10)
@@ -446,9 +448,7 @@ def plot_mape_by_category(
 
     fig.suptitle("Per-prediction APE distribution by category", fontsize=12)
     if use_shared_legend:
-        legend_handles = [
-            Patch(facecolor=color_map[pid], alpha=0.6, label=label_map[pid]) for pid in predictor_ids
-        ]
+        legend_handles = [Patch(facecolor=color_map[pid], alpha=0.6, label=label_map[pid]) for pid in predictor_ids]
         fig.legend(
             handles=legend_handles,
             loc="lower center",

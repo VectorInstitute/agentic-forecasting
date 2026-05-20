@@ -13,7 +13,6 @@ from aieng.forecasting.data.adapters.base import BaseAdapter
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic.outputs import ContinuousAgentForecastOutput
 from food_price_forecasting.analyst_agent import (
-    FOOD_PRICE_FORECASTER_INSTRUCTION,
     FoodPriceForecastPromptBuilder,
     build_food_price_agent_config,
     build_food_price_agent_predictor,
