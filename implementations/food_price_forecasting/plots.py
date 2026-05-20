@@ -19,6 +19,7 @@ from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.backtest import BacktestResult
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.patches import Patch
 
 from .data import CATEGORY_LABELS, FOOD_CPI_SERIES
 
@@ -44,6 +45,11 @@ def _resolve_colors(predictors: list[str], colors: dict[str, str] | None) -> dic
     return resolved
 
 
+def _resolve_labels(predictors: list[str], labels: dict[str, str] | None) -> dict[str, str]:
+    """Return a ``predictor_id -> display label`` map for plot legends and axes."""
+    return {pid: (labels or {}).get(pid, pid) for pid in predictors}
+
+
 # ---------------------------------------------------------------------------
 # Trajectory fan chart (median + 50% + 90% CI) for recent origins
 # ---------------------------------------------------------------------------
@@ -56,6 +62,7 @@ def plot_trajectory_fan(
     data_service: DataService,
     n_recent: int = 3,
     colors: dict[str, str] | None = None,
+    labels: dict[str, str] | None = None,
 ) -> tuple[Figure, list[Axes]]:
     """Draw median + 50%/90% CI trajectories for the ``n_recent`` most recent origins.
 
@@ -78,6 +85,8 @@ def plot_trajectory_fan(
         How many most-recent origins to plot (one subplot each).
     colors : dict[str, str] or None
         Optional predictor_id -> matplotlib colour mapping.
+    labels : dict[str, str] or None
+        Optional predictor_id -> short display label for the legend.
 
     Returns
     -------
@@ -86,6 +95,7 @@ def plot_trajectory_fan(
     """
     predictor_ids = list(results_by_predictor.keys())
     color_map = _resolve_colors(predictor_ids, colors)
+    label_map = _resolve_labels(predictor_ids, labels)
 
     sample_result = next(iter(results_by_predictor.values()))[task_id]
     origins = sorted({p.as_of for p in sample_result.predictions})
@@ -140,7 +150,7 @@ def plot_trajectory_fan(
             q95 = np.array([p.payload.quantiles[0.95] for p in preds], dtype=float)
             ax.fill_between(dates, q05, q95, alpha=0.12, color=color)
             ax.fill_between(dates, q25, q75, alpha=0.22, color=color)
-            ax.plot(dates, medians, color=color, linewidth=1.6, label=pid)
+            ax.plot(dates, medians, color=color, linewidth=1.6, label=label_map[pid])
 
         ax.axvline(origin_ts, color="navy", linewidth=1.2, linestyle=":", alpha=0.7)
         ax.set_title(f"Origin: {origin_ts.date()}  (-> forecast Y+1 = {origin_ts.year + 1})", fontsize=10)
@@ -168,6 +178,7 @@ def plot_avgyoy_grid(
     task_to_category: dict[str, str],
     colors: dict[str, str] | None = None,
     ncols: int = 3,
+    labels: dict[str, str] | None = None,
 ) -> tuple[Figure, np.ndarray]:
     """Plot a grid of avg/avg YoY fan charts, one panel per category.
 
@@ -183,6 +194,8 @@ def plot_avgyoy_grid(
         Optional predictor_id -> matplotlib colour mapping.
     ncols : int
         Number of columns in the subplot grid (default 3).
+    labels : dict[str, str] or None
+        Optional predictor_id -> short display label for the legend.
 
     Returns
     -------
@@ -191,6 +204,7 @@ def plot_avgyoy_grid(
     """
     predictor_ids = list(yoy_by_predictor_by_task.keys())
     color_map = _resolve_colors(predictor_ids, colors)
+    label_map = _resolve_labels(predictor_ids, labels)
 
     task_ids = list(task_to_category.keys())
     n = len(task_ids)
@@ -237,7 +251,7 @@ def plot_avgyoy_grid(
             yrs = df["origin_year"] + 1
             ax.fill_between(yrs, df["yoy_q05"] * 100, df["yoy_q95"] * 100, alpha=0.10, color=color)
             ax.fill_between(yrs, df["yoy_q25"] * 100, df["yoy_q75"] * 100, alpha=0.20, color=color)
-            ax.plot(yrs, df["yoy_median"] * 100, color=color, linewidth=1.3, marker="^", markersize=4, label=pid)
+            ax.plot(yrs, df["yoy_median"] * 100, color=color, linewidth=1.3, marker="^", markersize=4, label=label_map[pid])
 
         ax.axhline(0, color="#aaa", linewidth=0.8, linestyle="--")
         ax.set_title(label, fontsize=10)
@@ -264,7 +278,10 @@ def plot_avgyoy_grid(
 
 
 def plot_crps_disaggregated(
-    predictions_df: pd.DataFrame, by: str = "origin_year", colors: dict[str, str] | None = None
+    predictions_df: pd.DataFrame,
+    by: str = "origin_year",
+    colors: dict[str, str] | None = None,
+    labels: dict[str, str] | None = None,
 ) -> tuple[Figure, Axes]:
     """Plot mean CRPS per predictor disaggregated by origin-year or horizon.
 
@@ -288,13 +305,22 @@ def plot_crps_disaggregated(
 
     predictor_ids = sorted(predictions_df["predictor_id"].unique())
     color_map = _resolve_colors(predictor_ids, colors)
+    label_map = _resolve_labels(predictor_ids, labels)
 
     pivot = predictions_df.groupby(["predictor_id", by])["crps"].mean().unstack(0)
 
     fig, ax = plt.subplots(figsize=(9, 4.5))
     for pid in predictor_ids:
         if pid in pivot.columns:
-            ax.plot(pivot.index, pivot[pid], color=color_map[pid], linewidth=1.5, marker="o", markersize=5, label=pid)
+            ax.plot(
+                pivot.index,
+                pivot[pid],
+                color=color_map[pid],
+                linewidth=1.5,
+                marker="o",
+                markersize=5,
+                label=label_map[pid],
+            )
     ax.set_xlabel(by.replace("_", " ").title(), fontsize=10)
     ax.set_ylabel("Mean CRPS (lower is better)", fontsize=10)
     ax.set_title(f"CRPS disaggregated by {by.replace('_', ' ')}", fontsize=10)
@@ -309,7 +335,9 @@ def plot_crps_disaggregated(
 # ---------------------------------------------------------------------------
 
 
-def plot_mape_distribution(mape_df: pd.DataFrame, colors: dict[str, str] | None = None) -> tuple[Figure, Axes]:
+def plot_mape_distribution(
+    mape_df: pd.DataFrame, colors: dict[str, str] | None = None, labels: dict[str, str] | None = None
+) -> tuple[Figure, Axes]:
     """Box plot of per-task mean-APE distribution, one box per predictor.
 
     Parameters
@@ -319,6 +347,8 @@ def plot_mape_distribution(mape_df: pd.DataFrame, colors: dict[str, str] | None 
         predictor (as returned by :func:`compute_mape`).
     colors : dict[str, str] or None
         Optional predictor_id -> colour mapping.
+    labels : dict[str, str] or None
+        Optional predictor_id -> short display label for the x-axis.
 
     Returns
     -------
@@ -326,10 +356,12 @@ def plot_mape_distribution(mape_df: pd.DataFrame, colors: dict[str, str] | None 
     """
     predictor_ids = list(mape_df.columns)
     color_map = _resolve_colors(predictor_ids, colors)
+    label_map = _resolve_labels(predictor_ids, labels)
+    tick_labels = [label_map[pid] for pid in predictor_ids]
 
     fig, ax = plt.subplots(figsize=(9, 4.5))
     data: list[Any] = [mape_df[pid].dropna().values for pid in predictor_ids]
-    bp = ax.boxplot(data, patch_artist=True, tick_labels=predictor_ids)
+    bp = ax.boxplot(data, patch_artist=True, tick_labels=tick_labels)
     for patch, pid in zip(bp["boxes"], predictor_ids):
         patch.set_facecolor(color_map[pid])
         patch.set_alpha(0.6)
@@ -350,6 +382,7 @@ def plot_mape_by_category(
     ape_long_df: pd.DataFrame,
     task_to_category: dict[str, str],
     colors: dict[str, str] | None = None,
+    labels: dict[str, str] | None = None,
 ) -> tuple[Figure, np.ndarray]:
     """Small-multiples box plot of raw per-prediction APE, one panel per category.
 
@@ -378,6 +411,8 @@ def plot_mape_by_category(
     task_ids = list(task_to_category.keys())
     predictor_ids = sorted(ape_long_df["predictor_id"].unique())
     color_map = _resolve_colors(predictor_ids, colors)
+    label_map = _resolve_labels(predictor_ids, labels)
+    use_shared_legend = labels is not None
 
     n = len(task_ids)
     ncols = 3
@@ -392,21 +427,38 @@ def plot_mape_by_category(
         task_df = ape_long_df[ape_long_df["task_id"] == task_id]
         data: list[Any] = [task_df[task_df["predictor_id"] == pid]["ape"].dropna().values for pid in predictor_ids]
 
-        bp = ax.boxplot(data, patch_artist=True, tick_labels=predictor_ids)
+        tick_labels = [""] * len(predictor_ids) if use_shared_legend else [label_map[pid] for pid in predictor_ids]
+        bp = ax.boxplot(data, patch_artist=True, tick_labels=tick_labels)
         for patch, pid in zip(bp["boxes"], predictor_ids):
             patch.set_facecolor(color_map[pid])
             patch.set_alpha(0.6)
 
         ax.set_title(label, fontsize=10)
         ax.set_ylabel("APE (%)", fontsize=8)
-        ax.tick_params(axis="x", labelrotation=20, labelsize=7)
+        if not use_shared_legend:
+            ax.tick_params(axis="x", labelrotation=20, labelsize=7)
+        else:
+            ax.tick_params(axis="x", labelbottom=False)
         ax.grid(axis="y", alpha=0.3)
 
     for ax in axes_flat[n:]:
         ax.axis("off")
 
     fig.suptitle("Per-prediction APE distribution by category", fontsize=12)
-    fig.tight_layout()
+    if use_shared_legend:
+        legend_handles = [
+            Patch(facecolor=color_map[pid], alpha=0.6, label=label_map[pid]) for pid in predictor_ids
+        ]
+        fig.legend(
+            handles=legend_handles,
+            loc="lower center",
+            ncol=min(len(predictor_ids), 4),
+            fontsize=9,
+            frameon=False,
+        )
+        fig.tight_layout(rect=[0, 0.06, 1, 0.96])
+    else:
+        fig.tight_layout()
     return fig, axes
 
 
