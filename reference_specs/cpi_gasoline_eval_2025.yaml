@@ -1,0 +1,67 @@
+# Reference EvalSpec: CPI Gasoline Canada, 1-month ahead — 2025 eval window
+#
+# Companion to cpi_gasoline_1m.yaml.  Covers origins from January 2025
+# through March 2026 — the most recent window where every forecast (h=1)
+# has a published resolution as of the time of writing (May 2026; StatCan
+# releases CPI ~3 weeks after the reference month, so April 2026 data was
+# published ~May 19 2026 and all h=1 forecasts up to March 2026 are
+# resolved).
+#
+# This spec is intentionally "live-adjacent": origins from late 2025 and
+# early 2026 are as recent as possible, making it possible to extend the
+# eval window month by month as new CPI prints are published.
+#
+# Use this spec sparingly.  max_runs: 5 limits how many times a
+# participant may run evaluate() against it, reducing the risk of
+# inadvertently over-fitting to the held-out window.
+#
+# To load this spec in Python:
+#
+#   import yaml
+#   from pathlib import Path
+#   from aieng.forecasting.evaluation import EvalSpec, EvalTracker, evaluate
+#
+#   with open("reference_specs/cpi_gasoline_eval_2025.yaml") as f:
+#       spec = EvalSpec.model_validate(yaml.safe_load(f))
+#
+#   tracker = EvalTracker(Path("data/eval_runs.yaml"))
+#   result = evaluate(predictor=my_predictor, spec=spec, data_service=svc, tracker=tracker)
+#   print(f"Eval mean CRPS: {result.mean_crps:.4f}  (run {result.run_number}/{spec.max_runs})")
+#
+# The target series must be registered before running.  Use
+# scripts/fetch_cpi.py to populate the local data cache, then register
+# "cpi_gasoline_canada".
+
+spec_id: cpi_gasoline_eval_2025
+
+task:
+  task_id: cpi_gasoline_canada_1m
+  target_series_id: cpi_gasoline_canada
+  horizons: [1]
+  frequency: MS
+  description: >-
+    Forecast Canada-wide CPI Gasoline (index, 2002=100) exactly 1 month
+    ahead of the forecast origin. Evaluated at every monthly origin.
+    Ground truth is the observed StatCan CPI value at the resolution date.
+
+# Eval window: January 2025 through March 2026.
+# Origins Jan 2025 – Mar 2026 with h=1 produce forecast dates Feb 2025 – Apr 2026,
+# all of which are published as of May 2026.
+start: "2025-01-01"
+end: "2026-04-01"
+
+# stride=1 gives one origin per month (~15 origins).
+stride: 1
+
+# Require 24 months of history before the first forecast.
+warmup: 24
+
+# Budget cap: each participant may run evaluate() against this spec at
+# most 5 times.  Enforced by EvalTracker when passed to evaluate().
+max_runs: 5
+
+description: >-
+  Getting-started protected eval: monthly origins from Jan 2025 through
+  Mar 2026 for CPI Gasoline Canada 1-month ahead forecasts.  All
+  resolutions are published as of May 2026.  Budget-limited to 5 runs
+  per participant tracker.
