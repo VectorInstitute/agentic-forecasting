@@ -154,7 +154,8 @@ class AdkTextRunner:
 
     def __init__(self, agent: BaseAgent, *, config: AdkTextRunnerConfig) -> None:
         """Construct the runner and optionally initialise Langfuse tracing."""
-        self._config = config
+        self.config = config
+        self.agent = agent
         self._runner = InMemoryRunner(agent=agent, app_name=config.app_name)
         # Sticky ADK session per user when ``fresh_session_per_message`` is False.
         self._conversation_session_by_user: dict[str, str] = {}
@@ -167,11 +168,6 @@ class AdkTextRunner:
     def runner(self) -> InMemoryRunner:
         """Underlying ADK runner (session, artifact, memory services)."""
         return self._runner
-
-    @property
-    def agent(self) -> BaseAgent:
-        """Underlying ADK agent driving this runner."""
-        return self._runner.agent
 
     async def _resolve_session_id(self, user_id: str | None, session_id: str | None) -> str:
         """Return the ADK session id to use for a single turn.
@@ -190,11 +186,11 @@ class AdkTextRunner:
             ADK session id for this turn.
         """
         if user_id is None:
-            user_id = self._config.default_user_id
+            user_id = self.config.default_user_id
 
-        if self._config.fresh_session_per_message:
+        if self.config.fresh_session_per_message:
             new_session = await self._runner.session_service.create_session(
-                app_name=self._config.app_name,
+                app_name=self.config.app_name,
                 user_id=user_id,
             )
             sid = new_session.id
@@ -205,7 +201,7 @@ class AdkTextRunner:
             sid = self._conversation_session_by_user[user_id]
         else:
             new_session = await self._runner.session_service.create_session(
-                app_name=self._config.app_name,
+                app_name=self.config.app_name,
                 user_id=user_id,
             )
             sid = new_session.id
@@ -257,7 +253,7 @@ class AdkTextRunner:
         When ``enable_langfuse_tracing`` is True, each turn runs inside Langfuse
         ``propagate_attributes`` using the resolved ``user_id`` and ADK ``session_id``.
         """
-        user_id = user_id or self._config.default_user_id
+        user_id = user_id or self.config.default_user_id
 
         session_id = await self._resolve_session_id(user_id, session_id)
 
@@ -274,12 +270,12 @@ class AdkTextRunner:
                     return event.content.parts[0].text or ""
             return ""
 
-        if self._config.enable_langfuse_tracing:
+        if self.config.enable_langfuse_tracing:
             from langfuse import propagate_attributes  # noqa: PLC0415
 
-            metadata: dict[str, str] = {"adk_app_name": self._config.app_name}
-            if self._config.langfuse_propagate_metadata:
-                metadata = {**metadata, **self._config.langfuse_propagate_metadata}
+            metadata: dict[str, str] = {"adk_app_name": self.config.app_name}
+            if self.config.langfuse_propagate_metadata:
+                metadata = {**metadata, **self.config.langfuse_propagate_metadata}
 
             pa_kw: dict[str, Any] = {
                 k: v
@@ -287,9 +283,9 @@ class AdkTextRunner:
                     "user_id": user_id,
                     "session_id": session_id,
                     "metadata": metadata,
-                    "tags": self._config.langfuse_tags,
-                    "trace_name": self._config.langfuse_trace_name,
-                    "version": self._config.langfuse_version,
+                    "tags": self.config.langfuse_tags,
+                    "trace_name": self.config.langfuse_trace_name,
+                    "version": self.config.langfuse_version,
                 }.items()
                 if v is not None
             }

@@ -88,11 +88,11 @@ def mock_agent():
 class TestRunnerExposure:
     """Expose the wrapped runner and agent for integration seams."""
 
-    def test_agent_property_returns_underlying_runner_agent(self, patch_runner_cls, mock_agent) -> None:
-        """``AgentPredictor`` relies on this property for runner injection."""
+    def test_agent_attribute_returns_constructor_agent(self, patch_runner_cls, mock_agent) -> None:
+        """``AgentPredictor`` relies on this attribute for runner injection."""
         runner = AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app"))
 
-        assert runner.agent is patch_runner_cls.agent
+        assert runner.agent is mock_agent
 
     def test_runner_property_returns_underlying_runner(self, patch_runner_cls, mock_agent) -> None:
         """Expose the ADK runner for advanced callers that need lower-level services."""
