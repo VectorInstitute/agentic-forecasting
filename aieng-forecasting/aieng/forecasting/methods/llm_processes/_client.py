@@ -135,6 +135,10 @@ async def _one_completion_async(
         # overconfidence is well-documented for continuous probabilistic
         # forecasting (Welch 2026, Marzoev 2026).
         kwargs["reasoning_effort"] = reasoning_effort
+        # Some models (e.g. gemini-3.5-flash) don't accept reasoning_effort.
+        # drop_params=True tells LiteLLM to silently omit unsupported params
+        # rather than raising UnsupportedParamsError.
+        kwargs["drop_params"] = True
 
     resp = await litellm.acompletion(**kwargs)
     cost = float(getattr(resp, "_hidden_params", {}).get("response_cost") or 0.0)
