@@ -19,13 +19,14 @@ dependencies = [
 [project.optional-dependencies]
 agentic = [
     "aieng-agents[code-interpreter]>=0.3.0",
-    "google-adk>=1.32.0",
+    "google-adk>=2.0.0",
+    "google-cloud-storage>=2.18,<4",
     "langfuse>=4.5.1",
     "openinference-instrumentation-google-adk>=0.1.11",
 ]
 llm = [
     "langfuse>=4.5.1",
-    "litellm>=1.83.14",
+    "litellm>=1.85.0",
 ]
 numerical = [
     "darts>=0.44.1",
