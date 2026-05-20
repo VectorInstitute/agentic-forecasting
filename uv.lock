@@ -178,8 +178,8 @@ requires-dist = [
     { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.5.1" },
     { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
-    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.0" },
-    { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
+    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.83.14" },
+    { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.14" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
     { name = "pydantic", specifier = ">=2.0" },
@@ -3866,7 +3866,7 @@ wheels = [
 
 [[package]]
 name = "openinference-instrumentation"
-version = "0.1.50"
+version = "0.1.51"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openinference-semantic-conventions" },
@@ -3874,14 +3874,14 @@ dependencies = [
     { name = "opentelemetry-sdk" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/bc/9126db2e991304d05e777c3cd107580cc1e721f2db91586dda09db7600f2/openinference_instrumentation-0.1.50.tar.gz", hash = "sha256:3ce2e19bc832cbfc5e141a1a78d6f5f9547b98ddfaecf8128edd2b5e6ed5c6e6", size = 24788, upload-time = "2026-05-11T22:04:18.14Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/28/bfeda54631d620e5a9d93904c45b55a8cee5491c449db6c1366f3b7cf23e/openinference_instrumentation-0.1.51.tar.gz", hash = "sha256:7923619c9e1c3f3a8ae924f909e86bdeda27186222352a7a8a7a6cecea1771a6", size = 33294, upload-time = "2026-05-14T19:29:16.873Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/0f/1eba26ef9599a69e08c60df0d9826a7530fa019ad4da66a9d6d9f1841ff1/openinference_instrumentation-0.1.50-py3-none-any.whl", hash = "sha256:e757e308df590f393d02b1cfcbd934d728cf876fca2f4432b2e7052ae9b64622", size = 31002, upload-time = "2026-05-11T22:04:17.12Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/5b/8224abeb096e15151c6e996f29d5604335736bb4bfce07fb13970b4e92c5/openinference_instrumentation-0.1.51-py3-none-any.whl", hash = "sha256:a35b45f4912c2668fb6986394229fa5d785b9f7ded038793dc0ceed88f699a5b", size = 40504, upload-time = "2026-05-14T19:29:14.539Z" },
 ]
 
 [[package]]
 name = "openinference-instrumentation-google-adk"
-version = "0.1.13"
+version = "0.1.14"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openinference-instrumentation" },
@@ -3892,9 +3892,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/ae/a1abf77d606515c3610d030bf5a4a6831b23ffd215b38f85f9201192855d/openinference_instrumentation_google_adk-0.1.13.tar.gz", hash = "sha256:026255bc683204bec00e7439c21f61ac21141f492e00948439c3bb85942c1f0d", size = 14499, upload-time = "2026-05-14T19:29:19.085Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c3/9e/9771a2d88f1d33fec62d7a7d48f9d934a19af1f7490224287d3b7885765a/openinference_instrumentation_google_adk-0.1.14.tar.gz", hash = "sha256:07c0afdd2979209983b589f9193e280dc1f0b8a4ef4877e9c9e10cc898cd15f5", size = 14499, upload-time = "2026-05-18T18:51:35.127Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/21/be/76bf335747fc00a00edf43986c39504d23b24bf95d6761d0b30636cb344c/openinference_instrumentation_google_adk-0.1.13-py3-none-any.whl", hash = "sha256:68e5995c3b5152d9622a517bdbc147899d6cf348aabc59a725aba85a08c6c7e8", size = 16443, upload-time = "2026-05-14T19:29:16.267Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/ac/3baa4132764ad671f3a6ec6f31dfa5c946a2b83f2b062879b05f1c3bef21/openinference_instrumentation_google_adk-0.1.14-py3-none-any.whl", hash = "sha256:8f92c6fdb720e44ee9326a63566ca2c971984c8b5540c8d6d50af88cf17eace8", size = 16443, upload-time = "2026-05-18T18:51:33.562Z" },
 ]
 
 [[package]]
