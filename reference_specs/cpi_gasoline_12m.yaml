@@ -7,9 +7,14 @@
 # makes the "why is this hard?" teaching point land without needing the
 # full CFPR trajectory machinery.
 #
-# Evaluates predictors twice per year (January and July origins) from
-# 2000 to present.  Requires 24 months of history before the first
-# forecast (warmup).
+# Evaluates predictors at every monthly origin from 2000 to present
+# (stride=1).  Monthly granularity gives a denser backtest grid, which
+# is more suitable for LLM-based and agentic predictors: it keeps the
+# total number of origins tractable while leaving enough recent origins
+# (e.g. Jan 2025 onward) unresolved for a live evaluation once we have
+# support for prospective testing.
+#
+# Requires 24 months of history before the first forecast (warmup).
 #
 # To load this spec in Python:
 #
@@ -30,22 +35,23 @@ task:
   frequency: MS
   description: >-
     Forecast Canada-wide CPI Gasoline (index, 2002=100) exactly 12 months
-    ahead of the forecast origin. Evaluated at January and July origins.
+    ahead of the forecast origin. Evaluated at every monthly origin.
     Ground truth is the observed StatCan CPI value at the resolution date.
 
 # Backtest window: January 2000 through January 2026.
 start: "2000-01-01"
 end: "2026-01-01"
 
-# stride=6 on monthly (MS) frequency gives January and July origins.
-stride: 6
+# stride=1 on monthly (MS) frequency gives one origin per month.
+stride: 1
 
 # Require 24 months of history before the first forecast.
 warmup: 24
 
 description: >-
   Getting-started reference backtest: forecast Canada-wide CPI Gasoline
-  (index, 2002=100) 12 months ahead at January and July origins from 2000
+  (index, 2002=100) 12 months ahead at every monthly origin from 2000
   to 2026.  The volatile target makes the naive-vs-AutoARIMA comparison
   visually compelling and motivates richer methods (exogenous covariates,
-  LLM context, agentic news retrieval).
+  LLM context, agentic news retrieval).  Monthly stride leaves recent
+  origins available for live / prospective evaluation.
