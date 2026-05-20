@@ -97,7 +97,7 @@ class AgentQuantileForecast(BaseModel):
 
     model_config = {"extra": "ignore"}
 
-    quantile: float = Field(gt=0.0, lt=1.0, description="Quantile level in (0, 1), e.g. 0.50.")
+    quantile: float = Field(description="Quantile level in (0, 1), e.g. 0.50.")
     value: float = Field(description="Forecast value at this quantile level.")
 
     @field_validator("quantile", "value")
@@ -135,8 +135,6 @@ class ContinuousAgentHorizonForecast(BaseModel):
         description="Central forecast. This must match the 0.50 quantile to avoid contradictory output."
     )
     quantiles: list[AgentQuantileForecast] = Field(
-        min_length=len(STANDARD_QUANTILES),
-        max_length=len(STANDARD_QUANTILES),
         description="Forecast values for every standard quantile level.",
     )
     rationale: str = Field(default="", description="Optional horizon-specific explanation; omit when not needed.")
@@ -233,7 +231,6 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
     model_config = {"extra": "ignore"}
 
     forecasts: list[ContinuousAgentHorizonForecast] = Field(
-        min_length=1,
         description="One forecast object for each requested task horizon.",
     )
     rationale: str = Field(
@@ -242,7 +239,9 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
 
     @model_validator(mode="after")
     def _forecast_horizons_are_unique(self) -> "ContinuousAgentForecastOutput":
-        """Reject duplicate horizon forecasts before task-level conversion."""
+        """Reject empty or duplicate horizon forecasts before task-level conversion."""
+        if not self.forecasts:
+            raise ValueError("forecasts must contain at least one horizon forecast.")
         seen: set[int] = set()
         duplicates: list[int] = []
         for forecast in self.forecasts:
