@@ -27,12 +27,13 @@ from aieng.forecasting.data.adapters.yfinance import YFinanceDailyAdapter
 
 CACHE_DIR = Path("data/yfinance")
 TICKER = "CL=F"
+HISTORY_START = "2004-01-01"
 
 
 def main() -> None:
     """Fetch WTI history and print a brief summary."""
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    adapter = YFinanceDailyAdapter(ticker=TICKER, cache_dir=CACHE_DIR, refresh=True)
+    adapter = YFinanceDailyAdapter(ticker=TICKER, start=HISTORY_START, cache_dir=CACHE_DIR, refresh=True)
     print(f"Fetching {TICKER} (Adj Close) → {adapter.cache_path}")
     df = adapter.fetch()
     print(f"  {len(df):,} trading days  |  {df['timestamp'].min().date()} → {df['timestamp'].max().date()}")

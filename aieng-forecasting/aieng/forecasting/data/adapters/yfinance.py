@@ -196,12 +196,19 @@ class YFinanceDailyAdapter(BaseAdapter):
         Both the start and end boundaries are checked. If either falls outside
         the cached window we fall through to a live yfinance fetch so the caller
         always receives the exact rows they asked for.
+
+        Start boundary uses a 5-business-day tolerance so that a requested
+        ``start`` of ``"2005-01-01"`` (Saturday) is satisfied by a cache that
+        begins on ``"2005-01-03"`` (the first trading day of that week). Without
+        this tolerance, every fetch would be treated as a cache miss because
+        market data never starts on a weekend or public holiday.
         """
         if df.empty:
             return False
         if self._config.start is not None:
             cache_start = df["timestamp"].min()
-            if cache_start > pd.Timestamp(self._config.start):
+            start_with_tolerance = pd.Timestamp(self._config.start) + pd.offsets.BDay(5)
+            if cache_start > start_with_tolerance:
                 return False
         if self._config.end is not None:
             cache_end = df["timestamp"].max()

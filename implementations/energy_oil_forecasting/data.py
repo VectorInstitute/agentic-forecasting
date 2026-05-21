@@ -19,7 +19,12 @@ WTI_SERIES_ID = "wti_crude_oil_price"
 """Canonical series ID for the WTI front-month futures close price."""
 
 DEFAULT_CACHE_DIR = Path("data/yfinance")
-"""Default yfinance CSV cache directory."""
+"""Default yfinance CSV cache directory (resolved relative to CWD at call time)."""
+
+_WTI_HISTORY_START = "2004-01-01"
+"""Earliest date requested from yfinance.  Setting an explicit start ensures the
+adapter fetches the full available history rather than yfinance's default 30-day
+window when no cache exists."""
 
 
 def build_wti_service(cache_dir: Path | None = None) -> DataService:
@@ -28,8 +33,11 @@ def build_wti_service(cache_dir: Path | None = None) -> DataService:
     Parameters
     ----------
     cache_dir : Path or None
-        yfinance CSV cache directory.  Defaults to ``data/yfinance`` at the
-        repo root.
+        yfinance CSV cache directory.  Defaults to ``data/yfinance`` relative
+        to the current working directory.  Notebooks typically run from their
+        own directory so the adapter will transparently fetch from yfinance if
+        the cache is absent or stale, then persist the result for subsequent
+        runs.
 
     Returns
     -------
@@ -46,7 +54,9 @@ def build_wti_service(cache_dir: Path | None = None) -> DataService:
         # field defaults to "Adj Close" — matches the cache key cl_f_adj_close_1d.parquet
         # produced by scripts/fetch_wti.py. For futures contracts like CL=F, Adj Close
         # equals Close (no dividend adjustments).
-        YFinanceDailyAdapter(ticker="CL=F", cache_dir=resolved_cache_dir),
+        # start is set explicitly to ensure yfinance fetches full history on a cache miss
+        # rather than its default 30-day window.
+        YFinanceDailyAdapter(ticker="CL=F", start=_WTI_HISTORY_START, cache_dir=resolved_cache_dir),
         SeriesMetadata(
             series_id=WTI_SERIES_ID,
             description="WTI Crude Oil continuous front-month futures adjusted close (Yahoo Finance CL=F)",
