@@ -107,6 +107,7 @@ ignore = [
     "PLR2004", # Replace magic number with named constant
     "PLR0913", # Too many arguments
     "COM812", # Missing trailing comma
+    "N999", # Invalid module name — conflicts with numbered notebook naming convention (01_*, 02_*)
 ]
 
 # Ignore import violations in all `__init__.py` files.

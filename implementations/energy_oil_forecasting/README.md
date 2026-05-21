@@ -43,31 +43,83 @@ Each forecasting origin defines a strict information cutoff (`as_of`). Predictor
 
 ---
 
-## Gemini Native Code Execution & Custom Skills
+## Module Layout
 
-To implement the code-executing agent configuration (Step 4 of the progression), we leverage **Gemini's Native Code Execution** tool rather than an external E2B sandbox. 
+```
+implementations/energy_oil_forecasting/
+├── __init__.py
+├── data.py                        # build_wti_service() — registers CL=F in DataService
+├── analyst_agent/
+│   ├── __init__.py                # exports all config factories + prompt builder
+│   ├── agent.py                   # AgentConfig factories, WtiPriceForecastPromptBuilder
+│   └── skills/
+│       ├── rolling-statistics/
+│       │   ├── SKILL.md
+│       │   └── references/
+│       │       └── wti_benchmarks.json   # pre-computed WTI volatility stats 2020–2025
+│       ├── trend-projection/
+│       │   ├── SKILL.md
+│       │   └── references/
+│       │       └── projection-examples.md  # sklearn + scipy code patterns with CI formulas
+│       └── forecast-visualization/
+│           ├── SKILL.md
+│           └── references/
+│               └── plotting-guide.md      # matplotlib chart template + sanity checks
+├── specs/
+│   ├── energy_oil_backtest.yaml   # 2025 weekly rolling backtest (51 origins)
+│   └── energy_oil_eval.yaml       # 2026 prospective evaluation (8 origins, price shock)
+├── 01_intro_agentic_predictor.ipynb
+└── 02_energy_backtest_eval.ipynb
+```
 
-Gemini executes generated Python code in an isolated, short-lived sandbox environment. This choice has major architectural advantages:
-*   **Zero setup overhead**: No external API keys (E2B), custom Docker images, or container provisioning are required.
-*   **Supported libraries**: The runtime includes a robust pre-installed toolset: `numpy`, `pandas`, `scipy`, `scikit-learn`, `matplotlib`, and `seaborn`.
-*   **Matplotlib graph rendering**: Visualizations generated in the sandbox are returned directly as inline images inside the model response.
+### `data.py`
 
-### 3 Core Forecasting Skills
+`build_wti_service(cache_dir=None) -> DataService` — registers the WTI front-month
+futures close series under the canonical ID `wti_crude_oil_price`.
 
-Because the sandbox runtime has a **30-second execution limit** and does not support outbound network requests, we provide the agent with **3 basic introductory skills** to guide its code generation:
+### `analyst_agent/agent.py`
 
-1.  **Data Aggregation & Noise Reduction (using `pandas` and `numpy`)**
-    *   Guides the agent to load the daily price history, align trading dates, compute rolling Simple Moving Averages (SMAs) or Exponentially Weighted Moving Averages (EWMAs) to filter daily volatility, and calculate rolling standard deviations (volatility) to set a baseline uncertainty band.
-2.  **Trend Projection & Calibration (using `scikit-learn` and `scipy`)**
-    *   Guides the agent on how to fit regression models (e.g. `LinearRegression` or polynomial trends) to recent history (e.g., past 30 trading days), extrapolate point forecasts, and calculate prediction intervals from the standard error of the training residuals.
-3.  **Inline Plotting and Visual Sanity Checks (using `matplotlib`)**
-    *   Teaches the agent how to plot the price series, its fitted trends, and predicted quantile bounds. Since Gemini returns these charts inline, the agent can "visually inspect" its forecast for sanity, checking if the intervals are too narrow or trend lines are physically implausible before exporting its final structured JSON predictions.
+Three importable `AgentConfig` factories:
+
+| Factory | Capability |
+|---------|-----------|
+| `build_wti_basic_config()` | No tools — LLM reasons from price history alone |
+| `build_wti_news_config()` | Bounded Google Search via `ContextRetrievalConfig` sub-agent |
+| `build_wti_code_exec_config()` | Gemini native code execution + 3 forecasting skills |
+
+`WtiPriceForecastPromptBuilder` (Pydantic `BaseModel`) serialises the task and history
+into a structured JSON payload, including `standard_quantiles` explicitly so the agent
+knows the exact grid it must produce. History older than 6 months is compressed to
+weekly averages to stay within context limits.
+
+`build_wti_agent_predictor(config)` wraps any config into a ready-to-use
+`AgentPredictor` with `ContinuousAgentForecastOutput` as the output schema.
+
+---
+
+## Gemini Native Code Execution & Skills
+
+The code-executing agent (`build_wti_code_exec_config`) uses `CodeExecutionConfig(provider="gemini_native")`,
+which wires Gemini's built-in server-side execution environment instead of an external
+E2B sandbox. Available libraries: `numpy`, `pandas`, `scipy`, `scikit-learn`,
+`matplotlib`, `seaborn`. Execution time limit: ~30 seconds per turn.
+
+Three ADK skills provide reference data on demand (following the design rule in
+`docs/adk-skills-guide.md` — each skill has at least one real file in `references/`
+and explicitly forbids `run_skill_script`):
+
+| Skill | What it provides |
+|-------|-----------------|
+| `rolling-statistics` | Pre-computed WTI weekly vol stats 2020–2025 — baseline uncertainty floor |
+| `trend-projection` | sklearn + scipy code patterns for linear trend fit + 80% CI calibration |
+| `forecast-visualization` | matplotlib chart template for visual sanity checks |
 
 ---
 
 ## Data Source & Setup
 
-We use Yahoo Finance's `CL=F` series — the West Texas Intermediate (WTI) crude oil continuous front-month futures contract. This contract tracks the WTI spot price within cents and is downloaded and cached automatically to:
-`data/wti_price_history.parquet`
+We use Yahoo Finance's `CL=F` series — the WTI crude oil continuous front-month
+futures contract. Cached to `data/yfinance/` by `build_wti_service()`.
 
-Ensure your `.env` contains your `GEMINI_API_KEY`. No external credentials or paid commodity APIs are required to run the full pipeline.
+Ensure your `.env` contains your `GEMINI_API_KEY`. No external credentials or paid
+commodity APIs are required.

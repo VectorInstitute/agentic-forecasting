@@ -4,8 +4,8 @@ This module exposes :class:`AgentConfig` plus its nested
 :class:`CodeExecutionConfig` and :class:`ContextRetrievalConfig` configs,
 the :class:`ContextRetrievalRequest` input schema used by the context sub-agent,
 and the :func:`build_adk_agent` factory that turns a config into a fully
-configured :class:`google.adk.agents.LlmAgent` (with optional E2B-backed
-code execution and a Google Search context-retrieval sub-agent).
+configured :class:`google.adk.agents.LlmAgent` (with optional E2B-backed or
+Gemini-native code execution and a Google Search context-retrieval sub-agent).
 
 This module requires the ``agentic`` extra; importing it without the extra
 raises :class:`ImportError` with installation guidance.
@@ -14,7 +14,7 @@ raises :class:`ImportError` with installation guidance.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Literal, Sequence
 
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
 from google.adk.models.base_llm import BaseLlm
@@ -29,7 +29,7 @@ try:
     from google.adk.tools.google_search_agent_tool import GoogleSearchAgentTool
     from google.adk.tools.google_search_tool import google_search
     from google.adk.tools.skill_toolset import SkillToolset
-    from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel
+    from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel, Tool, ToolCodeExecution
 except ModuleNotFoundError as exc:
     raise ImportError(
         "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
@@ -113,35 +113,46 @@ class ContextRetrievalConfig(BaseModel):
 class CodeExecutionConfig(BaseModel):
     """Configuration for code execution tool.
 
-    The code execution tool enables the agent to run code in a E2B-backed sandbox
-    environment. The sandbox is created and destroyed for each code execution request.
+    Supports two providers:
+
+    - ``"e2b"`` (default): code runs in an E2B-backed sandbox managed by the
+      :class:`~aieng.agents.tools.code_interpreter.CodeInterpreter` tool.
+    - ``"gemini_native"``: delegates to Gemini's built-in server-side code
+      execution environment. No sandbox lifecycle management is needed; Gemini
+      handles execution internally.  The E2B-only fields (``template_name``,
+      ``sandbox_timeout_seconds``, ``code_execution_timeout_seconds``) are
+      ignored when this provider is selected.
 
     Attributes
     ----------
     enabled : bool, default=False
         Whether to enable code execution. Disabled by default.
+    provider : Literal["e2b", "gemini_native"], default="e2b"
+        Code execution backend. Use ``"gemini_native"`` to leverage Gemini's
+        included Python environment (pandas, numpy, scipy, scikit-learn,
+        matplotlib) without provisioning a separate sandbox.
     template_name : str | None, default="agentic-forecasting-bootcamp"
-        E2B template name for the code execution environment, if available.
-        If not provided, the agent will use the default E2B sandbox.
+        E2B template name.  Only used when ``provider == "e2b"``.
     sandbox_timeout_seconds : int, default=3600
-        Sandbox timeout in seconds.
+        E2B sandbox lifetime in seconds.  Only used when ``provider == "e2b"``.
     code_execution_timeout_seconds : float | None, default=3300
-        Code execution timeout in seconds. If not provided, the agent will use the
-        default E2B code execution timeout.
+        Per-execution timeout in seconds.  Only used when ``provider == "e2b"``.
     """
 
     model_config = {"extra": "forbid"}
 
     enabled: bool = False
+    provider: Literal["e2b", "gemini_native"] = "e2b"
     template_name: str | None = "agentic-forecasting-bootcamp"
     sandbox_timeout_seconds: int = Field(default=3600, ge=1, le=3600)
     code_execution_timeout_seconds: float | None = Field(default=3300, gt=0)
 
     @model_validator(mode="after")
     def _timeouts_consistent(self) -> "CodeExecutionConfig":
-        """Ensure code execution cannot outlive the sandbox itself."""
+        """Ensure code execution cannot outlive the sandbox itself (E2B only)."""
         if (
-            self.code_execution_timeout_seconds is not None
+            self.provider == "e2b"
+            and self.code_execution_timeout_seconds is not None
             and self.code_execution_timeout_seconds > self.sandbox_timeout_seconds
         ):
             raise ValueError("code_execution_timeout_seconds cannot exceed sandbox_timeout_seconds")
@@ -179,9 +190,9 @@ class AgentConfig(BaseModel):
     thinking_level : ThinkingLevel or None, default=None
         Thinking-level preset; overrides ``thinking_budget`` when both are set.
     code_execution : CodeExecutionConfig
-        Configuration for code execution. If enabled, the agent will be equipped with
-        the ability to run code in a E2B-backed sandbox environment. Disabled by
-        default.
+        Configuration for code execution. If enabled, the agent will be equipped
+        with the ability to run code via the selected provider (E2B or Gemini native).
+        Disabled by default.
     context_retrieval : ContextRetrievalConfig
         Configuration for context retrieval. If enabled, the agent will be equipped with
         the ability to search the web for information using the `google_search` tool.
@@ -286,14 +297,22 @@ def build_adk_agent(
     """
     # Configure tools
     tools: list[Any] = []
+    # Native Gemini tools go in GenerateContentConfig.tools, not the ADK tools list.
+    builtin_tools: list[Any] = []
+
     if config.code_execution.enabled:
-        tools.append(
-            CodeInterpreter(
-                template_name=config.code_execution.template_name,
-                sandbox_timeout_seconds=config.code_execution.sandbox_timeout_seconds,
-                code_execution_timeout_seconds=config.code_execution.code_execution_timeout_seconds,
-            ).run_code
-        )
+        if config.code_execution.provider == "e2b":
+            tools.append(
+                CodeInterpreter(
+                    template_name=config.code_execution.template_name,
+                    sandbox_timeout_seconds=config.code_execution.sandbox_timeout_seconds,
+                    code_execution_timeout_seconds=config.code_execution.code_execution_timeout_seconds,
+                ).run_code
+            )
+        else:
+            # gemini_native: server-side execution; no ADK function tool needed.
+            builtin_tools.append(Tool(code_execution=ToolCodeExecution()))
+
     if config.context_retrieval.enabled:
         context_agent = LlmAgent(
             name="context_agent",
@@ -343,5 +362,6 @@ def build_adk_agent(
             temperature=config.temperature,
             max_output_tokens=config.max_output_tokens,
             thinking_config=thinking_config,
+            tools=builtin_tools if builtin_tools else None,
         ),
     )
