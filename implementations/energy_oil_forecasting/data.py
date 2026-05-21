@@ -43,10 +43,13 @@ def build_wti_service(cache_dir: Path | None = None) -> DataService:
     svc = DataService()
     svc.register(
         WTI_SERIES_ID,
-        YFinanceDailyAdapter(ticker="CL=F", field="Close", cache_dir=resolved_cache_dir),
+        # field defaults to "Adj Close" — matches the cache key cl_f_adj_close_1d.parquet
+        # produced by scripts/fetch_wti.py. For futures contracts like CL=F, Adj Close
+        # equals Close (no dividend adjustments).
+        YFinanceDailyAdapter(ticker="CL=F", cache_dir=resolved_cache_dir),
         SeriesMetadata(
             series_id=WTI_SERIES_ID,
-            description="WTI Crude Oil continuous front-month futures close price (Yahoo Finance CL=F)",
+            description="WTI Crude Oil continuous front-month futures adjusted close (Yahoo Finance CL=F)",
             source="yfinance",
             units="USD/bbl",
             frequency="B",
