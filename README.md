@@ -21,11 +21,10 @@ The formal cohort 1 reference experiments are:
 | Experiment | Role | Current state |
 | --- | --- | --- |
 | Getting Started | CPI gasoline hello-world for the evaluation loop. | Implemented. |
-| Food Price Forecasting | CFPR-style multivariate food CPI task. | Implemented for the canonical StatCan path. |
+| Food Price Forecasting | CFPR-style multivariate food CPI task (clean baseline vs LLMP). | Implemented for the canonical StatCan path. |
+| Energy/Oil | Flagship daily WTI commodity price forecasting (Prophet, LLMP, and progressive agents vs 2026 geopolitical shock). | Implemented. |
 | Financial Markets - S&P 500 | Deep numerical-methods comparison; financial-markets Track 1 template. | In progress (Behnoosh). |
 | BoC Rate Decisions | Binary/discrete-event reference experiment. | Planned (Ethan). |
-
-Energy/oil 2026 lives in `playground/energy_case_study/` today as the May 21 information-session demo. Promotion to a formal reference experiment with a proper eval spec is planned next on Ethan's track. S&P 500 and energy/oil can proceed in parallel.
 
 ForecastBench, energy as a formal Track 1 extension, additional financial assets, richer covariates, and time-series foundation models are participant extension ideas unless explicitly pulled into the workplan.
 
@@ -52,12 +51,13 @@ aieng-forecasting/         # Installable library package: import as aieng.foreca
 implementations/           # Reference experiments, helpers, and co-located specs
 |-- getting_started/
 |   `-- specs/             # CPI gasoline backtest and eval YAML
-`-- food_price_forecasting/
-    `-- specs/             # CFPR backtest YAML
+|-- food_price_forecasting/
+|   `-- specs/             # CFPR backtest YAML
+`-- energy_oil_forecasting/
+    `-- specs/             # WTI crude oil backtest and eval YAML
 planning-docs/
 `-- bootcamp-workplan.md   # Single planning source of truth
 playground/                # Demo and exploration code (not formal reference experiments)
-|-- energy_case_study/     # Energy/oil information-session demo (promotion planned)
 `-- news_search/           # News grounding playground
 scripts/                   # Data population scripts
 ```

@@ -16,13 +16,15 @@ implementations/
 |   `-- specs/                # backtest and eval YAML
 |-- food_price_forecasting/   # CFPR-style food CPI experiment
 |   `-- specs/                # backtest YAML
+|-- energy_oil_forecasting/   # Daily WTI oil price forecasting experiment
+|   `-- specs/                # backtest and eval YAML
 |-- tests/                    # tests for implementation-specific helper modules
 `-- pyproject.toml            # local workspace packaging
 ```
 
 YAML backtest and eval specs live under each use case in `specs/`.
 
-The S&P 500 experiment (Behnoosh) is in progress as a net-new financial-markets reference. Energy/oil promotion to a formal reference experiment (Ethan) and the BoC rate-decision experiment (Ethan, after energy) are planned next on the reference-experiment track.
+The S&P 500 experiment (Behnoosh) is in progress as a net-new financial-markets reference. The BoC rate-decision experiment (Ethan) is planned next on the reference-experiment track.
 
 ---
 
