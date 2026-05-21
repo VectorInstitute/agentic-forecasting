@@ -262,7 +262,7 @@ class WtiPriceForecastPromptBuilder(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def build_wti_basic_config(model: str = "gemini-2.5-flash") -> AgentConfig:
+def build_wti_basic_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     """Build an :class:`AgentConfig` with no tools.
 
     The agent reasons purely from the price history in the prompt payload.
@@ -285,7 +285,7 @@ def build_wti_basic_config(model: str = "gemini-2.5-flash") -> AgentConfig:
     )
 
 
-def build_wti_news_config(model: str = "gemini-2.5-flash") -> AgentConfig:
+def build_wti_news_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     """Build an :class:`AgentConfig` with bounded Google Search.
 
     Wires a :class:`~aieng.forecasting.methods.agentic.agent_factory.ContextRetrievalConfig`
@@ -312,7 +312,7 @@ def build_wti_news_config(model: str = "gemini-2.5-flash") -> AgentConfig:
     )
 
 
-def build_wti_code_exec_config(model: str = "gemini-2.5-flash") -> AgentConfig:
+def build_wti_code_exec_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     """Build an :class:`AgentConfig` with Gemini native code execution and forecasting skills.
 
     Combines bounded Google Search (temporal cutoff enforced) with Gemini's

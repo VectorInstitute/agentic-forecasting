@@ -64,7 +64,7 @@ class ContextRetrievalConfig(BaseModel):
     model_config = {"extra": "forbid"}
 
     enabled: bool = False
-    model: str = "gemini-2.5-flash"
+    model: str = "gemini-3.5-flash"
     instruction: str = (
         "You are a specialized Google search agent.\n\n"
         "You will receive a request string that contains a cutoff_date and a query. "
