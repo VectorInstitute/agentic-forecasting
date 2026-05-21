@@ -2,7 +2,6 @@
 
 This module exposes :class:`AgentConfig` plus its nested
 :class:`CodeExecutionConfig` and :class:`ContextRetrievalConfig` configs,
-the :class:`ContextRetrievalRequest` input schema used by the context sub-agent,
 and the :func:`build_adk_agent` factory that turns a config into a fully
 configured :class:`google.adk.agents.LlmAgent` (with optional E2B-backed or
 Gemini-native code execution and a Google Search context-retrieval sub-agent).
@@ -24,50 +23,17 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 try:
     from aieng.agents.tools.code_interpreter import CodeInterpreter
     from google.adk.agents import LlmAgent
+    from google.adk.code_executors import BuiltInCodeExecutor
     from google.adk.skills import load_skill_from_dir
     from google.adk.skills.models import Skill
     from google.adk.tools.google_search_agent_tool import GoogleSearchAgentTool
     from google.adk.tools.google_search_tool import google_search
     from google.adk.tools.skill_toolset import SkillToolset
-    from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel, Tool, ToolCodeExecution
+    from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel
 except ModuleNotFoundError as exc:
     raise ImportError(
         "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
     ) from exc
-
-
-class ContextRetrievalRequest(BaseModel):
-    """Typed input schema for the context retrieval sub-agent.
-
-    When this model is set as ``input_schema`` on the context
-    :class:`~google.adk.agents.LlmAgent`, the ADK ``AgentTool`` generates a
-    typed ``FunctionDeclaration`` from it. The calling agent is then required to
-    supply both fields — it cannot invoke the tool with a free-form string —
-    which prevents accidental omission of the temporal cutoff in historical
-    backtests.
-
-    The validated arguments are serialised with ``model_dump_json()`` and
-    forwarded as the user message to the context sub-agent.
-
-    Attributes
-    ----------
-    cutoff_date : str
-        Information cutoff in ``YYYY-MM-DD`` format. The context sub-agent
-        must only return evidence published strictly before this date.
-    query : str
-        The research question or topic to search for.
-    """
-
-    model_config = {"extra": "forbid"}
-
-    cutoff_date: str = Field(
-        description=(
-            "Information cutoff date in YYYY-MM-DD format. "
-            "Include ONLY evidence published strictly before this date. "
-            "This is the forecast origin date; post-cutoff sources must be excluded."
-        )
-    )
-    query: str = Field(description="The research question or topic to search for.")
 
 
 class ContextRetrievalConfig(BaseModel):
@@ -98,14 +64,13 @@ class ContextRetrievalConfig(BaseModel):
     model_config = {"extra": "forbid"}
 
     enabled: bool = False
-    model: str = "gemini-3-flash-preview"
-    instruction: str = """
-    You are a specialized Google search agent.
-
-    You will receive a JSON object with "cutoff_date" and "query" fields.
-    Use the `google_search` tool to find information relevant to "query"
-    published before "cutoff_date". Return a concise summary of what you find.
-    """
+    model: str = "gemini-2.5-flash"
+    instruction: str = (
+        "You are a specialized Google search agent.\n\n"
+        "You will receive a request string that contains a cutoff_date and a query. "
+        "Use the `google_search` tool to find information relevant to the query "
+        "published before the cutoff_date. Return a concise summary of what you find."
+    )
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
     max_output_tokens: int | None = Field(default=None, ge=1)
 
@@ -297,8 +262,9 @@ def build_adk_agent(
     """
     # Configure tools
     tools: list[Any] = []
-    # Native Gemini tools go in GenerateContentConfig.tools, not the ADK tools list.
-    builtin_tools: list[Any] = []
+    # ADK 2.0: Gemini native code execution uses LlmAgent.code_executor, not
+    # generate_content_config.tools (which is forbidden by the LlmAgent validator).
+    code_executor: BuiltInCodeExecutor | None = None
 
     if config.code_execution.enabled:
         if config.code_execution.provider == "e2b":
@@ -310,25 +276,22 @@ def build_adk_agent(
                 ).run_code
             )
         else:
-            # gemini_native: server-side execution; no ADK function tool needed.
-            builtin_tools.append(Tool(code_execution=ToolCodeExecution()))
+            # gemini_native: delegate to BuiltInCodeExecutor, the ADK 2.0 canonical API.
+            code_executor = BuiltInCodeExecutor()
 
     if config.context_retrieval.enabled:
+        # ADK 2.0 canonical pattern: dedicated search sub-agent with only google_search,
+        # no input_schema (AgentTool passes args['request'] as a plain text message).
+        # Temporal cutoff enforcement is handled via the sub-agent's instruction.
         context_agent = LlmAgent(
             name="context_agent",
             model=config.context_retrieval.model,
             description=(
-                "Performs a bounded web search and returns evidence published "
-                "before the specified cutoff_date. Requires cutoff_date (YYYY-MM-DD) "
-                "and query fields."
+                "Performs a bounded Google web search and returns a summary of "
+                "evidence published before the cutoff date specified in the request."
             ),
             instruction=config.context_retrieval.instruction,
             tools=[google_search],
-            input_schema=ContextRetrievalRequest,
-            generate_content_config=GenerateContentConfig(
-                temperature=config.context_retrieval.temperature,
-                max_output_tokens=config.context_retrieval.max_output_tokens,
-            ),
         )
         tools.append(GoogleSearchAgentTool(agent=context_agent))
 
@@ -357,11 +320,11 @@ def build_adk_agent(
         instruction=config.instruction,
         tools=tools,
         output_schema=output_schema,
+        code_executor=code_executor,
         generate_content_config=GenerateContentConfig(
             seed=config.seed,
             temperature=config.temperature,
             max_output_tokens=config.max_output_tokens,
             thinking_config=thinking_config,
-            tools=builtin_tools if builtin_tools else None,
         ),
     )

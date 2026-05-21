@@ -82,17 +82,17 @@ structured forecast.
 When context retrieval is available, call the context sub-agent to gather \
 market intelligence BEFORE producing forecasts.
 
-Invoke the context sub-agent with a JSON object:
-  {"cutoff_date": "<as_of from payload>", "query": "<specific WTI market topic>"}
+Call the context sub-agent with a `request` string in the format:
+  "cutoff_date: <as_of from payload> | query: <specific WTI market topic>"
 
 The `cutoff_date` MUST always equal the `as_of` date from the payload. This \
 is the temporal fence that prevents any post-origin information from \
 contaminating historical backtests.
 
 Recommended queries (call the sub-agent once per topic):
-- "WTI crude oil price trend and OPEC+ supply decisions"
-- "Persian Gulf geopolitical risk shipping lane disruptions"
-- "US Strategic Petroleum Reserve policy and global demand outlook"
+- "cutoff_date: <as_of> | query: WTI crude oil price trend and OPEC+ supply decisions"
+- "cutoff_date: <as_of> | query: Persian Gulf geopolitical risk shipping lane disruptions"
+- "cutoff_date: <as_of> | query: US Strategic Petroleum Reserve policy and global demand outlook"
 
 Document your key assumptions (OPEC+ policy, shipping lane risk, inventory \
 levels, macro demand) in the `rationale` fields of your forecast output.\
@@ -105,14 +105,15 @@ levels, macro demand) in the `rationale` fields of your forecast output.\
 _WTI_CONTEXT_RETRIEVAL_INSTRUCTION = """\
 You are an oil market intelligence specialist with access to web search.
 
-You will receive a JSON object with two fields: "cutoff_date" and "query".
+You will receive a request string in the format:
+  "cutoff_date: YYYY-MM-DD | query: <topic>"
 
 CRITICAL TEMPORAL CONSTRAINT:
-- Include ONLY information publicly available strictly BEFORE "cutoff_date".
-- EXCLUDE any events, market moves, or data from "cutoff_date" or later.
-- If a search result's publication date is on or after "cutoff_date", skip it entirely.
+- Include ONLY information publicly available strictly BEFORE the cutoff_date.
+- EXCLUDE any events, market moves, or data from cutoff_date or later.
+- If a search result's publication date is on or after cutoff_date, skip it entirely.
 
-Use `google_search` to find information relevant to "query", then return a \
+Use `google_search` to find information relevant to the query, then return a \
 concise structured markdown summary (3-5 paragraphs) covering relevant aspects of:
 - WTI/Brent crude price level and recent trend
 - OPEC+ production decisions and supply outlook
@@ -261,7 +262,7 @@ class WtiPriceForecastPromptBuilder(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def build_wti_basic_config(model: str = "gemini-3.5-flash") -> AgentConfig:
+def build_wti_basic_config(model: str = "gemini-2.5-flash") -> AgentConfig:
     """Build an :class:`AgentConfig` with no tools.
 
     The agent reasons purely from the price history in the prompt payload.
@@ -284,7 +285,7 @@ def build_wti_basic_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     )
 
 
-def build_wti_news_config(model: str = "gemini-3.5-flash") -> AgentConfig:
+def build_wti_news_config(model: str = "gemini-2.5-flash") -> AgentConfig:
     """Build an :class:`AgentConfig` with bounded Google Search.
 
     Wires a :class:`~aieng.forecasting.methods.agentic.agent_factory.ContextRetrievalConfig`
@@ -311,7 +312,7 @@ def build_wti_news_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     )
 
 
-def build_wti_code_exec_config(model: str = "gemini-3.5-flash") -> AgentConfig:
+def build_wti_code_exec_config(model: str = "gemini-2.5-flash") -> AgentConfig:
     """Build an :class:`AgentConfig` with Gemini native code execution and forecasting skills.
 
     Combines bounded Google Search (temporal cutoff enforced) with Gemini's
