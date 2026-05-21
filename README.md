@@ -7,7 +7,7 @@ The bootcamp teaches participants to build, evaluate, and compare forecasting sy
 ## What This Repo Provides
 
 - Core forecasting infrastructure in `aieng-forecasting` (`aieng.forecasting`): data services, cutoff enforcement, forecasting tasks, prediction payloads, backtesting, evaluation, and artifacts.
-- Reference methods in `aieng-forecasting/aieng/forecasting/methods`: reusable `Predictor` implementations including naive baselines, Darts numerical predictors, and an ADK-based analyst agent (`build_analyst_agent` / `AdkTextRunner`).
+- Reference methods in `aieng-forecasting/aieng/forecasting/methods`: reusable `Predictor` implementations including naive baselines, Darts numerical predictors, and ADK-based agentic infrastructure (`build_adk_agent`, `AdkTextRunner`, and `AgentPredictor`).
 - Langfuse / OpenTelemetry tracing bootstrap (`aieng.forecasting.langfuse_tracing`) for LiteLLM and Google ADK.
 - Reference experiments in `implementations`: notebooks, helpers, and task-specific configuration.
 - Canonical YAML specs in `reference_specs`.
@@ -90,7 +90,7 @@ uv run python scripts/fetch_cpi.py
 
 ### 3. (Agentic track only) Build the E2B sandbox image
 
-The analyst agent runs code in an E2B cloud sandbox. Do this once before using `AdkTextRunner` / `build_analyst_agent`:
+Agentic forecasters can run code in an E2B cloud sandbox. Do this once before enabling code execution in `build_adk_agent`:
 
 1. Create a free account at [e2b.dev](https://e2b.dev) and copy your API key.
 2. Add it to your `.env` file alongside the other keys (see `.env.example`):
@@ -102,7 +102,7 @@ The analyst agent runs code in an E2B cloud sandbox. Do this once before using `
    uv run --env-file .env scripts/build_e2b_template.py
    ```
 
-The template is named `agentic-forecasting-bootcamp` and is the default in `AnalystAgentConfig.e2b_template_name`.
+The template is named `agentic-forecasting-bootcamp` and is the default in `CodeExecutionConfig.template_name`.
 
 Then start with:
 
@@ -124,10 +124,10 @@ class MyPredictor(Predictor):
     def predictor_id(self) -> str:
         return "my_predictor"
 
-    def predict(self, task: ForecastingTask, context: ForecastContext) -> Prediction:
+    def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
         series = context.get_series(task.target_series_id)
         ...
-        return Prediction(...)
+        return [Prediction(...)]
 ```
 
 `ForecastContext` is cutoff-scoped. Predictors only see observations available as of the forecast origin, which keeps backtests honest.

@@ -35,6 +35,8 @@ wheels/
 # Guard against notebooks inadvertently creating a cache here if run with a
 # stale relative path (the canonical cache location is /data/ at repo root)
 /implementations/data/
+# implementation-level data caches (e.g. food_price_forecasting/data/)
+implementations/**/data/
 
 # workspace-specific agents
 .github/agents/

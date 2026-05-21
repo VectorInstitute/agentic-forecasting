@@ -4,7 +4,7 @@ The bootcamp's **"hello-world"** forecasting experiment.  Start here if
 this is your first session with the repo.
 
 The task deliberately keeps the framework surface minimal - a single
-series, a single 12-month horizon, one `BacktestSpec`, the `backtest()`
+series, a single 1-month horizon, one `BacktestSpec`, the `backtest()`
 and `evaluate()` entry points - so the evaluation loop itself is clear
 before you meet the richer patterns in
 [`implementations/food_price_forecasting/`](../food_price_forecasting/) (multi-target,
@@ -14,17 +14,23 @@ multi-horizon trajectories, avg/avg YoY, cached artefacts).
 
 ## The task
 
-**Forecast Canada CPI Gasoline (index, 2002=100) exactly 12 months
-ahead.**  Evaluated at January and July origins from 2000 to 2026.
+**Forecast Canada CPI Gasoline (index, 2002=100) exactly 1 month
+ahead.**  Evaluated at every monthly origin from 2000 to 2025, with a
+held-out eval set covering Jan 2025 – Mar 2026.
 
 **Why gasoline?**  Because it *breaks* our models, visibly.  The
-evaluation window covers four textbook regime shifts - the 2008
-crude-oil collapse, the 2014-16 OPEC-led decline, the 2020 COVID
-demand shock, and the 2021-22 Russia/Ukraine surge. A 12-month-ahead
-forecast has no mechanism for seeing any of them coming.  The CRPS
-spikes at each of those origins are exactly the motivation for the
-downstream bootcamp work: exogenous covariates, LLM context, and
-agents that can retrieve that context themselves.
+backtest window covers four textbook regime shifts — the 2008
+crude-oil collapse, the 2014–16 OPEC-led decline, the 2020 COVID
+demand shock, and the 2021–22 Russia/Ukraine surge.  Even at h=1
+the series makes large enough month-over-month jumps during these
+events that last-value and ARIMA both struggle.  The CRPS spikes are
+exactly the motivation for the downstream bootcamp work: exogenous
+covariates, LLM context, and agents that can retrieve that context.
+
+**Why 1-month ahead?**  StatCan publishes CPI ~3 weeks after the
+reference month, so a forecast made today resolves at the next print.
+This is short enough to run genuine **live / prospective tests**: make
+a prediction now, validate it next month.
 
 Headline `cpi_all_items_canada` was the original target here and is a
 fine series - just too smooth to teach anything interesting.
@@ -61,7 +67,7 @@ you can see what the YAML spec turns into.
 
 Ten cells.  Walks through the full cycle:
 
-1. Load `reference_specs/cpi_gasoline_12m.yaml` into a `BacktestSpec`.
+1. Load `reference_specs/cpi_gasoline_1m.yaml` into a `BacktestSpec`.
 2. Construct a `LastValuePredictor` (the floor) and a
    `DartsAutoARIMAPredictor` (a real baseline).
 3. Run `backtest()` for both, print a CRPS comparison table.
@@ -69,7 +75,7 @@ Ten cells.  Walks through the full cycle:
 5. Inspect the worst-performing origins and match them to real-world
    events.
 6. Show how `evaluate()` + `EvalTracker` would spend a run from the
-   protected window budget.
+   held-out 2025 eval window.
 7. Re-run the same predictors against shelter for a side-by-side
    regime-contrast.
 8. Serialise the `BacktestResult` to YAML.
@@ -93,7 +99,7 @@ class MyPredictor(Predictor):
 ```
 
 Then point `backtest(predictor=MyPredictor(), spec=spec, data_service=svc)`
-at `cpi_gasoline_12m.yaml` and see whether you beat AutoARIMA.
+at `cpi_gasoline_1m.yaml` and see whether you beat AutoARIMA.
 
 ### 4. Compare predictors
 
@@ -103,8 +109,9 @@ the `BacktestResult.mean_crps` values are directly comparable.
 ### 5. Spend an eval run
 
 Once you have a predictor you're confident about, run `evaluate()`
-against [`cpi_gasoline_eval_2yr.yaml`](../../reference_specs/cpi_gasoline_eval_2yr.yaml).
-`max_runs: 5` - spend deliberately.
+against [`cpi_gasoline_eval_2025.yaml`](../../reference_specs/cpi_gasoline_eval_2025.yaml)
+— monthly origins from Jan 2025 through Mar 2026, all currently resolved.
+`max_runs: 5` — spend deliberately.
 
 ---
 
@@ -144,8 +151,8 @@ Reference specs (at the repo root, shared across use cases):
 
 ```text
 reference_specs/
-├── cpi_gasoline_12m.yaml            # backtest spec - use freely
-└── cpi_gasoline_eval_2yr.yaml       # eval spec - 5 runs max
+├── cpi_gasoline_1m.yaml             # backtest spec (2000–2025) - use freely
+└── cpi_gasoline_eval_2025.yaml      # eval spec (Jan 2025–Mar 2026) - 5 runs max
 ```
 
 ---

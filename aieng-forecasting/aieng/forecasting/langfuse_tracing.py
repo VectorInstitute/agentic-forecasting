@@ -3,7 +3,12 @@
 Call :func:`init_langfuse_tracing` once at process startup when using the
 ``llm`` or ``agentic`` extras and Langfuse credentials are set in the
 environment.
+
+Call :func:`print_langfuse_trace_url` after a ``predict()`` call to flush
+pending spans and print a clickable Langfuse UI link.
 """
+
+from __future__ import annotations
 
 import logging
 import os
@@ -125,3 +130,57 @@ def init_langfuse_tracing() -> None:
     exit so pending spans are exported.
     """
     _bootstrap.init()
+
+
+def print_langfuse_trace_url(
+    trace_id: str | None = None,
+    *,
+    trace_name: str | None = None,
+) -> str | None:
+    """Flush pending spans and print a Langfuse trace URL (no API trace fetch).
+
+    Uses the in-process trace id when available (``get_current_trace_id``).
+    Does **not** call ``api.trace.list`` — use this from notebooks when list/get
+    time out. If no trace id is available, prints the project traces page and the
+    ``trace_name`` to filter manually in the UI.
+
+    Parameters
+    ----------
+    trace_id : str, optional
+        Explicit trace id. When omitted, uses ``get_current_trace_id()`` if set.
+    trace_name : str, optional
+        ``trace_name`` from ``propagate_attributes`` (for manual UI lookup).
+
+    Returns
+    -------
+    str or None
+        Trace URL when resolved, else ``None``.
+    """
+    if not _langfuse_credentials_present():
+        print("Langfuse: set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY in .env to export traces.")
+        return None
+
+    try:
+        from langfuse import get_client  # noqa: PLC0415
+    except ImportError:
+        print("Langfuse package not installed.")
+        return None
+
+    init_langfuse_tracing()
+    client = get_client()
+    client.flush()
+
+    resolved_id = trace_id or client.get_current_trace_id()
+    url = client.get_trace_url(trace_id=resolved_id)
+    if url:
+        print(f"Langfuse trace: {url}")
+        return url
+
+    project_id = client._get_project_id()  # noqa: SLF001
+    base = getattr(client, "_base_url", None) or os.environ.get("LANGFUSE_HOST", "https://cloud.langfuse.com")
+    traces_page = f"{base}/project/{project_id}/traces" if project_id else base
+    print("Langfuse: trace id not available in this process after flush.")
+    print(f"  Open traces: {traces_page}")
+    if trace_name:
+        print(f"  Filter by trace name: {trace_name!r}")
+    return None

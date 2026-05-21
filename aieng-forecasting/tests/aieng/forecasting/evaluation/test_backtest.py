@@ -9,7 +9,7 @@ import pytest
 from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.data.models import SeriesMetadata
 from aieng.forecasting.data.service import DataService
-from aieng.forecasting.evaluation.backtest import BacktestResult, BacktestSpec, backtest
+from aieng.forecasting.evaluation.backtest import BacktestResult, BacktestSpec, backtest, run_eval_loop
 from aieng.forecasting.evaluation.prediction import (
     STANDARD_QUANTILES,
     ContinuousForecast,
@@ -232,3 +232,120 @@ class TestBacktestFunction:
         )
         with pytest.raises(ValueError, match="No predictions were scored"):
             backtest(ConstantPredictor(), spec, svc)
+
+
+class TestRunEvalLoopRetry:
+    """Tests for per-origin retry logic in run_eval_loop."""
+
+    def test_succeeds_on_second_attempt(self) -> None:
+        """If predict() fails once then succeeds, the origin is scored normally."""
+        svc = _build_data_service()
+        task = _make_task()
+        origins = [datetime(2010, 1, 1)]
+
+        class FlakyPredictor(Predictor):
+            def __init__(self) -> None:
+                self.calls = 0
+
+            @property
+            def predictor_id(self) -> str:
+                return "flaky"
+
+            def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
+                self.calls += 1
+                if self.calls == 1:
+                    raise ValueError("transient failure")
+                offset = pd.tseries.frequencies.to_offset(task.frequency)
+                return [
+                    Prediction(
+                        predictor_id=self.predictor_id,
+                        task_id=task.task_id,
+                        issued_at=datetime(2024, 1, 1),
+                        as_of=context.as_of,
+                        forecast_date=(pd.Timestamp(context.as_of) + offset * h).to_pydatetime(),
+                        payload=_make_forecast(100.0),
+                    )
+                    for h in task.horizons
+                ]
+
+        predictor = FlakyPredictor()
+        predictions, scores, skipped = run_eval_loop(
+            predictor=predictor,
+            task=task,
+            origins=origins,
+            warmup=0,
+            data_service=svc,
+            max_retries=2,
+            retry_delay=0.0,
+        )
+        assert predictor.calls == 2
+        assert skipped == 0
+        assert len(predictions) == 1
+
+    def test_origin_skipped_after_all_retries_exhausted(self) -> None:
+        """An origin is counted as skipped once all retry attempts fail."""
+        svc = _build_data_service()
+        task = _make_task()
+        origins = [datetime(2010, 1, 1), datetime(2011, 1, 1)]
+
+        class AlwaysFailsPredictor(Predictor):
+            @property
+            def predictor_id(self) -> str:
+                return "always_fails"
+
+            def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
+                raise RuntimeError("persistent failure")
+
+        with pytest.raises(ValueError, match="No predictions were scored"):
+            run_eval_loop(
+                predictor=AlwaysFailsPredictor(),
+                task=task,
+                origins=origins,
+                warmup=0,
+                data_service=svc,
+                max_retries=1,
+                retry_delay=0.0,
+            )
+
+    def test_failing_origin_does_not_block_others(self) -> None:
+        """One failing origin is skipped; subsequent origins are still scored."""
+        svc = _build_data_service()
+        task = _make_task()
+        origins = [datetime(2010, 1, 1), datetime(2011, 1, 1), datetime(2012, 1, 1)]
+
+        class FailFirstPredictor(Predictor):
+            def __init__(self) -> None:
+                self.calls = 0
+
+            @property
+            def predictor_id(self) -> str:
+                return "fail_first"
+
+            def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
+                self.calls += 1
+                if self.calls <= 2:  # max_retries=1 means 2 attempts on first origin
+                    raise ValueError("fail first origin")
+                offset = pd.tseries.frequencies.to_offset(task.frequency)
+                return [
+                    Prediction(
+                        predictor_id=self.predictor_id,
+                        task_id=task.task_id,
+                        issued_at=datetime(2024, 1, 1),
+                        as_of=context.as_of,
+                        forecast_date=(pd.Timestamp(context.as_of) + offset * h).to_pydatetime(),
+                        payload=_make_forecast(100.0),
+                    )
+                    for h in task.horizons
+                ]
+
+        predictions, scores, skipped = run_eval_loop(
+            predictor=FailFirstPredictor(),
+            task=task,
+            origins=origins,
+            warmup=0,
+            data_service=svc,
+            max_retries=1,
+            retry_delay=0.0,
+        )
+        assert skipped == 1
+        assert len(predictions) == 2

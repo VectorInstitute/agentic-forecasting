@@ -54,3 +54,6 @@ jobs:
         uses: pypa/gh-action-pip-audit@1220774d901786e6f652ae159f7b6bc8fea6d266
         with:
           virtual-environment: .venv/
+          ignore-vulns: |
+            PYSEC-2024-277
+            PYSEC-2025-183

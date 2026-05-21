@@ -1,0 +1,34 @@
+# Mini backtest spec: single target, recent 6 origins.
+#
+# One task (bakery & cereal), 6 annual July origins (2019-2024).
+# Use this for fast agent development and pipeline smoke-testing.
+# Not budget-gated; run freely.
+#
+# Origin count : 6   (Jul 2019, 2020, 2021, 2022, 2023, 2024)
+# Agent calls  : ~6  (one per origin, all 12 trajectory horizons in one call)
+#
+# Prerequisites
+# -------------
+#   uv run python scripts/fetch_cpi.py
+
+spec_id: food_cpi_single_mini_backtest
+
+description: >-
+  Single-target mini backtest: bakery & cereal CPI, 6 recent annual July
+  origins (2019-2024), 12-step trajectory (horizons 6-17). Use for fast
+  agent development and pipeline smoke-testing. Not budget-gated — run freely.
+
+tasks:
+  - task_id: food_cpi_bakery_cereal_cfpr
+    target_series_id: cpi_bakery_cereal_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Bakery and cereal products (excl. baby food), trajectory
+      across Jan-Dec of the year following a July origin.
+
+# Jul 2019 -> Jul 2024 = 6 annual origins.
+start: "2019-07-01"
+end: "2024-07-01"
+stride: 12
+warmup: 24

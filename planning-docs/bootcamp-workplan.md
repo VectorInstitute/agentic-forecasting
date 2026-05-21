@@ -41,8 +41,8 @@ These are the experiments we plan to make runnable, documented, and suitable for
 
 | Experiment                  | Role                                                                                             | Dataset(s)                         | Status                                                                    |
 | --------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------- |
-| Getting Started             | Smallest continuous forecasting walkthrough using CPI gasoline.                                  | StatCan                            | Implemented; polish only.                                                 |
-| Food Price Forecasting      | CFPR-style multivariate CPI task and flagship no-futures context-driven case.                    | StatCan; optional FRED extensions  | Implemented for canonical StatCan path; covariates remain extension work. |
+| Getting Started             | Smallest continuous forecasting walkthrough using CPI gasoline.                                  | StatCan                            | Complete. Spec updated to h=1 (1-month ahead) with clean backtest/eval split (backtest 2000–2025; eval Jan 2025–Mar 2026). |
+| Food Price Forecasting      | CFPR-style multivariate CPI task and flagship no-futures context-driven case.                    | StatCan; optional FRED extensions  | Complete. Canonical StatCan path implemented with baselines, LLMPs, and agentic predictors. Mini specs for fast iteration. No protected eval (leakage risk for LLM predictors; proper live eval deferred). |
 | Financial Markets - S&P 500 | First formal financial-markets Track 1 template with daily horizons and market-data conventions. | yfinance; optional FRED covariates | In progress.                                                              |
 | BoC Rate Decisions          | Sole binary/discrete-event reference experiment and validation surface for `BinaryForecast`.     | StatCan, FRED, public BoC material | Planned.                                                                  |
 
@@ -145,12 +145,14 @@ Deliverables:
 Owner: Ethan
 Target: June 18
 
+Status: **Done.**
+
 Deliverables:
 
-- Reconcile the CFPR README, notebooks, specs, and helper modules.
-- Keep the canonical experiment StatCan-only; document FRED covariates as extension work.
-- Clarify cached-artifact and rerun instructions for participants.
-- Add a brief note on where future LLMP and agentic predictors will plug in.
+- ✅ Reconcile the CFPR README, notebooks, specs, and helper modules.
+- ✅ Keep the canonical experiment StatCan-only; FRED covariates documented as extension work.
+- ✅ Clarify cached-artifact and rerun instructions for participants; crash recovery and per-origin retry added to the backtest harness.
+- ✅ LLMP and agentic predictors integrated into the experiment; leakage narrative explains why historical scores are upper bounds.
 
 ### 5. BoC Binary Reference (Medium)
 
@@ -188,7 +190,7 @@ Deliverables:
 - Define the first repo forecasting/backtesting agent skills.
 - Specify the Context Retrieval Agent contract for Gemini/Google Search grounding.
 - Specify the Analyst Agent contract for code execution, skills, and provider flexibility.
-- Build one Track 1 agent configuration that emits standardized `Prediction` objects.
+- ✅ Build one Track 1 agent configuration that emits standardized `Prediction` objects — food price forecasting agent baseline (no skills; v1 rationale documented in `docs/adk-skills-guide.md`).
 - Build one Track 2 interactive analyst configuration for scenario exploration.
 
 ### 8. Energy/Oil Forecasting Analyst Demo (Large)
@@ -196,14 +198,20 @@ Deliverables:
 Owner: Ethan / Ali, with Franklin's execution service as dependency
 Target: May 21 for storytelling demo; polished later for Build Days
 
+Status: **May 21 demo complete.** Slides produced for the information session. Playground
+content lives in `playground/energy_case_study/` — two notebooks (Prophet rolling backtest
+simulation + agentic scenario analysis) that tell the sponsor-facing story. This is a
+staging artifact, not yet a formal reference experiment.
+
 Deliverables:
 
-- Lock the sponsor-facing scenario, horizon, and target series for the May 21 story.
-- Produce univariate and futures-aware comparison views.
-- Add news-grounded context for the early-2026 energy/oil narrative.
-- Assemble a first scenario-analysis flow, such as Strait of Hormuz closure versus reopening.
-- Label the May 21 artifact as a demo, not a scored reference experiment.
+- ✅ Lock the sponsor-facing scenario, horizon, and target series for the May 21 story — WTI 30-day-ahead rolling forecast, Jan 2025 – Apr 2026.
+- ✅ Produce univariate comparison view — Prophet rolling simulation showing coverage collapse during Persian Gulf escalation.
+- ✅ Add news-grounded context for the early-2026 energy/oil narrative.
+- ✅ Assemble a first scenario-analysis flow (Tasks A/B/C: trajectory fan, binary probability, scenario conditional forecasts).
+- ✅ Label the May 21 artifact as a demo, not a scored reference experiment.
 - Fast-follow the initial yfinance exploration with a futures-data review covering contract chains, roll rules, curve snapshots, open interest, volume, and licensing before depending on futures-curve semantics.
+- **Future task:** transform `playground/energy_case_study/` into a formal reference experiment with proper live/prospective eval (daily data enables clean cutoff enforcement).
 
 ### 9. Lecture And Learn Days Content (Large)
 

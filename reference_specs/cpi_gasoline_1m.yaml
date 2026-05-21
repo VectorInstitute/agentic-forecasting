@@ -1,0 +1,63 @@
+# Reference BacktestSpec: CPI Gasoline Canada, 1-month ahead forecast
+#
+# Gasoline is the "hello-world" target for the getting-started experiment.
+# It is deliberately chosen over headline All-items because it is visibly
+# volatile (2008 crude collapse, 2014-16 OPEC-led decline, 2020 COVID
+# demand shock, 2022 Russia/Ukraine surge) — a single-series backtest
+# makes the "why is this hard?" teaching point land without needing the
+# full CFPR trajectory machinery.
+#
+# Horizon is 1 month ahead (h=1).  Rationale:
+#   - One-step-ahead is the most natural short-term question on a monthly
+#     series and is immediately interpretable.
+#   - StatCan releases CPI ~3 weeks after the reference month, so a
+#     forecast made at origin T resolves at T+1 within the same month the
+#     next CPI print is published.  This is short enough to enable
+#     genuine live / prospective evaluation (make a prediction today,
+#     validate it next month).
+#   - The backtest (2000–2025) provides ~276 training-window origins;
+#     the eval set (2025–present) covers ~15+ already-resolved origins,
+#     enough for a stable CRPS estimate.
+#   - Naive (last-value) is meaningfully bad at turning points, so the
+#     naive-vs-AutoARIMA comparison still lands even at h=1.
+#
+# To load this spec in Python:
+#
+#   import yaml
+#   from aieng.forecasting.evaluation import BacktestSpec
+#
+#   with open("reference_specs/cpi_gasoline_1m.yaml") as f:
+#       spec = BacktestSpec.model_validate(yaml.safe_load(f))
+#
+# The target series must be registered in the DataService before running
+# a backtest.  Use scripts/fetch_cpi.py to populate the local data cache,
+# then register "cpi_gasoline_canada" from StatCan table 18-10-0004-11.
+
+task:
+  task_id: cpi_gasoline_canada_1m
+  target_series_id: cpi_gasoline_canada
+  horizons: [1]
+  frequency: MS
+  description: >-
+    Forecast Canada-wide CPI Gasoline (index, 2002=100) exactly 1 month
+    ahead of the forecast origin. Evaluated at every monthly origin.
+    Ground truth is the observed StatCan CPI value at the resolution date.
+
+# Backtest window: January 2000 through January 2025.
+# Origins from January 2025 onward are reserved for the eval set.
+start: "2000-01-01"
+end: "2025-01-01"
+
+# stride=1 on monthly (MS) frequency gives one origin per month.
+stride: 1
+
+# Require 24 months of history before the first forecast.
+warmup: 24
+
+description: >-
+  Getting-started reference backtest: forecast Canada-wide CPI Gasoline
+  (index, 2002=100) 1 month ahead at every monthly origin from 2000
+  to 2025.  The volatile target makes the naive-vs-AutoARIMA comparison
+  visually compelling and motivates richer methods (exogenous covariates,
+  LLM context, agentic news retrieval).  Origins from Jan 2025 onward
+  are held out in the companion eval spec for live / prospective testing.

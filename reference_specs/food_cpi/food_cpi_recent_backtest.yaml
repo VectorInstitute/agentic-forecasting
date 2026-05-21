@@ -1,45 +1,26 @@
-# Reference MultiTargetEvalSpec: Canada Food CPI, CFPR trajectory replica
-# — protected evaluation window.
+# Mini backtest spec: all 9 targets, recent 6 origins.
 #
-# This spec covers the four most recent annual July origins (Jul 2021 →
-# Jul 2024) on the same 9 food CPI categories and same 12-step trajectory
-# horizons as `food_cpi_cfpr_backtest.yaml`.  All four origins resolve by
-# Dec 2025 and are available in StatCan data as of Jan 2026.
+# All nine food CPI categories, 6 annual July origins (2019-2024).
+# Covers two meaningful macro regimes — the COVID shock (2020-21) and the
+# food-price surge and retreat (2021-24) — while keeping total agent calls
+# manageable.  Not budget-gated; run freely.
 #
-# Budget semantics
-# ----------------
-# One call to multi_evaluate() counts as ONE run regardless of how many
-# food categories are in the spec.  The budget governs evaluation
-# *sessions*, not individual series.  Spend the 5 runs deliberately.
+# Origin count : 6    (Jul 2019, 2020, 2021, 2022, 2023, 2024)
+# Agent calls  : ~54  (9 tasks × 6 origins, all 12 trajectory horizons per call)
 #
-# Intended usage
-# --------------
-# Use `food_cpi_cfpr_backtest.yaml` freely for tuning a predictor; run
-# this spec only when you have a predictor you genuinely believe in and
-# are ready to report a headline CRPS / avg/avg YoY error number.
+# Use `food_cpi_cfpr_backtest.yaml` for the full 16-origin canonical backtest.
 #
-# Loading
-# -------
-#
-#   import yaml
-#   from pathlib import Path
-#   from aieng.forecasting.evaluation import (
-#       MultiTargetEvalSpec, EvalTracker, multi_evaluate,
-#   )
-#
-#   with open("reference_specs/food_cpi/food_cpi_cfpr_eval.yaml") as f:
-#       spec = MultiTargetEvalSpec.model_validate(yaml.safe_load(f))
-#   tracker = EvalTracker(Path("data/eval_runs.yaml"))
-#   results = multi_evaluate(predictor=my_predictor, spec=spec,
-#                            data_service=svc, tracker=tracker)
+# Prerequisites
+# -------------
+#   uv run python scripts/fetch_cpi.py
 
-spec_id: food_cpi_cfpr_eval
+spec_id: food_cpi_recent_backtest
 
 description: >-
-  CFPR replica protected evaluation: 9 Canadian food CPI sub-indices,
-  last 4 annual July origins 2021-2024, 12-step trajectory (horizons
-  6-17) spanning Jan-Dec of the following calendar year.  Budget: 5
-  multi_evaluate() calls per participant.
+  All-targets recent backtest: 9 Canadian food CPI sub-indices, 6 recent
+  annual July origins (2019-2024), 12-step trajectory (horizons 6-17).
+  Covers COVID shock and food-price surge/retreat regimes. Not
+  budget-gated — run freely.
 
 tasks:
   - task_id: food_cpi_overall_cfpr
@@ -114,11 +95,8 @@ tasks:
       Canada CPI Vegetables and vegetable preparations, trajectory across
       Jan-Dec of the year following a July origin.
 
-# Jul 2021 -> Jul 2024 = 4 annual origins; all resolve by Dec 2025.
-start: "2021-07-01"
+# Jul 2019 -> Jul 2024 = 6 annual origins.
+start: "2019-07-01"
 end: "2024-07-01"
 stride: 12
 warmup: 24
-
-# Budget: 5 multi_evaluate() calls per participant.
-max_runs: 5

@@ -68,10 +68,14 @@ preparation discipline at every origin:
 - **Backtest window:** July 2009 → July 2024 (16 annual origins).  Covers
   three distinct macro regimes: low-inflation (2010-19), COVID shock (2020-21),
   and the food-price surge and retreat (2021-24).
-- **Protected eval window:** July 2021 → July 2024 (4 origins).  Budget-limited
-  to 5 `multi_evaluate()` calls via `EvalTracker`.
 - **Information cutoff:** at each origin, predictors only see data with
   `timestamp ≤ origin`, enforced by `ForecastContext.as_of`.
+
+> **Note on leakage:** LLM-based predictors trained on data through 2024 have
+> likely seen the resolutions of historical backtesting origins.  Historical
+> CRPS scores for LLMP and agentic predictors represent an **upper bound** on
+> real-world performance, not a clean benchmark.  Proper evaluation requires
+> live / prospective testing on unresolved origins.
 
 ---
 
@@ -79,13 +83,15 @@ preparation discipline at every origin:
 
 ```
 reference_specs/food_cpi/
-├── food_cpi_cfpr_backtest.yaml   # MultiTargetBacktestSpec — 9 tasks × 16 origins
-└── food_cpi_cfpr_eval.yaml       # MultiTargetEvalSpec     — 9 tasks × 4 origins, max_runs=5
+├── food_cpi_cfpr_backtest.yaml      # MultiTargetBacktestSpec — 9 tasks × 16 origins (full)
+├── food_cpi_recent_backtest.yaml    # MultiTargetBacktestSpec — 9 tasks × 6 recent origins
+└── food_cpi_single_mini_backtest.yaml  # MultiTargetBacktestSpec — 1 task × 6 origins (dev/smoke)
 ```
 
-Both specs are the **source of truth**.  The notebook loads them with
-`yaml.safe_load` → `MultiTargetBacktestSpec.model_validate(...)` and prints
-`describe_spec()` output to make the task self-documenting.
+The notebook selects a spec via the `EXPERIMENT_CONFIG` variable at the top
+(`"full"`, `"mini_recent"`, or `"mini_single"`).  The full spec is the
+source of truth for the CFPR task; the mini specs are for fast iteration and
+smoke-testing during development.
 
 ---
 
@@ -99,6 +105,7 @@ implementations/food_price_forecasting/
 ├── plots.py       # plot_trajectory_fan, plot_avgyoy_grid,
 │                  # plot_crps_disaggregated, plot_mape_distribution,
 │                  # plot_food_cpi_small_multiples
+├── analyst_agent/ # task-specific ADK agent config and prompt builder
 ├── food_cpi_experiment.ipynb      # 26-cell narrative over the helpers above
 └── food_data_exploration.ipynb    # 9-cell warm-up tour of the 9 series
 ```
@@ -120,14 +127,14 @@ that need FRED covariates should register their own via `FREDAdapter`.
 ## Artifact storage
 
 `cached_multi_backtest()` saves each `BacktestResult` to
-`data/predictions/<spec_id>/<predictor_id>__<task_id>.yaml` and reuses it on
-the next run.  The first run of the notebook takes ~1 minute; cached reruns
-take ~12 seconds.  Use `force_refresh=True` to invalidate a predictor's
-entry.
+`data/predictions/<spec_id>/<predictor_id>__<task_id>.yaml` immediately after
+each task completes.  If a run crashes mid-experiment, all completed tasks are
+preserved and only the failed task is retried.  Use `force_refresh=True` to
+re-run a predictor from scratch.
 
-The eval-run counter lives at `data/eval_runs.yaml` (gitignored) so each
-participant has a private tally against the 5-run budget in
-`food_cpi_cfpr_eval.yaml`.
+Per-origin retry logic (`max_retries=2` by default) handles transient model
+errors such as malformed structured output — a common occurrence with LLM-based
+predictors — without aborting the whole backtest.
 
 ---
 
@@ -141,12 +148,84 @@ No FRED API key is required for the canonical experiment.
 
 ---
 
+## Agentic Predictor
+
+The concrete food CPI agent lives in `analyst_agent/`. It uses the reusable
+`aieng.forecasting.methods.agentic` helpers with food-task-specific
+configuration.
+
+### Identity vs. role
+
+`AgentConfig` captures the agent's **identity** — instruction, model, and
+capability toggles. It says nothing about output format.
+
+`AgentPredictor` (and `build_food_price_agent_predictor`) captures the agent's
+**role** in a specific experiment — including the `output_schema` it must
+satisfy. The same config can be reused across roles.
+
+### Three instantiation patterns
+
+**Pattern 1 — experiment predictor (one-liner)**
+
+```python
+from food_price_forecasting.analyst_agent import build_food_price_agent_predictor
+
+predictor = build_food_price_agent_predictor(model="gemini-3-flash-preview")
+# output_schema defaults to ContinuousAgentForecastOutput
+```
+
+**Pattern 2 — explicit construction (shows the split)**
+
+```python
+from aieng.forecasting.methods.agentic import AgentPredictor, ContinuousAgentForecastOutput
+from food_price_forecasting.analyst_agent import (
+    FoodPriceForecastPromptBuilder,
+    build_food_price_agent_config,
+)
+
+config = build_food_price_agent_config()            # identity
+predictor = AgentPredictor(                         # role in this experiment
+    config,
+    FoodPriceForecastPromptBuilder(),
+    output_schema=ContinuousAgentForecastOutput,
+)
+```
+
+**Pattern 3 — interactive analyst via `adk web`**
+
+```bash
+# From the repo root — opens a chat UI; no JSON constraint.
+uv run adk web implementations/food_price_forecasting/analyst_agent
+```
+
+`analyst_agent/agent.py` exposes a `root_agent` lazily via `__getattr__`,
+calling `build_adk_agent(config)` with no `output_schema`.  The agent reasons
+freely without being forced into Track 1 JSON.
+
+### Notes
+
+- `output_schema` is supplied to `AgentPredictor`, not to `AgentConfig`. This
+  means the schema is determined at predictor instantiation time, not baked
+  into the agent definition.
+- **`context_agent`** (bounded news search) is a separate optional tool on the
+  forecaster, **off by default** (`enable_news_search=False`). Enable with
+  `enable_news_search=True` only when `as_of` is the real present, or you accept
+  leakage risk in historical runs. The experiment notebook exposes this switch.
+- **No skills in v1.** The v1 baseline does not use ADK `SkillToolset`. Attaching
+  a skill toolset unconditionally injects an ADK system-prompt description of
+  executable scripts, which causes the model to hallucinate script names even when
+  the skill contains none. Skills will be reintroduced once we have genuine
+  reference data to put in them. See [`docs/adk-skills-guide.md`](../../docs/adk-skills-guide.md)
+  for the design rationale and a concrete spec for the next skill.
+
+---
+
 ## Notebooks
 
 | Notebook | Purpose |
 |----------|---------|
 | `food_data_exploration.ipynb` | Short warm-up tour: register the 9 series, small-multiples history, YoY overlay, coverage table. |
-| `food_cpi_experiment.ipynb`   | **Main experiment.** Loads YAML spec; runs cached backtests of `LastValuePredictor` and `DartsAutoARIMAPredictor` across all 9 categories × 16 origins; plots trajectory fans and the avg/avg YoY grid; prints CRPS/MAPE leaderboards; prepares (but does not spend) a protected eval run. |
+| `food_cpi_experiment.ipynb`   | **Main experiment.** Selectable via `EXPERIMENT_CONFIG` (`"full"` / `"mini_recent"` / `"mini_single"`). Runs cached backtests for two baselines (`LastValuePredictor`, `DartsAutoARIMAPredictor`), two LLMPs, and four agentic predictors (two models × with/without news search). Plots trajectory fans, avg/avg YoY grid, and CRPS/MAPE leaderboards. Includes a smoke test cell that prints the agent's system prompt and user message before calling `predict()`. |
 
 ---
 
