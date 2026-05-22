@@ -106,8 +106,8 @@ implementations/food_price_forecasting/
 ├── plots.py       # plot_trajectory_fan, plot_avgyoy_grid,
 │                  # plot_crps_disaggregated, plot_mape_distribution,
 │                  # plot_food_cpi_small_multiples
-├── food_cpi_experiment.ipynb      # 26-cell narrative over the helpers above
-└── food_data_exploration.ipynb    # 9-cell warm-up tour of the 9 series
+├── 01_food_data_exploration.ipynb # 9-cell warm-up tour of the 9 series
+└── 02_food_cpi_experiment.ipynb   # 26-cell narrative over the helpers above
 ```
 
 Unit tests for the analysis helpers live under
@@ -152,8 +152,8 @@ No FRED API key is required for the canonical experiment.
 
 | Notebook | Purpose |
 |----------|---------|
-| `food_data_exploration.ipynb` | Short warm-up tour: register the 9 series, small-multiples history, YoY overlay, coverage table. |
-| `food_cpi_experiment.ipynb`   | **Main experiment.** Selectable via `EXPERIMENT_CONFIG` (`"full"` / `"mini_recent"` / `"mini_single"`). Runs cached backtests for two baselines (`LastValuePredictor`, `DartsAutoARIMAPredictor`) and two LLMPs. Plots trajectory fans, avg/avg YoY grid, and CRPS/MAPE leaderboards. |
+| `01_food_data_exploration.ipynb` | Short warm-up tour: register the 9 series, small-multiples history, YoY overlay, coverage table. |
+| `02_food_cpi_experiment.ipynb`   | **Main experiment.** Selectable via `EXPERIMENT_CONFIG` (`"full"` / `"mini_recent"` / `"mini_single"`). Runs cached backtests for two baselines (`LastValuePredictor`, `DartsAutoARIMAPredictor`) and two LLMPs. Plots trajectory fans, avg/avg YoY grid, and CRPS/MAPE leaderboards. |
 
 ---
 
