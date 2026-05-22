@@ -180,16 +180,30 @@ TASK_OUTPUT_SCHEMAS: dict[TaskKind, type[AgentForecastOutput]] = {
 }
 
 
-def build_wti_news_predictor(task: TaskKind) -> AgentPredictor:
-    """Build a news-grounded agent predictor for the given task kind."""
+def build_wti_news_predictor(
+    task: TaskKind,
+    model: str = "gemini-3.5-flash",
+) -> AgentPredictor:
+    """Build a news-grounded agent predictor for the given task kind.
+
+    Parameters
+    ----------
+    task : TaskKind
+        One of ``"trajectory"``, ``"shock"``, or ``"scenario"``.
+    model : str
+        Gemini model identifier passed through to the underlying
+        :class:`~aieng.forecasting.methods.agentic.agent_factory.AgentConfig`.
+        Defaults to ``"gemini-3.5-flash"``; pass a cheaper model (e.g.
+        ``"gemini-2.0-flash-lite"``) for development runs.
+    """
     if task == "trajectory":
         return AgentPredictor(
-            agent_config=build_wti_news_config(),
+            agent_config=build_wti_news_config(model=model),
             prompt_builder=WtiPriceForecastPromptBuilder(),
             output_schema=ContinuousAgentForecastOutput,
         )
     return AgentPredictor(
-        agent_config=build_wti_multitask_news_config(),
+        agent_config=build_wti_multitask_news_config(model=model),
         prompt_builder=WtiMultitaskPromptBuilder(task_spec=TASK_SPECS[task]),
         output_schema=TASK_OUTPUT_SCHEMAS[task],
     )
