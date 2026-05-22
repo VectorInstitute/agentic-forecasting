@@ -38,6 +38,11 @@ class TestCodeExecutionConfig:
         config = CodeExecutionConfig(code_execution_timeout_seconds=None)
         assert config.code_execution_timeout_seconds is None
 
+    def test_include_server_side_tool_invocations_defaults_true(self) -> None:
+        """Server-side tool invocations default to enabled for gemini_native."""
+        config = CodeExecutionConfig(enabled=True, provider="gemini_native")
+        assert config.include_server_side_tool_invocations is True
+
 
 class TestAgentConfig:
     """Validation for reusable agent configs."""
@@ -106,3 +111,22 @@ class TestBuildAdkAgent:
         tool_config = agent.generate_content_config.tool_config
         assert tool_config is not None
         assert tool_config.include_server_side_tool_invocations is True
+
+    def test_gemini_native_can_disable_server_side_tool_invocations(self) -> None:
+        """Callers may opt out via CodeExecutionConfig when building minimal agents."""
+        agent = build_adk_agent(
+            AgentConfig(
+                instruction="Forecast the supplied series.",
+                context_retrieval=ContextRetrievalConfig(
+                    enabled=True,
+                    instruction="Search for market news before the cutoff date.",
+                ),
+                code_execution=CodeExecutionConfig(
+                    enabled=True,
+                    provider="gemini_native",
+                    include_server_side_tool_invocations=False,
+                ),
+            ),
+        )
+
+        assert agent.generate_content_config.tool_config is None

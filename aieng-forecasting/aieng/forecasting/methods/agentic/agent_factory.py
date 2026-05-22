@@ -102,6 +102,13 @@ class CodeExecutionConfig(BaseModel):
         E2B sandbox lifetime in seconds.  Only used when ``provider == "e2b"``.
     code_execution_timeout_seconds : float | None, default=3300
         Per-execution timeout in seconds.  Only used when ``provider == "e2b"``.
+    include_server_side_tool_invocations : bool, default=True
+        When ``provider == "gemini_native"``, Gemini requires this flag on
+        ``GenerateContentConfig.tool_config`` whenever the agent also uses
+        function-calling tools (context retrieval, skills, E2B ``run_code``, etc.).
+        Enabled by default so mixed-tool agents work out of the box. Set to
+        ``False`` only for gemini-native agents that use code execution alone
+        with no other tools. Ignored for ``provider == "e2b"``.
     """
 
     model_config = {"extra": "forbid"}
@@ -111,6 +118,7 @@ class CodeExecutionConfig(BaseModel):
     template_name: str | None = "agentic-forecasting-bootcamp"
     sandbox_timeout_seconds: int = Field(default=3600, ge=1, le=3600)
     code_execution_timeout_seconds: float | None = Field(default=3300, gt=0)
+    include_server_side_tool_invocations: bool = True
 
     @model_validator(mode="after")
     def _timeouts_consistent(self) -> "CodeExecutionConfig":
@@ -122,6 +130,20 @@ class CodeExecutionConfig(BaseModel):
         ):
             raise ValueError("code_execution_timeout_seconds cannot exceed sandbox_timeout_seconds")
         return self
+
+
+def _build_tool_config(
+    code_execution: CodeExecutionConfig,
+    *,
+    code_executor: BuiltInCodeExecutor | None,
+    tools: list[Any],
+) -> ToolConfig | None:
+    """Return Gemini tool_config when native code exec is mixed with function tools."""
+    if code_executor is None or not tools:
+        return None
+    if not code_execution.include_server_side_tool_invocations:
+        return None
+    return ToolConfig(include_server_side_tool_invocations=True)
 
 
 class AgentConfig(BaseModel):
@@ -313,12 +335,12 @@ def build_adk_agent(
         else None
     )
 
-    # Gemini requires this when BuiltInCodeExecutor (server-side code execution)
-    # is combined with function-calling tools (search sub-agent, skills, etc.).
-    tool_config = (
-        ToolConfig(include_server_side_tool_invocations=True)
-        if code_executor is not None and tools
-        else None
+    # Gemini requires tool_config when BuiltInCodeExecutor is combined with
+    # function-calling tools; callers opt out via CodeExecutionConfig.
+    tool_config = _build_tool_config(
+        config.code_execution,
+        code_executor=code_executor,
+        tools=tools,
     )
 
     return LlmAgent(
