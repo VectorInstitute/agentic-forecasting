@@ -10,7 +10,9 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.backtest import BacktestResult
+from aieng.forecasting.evaluation.prediction import ContinuousForecast
 
 
 def compute_brier_score(probabilities: list[float], outcomes: list[int]) -> float:
@@ -43,6 +45,47 @@ def rolling_coverage_pct(forecasts_df: pd.DataFrame, *, year: int | None = None)
     if resolved.empty:
         return float("nan")
     return float(resolved["inside_ci"].mean() * 100)
+
+
+def score_backtest_results(
+    results: dict[str, BacktestResult],
+    data_service: DataService,
+    *,
+    mae_horizon: int = 21,
+) -> dict[str, float]:
+    """Aggregate CRPS, MAE at a horizon, and 80% CI coverage for backtest results."""
+    all_scores: list[float] = []
+    mae_errors: list[float] = []
+    coverage_hits: list[float] = []
+
+    for result in results.values():
+        all_scores.extend(result.scores)
+        task = result.spec.task
+        actual_df = data_service.get_series(task.target_series_id, as_of=result.spec.end)
+        actual_by_date = {
+            pd.Timestamp(row["timestamp"]).normalize(): float(row["value"]) for _, row in actual_df.iterrows()
+        }
+
+        for pred, score in zip(result.predictions, result.scores, strict=False):
+            _ = score
+            if not isinstance(pred.payload, ContinuousForecast):
+                continue
+            fd = pd.Timestamp(pred.forecast_date).normalize()
+            actual = actual_by_date.get(fd)
+            if actual is None:
+                continue
+            median = pred.payload.point_forecast
+            mae_errors.append(abs(median - actual))
+            q80 = pred.payload.quantiles.get(0.80)
+            q20 = pred.payload.quantiles.get(0.20)
+            if q80 is not None and q20 is not None:
+                coverage_hits.append(float(q20 <= actual <= q80))
+
+    return {
+        "mean_crps": float(np.mean(all_scores)) if all_scores else float("nan"),
+        "mae_h21": float(np.mean(mae_errors)) if mae_errors else float("nan"),
+        "coverage_80": float(np.mean(coverage_hits) * 100) if coverage_hits else float("nan"),
+    }
 
 
 def backtest_results_to_frame(results: dict[str, BacktestResult]) -> pd.DataFrame:
@@ -115,6 +158,7 @@ __all__ = [
     "backtest_results_to_frame",
     "compute_brier_score",
     "rolling_coverage_pct",
+    "score_backtest_results",
     "select_top_predictors",
     "trajectory_mae_table",
 ]
