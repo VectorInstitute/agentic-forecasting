@@ -156,16 +156,29 @@ _CODE_EXEC_SKILLS_SUPPLEMENT = """
 
 ## Skills
 
-You have access to forecasting skills via the SkillToolset.
+You have access to two forecasting skills via the SkillToolset. All data
+available to code execution comes from the JSON payload in your context —
+there are no disk files to read.
 
-Before using any skill:
-1. Call `list_skills` to see the available skill names and descriptions.
+**Recommended invocation order:**
+
+1. `statistical-analysis` — run first. Provides diagnostic code patterns
+   for interrogating the price series you have been given: vol regime
+   classification, anomaly detection, and adaptive trend-window selection.
+   The output of Pattern 3 (trend window) is the input to the projection
+   skill below.
+
+2. `trend-projection` — run second. Provides code patterns for fitting a
+   linear trend on the window chosen above, projecting point forecasts to
+   each horizon, and calibrating 80% prediction interval widths.
+
+**To use a skill:**
+1. Call `list_skills` to see available skill names and descriptions.
 2. Call `load_skill(<name>)` to read the skill's full instructions.
-3. Call `load_skill_resource(<skill_name>, <file_path>)` to load reference \
-data (e.g. `references/wti_benchmarks.json`).
+3. Call `load_skill_resource(<skill_name>, <file_path>)` to load a
+   reference file (e.g. `references/wti_benchmarks.json`).
 
-These skills provide reference data only — they have NO scripts. \
-Do not call `run_skill_script`.\
+These skills have NO scripts. Do not call `run_skill_script`.\
 """
 
 # ---------------------------------------------------------------------------
@@ -355,9 +368,12 @@ def build_wti_code_exec_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     """Build an :class:`AgentConfig` with Gemini native code execution and forecasting skills.
 
     Combines bounded Google Search (temporal cutoff enforced) with Gemini's
-    native code execution environment and three forecasting skills that provide
-    reference data for rolling statistics, trend projection, and forecast
-    visualisation.
+    native code execution environment and two forecasting skills:
+
+    - ``statistical-analysis``: diagnostic patterns for the payload data
+      (vol regime, anomaly detection, adaptive trend window).
+    - ``trend-projection``: linear trend fit, CI calibration, and plausibility
+      guard using the window determined by statistical-analysis.
 
     Parameters
     ----------
@@ -381,9 +397,8 @@ def build_wti_code_exec_config(model: str = "gemini-3.5-flash") -> AgentConfig:
             provider="gemini_native",
         ),
         skills_dirs=[
-            _SKILLS_ROOT / "rolling-statistics",
+            _SKILLS_ROOT / "statistical-analysis",
             _SKILLS_ROOT / "trend-projection",
-            _SKILLS_ROOT / "forecast-visualization",
         ],
     )
 
