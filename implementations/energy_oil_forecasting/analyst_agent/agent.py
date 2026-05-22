@@ -49,6 +49,28 @@ from pydantic import BaseModel
 # System prompt (root analyst agent)
 # ---------------------------------------------------------------------------
 
+_WTI_MULTITASK_ANALYST_INSTRUCTION = """\
+## Role
+
+You are an expert WTI crude oil market analyst.
+
+## Input
+
+You will receive a JSON payload containing:
+- `task_spec`: the exact question and required JSON output schema
+- `as_of`: the forecast origin date (temporal cutoff)
+- `origin_price_usd_bbl`: WTI close on the origin date
+- `target_history_csv`: compressed WTI daily close history
+
+When context retrieval is enabled, call the context sub-agent BEFORE answering.
+
+## Output contract
+
+Read the data (and briefing, if retrieved) carefully, then execute the task \
+in `task_spec` precisely. Return ONLY valid JSON matching the schema described \
+there — no preamble outside the JSON object.\
+"""
+
 _WTI_ANALYST_INSTRUCTION = """\
 ## Role
 
@@ -282,6 +304,23 @@ def build_wti_basic_config(model: str = "gemini-3.5-flash") -> AgentConfig:
         name="wti_analyst_basic",
         model=model,
         instruction=_WTI_ANALYST_INSTRUCTION,
+    )
+
+
+def build_wti_multitask_news_config(model: str = "gemini-3.5-flash") -> AgentConfig:
+    """News-grounded config for the one-agent-three-tasks demo (NB3).
+
+    Uses a task-agnostic analyst instruction; the task schema is supplied in
+    the user prompt payload via :class:`~energy_oil_forecasting.tasks.WtiMultitaskPromptBuilder`.
+    """
+    return AgentConfig(
+        name="wti_analyst_multitask",
+        model=model,
+        instruction=_WTI_MULTITASK_ANALYST_INSTRUCTION,
+        context_retrieval=ContextRetrievalConfig(
+            enabled=True,
+            instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
+        ),
     )
 
 

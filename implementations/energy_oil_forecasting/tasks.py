@@ -7,40 +7,48 @@ identity with task-specific prompt builders and output schemas supplied via
 
 from __future__ import annotations
 
-from typing import Literal
+import json
+from datetime import datetime
+from typing import Any, ClassVar, Literal
 
-from aieng.forecasting.methods.agentic import AgentPredictor, ContinuousAgentForecastOutput
+import pandas as pd
+from aieng.forecasting.data.context import ForecastContext
+from aieng.forecasting.evaluation.prediction import BinaryForecast, Prediction
+from aieng.forecasting.evaluation.task import ForecastingTask
+from aieng.forecasting.methods.agentic import (
+    AgentPredictor,
+    ContinuousAgentForecastOutput,
+    DiscreteAgentForecastOutput,
+)
 from aieng.forecasting.methods.agentic.agent_factory import AgentConfig
+from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
 from energy_oil_forecasting.analyst_agent import (
     WtiPriceForecastPromptBuilder,
+    build_wti_multitask_news_config,
     build_wti_news_config,
+    compress_history,
 )
 from energy_oil_forecasting.paths import SHOCK_HORIZON, SHOCK_THRESHOLD
+from pydantic import BaseModel, Field
 
 
-# ── Task B / C specification strings (embedded in user prompts for NB3) ─────
+# ── Task specification strings (embedded in user prompts for NB3) ───────────
 
 TASK_TRAJECTORY_SPEC = (
     "Forecast the WTI crude oil price at three forward horizons from today:\n"
     "  - 5  business days (~1 trading week)\n"
     "  - 10 business days (~2 trading weeks)\n"
     "  - 21 business days (~1 calendar month)\n\n"
-    "For each horizon provide a point estimate and an 80% confidence interval.\n"
-    "Be calibrated: historical weekly vol is roughly $2-5/bbl; widen intervals\n"
-    "when the market is unusually uncertain.\n\n"
+    "For each horizon provide a point estimate and an 80% confidence interval.\n\n"
     "Return JSON with exactly these fields:\n"
     "{\n"
-    '  "day_5":           <float>,\n'
-    '  "lower_80_day_5":  <float>,\n'
-    '  "upper_80_day_5":  <float>,\n'
-    '  "day_10":          <float>,\n'
-    '  "lower_80_day_10": <float>,\n'
-    '  "upper_80_day_10": <float>,\n'
-    '  "day_21":          <float>,\n'
-    '  "lower_80_day_21": <float>,\n'
-    '  "upper_80_day_21": <float>,\n'
-    '  "reasoning":       "<2-4 sentences>",\n'
-    '  "confidence":      "<high|medium|low>"\n'
+    '  "forecasts": [\n'
+    '    {"horizon": 5,  "point_forecast": <float>, "quantiles": [{"quantile": 0.10, "value": <float>}, '
+    '{"quantile": 0.50, "value": <float>}, {"quantile": 0.90, "value": <float>}]},\n'
+    '    {"horizon": 10, "point_forecast": <float>, "quantiles": [...]},\n'
+    '    {"horizon": 21, "point_forecast": <float>, "quantiles": [...]}\n'
+    "  ],\n"
+    '  "rationale": "<2-4 sentences>"\n'
     "}"
 )
 
@@ -48,71 +56,142 @@ TASK_SHOCK_SPEC = (
     f"Estimate P(up) — the probability that WTI will close MORE THAN\n"
     f"${int(SHOCK_THRESHOLD)}/bbl HIGHER than today's price at the end of\n"
     f"{SHOCK_HORIZON} trading days.\n\n"
-    "This is a directional upside question only.\n\n"
-    "Calibration guidance:\n"
-    "  - No unusual upside catalyst       -> base rate ~10-15%\n"
-    "  - Escalating unconfirmed risk      -> 20-40%\n"
-    "  - Confirmed supply disruption      -> 60-85%\n\n"
     "Return JSON with exactly these fields:\n"
     "{\n"
-    '  "probability_up":  <float 0-1>,\n'
-    '  "direction_bias":  "<up|down|neutral>",\n'
-    '  "reasoning":       "<2-4 sentences>",\n'
-    '  "key_signals":     ["<signal 1>", "<signal 2>", "<signal 3>"],\n'
-    '  "confidence":      "<high|medium|low>"\n'
+    '  "probability": <float 0-1>,\n'
+    '  "direction_bias": "<up|down|neutral>",\n'
+    '  "reasoning": "<2-4 sentences>",\n'
+    '  "key_signals": ["<signal 1>", "<signal 2>"],\n'
+    '  "confidence": "<high|medium|low>"\n'
     "}"
 )
 
 TASK_SCENARIOS_SPEC = (
-    "Identify the three scenarios that oil market analysts and experts are most\n"
-    "actively debating for WTI crude over the next 60 days, given the current\n"
-    "market context and price history.\n\n"
-    "For each scenario:\n"
-    "  - Give it a concise name (3-6 words)\n"
-    "  - Describe it in 1-2 sentences\n"
-    "  - Assign a probability (all three must sum to <= 1.0)\n"
-    "  - Provide an expected WTI price range at the 60-day horizon as [low, high]\n"
-    "  - Give your point estimate for WTI at 60 days under this scenario\n"
-    "  - List 1-2 key drivers that would cause this scenario to materialise\n\n"
-    "Also identify which scenario is the base case and provide an overall\n"
-    "one-paragraph reasoning summary.\n\n"
+    "Identify the three scenarios oil market analysts are debating for WTI over the next 60 days.\n\n"
     "Return JSON with exactly these fields:\n"
     "{\n"
     '  "scenarios": [\n'
     "    {\n"
-    '      "name":               "<string>",\n'
-    '      "description":        "<string>",\n'
-    '      "probability":        <float>,\n'
-    '      "wti_range_60d":      [<float_low>, <float_high>],\n'
+    '      "name": "<string>",\n'
+    '      "description": "<string>",\n'
+    '      "probability": <float>,\n'
+    '      "wti_range_60d": [<float_low>, <float_high>],\n'
     '      "point_estimate_60d": <float>,\n'
-    '      "key_drivers":        ["<driver 1>", "<driver 2>"]\n'
+    '      "key_drivers": ["<driver 1>"]\n'
     "    }\n"
     "  ],\n"
-    '  "base_case":  "<scenario name>",\n'
-    '  "reasoning":  "<paragraph>"\n'
+    '  "base_case": "<scenario name>",\n'
+    '  "reasoning": "<paragraph>"\n'
     "}"
 )
 
 TaskKind = Literal["trajectory", "shock", "scenario"]
 
+TASK_SPECS: dict[TaskKind, str] = {
+    "trajectory": TASK_TRAJECTORY_SPEC,
+    "shock": TASK_SHOCK_SPEC,
+    "scenario": TASK_SCENARIOS_SPEC,
+}
+
+
+class WtiMultitaskPromptBuilder(BaseModel):
+    """Prompt builder for task-spec-driven agent calls (NB3)."""
+
+    task_spec: str
+
+    model_config = {"extra": "forbid"}
+
+    def __call__(self, *, task: ForecastingTask, context: ForecastContext) -> str:
+        df = context.get_series(task.target_series_id)
+        last_row = df.iloc[-1]
+        payload: dict[str, Any] = {
+            "task": task.task_id,
+            "task_spec": self.task_spec,
+            "as_of": str(context.as_of)[:10],
+            "origin_price_usd_bbl": float(last_row["value"]),
+            "target_history_csv": compress_history(df),
+        }
+        return json.dumps(payload, indent=2)
+
+
+class ScenarioCard(BaseModel):
+    """One scenario card from Task C agent output."""
+
+    model_config = {"extra": "ignore"}
+
+    name: str
+    description: str
+    probability: float = Field(ge=0.0, le=1.0)
+    wti_range_60d: list[float]
+    point_estimate_60d: float
+    key_drivers: list[str] = Field(default_factory=list)
+
+
+class ScenarioAgentForecastOutput(AgentForecastOutput):
+    """Track 2 scenario analysis output for the energy case study."""
+
+    modality: ClassVar[Literal["continuous", "discrete"]] = "discrete"
+
+    model_config = {"extra": "ignore"}
+
+    scenarios: list[ScenarioCard]
+    base_case: str
+    reasoning: str = ""
+
+    def to_predictions(
+        self,
+        *,
+        task: ForecastingTask,
+        context: ForecastContext,
+        predictor_id: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> list[Prediction]:
+        """Convert scenario output to a metadata-rich prediction (Track 2 display)."""
+        if len(task.horizons) != 1:
+            raise ValueError("Scenario agent output expects exactly one task horizon.")
+
+        horizon = task.horizons[0]
+        issued_at = datetime.utcnow()
+        offset = pd.tseries.frequencies.to_offset(task.frequency)
+        base_prob = float(sum(s.probability for s in self.scenarios))
+        prediction_metadata: dict[str, Any] = dict(metadata) if metadata is not None else {}
+        prediction_metadata["scenarios"] = [s.model_dump() for s in self.scenarios]
+        prediction_metadata["base_case"] = self.base_case
+        if self.reasoning.strip():
+            prediction_metadata["agent_rationale"] = self.reasoning
+
+        return [
+            Prediction(
+                predictor_id=predictor_id,
+                task_id=task.task_id,
+                issued_at=issued_at,
+                as_of=context.as_of,
+                forecast_date=(pd.Timestamp(context.as_of) + offset * horizon).to_pydatetime(),
+                payload=BinaryForecast(probability=min(base_prob, 1.0)),
+                metadata=prediction_metadata,
+            )
+        ]
+
+
+TASK_OUTPUT_SCHEMAS: dict[TaskKind, type[AgentForecastOutput]] = {
+    "trajectory": ContinuousAgentForecastOutput,
+    "shock": DiscreteAgentForecastOutput,
+    "scenario": ScenarioAgentForecastOutput,
+}
+
 
 def build_wti_news_predictor(task: TaskKind) -> AgentPredictor:
-    """Build a news-grounded agent predictor for the given task kind.
-
-    Task A (trajectory) uses the standard :class:`WtiPriceForecastPromptBuilder`
-    and :class:`ContinuousAgentForecastOutput`. Tasks B and C will gain dedicated
-    prompt builders and output schemas in a follow-up milestone.
-    """
-    config = build_wti_news_config()
+    """Build a news-grounded agent predictor for the given task kind."""
     if task == "trajectory":
         return AgentPredictor(
-            agent_config=config,
+            agent_config=build_wti_news_config(),
             prompt_builder=WtiPriceForecastPromptBuilder(),
             output_schema=ContinuousAgentForecastOutput,
         )
-    raise NotImplementedError(
-        f"Task {task!r} predictor wiring requires DiscreteAgentForecastOutput / "
-        "ScenarioAgentForecastOutput — implemented in milestone 4."
+    return AgentPredictor(
+        agent_config=build_wti_multitask_news_config(),
+        prompt_builder=WtiMultitaskPromptBuilder(task_spec=TASK_SPECS[task]),
+        output_schema=TASK_OUTPUT_SCHEMAS[task],
     )
 
 
@@ -124,14 +203,22 @@ def build_wti_agent_predictor_for_task(config: AgentConfig, task: TaskKind) -> A
             prompt_builder=WtiPriceForecastPromptBuilder(),
             output_schema=ContinuousAgentForecastOutput,
         )
-    raise NotImplementedError(f"Task {task!r} not yet wired to AgentPredictor.")
+    return AgentPredictor(
+        agent_config=config,
+        prompt_builder=WtiMultitaskPromptBuilder(task_spec=TASK_SPECS[task]),
+        output_schema=TASK_OUTPUT_SCHEMAS[task],
+    )
 
 
 __all__ = [
     "TASK_SCENARIOS_SPEC",
     "TASK_SHOCK_SPEC",
+    "TASK_SPECS",
     "TASK_TRAJECTORY_SPEC",
+    "ScenarioAgentForecastOutput",
+    "ScenarioCard",
     "TaskKind",
+    "WtiMultitaskPromptBuilder",
     "build_wti_agent_predictor_for_task",
     "build_wti_news_predictor",
 ]
