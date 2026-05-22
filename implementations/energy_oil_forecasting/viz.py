@@ -28,6 +28,7 @@ from energy_oil_forecasting.paths import (
 
 _DAY_MS = 24 * 3600 * 1000
 
+
 def build_forecast_animation(  # noqa: PLR0915
     price_df: pd.DataFrame,
     forecasts_df: pd.DataFrame,
@@ -412,7 +413,6 @@ def build_forecast_animation(  # noqa: PLR0915
     return fig
 
 
-
 def make_context_chart(price_df: pd.DataFrame) -> go.Figure:
     """Annotated WTI price chart: what a well-informed agent could have seen."""
     context = price_df.loc["2024-09-01":"2024-12-31"]
@@ -737,7 +737,6 @@ def make_punchline_charts(forecasts_df: pd.DataFrame) -> tuple[go.Figure, go.Fig
     return make_error_timeline(forecasts_df), make_coverage_chart(forecasts_df), coverage_summary_table(forecasts_df)
 
 
-
 def make_futures_curve_chart(price_df: pd.DataFrame) -> go.Figure | None:
     """Snapshot of the WTI futures term structure from nearby NYMEX contracts."""
     month_codes = ["F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z"]
@@ -820,6 +819,7 @@ def export_animation_html(fig: go.Figure, output_path: Path) -> None:
 
 
 # ── HTML display helpers (NB3 forecast cards) ────────────────────────────────
+
 
 def verdict_label(a_prob: float, outcome: int, delta: float, threshold: float) -> str:
     """Human-readable verdict for binary shock forecast cards."""

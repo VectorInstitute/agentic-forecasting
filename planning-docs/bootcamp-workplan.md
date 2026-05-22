@@ -41,7 +41,7 @@ These are the experiments we plan to make runnable, documented, and suitable for
 | Getting Started             | Smallest continuous forecasting walkthrough using CPI gasoline.                                  | StatCan                            | —         | **Complete.** h=1 (1-month ahead); backtest 2000–2025; eval Jan 2025–Mar 2026.                                                        |
 | Food Price Forecasting      | CFPR-style multivariate CPI task and clean model selection case study comparing baselines & LLMPs.| StatCan; optional FRED extensions  | Ethan     | **Complete.** Baselines and LLMPs integrated. Mini specs for fast iteration. No protected historical eval (leakage). |
 | Financial Markets - S&P 500 | Deep numerical-methods comparison; first formal financial-markets Track 1 template.              | yfinance; optional FRED covariates | Behnoosh  | **In progress.** Net-new reference implementation.                                                                                     |
-| Energy/Oil                  | Daily WTI forecasting with proper eval; sponsor-facing context-driven case.                      | yfinance                           | Ethan     | **Complete.** Formally promoted reference under `implementations/energy_oil_forecasting/` with co-located specs & 4-step progressive agentic walkthrough and systematic backtest/eval. |
+| Energy/Oil                  | Daily WTI forecasting with proper eval; sponsor-facing context-driven case.                      | yfinance                           | Ethan     | **Complete.** Four-notebook curriculum under `implementations/energy_oil_forecasting/`: case-study narrative, agentic staircase, one-agent-three-tasks, systematic backtest/eval. |
 | BoC Rate Decisions          | Sole binary/discrete-event reference experiment and validation surface for `BinaryForecast`.     | StatCan, FRED, public BoC material | Ethan     | **Planned.** Net-new reference after energy promotion.                                                                                 |
 
 ### Energy/Oil 2026 Case Study
@@ -58,9 +58,9 @@ The case study should demonstrate the bootcamp thesis:
 
 The interactive Track 2 example can support questions such as: "Analyze what has happened with energy prices in 2026 so far. Then show me two forecasts: one where the Strait of Hormuz stays closed for another month and one where it reopens tomorrow."
 
-**May 21 demo:** complete. Two notebooks in `playground/energy_case_study/` (Prophet rolling backtest + agentic scenario analysis).
+**May 21 demo:** complete. Playground notebooks in `playground/energy_case_study/`; formal reference in `implementations/energy_oil_forecasting/` (4 notebooks).
 
-**Next (Ethan):** promote to a formal reference experiment under `implementations/` with a worthwhile eval spec. Daily WTI data enables clean cutoff enforcement and prospective evaluation — a key differentiator from the food CPI experiment.
+**Status (Ethan):** Rebuilt reference with decomposed helper modules (`prophet_baseline.py`, `viz.py`, `tasks.py`, `analysis.py`) and four-notebook curriculum preserving the original narrative arc.
 
 ### Participant Extension Ideas
 
