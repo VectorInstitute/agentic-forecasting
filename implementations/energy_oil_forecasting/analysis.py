@@ -103,45 +103,64 @@ def backtest_results_to_frame(results: dict[str, BacktestResult]) -> pd.DataFram
     return pd.DataFrame(rows).sort_values("mean_crps")
 
 
+def _extract_agent_point(rec: dict[str, Any], horizon_idx: int, horizon: int) -> float:
+    """Extract a point forecast from either the reference or legacy prediction format."""
+    if "predictions" in rec:
+        preds = rec["predictions"]
+        if horizon_idx < len(preds):
+            return float(preds[horizon_idx]["payload"]["point_forecast"])
+        return float("nan")
+    return float(rec.get(f"day_{horizon}", float("nan")))
+
+
 def trajectory_mae_table(
     agent_results: list[dict[str, Any]],
     prophet_traj_df: pd.DataFrame,
     price_df: pd.DataFrame,
     horizons: list[int] | None = None,
 ) -> pd.DataFrame:
-    """MAE at selected horizons comparing agent point forecasts to Prophet."""
+    """MAE at selected horizons comparing agent point forecasts to Prophet.
+
+    Accepts both the reference prediction format
+    (``{"origin": str, "predictions": [pred.model_dump()]}``)
+    and the legacy playground flat-dict format (``{"origin": str, "day_5": float, ...}``).
+    """
     horizons = horizons or [5, 10, 21]
     rows: list[dict[str, Any]] = []
 
     for rec in agent_results:
         origin = pd.Timestamp(rec["origin"])
-        origin_price_row = price_df[price_df.index >= origin]
-        if origin_price_row.empty:
+        if price_df[price_df.index >= origin].empty:
             continue
 
-        for h in horizons:
-            key = f"day_{h}"
-            if key not in rec:
-                continue
+        for h_idx, h in enumerate(horizons):
             target_dates = pd.bdate_range(start=origin + pd.offsets.BDay(1), periods=h)
             actual_date = target_dates[-1]
-            if actual_date not in price_df.index:
+            actual_rows = price_df[price_df.index >= actual_date]
+            if actual_rows.empty:
                 continue
-            actual = float(price_df.loc[actual_date, "price"])
-            agent_pred = float(rec[key])
-            prophet_row = prophet_traj_df[(prophet_traj_df["origin"] == origin) & (prophet_traj_df["horizon"] == h)]
+            actual = float(actual_rows.iloc[0]["price"])
+            agent_pred = _extract_agent_point(rec, h_idx, h)
+            prophet_row = prophet_traj_df[
+                (prophet_traj_df["origin"] == origin) & (prophet_traj_df["horizon"] == h)
+            ]
             prophet_pred = float(prophet_row.iloc[0]["yhat"]) if not prophet_row.empty else float("nan")
             rows.append(
                 {
-                    "origin": origin.date(),
-                    "horizon": h,
-                    "actual": actual,
-                    "agent_mae": abs(agent_pred - actual),
-                    "prophet_mae": abs(prophet_pred - actual),
+                    "Origin": str(origin.date()),
+                    "Horizon": f"{h} bdays",
+                    "Actual ($)": f"{actual:.1f}",
+                    "Prophet ($)": f"{prophet_pred:.1f}" if not np.isnan(prophet_pred) else "—",
+                    "Agent ($)": f"{agent_pred:.1f}" if not np.isnan(agent_pred) else "—",
+                    "Prophet MAE": abs(prophet_pred - actual) if not np.isnan(prophet_pred) else float("nan"),
+                    "Agent MAE": abs(agent_pred - actual) if not np.isnan(agent_pred) else float("nan"),
                 }
             )
 
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+    return df.set_index(["Origin", "Horizon"])
 
 
 def select_top_predictors(

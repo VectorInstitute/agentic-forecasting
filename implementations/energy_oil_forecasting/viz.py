@@ -8,18 +8,23 @@ from __future__ import annotations
 
 import datetime
 from pathlib import Path
+from typing import Any
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.subplots as psp
 import yfinance as yf
 from energy_oil_forecasting.paths import (
     CLR_ACTUAL,
+    CLR_AGENT,
     CLR_CI_CURR_FILL,
     CLR_CI_PAST_FILL,
     CLR_DAY_LINE,
     CLR_HISTORY,
     CLR_HIT,
     CLR_MISS,
+    CLR_PROPHET,
     IRAN_COLOR,
     SIMULATION_START,
     WARN_COLOR,
@@ -816,6 +821,404 @@ def make_futures_curve_chart(price_df: pd.DataFrame) -> go.Figure | None:
 def export_animation_html(fig: go.Figure, output_path: Path) -> None:
     """Write a standalone Plotly animation HTML file."""
     fig.write_html(str(output_path), include_plotlyjs="cdn", auto_play=False)
+
+
+# ── NB3 chart builders ────────────────────────────────────────────────────────
+
+
+def _qval(quantiles: dict[str | float, float], q: float) -> float:
+    """Extract a quantile value tolerating both string and float dict keys."""
+    for key in (q, str(q)):
+        if key in quantiles:
+            return float(quantiles[key])
+    return float("nan")
+
+
+def make_trajectory_fan_chart(
+    traj_agent_results: list[dict[str, Any]],
+    prophet_traj_df: pd.DataFrame,
+    price_df: pd.DataFrame,
+    trajectory_origins: list[pd.Timestamp],
+    *,
+    history_window: int = 40,
+) -> go.Figure:
+    """3-panel Plotly fan chart comparing Prophet CI fan to agent error bars.
+
+    One column per origin. Each panel shows:
+    - Pre-origin price history (grey line)
+    - Realised prices over the 21-day forecast window (blue thick line)
+    - Prophet 95% CI fan + median (grey shaded + dotted line)
+    - Agent point forecasts at h=5, 10, 21 with 80% CI error bars (green diamonds)
+    - Vertical dashed line at the forecast origin
+
+    Parameters
+    ----------
+    traj_agent_results : list[dict]
+        Reference-format agent results: ``{"origin": "YYYY-MM-DD", "predictions": [...]}``.
+    prophet_traj_df : pd.DataFrame
+        Prophet trajectory DataFrame with columns ``origin``, ``horizon``,
+        ``forecast_date``, ``yhat``, ``yhat_lower``, ``yhat_upper``.
+    price_df : pd.DataFrame
+        Price DataFrame with DatetimeIndex and column ``price``.
+    trajectory_origins : list[pd.Timestamp]
+        The three (or more) forecast origins to display as columns.
+    history_window : int
+        Number of business days of history to show before each origin.
+    """
+    agent_by_origin = {r["origin"]: r for r in traj_agent_results}
+
+    subplot_titles = []
+    for o in trajectory_origins:
+        rows = price_df[price_df.index >= o]
+        price_label = f"${float(rows.iloc[0]['price']):.0f}" if not rows.empty else ""
+        subplot_titles.append(f"{o.strftime('%b %d, %Y')}  WTI {price_label}")
+
+    fig = psp.make_subplots(
+        rows=1,
+        cols=len(trajectory_origins),
+        subplot_titles=subplot_titles,
+        shared_yaxes=True,
+        horizontal_spacing=0.04,
+    )
+
+    for col_idx, origin in enumerate(trajectory_origins, start=1):
+        key = str(origin.date())
+        show_legend = col_idx == 1
+
+        bday_dates = pd.bdate_range(start=origin + pd.offsets.BDay(1), periods=21)
+
+        # Pre-origin history
+        hist_window = price_df[price_df.index <= origin].iloc[-history_window:]
+        fig.add_trace(
+            go.Scatter(
+                x=hist_window.index.tolist(),
+                y=hist_window["price"].tolist(),
+                mode="lines",
+                line={"color": CLR_HISTORY, "width": 1.5},
+                name="WTI Price",
+                showlegend=show_legend,
+                legendgroup="actual",
+            ),
+            row=1,
+            col=col_idx,
+        )
+
+        # Realised post-origin prices
+        actual_future = price_df[
+            (price_df.index > origin) & (price_df.index <= bday_dates[-1])
+        ]
+        fig.add_trace(
+            go.Scatter(
+                x=actual_future.index.tolist(),
+                y=actual_future["price"].tolist(),
+                mode="lines",
+                line={"color": CLR_ACTUAL, "width": 2.5},
+                name="Actual outcome",
+                showlegend=show_legend,
+                legendgroup="actual_outcome",
+            ),
+            row=1,
+            col=col_idx,
+        )
+
+        # Prophet fan
+        p_sub = prophet_traj_df[prophet_traj_df["origin"] == origin].sort_values(
+            "horizon"
+        )
+        if not p_sub.empty:
+            x_fill = pd.concat(
+                [p_sub["forecast_date"], p_sub["forecast_date"].iloc[::-1]]
+            ).tolist()
+            y_fill = pd.concat(
+                [p_sub["yhat_lower"], p_sub["yhat_upper"].iloc[::-1]]
+            ).tolist()
+            fig.add_trace(
+                go.Scatter(
+                    x=x_fill,
+                    y=y_fill,
+                    fill="toself",
+                    fillcolor=f"rgba(99,99,99,0.12)",
+                    line={"width": 0},
+                    showlegend=False,
+                    hoverinfo="skip",
+                ),
+                row=1,
+                col=col_idx,
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=p_sub["forecast_date"].tolist(),
+                    y=p_sub["yhat"].tolist(),
+                    mode="lines",
+                    line={"color": CLR_PROPHET, "width": 1.8, "dash": "dot"},
+                    name="Prophet (95% CI)",
+                    showlegend=show_legend,
+                    legendgroup="prophet",
+                ),
+                row=1,
+                col=col_idx,
+            )
+
+        # Agent error bars at h=5, 10, 21
+        result = agent_by_origin.get(key)
+        if result and result.get("predictions"):
+            preds = result["predictions"]
+            agent_horizons = [5, 10, 21]
+            agent_dates = [bday_dates[h - 1] for h in agent_horizons]
+            agent_pts = [
+                preds[i]["payload"]["point_forecast"] for i in range(len(preds))
+            ]
+            agent_lo = [
+                _qval(preds[i]["payload"]["quantiles"], 0.1)
+                for i in range(len(preds))
+            ]
+            agent_hi = [
+                _qval(preds[i]["payload"]["quantiles"], 0.9)
+                for i in range(len(preds))
+            ]
+            err_hi = [
+                hi - pt if not (np.isnan(hi) or np.isnan(pt)) else 0.0
+                for hi, pt in zip(agent_hi, agent_pts)
+            ]
+            err_lo = [
+                pt - lo if not (np.isnan(lo) or np.isnan(pt)) else 0.0
+                for pt, lo in zip(agent_pts, agent_lo)
+            ]
+            fig.add_trace(
+                go.Scatter(
+                    x=[d.to_pydatetime() for d in agent_dates],
+                    y=agent_pts,
+                    mode="markers",
+                    marker={"color": CLR_AGENT, "size": 11, "symbol": "diamond"},
+                    error_y={
+                        "type": "data",
+                        "symmetric": False,
+                        "array": err_hi,
+                        "arrayminus": err_lo,
+                        "color": CLR_AGENT,
+                        "thickness": 2,
+                        "width": 6,
+                    },
+                    name="Agent (80% CI)",
+                    showlegend=show_legend,
+                    legendgroup="agent",
+                ),
+                row=1,
+                col=col_idx,
+            )
+
+        # Origin marker
+        fig.add_vline(
+            x=origin.timestamp() * 1000,
+            line={"color": "#aaaaaa", "dash": "dash", "width": 1.2},
+            row=1,
+            col=col_idx,
+        )
+
+    fig.update_layout(
+        title={
+            "text": "WTI Trajectory Forecast — Prophet Fan vs Agent Estimates",
+            "font": {"size": 16},
+            "x": 0.0,
+            "xanchor": "left",
+        },
+        template="plotly_white",
+        width=1000,
+        height=420,
+        margin={"t": 80, "b": 50, "l": 60, "r": 20},
+        legend={
+            "orientation": "h",
+            "y": -0.12,
+            "x": 0.0,
+            "xanchor": "left",
+            "font": {"size": 12},
+        },
+    )
+    fig.update_xaxes(showgrid=True, gridcolor="#f0f0f0", tickfont={"size": 11})
+    fig.update_yaxes(showgrid=True, gridcolor="#f0f0f0", tickfont={"size": 11})
+    return fig
+
+
+def make_shock_comparison_chart(
+    shock_results: list[dict[str, Any]],
+    prophet_probs: list[float],
+    *,
+    shock_threshold: float = 5.0,
+) -> go.Figure:
+    """2-panel chart: P(shock) over time + cumulative Brier score.
+
+    Row 1 — Predicted probability for each origin, both Prophet and Agent.
+    Shock origins are highlighted with a red background band.
+    Row 2 — Cumulative mean Brier score (lower is better; 0.25 = random).
+
+    Parameters
+    ----------
+    shock_results : list[dict]
+        Reference-format shock results: ``{"origin", "probability", "outcome", "delta"}``.
+    prophet_probs : list[float]
+        Pre-computed Prophet P(shock) values, parallel to ``shock_results``.
+    shock_threshold : float
+        The dollar threshold used to define a shock (for axis labelling).
+    """
+    origins = [r["origin"] for r in shock_results]
+    agent_probs = [float(r["probability"]) for r in shock_results]
+    outcomes = [int(r["outcome"]) for r in shock_results]
+
+    agent_briers = [(p - y) ** 2 for p, y in zip(agent_probs, outcomes)]
+    prophet_briers = [
+        (p - y) ** 2 if not np.isnan(p) else float("nan")
+        for p, y in zip(prophet_probs, outcomes)
+    ]
+
+    # Cumulative mean Brier
+    def _cum_mean(vals: list[float]) -> list[float]:
+        result = []
+        total = 0.0
+        count = 0
+        for v in vals:
+            if not np.isnan(v):
+                total += v
+                count += 1
+            result.append(total / count if count else float("nan"))
+        return result
+
+    agent_cum = _cum_mean(agent_briers)
+    prophet_cum = _cum_mean(prophet_briers)
+
+    shock_indices = [i for i, r in enumerate(shock_results) if r["outcome"] == 1]
+
+    fig = psp.make_subplots(
+        rows=2,
+        cols=1,
+        row_heights=[0.58, 0.42],
+        vertical_spacing=0.22,
+        subplot_titles=[
+            f"P(WTI up > +${shock_threshold:.0f}/bbl in 5 trading days)",
+            "Cumulative mean Brier score (lower = better)",
+        ],
+    )
+
+    # Red shock bands
+    for i in shock_indices:
+        for row_n, y0, y1 in [(1, -0.06, 1.06), (2, 0.0, 0.30)]:
+            fig.add_shape(
+                type="rect",
+                layer="below",
+                xref=f"x{'' if row_n == 1 else str(row_n)}",
+                yref=f"y{'' if row_n == 1 else str(row_n)}",
+                x0=i - 0.48,
+                x1=i + 0.48,
+                y0=y0,
+                y1=y1,
+                fillcolor="rgba(214,39,40,0.12)",
+                line_width=0,
+            )
+        fig.add_annotation(
+            x=origins[i],
+            y=1.04,
+            text="<b>SHOCK</b>",
+            showarrow=False,
+            font={"size": 9, "color": "#d62728"},
+            xref="x",
+            yref="y",
+        )
+
+    # Probability traces
+    for method, probs, color, dash, symbol in [
+        ("Analyst Agent", agent_probs, CLR_AGENT, "solid", "circle"),
+        ("Prophet", prophet_probs, CLR_PROPHET, "dot", "square"),
+    ]:
+        fig.add_trace(
+            go.Scatter(
+                x=origins,
+                y=probs,
+                name=method,
+                mode="lines+markers",
+                line={"color": color, "width": 2.5, "dash": dash},
+                marker={"size": 10, "symbol": symbol},
+                legendgroup=method,
+                showlegend=True,
+                hovertemplate="%{x}<br>P(shock)=%{y:.0%}<extra>" + method + "</extra>",
+            ),
+            row=1,
+            col=1,
+        )
+        yshift = 12 if method == "Analyst Agent" else -14
+        for x_val, y_val in zip(origins, probs):
+            if not np.isnan(y_val):
+                fig.add_annotation(
+                    x=x_val,
+                    y=y_val,
+                    text=f"{y_val:.0%}",
+                    showarrow=False,
+                    font={"size": 8, "color": color},
+                    yshift=yshift,
+                    row=1,
+                    col=1,
+                )
+
+    fig.add_hline(
+        y=0.5,
+        line={"color": "#d0d0d0", "dash": "dot", "width": 1.2},
+        row=1,
+        col=1,
+    )
+
+    # Brier traces
+    for method, cum, color, dash, symbol in [
+        ("Analyst Agent", agent_cum, CLR_AGENT, "solid", "circle"),
+        ("Prophet", prophet_cum, CLR_PROPHET, "dot", "square"),
+    ]:
+        fig.add_trace(
+            go.Scatter(
+                x=origins,
+                y=cum,
+                name=method,
+                mode="lines+markers",
+                line={"color": color, "width": 2.5, "dash": dash},
+                marker={"size": 8, "symbol": symbol},
+                legendgroup=method,
+                showlegend=False,
+                hovertemplate="%{x}<br>Cumul. Brier: %{y:.3f}<extra>" + method + "</extra>",
+            ),
+            row=2,
+            col=1,
+        )
+
+    fig.add_hline(
+        y=0.25,
+        line={"color": "#aaaaaa", "dash": "dot", "width": 1.5},
+        annotation_text="0.25 random ceiling",
+        annotation_position="top right",
+        annotation_font={"size": 9, "color": "#888888"},
+        row=2,
+        col=1,
+    )
+
+    fig.update_layout(
+        title={
+            "text": f"Analyst Agent vs Prophet — WTI Upward Shock (>${shock_threshold:.0f}/bbl in 5 days)",
+            "x": 0.5,
+            "font": {"size": 13},
+        },
+        height=520,
+        width=700,
+        template="plotly_white",
+        xaxis={"type": "category", "tickangle": -35, "showgrid": False},
+        xaxis2={"type": "category", "tickangle": -35, "showgrid": False},
+        yaxis={"range": [-0.06, 1.12], "tickformat": ".0%", "showgrid": True, "gridcolor": "#f0f0f0"},
+        yaxis2={"range": [0.0, 0.32], "showgrid": True, "gridcolor": "#f0f0f0"},
+        legend={
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.04,
+            "xanchor": "right",
+            "x": 1,
+            "font": {"size": 11},
+        },
+        margin={"t": 80, "b": 70, "l": 60, "r": 35},
+    )
+    return fig
 
 
 # ── HTML display helpers (NB3 forecast cards) ────────────────────────────────
