@@ -10,6 +10,7 @@ from aieng.forecasting.methods.agentic.outputs import DiscreteAgentForecastOutpu
 
 
 def test_discrete_output_to_predictions() -> None:
+    """Discrete agent JSON converts to a BinaryForecast prediction."""
     task = ForecastingTask(
         task_id="wti_upshock",
         target_series_id="wti_crude_oil_price",
