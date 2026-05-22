@@ -14,6 +14,35 @@ from __future__ import annotations
 import types as py_types
 from typing import Any
 
+# ---------------------------------------------------------------------------
+# Patch: suppress spurious OTel async-context ValueError
+# ---------------------------------------------------------------------------
+# openinference auto-instruments litellm with OpenTelemetry tracing. When an
+# asyncio Task is garbage-collected while still pending (normal in Jupyter and
+# in nested event-loop patterns used by ADK), ``GeneratorExit`` is thrown into
+# OTel's ``start_as_current_span`` context manager. The manager then tries to
+# detach a context token that was created in a different asyncio ``Context``
+# and raises ``ValueError: Token was created in a different Context``.
+#
+# The predictions succeed; this is purely cosmetic noise. We patch
+# ``opentelemetry.context.detach`` at import time to silently ignore the
+# cross-context ``ValueError``. The fix is intentionally narrow: it only
+# suppresses that one error type and leaves all other detach failures intact.
+try:
+    from opentelemetry import context as _otel_ctx
+
+    _orig_detach = _otel_ctx.detach
+
+    def _safe_detach(token):  # type: ignore[no-untyped-def]
+        try:
+            _orig_detach(token)
+        except ValueError:
+            pass
+
+    _otel_ctx.detach = _safe_detach
+except ImportError:
+    pass  # opentelemetry not installed; nothing to patch
+
 from pydantic import BaseModel, Field
 
 
