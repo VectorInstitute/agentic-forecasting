@@ -9,10 +9,22 @@ reference the same ``series_id`` via this module.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.adapters.yfinance import YFinanceDailyAdapter
+
+
+def naive_utc_now() -> datetime:
+    """Return current UTC time as a timezone-naive :class:`datetime`.
+
+    :class:`~aieng.forecasting.data.service.DataService` and
+    :class:`~aieng.forecasting.data.cutoff.CutoffEnforcer` require naive
+    ``as_of`` values — tz-aware timestamps raise on comparison with cached
+    series timestamps.
+    """
+    return datetime.now(tz=timezone.utc).replace(tzinfo=None)
 
 
 WTI_SERIES_ID = "wti_crude_oil_price"
@@ -72,4 +84,5 @@ __all__ = [
     "DEFAULT_CACHE_DIR",
     "WTI_SERIES_ID",
     "build_wti_service",
+    "naive_utc_now",
 ]
