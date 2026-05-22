@@ -10,7 +10,7 @@ The package is organized by method family:
 methods/
 ├── baselines/       # simple floor baselines and teaching references
 ├── numerical/       # classical / ML numerical forecasters
-├── llm_processes/   # LLM-process predictors
+├── llm_processes/   # LLM-process predictors (sampled trajectories, quantile grids, etc.)
 └── agentic/         # reusable ADK runners, agent factory, predictors, and output schemas
 ```
 

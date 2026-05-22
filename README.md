@@ -7,10 +7,10 @@ The bootcamp teaches participants to build, evaluate, and compare forecasting sy
 ## What This Repo Provides
 
 - Core forecasting infrastructure in `aieng-forecasting` (`aieng.forecasting`): data services, cutoff enforcement, forecasting tasks, prediction payloads, backtesting, evaluation, and artifacts.
-- Reference methods in `aieng-forecasting/aieng/forecasting/methods`: reusable `Predictor` implementations including naive baselines, Darts numerical predictors, and ADK-based agentic infrastructure (`build_adk_agent`, `AdkTextRunner`, and `AgentPredictor`).
+- Reference methods in `aieng-forecasting/aieng/forecasting/methods`: reusable `Predictor` implementations including naive baselines, Darts numerical predictors, LLM-process predictors (`ContinuousLLMPredictor`), and ADK-based agentic infrastructure (`build_adk_agent`, `AdkTextRunner`, and `AgentPredictor`).
 - Langfuse / OpenTelemetry tracing bootstrap (`aieng.forecasting.langfuse_tracing`) for LiteLLM and Google ADK.
-- Reference experiments in `implementations`: notebooks, helpers, and task-specific configuration.
-- Canonical YAML specs in `reference_specs`.
+- Reference experiments in `implementations`: notebooks, helpers, task-specific configuration, and (target layout) co-located YAML specs.
+- YAML backtest and eval specs co-located under `implementations/<use-case>/specs/`.
 - Data population scripts in `scripts`, including `build_e2b_template.py` for building the E2B sandbox image.
 - Planning source of truth in `planning-docs/bootcamp-workplan.md`.
 
@@ -22,10 +22,10 @@ The formal cohort 1 reference experiments are:
 | --- | --- | --- |
 | Getting Started | CPI gasoline hello-world for the evaluation loop. | Implemented. |
 | Food Price Forecasting | CFPR-style multivariate food CPI task. | Implemented for the canonical StatCan path. |
-| Financial Markets - S&P 500 | First formal financial-markets Track 1 template. | In progress. |
-| BoC Rate Decisions | Binary/discrete-event reference experiment. | Planned. |
+| Financial Markets - S&P 500 | Deep numerical-methods comparison; financial-markets Track 1 template. | In progress (Behnoosh). |
+| BoC Rate Decisions | Binary/discrete-event reference experiment. | Planned (Ethan). |
 
-Energy/oil 2026 is a separate demo and storytelling surface for the May 21 information session and the later interactive Forecasting Analyst Agent. It should motivate the bootcamp with a realistic scenario around oil, fuel, logistics, transportation, and Persian Gulf conflict risk. It is not the first formal Track 1 financial-markets reference build; S&P 500 remains the clean first template for that path.
+Energy/oil 2026 lives in `playground/energy_case_study/` today as the May 21 information-session demo. Promotion to a formal reference experiment with a proper eval spec is planned next on Ethan's track. S&P 500 and energy/oil can proceed in parallel.
 
 ForecastBench, energy as a formal Track 1 extension, additional financial assets, richer covariates, and time-series foundation models are participant extension ideas unless explicitly pulled into the workplan.
 
@@ -49,16 +49,16 @@ Historical data is cached locally under `data/` and is not committed.
 
 ```text
 aieng-forecasting/         # Installable library package: import as aieng.forecasting
-implementations/           # Reference experiments and helpers
+implementations/           # Reference experiments, helpers, and co-located specs
 |-- getting_started/
+|   `-- specs/             # CPI gasoline backtest and eval YAML
 `-- food_price_forecasting/
+    `-- specs/             # CFPR backtest YAML
 planning-docs/
 `-- bootcamp-workplan.md   # Single planning source of truth
-playground/                # Demo and exploration code
-|-- energy_case_study/     # Notebook-first energy/oil information-session demo
-|-- energy_yfinance/       # Energy/oil yfinance market-data exploration
+playground/                # Demo and exploration code (not formal reference experiments)
+|-- energy_case_study/     # Energy/oil information-session demo (promotion planned)
 `-- news_search/           # News grounding playground
-reference_specs/           # YAML backtest and eval specs
 scripts/                   # Data population scripts
 ```
 
@@ -108,11 +108,10 @@ Then start with:
 
 Each use case under `implementations` has a `README.md` with a recommended learning path.
 
-- **Start here:** `implementations/getting_started/` — the hello-world tour. Single series (CPI gasoline), 12-month horizon, naive + AutoARIMA baselines, one `BacktestSpec`, one `EvalSpec`. The smallest useful end-to-end walkthrough of the evaluation framework.
-- **Graduate to:** `implementations/food_price_forecasting/` — the CFPR reference experiment, flagship of the no-futures multivariate case. Nine correlated CPI sub-indices, a 12-step trajectory, the avg/avg YoY metric from the real Canada's Food Price Report, helper modules for analysis and plotting, and cached artefacts for fast iteration.
-- **Explore:** `playground/energy_yfinance/` — the first energy/oil yfinance market-data exploration using the core yfinance adapter.
-- **Demo:** `playground/energy_case_study/` — the notebook-first energy/oil information-session case study, comparing univariate, multivariate, and futures-proxy numerical forecasts (Matplotlib figures and tables for the session).
-- **Look ahead to:** the bootcamp centrepiece — the Track 1 + Track 2 convergence built on the S&P 500 template and then extended to energy commodities. See `planning-docs/bootcamp-workplan.md` for current scope and experiment sequencing.
+- **Start here:** `implementations/getting_started/` — the hello-world tour. Single series (CPI gasoline), 1-month horizon, naive + AutoARIMA baselines, one `BacktestSpec`, one `EvalSpec`. The smallest useful end-to-end walkthrough of the evaluation framework.
+- **Graduate to:** `implementations/food_price_forecasting/` — the CFPR reference experiment, flagship of the no-futures multivariate case. Nine correlated CPI sub-indices, a 12-step trajectory, the avg/avg YoY metric from the real Canada's Food Price Report, baselines plus LLMP and agentic predictors, helper modules for analysis and plotting, and cached artefacts for fast iteration.
+- **Demo:** `playground/energy_case_study/` — the energy/oil information-session case study (Prophet rolling backtest + agentic scenario analysis). Promotion to a formal reference experiment is planned.
+- **Look ahead to:** S&P 500 numerical comparison (Behnoosh), energy/oil reference promotion and BoC rate prediction (Ethan), then deeper agent and analyst work. See `planning-docs/bootcamp-workplan.md` for current scope and sequencing.
 
 ## Core Concepts
 

@@ -63,7 +63,7 @@ class BacktestSpec(BaseModel):
 
     Because ``BacktestSpec`` is a Pydantic model it is YAML-serializable,
     making evaluation windows shareable and reproducible. Reference specs for
-    canonical tasks live in ``reference_specs/`` in the repo root.
+    canonical tasks live in ``implementations/<use-case>/specs/``.
 
     Parameters
     ----------
@@ -93,15 +93,15 @@ class BacktestSpec(BaseModel):
     >>> from datetime import datetime
     >>> spec = BacktestSpec(
     ...     task=ForecastingTask(
-    ...         task_id="cpi_all_items_canada_12m",
-    ...         target_series_id="cpi_all_items_canada",
-    ...         horizon=12,
+    ...         task_id="cpi_gasoline_canada_1m",
+    ...         target_series_id="cpi_gasoline_canada",
+    ...         horizon=1,
     ...         frequency="MS",
-    ...         description="CPI All-items Canada, 12-month ahead forecast",
+    ...         description="CPI Gasoline Canada, 1-month ahead forecast",
     ...     ),
     ...     start=datetime(2000, 1, 1),
-    ...     end=datetime(2026, 1, 1),
-    ...     stride=6,
+    ...     end=datetime(2025, 1, 1),
+    ...     stride=1,
     ...     warmup=24,
     ... )
     >>> origins = spec.origins()

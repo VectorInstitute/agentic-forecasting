@@ -108,10 +108,10 @@ Skills earn their place when they provide one of:
 
 ---
 
-## 4. Spec for the next skill: `calibration-benchmarks`
+## 4. Spec for a future skill: `calibration-benchmarks`
 
-When we are ready to reintroduce a skill, this is the concrete design to
-implement.
+**Not built yet.** The food CPI agent v1 deliberately runs without ADK skills
+(see §1–3). When we reintroduce skills, this is the concrete design to implement.
 
 ### Directory layout
 

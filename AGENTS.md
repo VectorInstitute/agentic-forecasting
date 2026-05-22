@@ -17,11 +17,14 @@ The old planning log, backlog, project charter, and technical design files are r
 Current project framing to preserve:
 
 - Cohort 1 readiness is the priority.
-- The formal reference experiments are Getting Started, Food Price Forecasting, Financial Markets S&P 500, and BoC Rate Decisions.
-- Energy/oil 2026 is the May 21 information-session story and the flagship interactive Forecasting Analyst Agent demo; it is not the first formal Track 1 financial-markets reference build.
-- S&P 500 remains the first formal financial-markets Track 1 template.
-- Franklin owns the code execution service plus a minimal basic-agent integration.
-- Ali owns the broader agentic forecasting architecture, including the split between Track 1 prediction-oriented configs and Track 2 interactive analyst configs.
+- Complete reference experiments: Getting Started, Food Price Forecasting.
+- In progress: S&P 500 numerical comparison (Behnoosh), energy/oil promotion to formal reference (Ethan).
+- Planned: BoC Rate Decisions binary reference (Ethan, after energy).
+- Energy/oil May 21 demo lives in `playground/energy_case_study/` until promotion merges.
+- Reusable predictors live in `aieng.forecasting.methods`; use-case material lives in `implementations/<use-case>/`.
+- YAML specs are co-located under `implementations/<use-case>/specs/`.
+- Ali owns LLMP refinement and the broader agentic forecasting architecture (Track 1 + Track 2).
+- Ethan owns energy/oil reference promotion, BoC reference, and live-testing infrastructure (with Ali).
 
 ### README files
 
