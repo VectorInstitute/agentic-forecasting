@@ -10,7 +10,7 @@ The package is organized by method family:
 methods/
 ├── baselines/       # simple floor baselines and teaching references
 ├── numerical/       # classical / ML numerical forecasters
-├── llm_processes/   # LLM-process predictors (ContinuousLLMPredictor; refinement in flight)
+├── llm_processes/   # LLM-process predictors (sampled trajectories, quantile grids, etc.)
 └── agentic/         # reusable ADK runners, agent factory, predictors, and output schemas
 ```
 
@@ -88,8 +88,10 @@ from aieng.forecasting.methods.agentic import (
 
 | Module | Class | Description |
 |---|---|---|
-| `llm_processes/continuous.py` | `ContinuousLLMPredictor` | LiteLLM-based sample trajectory predictor with empirical quantiles. Integrated in the food CPI experiment; Ali is refining the implementation in a follow-up PR. |
-| `llm_processes/base.py` | `LLMPredictor` | Abstract base for LLM-process predictors. |
+| `llm_processes/sampled_trajectory.py` | `SampledTrajectoryLLMPredictor` | Samples full trajectories from an LLM, then computes empirical quantiles per horizon. |
+| `llm_processes/quantile_grid.py` | `QuantileGridLLMPredictor` | Asks an LLM for the standard quantile grid in one structured completion. |
+| `llm_processes/point_intervals.py` | — | Placeholder for a compact point-plus-interval contract; may become configurable sparse quantile-grid elicitation. |
+| `llm_processes/binary_probability.py` | — | Placeholder for a future binary event probability forecaster. |
 
 ### Agentic
 

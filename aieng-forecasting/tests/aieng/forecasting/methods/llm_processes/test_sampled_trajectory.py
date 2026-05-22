@@ -1,4 +1,4 @@
-"""Tests for ``aieng.forecasting.methods.llm_processes.continuous``.
+"""Tests for ``aieng.forecasting.methods.llm_processes.sampled_trajectory``.
 
 Pure helpers (history serialization, prompt builders, quantile aggregation)
 are exercised directly. The end-to-end ``predict`` path is covered by
@@ -15,13 +15,13 @@ import numpy as np
 import pandas as pd
 import pytest
 from aieng.forecasting.data import DataService, SeriesMetadata
-from aieng.forecasting.data.adapters.base import BaseAdapter
 from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.llm_processes.base import serialize_history
-from aieng.forecasting.methods.llm_processes.continuous import (
-    ContinuousLLMPredictor,
-    ContinuousLLMPredictorConfig,
+from aieng.forecasting.methods.llm_processes.sampled_trajectory import (
+    SampledTrajectoryLLMPredictor,
+    SampledTrajectoryLLMPredictorConfig,
+    _build_system_prompt,
     _build_user_prompt,
     _quantiles_per_step,
     _stack_trajectories,
@@ -32,54 +32,6 @@ from pydantic import ValidationError
 
 AS_OF = datetime(2020, 12, 1)
 HORIZON = 6
-
-
-class _InMemoryAdapter(BaseAdapter):
-    """Adapter that returns a supplied DataFrame unchanged."""
-
-    def __init__(self, df: pd.DataFrame) -> None:
-        self._df = df.copy()
-
-    def fetch(self) -> pd.DataFrame:
-        """Return the cached DataFrame."""
-        return self._df.copy()
-
-
-def _synthetic_series(periods: int = 300) -> pd.DataFrame:
-    dates = pd.date_range("2000-01-01", periods=periods, freq="MS")
-    t = np.arange(periods, dtype=float)
-    values = 100.0 + 0.5 * t + 10.0 * np.sin(2 * np.pi * t / 12)
-    return pd.DataFrame({"timestamp": dates, "value": values})
-
-
-@pytest.fixture
-def svc() -> DataService:
-    """DataService with a single synthetic monthly target series."""
-    service = DataService()
-    service.register(
-        "target",
-        _InMemoryAdapter(_synthetic_series()),
-        SeriesMetadata(
-            series_id="target",
-            description="Synthetic monthly series",
-            source="test",
-            units="index",
-            frequency="MS",
-        ),
-    )
-    return service
-
-
-@pytest.fixture
-def task() -> ForecastingTask:
-    """Build a 6-month single-horizon task against the synthetic target."""
-    return ForecastingTask(
-        task_id="synthetic_6m",
-        target_series_id="target",
-        horizons=[HORIZON],
-        frequency="MS",
-        description="Synthetic 6-month forecast for unit tests.",
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -162,9 +114,9 @@ def test_stack_trajectories_drops_wrong_length_and_requires_one_valid() -> None:
     ],
 )
 def test_config_rejects_invalid_values(kwargs: dict[str, Any]) -> None:
-    """``ContinuousLLMPredictorConfig`` validates bounds on construction."""
+    """``SampledTrajectoryLLMPredictorConfig`` validates bounds on construction."""
     with pytest.raises(ValidationError):
-        ContinuousLLMPredictorConfig(**kwargs)
+        SampledTrajectoryLLMPredictorConfig(**kwargs)
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +125,7 @@ def test_config_rejects_invalid_values(kwargs: dict[str, Any]) -> None:
 
 
 _PATCH_BOOTSTRAP = "aieng.forecasting.methods.llm_processes.base.bootstrap_litellm"
-_PATCH_SAMPLER = "aieng.forecasting.methods.llm_processes.continuous._sample_trajectories"
+_PATCH_SAMPLER = "aieng.forecasting.methods.llm_processes.sampled_trajectory._sample_trajectories"
 
 
 def _mock_sampler_return(
@@ -192,7 +144,7 @@ def _mock_sampler_return(
 def test_predict_end_to_end_with_mocked_sampler(svc: DataService, task: ForecastingTask) -> None:
     """Mock the LLM-call seam and check predictor invariants end to end."""
     n_samples = 8
-    cfg = ContinuousLLMPredictorConfig(
+    cfg = SampledTrajectoryLLMPredictorConfig(
         model="anthropic/claude-sonnet-4-5",
         n_samples=n_samples,
     )
@@ -210,12 +162,12 @@ def test_predict_end_to_end_with_mocked_sampler(svc: DataService, task: Forecast
         patch(_PATCH_BOOTSTRAP),
         patch(_PATCH_SAMPLER, return_value=sampler_return),
     ):
-        predictor = ContinuousLLMPredictor(cfg)
+        predictor = SampledTrajectoryLLMPredictor(cfg)
         preds = predictor.predict(task, svc.context(AS_OF))
 
     assert len(preds) == 1, "Single-horizon task → one Prediction."
     pred = preds[0]
-    assert pred.predictor_id == "llmp_continuous[anthropic/claude-sonnet-4-5]"
+    assert pred.predictor_id == "llmp_sampled_trajectories[anthropic/claude-sonnet-4-5]"
     assert pred.task_id == task.task_id
     assert pred.as_of == AS_OF
     assert pred.forecast_date == (pd.Timestamp(AS_OF) + pd.DateOffset(months=HORIZON)).to_pydatetime()
@@ -246,7 +198,7 @@ def test_predict_multi_horizon_emits_one_prediction_per_step(svc: DataService) -
         frequency="MS",
         description="Multi-horizon synthetic task.",
     )
-    cfg = ContinuousLLMPredictorConfig(n_samples=16)
+    cfg = SampledTrajectoryLLMPredictorConfig(n_samples=16)
 
     rng = np.random.default_rng(0)
     n_steps = 6
@@ -257,7 +209,7 @@ def test_predict_multi_horizon_emits_one_prediction_per_step(svc: DataService) -
         patch(_PATCH_BOOTSTRAP),
         patch(_PATCH_SAMPLER, return_value=sampler_return),
     ):
-        preds = ContinuousLLMPredictor(cfg).predict(multi_task, svc.context(AS_OF))
+        preds = SampledTrajectoryLLMPredictor(cfg).predict(multi_task, svc.context(AS_OF))
 
     assert [p.forecast_date for p in preds] == [
         (pd.Timestamp(AS_OF) + pd.DateOffset(months=h)).to_pydatetime() for h in [3, 6]
@@ -270,13 +222,115 @@ def test_predict_multi_horizon_emits_one_prediction_per_step(svc: DataService) -
 
 def test_predict_raises_when_all_samples_malformed(svc: DataService, task: ForecastingTask) -> None:
     """If every sample fails to parse, the predictor raises (surface, don't mask)."""
-    cfg = ContinuousLLMPredictorConfig(n_samples=4)
+    cfg = SampledTrajectoryLLMPredictorConfig(n_samples=4)
     sampler_return = _mock_sampler_return([], parse_failures=4)
 
     with (
         patch(_PATCH_BOOTSTRAP),
         patch(_PATCH_SAMPLER, return_value=sampler_return),
     ):
-        predictor = ContinuousLLMPredictor(cfg)
+        predictor = SampledTrajectoryLLMPredictor(cfg)
         with pytest.raises(RuntimeError, match="No valid trajectories"):
             predictor.predict(task, svc.context(AS_OF))
+
+
+# ---------------------------------------------------------------------------
+# Recipe seams: variant_tag and prompt / history overrides
+# ---------------------------------------------------------------------------
+
+
+def test_variant_tag_flows_into_predictor_id() -> None:
+    """``variant_tag`` is folded into ``predictor_id`` between method tag and model."""
+    bare = SampledTrajectoryLLMPredictor(SampledTrajectoryLLMPredictorConfig(model="m"))
+    tagged = SampledTrajectoryLLMPredictor(
+        SampledTrajectoryLLMPredictorConfig(model="m", variant_tag="flash"),
+    )
+    assert bare.predictor_id == "llmp_sampled_trajectories[m]"
+    assert tagged.predictor_id == "llmp_sampled_trajectories_flash[m]"
+
+
+def test_system_prompt_override_replaces_base() -> None:
+    """When set, ``system_prompt_override`` is returned verbatim."""
+    assert _build_system_prompt(None) != "REPLACED"
+    assert _build_system_prompt("REPLACED") == "REPLACED"
+
+
+def test_user_prompt_suffix_is_appended(task: ForecastingTask) -> None:
+    """``suffix`` is appended after the standard prompt body."""
+    out = _build_user_prompt(
+        task=task,
+        history_str="2020-01: 100.00",
+        series_meta=None,
+        forecast_start=pd.Timestamp("2021-01-01"),
+        forecast_end=pd.Timestamp("2021-06-01"),
+        n_steps=HORIZON,
+        suffix="Domain note: non-negative.",
+    )
+    assert out.rstrip().endswith("Domain note: non-negative.")
+
+
+def test_series_description_override_replaces_metadata_block(task: ForecastingTask) -> None:
+    """``series_description_override`` replaces the metadata-derived block entirely."""
+    meta = SeriesMetadata(
+        series_id="target",
+        description="Synthetic monthly series",
+        source="test",
+        units="index",
+        frequency="MS",
+    )
+    override = "Custom framing for this experiment."
+    out = _build_user_prompt(
+        task=task,
+        history_str="2020-01: 100.00",
+        series_meta=meta,
+        forecast_start=pd.Timestamp("2021-01-01"),
+        forecast_end=pd.Timestamp("2021-06-01"),
+        n_steps=HORIZON,
+        series_description_override=override,
+    )
+    assert override in out
+    assert "Synthetic monthly series" not in out
+    assert "Units: index" not in out
+
+
+def test_history_window_truncates_serialized_history(svc: DataService, task: ForecastingTask) -> None:
+    """``history_window`` keeps only the last N observations in the prompt."""
+    window = 12
+    cfg = SampledTrajectoryLLMPredictorConfig(n_samples=2, history_window=window)
+
+    captured: dict[str, str] = {}
+
+    def _capture(*, cfg: Any, system_prompt: str, user_prompt: str) -> tuple[list[_Trajectory], float, int, int, int]:
+        captured["user_prompt"] = user_prompt
+        return _mock_sampler_return([[100.0] * HORIZON, [101.0] * HORIZON])
+
+    with (
+        patch(_PATCH_BOOTSTRAP),
+        patch(_PATCH_SAMPLER, side_effect=_capture),
+    ):
+        SampledTrajectoryLLMPredictor(cfg).predict(task, svc.context(AS_OF))
+
+    # History block sits between "History:" and the blank line before "Forecast".
+    body = captured["user_prompt"].split("History:\n", 1)[1].split("\n\nForecast", 1)[0]
+    history_lines = [ln for ln in body.splitlines() if ln.strip()]
+    assert len(history_lines) == window
+    # Last serialized month is as_of itself (cutoff discipline preserved).
+    assert history_lines[-1].startswith("2020-12:")
+
+
+def test_history_window_surfaced_in_prediction_metadata(svc: DataService, task: ForecastingTask) -> None:
+    """Non-default recipe fields surface in ``Prediction.metadata`` for traceability."""
+    cfg = SampledTrajectoryLLMPredictorConfig(
+        n_samples=2,
+        history_window=24,
+        variant_tag="flash",
+    )
+    sampler_return = _mock_sampler_return([[100.0] * HORIZON, [101.0] * HORIZON])
+    with (
+        patch(_PATCH_BOOTSTRAP),
+        patch(_PATCH_SAMPLER, return_value=sampler_return),
+    ):
+        preds = SampledTrajectoryLLMPredictor(cfg).predict(task, svc.context(AS_OF))
+
+    assert preds[0].metadata["variant_tag"] == "flash"
+    assert preds[0].metadata["history_window"] == 24

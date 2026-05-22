@@ -46,8 +46,10 @@ except ImportError:
 
 from .baselines import LastValuePredictor
 from .llm_processes import (
-    ContinuousLLMPredictor,
-    ContinuousLLMPredictorConfig,
+    QuantileGridLLMPredictor,
+    QuantileGridLLMPredictorConfig,
+    SampledTrajectoryLLMPredictor,
+    SampledTrajectoryLLMPredictorConfig,
 )
 from .numerical import (
     DartsAutoARIMAPredictor,
@@ -57,8 +59,10 @@ from .numerical import (
 
 
 __all__ = [
-    "ContinuousLLMPredictor",
-    "ContinuousLLMPredictorConfig",
+    "SampledTrajectoryLLMPredictor",
+    "SampledTrajectoryLLMPredictorConfig",
+    "QuantileGridLLMPredictor",
+    "QuantileGridLLMPredictorConfig",
     "DartsAutoARIMAPredictor",
     "DartsLightGBMPredictor",
     "DartsLinearRegressionPredictor",

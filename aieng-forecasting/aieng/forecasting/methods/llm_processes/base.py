@@ -1,19 +1,19 @@
 """Abstract base class and shared config for LLM-process predictors.
 
 ``LLMPredictor`` is the abstract parent shared by every concrete predictor in
-this package (today: :class:`ContinuousLLMPredictor`; planned:
-``BinaryLLMPredictor``).  It is **never instantiated directly** — users
-instantiate one of the concrete subclasses re-exported from
-:mod:`aieng.forecasting.methods`.
+this package (today: :class:`SampledTrajectoryLLMPredictor` and
+:class:`QuantileGridLLMPredictor`; planned: ``BinaryProbabilityLLMPredictor``). It is
+**never instantiated directly** — users instantiate one of the concrete
+subclasses re-exported from :mod:`aieng.forecasting.methods`.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Mapping
 
 import pandas as pd
 from aieng.forecasting.evaluation.predictor import Predictor
-from aieng.forecasting.methods.llm_processes._client import bootstrap_litellm
+from aieng.forecasting.methods.llm_processes._client import bootstrap_litellm, current_trace_info
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -48,6 +48,16 @@ class LLMPredictorConfig(BaseModel):
             "forecasting). ``'low'`` requests minimum reasoning where the "
             "provider supports it. ``None`` lets the provider use its "
             "default — unsafe for calibration-critical work."
+        ),
+    )
+    variant_tag: str | None = Field(
+        default=None,
+        description=(
+            "Optional short identifier for a method recipe (e.g. ``'food_cpi_v1_h60_n3'``, "
+            "``'short_history'``). When set, it is folded into :attr:`predictor_id` "
+            "as ``<method_tag>_<variant_tag>[<model>]`` so artifact storage, cached "
+            "backtests, and leaderboards keep recipes distinct. ``None`` preserves "
+            "the bare ``<method_tag>[<model>]`` form used by ad-hoc construction."
         ),
     )
 
@@ -106,13 +116,13 @@ class LLMPredictor(Predictor):
 
     Subclasses must:
 
-    - Set the class attribute ``_method_tag`` (e.g. ``"llmp_continuous"``).
+    - Set the class attribute ``_method_tag`` (e.g. ``"llmp_sampled_trajectories"``).
     - Override ``_default_config`` to return their concrete config type.
     - Implement ``predict``.
     """
 
     #: Stable, human-readable family tag used in :attr:`predictor_id`.
-    #: Subclasses must override (e.g. ``"llmp_continuous"``).
+    #: Subclasses must override (e.g. ``"llmp_sampled_trajectories"``).
     _method_tag: ClassVar[str] = ""
 
     def __init__(self, cfg: LLMPredictorConfig | None = None) -> None:
@@ -130,8 +140,56 @@ class LLMPredictor(Predictor):
 
     @property
     def predictor_id(self) -> str:
-        """Stable identifier: ``<method_tag>[<model>]``.
+        """Stable identifier folding method tag, optional variant tag, and model.
 
-        Example: ``llmp_continuous[anthropic/claude-sonnet-4-5]``.
+        Format:
+
+        - ``<method_tag>[<model>]`` when ``cfg.variant_tag`` is ``None`` (default).
+        - ``<method_tag>_<variant_tag>[<model>]`` otherwise.
+
+        Recipes (see ``implementations/<use-case>/predictors/``) set
+        ``variant_tag`` so their cached backtests and leaderboard rows stay
+        distinct from ad-hoc bare-config runs.  Examples:
+
+        - ``llmp_sampled_trajectories[anthropic/claude-sonnet-4-5]``
+        - ``llmp_sampled_trajectories_food_cpi_v1_h60_n3[<model>]``
+        - ``llmp_quantile_grid_food_cpi_v1_h60_rlow[<model>]``
         """
+        if self.cfg.variant_tag:
+            return f"{self._method_tag}_{self.cfg.variant_tag}[{self.cfg.model}]"
         return f"{self._method_tag}[{self.cfg.model}]"
+
+    def _build_metadata(
+        self,
+        *,
+        cost_usd: float,
+        in_tokens: int,
+        out_tokens: int,
+        parse_failures: int,
+        history_window: int | None = None,
+        extra: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build common metadata for an LLM-backed prediction."""
+        trace_id, trace_url = current_trace_info()
+        metadata: dict[str, Any] = {"model": self.cfg.model}
+        if extra is not None:
+            metadata.update(extra)
+        metadata.update(
+            {
+                "temperature": self.cfg.temperature,
+                "reasoning_effort": self.cfg.reasoning_effort,
+                "cost_usd": cost_usd,
+                "input_tokens": in_tokens,
+                "output_tokens": out_tokens,
+                "parse_failures": parse_failures,
+            }
+        )
+        if self.cfg.variant_tag is not None:
+            metadata["variant_tag"] = self.cfg.variant_tag
+        if history_window is not None:
+            metadata["history_window"] = history_window
+        if trace_id is not None:
+            metadata["langfuse_trace_id"] = trace_id
+        if trace_url is not None:
+            metadata["langfuse_trace_url"] = trace_url
+        return metadata

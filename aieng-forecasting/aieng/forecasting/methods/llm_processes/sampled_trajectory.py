@@ -1,4 +1,4 @@
-"""ContinuousLLMPredictor — sample-based quantile forecaster.
+"""SampledTrajectoryLLMPredictor — sample-based quantile forecaster.
 
 Asks an LLM for ``N`` numerical trajectories spanning ``max(task.horizons)``
 steps, stacks them, and computes per-step empirical quantiles at
@@ -14,12 +14,12 @@ configurations of this class.
 Usage::
 
     from aieng.forecasting.methods import (
-        ContinuousLLMPredictor,
-        ContinuousLLMPredictorConfig,
+        SampledTrajectoryLLMPredictor,
+        SampledTrajectoryLLMPredictorConfig,
     )
 
-    predictor = ContinuousLLMPredictor(
-        ContinuousLLMPredictorConfig(model="gemini/gemini-2.5-flash", n_samples=20),
+    predictor = SampledTrajectoryLLMPredictor(
+        SampledTrajectoryLLMPredictorConfig(model="gemini/gemini-2.5-flash"),
     )
 """
 
@@ -37,7 +37,6 @@ from aieng.forecasting.evaluation.prediction import (
     Prediction,
 )
 from aieng.forecasting.methods.llm_processes._client import (
-    current_trace_info,
     langfuse_observe,
     make_json_schema_response_format,
     run_async,
@@ -61,31 +60,56 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ContinuousLLMPredictorConfig(LLMPredictorConfig):
-    """Frozen configuration for :class:`ContinuousLLMPredictor`.
+class SampledTrajectoryLLMPredictorConfig(LLMPredictorConfig):
+    """Frozen configuration for :class:`SampledTrajectoryLLMPredictor`.
 
     Quantile levels are fixed to :data:`STANDARD_QUANTILES` and not exposed.
+
+    The string overrides (``series_description``, ``system_prompt_override``,
+    ``user_prompt_suffix``) plus ``history_window`` are the degrees of freedom
+    intended for use-case recipes under ``implementations/<use-case>/predictors/``
+    — they reshape what the LLM sees without changing the predictor's
+    statistical contract (sampled trajectories → empirical quantiles).
     """
 
     model_config = ConfigDict(frozen=True)
 
     n_samples: int = Field(default=20, ge=1, description="Number of trajectory samples per forecast origin.")
     precision: int = Field(default=2, ge=0, le=10, description="Decimal places used when serializing values.")
-    context_text: str | None = Field(
+    history_window: int | None = Field(
         default=None,
+        ge=1,
         description=(
-            "Optional domain context injected into the user prompt after the history block "
-            "and before the forecast instruction.  Use this to supply plausibly-knowable "
-            "information at the time of the prediction (e.g. news headlines, futures curve "
-            "shape, policy statements) that the raw price series cannot encode."
+            "If set, only the last ``history_window`` cutoff-filtered observations "
+            "are serialized into the prompt. ``None`` (default) sends the full "
+            "available history. Useful for keeping prompts short on larger models "
+            "(Sonnet, Gemini Pro) where per-call cost dominates."
         ),
     )
-    context_tag: str | None = Field(
+    series_description: str | None = Field(
         default=None,
         description=(
-            "Short label appended to the predictor_id when context_text is set, "
-            "e.g. 'geopolitical'.  Allows cached results for context-aware runs to "
-            "coexist with vanilla runs in the artefact store."
+            "Optional override for the metadata-derived series description block. "
+            "When set, replaces the ``Series: ... / Units: ... / Frequency: ...`` "
+            "lines in the user prompt. Use to inject task-specific economic or "
+            "domain framing that the bare adapter metadata does not capture."
+        ),
+    )
+    system_prompt_override: str | None = Field(
+        default=None,
+        description=(
+            "Full replacement for the built-in system prompt. ``None`` (default) "
+            "uses the calibration-tuned base prompt. Recipes that change the "
+            "output contract or impose domain rules should set this."
+        ),
+    )
+    user_prompt_suffix: str | None = Field(
+        default=None,
+        description=(
+            "Free-form text appended to the user prompt after the standard "
+            "task / history / forecast-window blocks. Use for recipe-specific "
+            "hints (non-negativity, plausible-range anchors, known events) "
+            "without rewriting the system prompt."
         ),
     )
 
@@ -106,8 +130,15 @@ _TRAJECTORY_JSON_SCHEMA: dict[str, Any] = {
 }
 
 
-def _build_system_prompt() -> str:
-    """Stable, cacheable system prompt carrying the output contract and rules."""
+def _build_system_prompt(override: str | None = None) -> str:
+    """Stable, cacheable system prompt carrying the output contract and rules.
+
+    When ``override`` is provided, it replaces the built-in prompt verbatim.
+    Recipes pass the override through
+    :attr:`SampledTrajectoryLLMPredictorConfig.system_prompt_override`.
+    """
+    if override is not None:
+        return override
     return (
         "You are a probabilistic time-series forecaster. Given a historical series and a "
         "task description, return a single numerical trajectory covering the requested "
@@ -132,30 +163,33 @@ def _build_user_prompt(
     forecast_start: pd.Timestamp,
     forecast_end: pd.Timestamp,
     n_steps: int,
-    context_text: str | None = None,
+    series_description_override: str | None = None,
+    suffix: str | None = None,
 ) -> str:
-    """Build the user prompt.
+    """Task description + series metadata + history + explicit forecast window.
 
-    Combines task description, series metadata, history, optional domain context,
-    and an explicit forecast window instruction.
+    ``series_description_override`` replaces the metadata-derived series block;
+    ``suffix`` is appended verbatim at the end of the prompt. Both are
+    surfaced to recipes via :class:`SampledTrajectoryLLMPredictorConfig`.
     """
-    meta_lines: list[str] = []
-    if series_meta is not None:
-        meta_lines.append(f"Series: {series_meta.description} (source: {series_meta.source})")
-        meta_lines.append(f"Units: {series_meta.units}")
+    if series_description_override is not None:
+        meta_block = series_description_override
     else:
-        meta_lines.append(f"Series: {task.target_series_id}")
-    meta_lines.append(f"Frequency: {task.frequency}")
+        meta_lines: list[str] = []
+        if series_meta is not None:
+            meta_lines.append(f"Series: {series_meta.description} (source: {series_meta.source})")
+            meta_lines.append(f"Units: {series_meta.units}")
+        else:
+            meta_lines.append(f"Series: {task.target_series_id}")
+        meta_lines.append(f"Frequency: {task.frequency}")
+        meta_block = "\n".join(meta_lines)
 
-    context_block = f"\nCurrent context:\n{context_text}\n" if context_text else ""
-
-    return (
+    base = (
         f"Task: {task.description}\n"
-        "\n" + "\n".join(meta_lines) + "\n"
+        "\n" + meta_block + "\n"
         "\n"
         "History:\n"
         f"{history_str}\n"
-        f"{context_block}"
         "\n"
         f"Forecast the next {n_steps} {task.frequency} values "
         f"({forecast_start.strftime('%Y-%m-%d')} through {forecast_end.strftime('%Y-%m-%d')}).\n"
@@ -163,6 +197,9 @@ def _build_user_prompt(
         # TODO(covariates): when multivariate inputs land, append labeled
         # covariate blocks here per Context-is-Key §5.4. v1 is target-only.
     )
+    if suffix:
+        base = f"{base}\n\n{suffix.lstrip(chr(10))}"
+    return base
 
 
 def _stack_trajectories(trajectories: list[list[float]], n_steps: int) -> np.ndarray:
@@ -203,7 +240,7 @@ def _quantiles_per_step(samples: np.ndarray) -> np.ndarray:
 
 def _sample_trajectories(
     *,
-    cfg: ContinuousLLMPredictorConfig,
+    cfg: SampledTrajectoryLLMPredictorConfig,
     system_prompt: str,
     user_prompt: str,
 ) -> tuple[list[_Trajectory], float, int, int, int]:
@@ -234,62 +271,7 @@ def _sample_trajectories(
     return result
 
 
-def _build_predictions(
-    *,
-    task: ForecastingTask,
-    context: ForecastContext,
-    q_grid: np.ndarray,
-    cfg: ContinuousLLMPredictorConfig,
-    predictor_id: str,
-    cost_usd: float,
-    in_tokens: int,
-    out_tokens: int,
-    parse_failures: int,
-) -> list[Prediction]:
-    """Fan the per-step quantile grid into one ``Prediction`` per horizon step."""
-    issued_at = datetime.now(tz=timezone.utc).replace(tzinfo=None)
-    trace_id, trace_url = current_trace_info()
-    offset = pd.tseries.frequencies.to_offset(task.frequency)
-    median_idx = STANDARD_QUANTILES.index(0.50)
-
-    predictions: list[Prediction] = []
-    for h in task.horizons:
-        row = q_grid[h - 1]
-        quantiles = {q: float(row[i]) for i, q in enumerate(STANDARD_QUANTILES)}
-        payload = ContinuousForecast(
-            point_forecast=float(row[median_idx]),
-            quantiles=quantiles,
-        )
-        forecast_date: datetime = (pd.Timestamp(context.as_of) + offset * h).to_pydatetime()
-        metadata: dict[str, Any] = {
-            "model": cfg.model,
-            "n_samples": cfg.n_samples,
-            "temperature": cfg.temperature,
-            "reasoning_effort": cfg.reasoning_effort,
-            "cost_usd": cost_usd,
-            "input_tokens": in_tokens,
-            "output_tokens": out_tokens,
-            "parse_failures": parse_failures,
-        }
-        if trace_id is not None:
-            metadata["langfuse_trace_id"] = trace_id
-        if trace_url is not None:
-            metadata["langfuse_trace_url"] = trace_url
-        predictions.append(
-            Prediction(
-                predictor_id=predictor_id,
-                task_id=task.task_id,
-                issued_at=issued_at,
-                as_of=context.as_of,
-                forecast_date=forecast_date,
-                payload=payload,
-                metadata=metadata,
-            ),
-        )
-    return predictions
-
-
-class ContinuousLLMPredictor(LLMPredictor):
+class SampledTrajectoryLLMPredictor(LLMPredictor):
     """Continuous-modality LLM forecaster (sample-based empirical quantiles).
 
     Issues ``cfg.n_samples`` completion calls in parallel via
@@ -306,26 +288,18 @@ class ContinuousLLMPredictor(LLMPredictor):
       defaults to ``"disable"`` per the calibration evidence.
     """
 
-    _method_tag: ClassVar[str] = "llmp_continuous"
+    _method_tag: ClassVar[str] = "llmp_sampled_trajectories"
 
-    cfg: ContinuousLLMPredictorConfig  # type narrowing for static checkers
+    cfg: SampledTrajectoryLLMPredictorConfig  # type narrowing for static checkers
 
-    def __init__(self, cfg: ContinuousLLMPredictorConfig | None = None) -> None:
+    def __init__(self, cfg: SampledTrajectoryLLMPredictorConfig | None = None) -> None:
         super().__init__(cfg)
 
-    @property
-    def predictor_id(self) -> str:
-        """Stable identifier, extended with ``context_tag`` when set."""
-        base = f"{self._method_tag}[{self.cfg.model}]"
-        if self.cfg.context_tag:
-            return f"{base}[{self.cfg.context_tag}]"
-        return base
-
     @classmethod
-    def _default_config(cls) -> ContinuousLLMPredictorConfig:
-        return ContinuousLLMPredictorConfig()
+    def _default_config(cls) -> SampledTrajectoryLLMPredictorConfig:
+        return SampledTrajectoryLLMPredictorConfig()
 
-    @langfuse_observe("ContinuousLLMPredictor.predict")
+    @langfuse_observe("SampledTrajectoryLLMPredictor.predict")
     def predict(
         self,
         task: ForecastingTask,
@@ -348,6 +322,8 @@ class ContinuousLLMPredictor(LLMPredictor):
             with ``point_forecast`` equal to the sample median at that step.
         """
         series_df, series_meta = get_history_and_meta(task, context)
+        if self.cfg.history_window is not None:
+            series_df = series_df.tail(self.cfg.history_window).reset_index(drop=True)
 
         offset = pd.tseries.frequencies.to_offset(task.frequency)
         n_steps = task.horizon
@@ -355,7 +331,7 @@ class ContinuousLLMPredictor(LLMPredictor):
         forecast_end = (pd.Timestamp(context.as_of) + offset * n_steps).normalize()
 
         history_str = serialize_history(series_df, precision=self.cfg.precision)
-        system_prompt = _build_system_prompt()
+        system_prompt = _build_system_prompt(self.cfg.system_prompt_override)
         user_prompt = _build_user_prompt(
             task,
             history_str,
@@ -363,7 +339,8 @@ class ContinuousLLMPredictor(LLMPredictor):
             forecast_start,
             forecast_end,
             n_steps,
-            context_text=self.cfg.context_text,
+            series_description_override=self.cfg.series_description,
+            suffix=self.cfg.user_prompt_suffix,
         )
 
         parsed, cost_usd, in_tokens, out_tokens, parse_failures = _sample_trajectories(
@@ -374,14 +351,32 @@ class ContinuousLLMPredictor(LLMPredictor):
         samples = _stack_trajectories([t.values for t in parsed], n_steps=n_steps)
         q_grid = _quantiles_per_step(samples)
 
-        return _build_predictions(
-            task=task,
-            context=context,
-            q_grid=q_grid,
-            cfg=self.cfg,
-            predictor_id=self.predictor_id,
-            cost_usd=cost_usd,
-            in_tokens=in_tokens,
-            out_tokens=out_tokens,
-            parse_failures=parse_failures,
-        )
+        issued_at = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+        median_idx = STANDARD_QUANTILES.index(0.50)
+        predictions: list[Prediction] = []
+        for h in task.horizons:
+            row = q_grid[h - 1]
+            quantiles = {q: float(row[i]) for i, q in enumerate(STANDARD_QUANTILES)}
+            payload = ContinuousForecast(
+                point_forecast=float(row[median_idx]),
+                quantiles=quantiles,
+            )
+            predictions.append(
+                Prediction(
+                    predictor_id=self.predictor_id,
+                    task_id=task.task_id,
+                    issued_at=issued_at,
+                    as_of=context.as_of,
+                    forecast_date=(pd.Timestamp(context.as_of) + offset * h).to_pydatetime(),
+                    payload=payload,
+                    metadata=self._build_metadata(
+                        cost_usd=cost_usd,
+                        in_tokens=in_tokens,
+                        out_tokens=out_tokens,
+                        parse_failures=parse_failures,
+                        history_window=self.cfg.history_window,
+                        extra={"n_samples": self.cfg.n_samples},
+                    ),
+                ),
+            )
+        return predictions
