@@ -10,6 +10,9 @@ description: >-
 
 # Trend projection skill
 
+Run the `statistical-analysis` skill first to determine the current vol
+regime and appropriate trend window before applying these patterns.
+
 Load `references/projection-examples.md` via
 `load_skill_resource("trend-projection", "references/projection-examples.md")`
 **before writing any trend-projection code**.
@@ -30,7 +33,7 @@ The reference file contains:
 4. Project to horizons 5, 10, 21 by evaluating the regression at `30 + h - 1`.
 5. Compute `residual_std = std of (y - y_hat)` on the 30-day window.
 6. Set 80% CI half-width = `1.28 * residual_std * sqrt(h / 5)`.
-7. Clip projected point forecast to `[0.5 * 52w_low, 2.0 * 52w_high]` as a
+7. Clip projected point forecast to `[0.5 * 52w_low, 1.5 * 52w_high]` as a
    plausibility guard — extreme trend extrapolation is usually wrong.
 
 **No scripts in this skill. Do not call `run_skill_script`.**
