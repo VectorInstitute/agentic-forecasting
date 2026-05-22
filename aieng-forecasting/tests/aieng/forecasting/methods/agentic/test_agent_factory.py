@@ -89,3 +89,20 @@ class TestBuildAdkAgent:
         )
 
         assert agent.output_schema is ContinuousAgentForecastOutput
+
+    def test_gemini_native_code_exec_enables_server_side_tool_invocations(self) -> None:
+        """Built-in code execution plus function tools needs tool_config on Gemini."""
+        agent = build_adk_agent(
+            AgentConfig(
+                instruction="Forecast the supplied series.",
+                context_retrieval=ContextRetrievalConfig(
+                    enabled=True,
+                    instruction="Search for market news before the cutoff date.",
+                ),
+                code_execution=CodeExecutionConfig(enabled=True, provider="gemini_native"),
+            ),
+        )
+
+        tool_config = agent.generate_content_config.tool_config
+        assert tool_config is not None
+        assert tool_config.include_server_side_tool_invocations is True

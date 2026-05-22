@@ -29,7 +29,7 @@ try:
     from google.adk.tools.google_search_agent_tool import GoogleSearchAgentTool
     from google.adk.tools.google_search_tool import google_search
     from google.adk.tools.skill_toolset import SkillToolset
-    from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel
+    from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel, ToolConfig
 except ModuleNotFoundError as exc:
     raise ImportError(
         "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
@@ -313,6 +313,14 @@ def build_adk_agent(
         else None
     )
 
+    # Gemini requires this when BuiltInCodeExecutor (server-side code execution)
+    # is combined with function-calling tools (search sub-agent, skills, etc.).
+    tool_config = (
+        ToolConfig(include_server_side_tool_invocations=True)
+        if code_executor is not None and tools
+        else None
+    )
+
     return LlmAgent(
         name=config.name,
         description=config.description,
@@ -326,5 +334,6 @@ def build_adk_agent(
             temperature=config.temperature,
             max_output_tokens=config.max_output_tokens,
             thinking_config=thinking_config,
+            tool_config=tool_config,
         ),
     )
