@@ -2,6 +2,13 @@
   "description": "Pre-computed WTI crude oil historical volatility and move statistics, computed from Yahoo Finance CL=F daily close data.",
   "period": "2020-01-01 to 2025-12-31",
   "n_trading_days": 1509,
+  "regime_thresholds": {
+    "description": "Annualised rolling-30d vol thresholds for regime classification. Compare your computed vol against these to classify the current market state.",
+    "low_vol_max_pct": 20,
+    "normal_vol_max_pct": 35,
+    "high_vol_max_pct": 50,
+    "note": "Above 50% is extreme. Below 20% is low/managed. 20-35% is normal. 35-50% is elevated."
+  },
   "weekly_move_stats": {
     "description": "Absolute week-over-week close price changes (Friday to Friday).",
     "median_abs_move_usd": 2.15,
@@ -30,10 +37,5 @@
     "h5_80ci_halfwidth_usd": 3.74,
     "h10_80ci_halfwidth_usd": 5.29,
     "h21_80ci_halfwidth_usd": 7.66
-  },
-  "regime_notes": {
-    "low_vol_regime_usd": "Below 20 USD/bbl annualised vol — stable OPEC+ managed market (e.g. mid-2023, mid-2024).",
-    "elevated_vol_regime_usd": "30-50 USD/bbl annualised vol — typical for geopolitical uncertainty periods.",
-    "high_vol_regime_usd": "Above 50 USD/bbl annualised vol — supply shocks, demand collapses, or major conflict escalation."
   }
 }
