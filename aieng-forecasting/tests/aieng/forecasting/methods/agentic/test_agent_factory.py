@@ -130,3 +130,27 @@ class TestBuildAdkAgent:
         )
 
         assert agent.generate_content_config.tool_config is None
+
+    def test_tools_auto_disable_automatic_function_calling(self) -> None:
+        """ADK-orchestrated agents disable genai AFC to avoid mixed-tool warnings."""
+        agent = build_adk_agent(
+            AgentConfig(
+                instruction="Forecast the supplied series.",
+                context_retrieval=ContextRetrievalConfig(
+                    enabled=True,
+                    instruction="Search for market news before the cutoff date.",
+                ),
+                code_execution=CodeExecutionConfig(enabled=True, provider="gemini_native"),
+            ),
+            output_schema=ContinuousAgentForecastOutput,
+        )
+
+        afc = agent.generate_content_config.automatic_function_calling
+        assert afc is not None
+        assert afc.disable is True
+
+    def test_instruction_only_agent_leaves_automatic_function_calling_unset(self) -> None:
+        """Minimal interactive agents keep genai AFC at provider defaults."""
+        agent = build_adk_agent(AgentConfig(instruction="You are a helpful analyst."))
+
+        assert agent.generate_content_config.automatic_function_calling is None

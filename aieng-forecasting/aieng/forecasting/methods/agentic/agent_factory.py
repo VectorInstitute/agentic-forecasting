@@ -29,7 +29,13 @@ try:
     from google.adk.tools.google_search_agent_tool import GoogleSearchAgentTool
     from google.adk.tools.google_search_tool import google_search
     from google.adk.tools.skill_toolset import SkillToolset
-    from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel, ToolConfig
+    from google.genai.types import (
+        AutomaticFunctionCallingConfig,
+        GenerateContentConfig,
+        ThinkingConfig,
+        ThinkingLevel,
+        ToolConfig,
+    )
 except ModuleNotFoundError as exc:
     raise ImportError(
         "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
@@ -146,6 +152,22 @@ def _build_tool_config(
     return ToolConfig(include_server_side_tool_invocations=True)
 
 
+def _build_automatic_function_calling_config(
+    config: AgentConfig,
+    *,
+    tools: list[Any],
+    code_executor: BuiltInCodeExecutor | None,
+    output_schema: type[AgentForecastOutput] | None,
+) -> AutomaticFunctionCallingConfig | None:
+    """Disable genai AFC when ADK orchestrates tools, code execution, or schemas."""
+    disable = config.disable_automatic_function_calling
+    if disable is None:
+        disable = bool(tools or code_executor or output_schema is not None)
+    if not disable:
+        return None
+    return AutomaticFunctionCallingConfig(disable=True)
+
+
 class AgentConfig(BaseModel):
     """Configuration for building an ADK agent for forecasting tasks.
 
@@ -184,6 +206,13 @@ class AgentConfig(BaseModel):
         Configuration for context retrieval. If enabled, the agent will be equipped with
         the ability to search the web for information using the `google_search` tool.
         Disabled by default.
+    disable_automatic_function_calling : bool or None, default=None
+        When ``True``, sets ``automatic_function_calling.disable`` on the Gemini
+        request config. ADK agents execute tools via the ADK runtime, not the
+        genai SDK's Automatic Function Calling (AFC) helper — disabling AFC
+        avoids spurious warnings when mixing ``SkillToolset``, ``AgentTool``,
+        and ``BuiltInCodeExecutor``. ``None`` (default) auto-disables AFC
+        whenever tools, code execution, or an ``output_schema`` are configured.
     """
 
     model_config = {"extra": "forbid"}
@@ -203,6 +232,7 @@ class AgentConfig(BaseModel):
     # Capabilities
     code_execution: CodeExecutionConfig = Field(default_factory=CodeExecutionConfig)
     context_retrieval: ContextRetrievalConfig = Field(default_factory=ContextRetrievalConfig)
+    disable_automatic_function_calling: bool | None = None
 
     @field_validator("skills_dirs")
     @classmethod
@@ -323,7 +353,8 @@ def build_adk_agent(
         skills.append(load_skill_from_dir(skills_dir))
 
     if skills:
-        tools.append(SkillToolset(skills=skills))
+        # Pass code_executor explicitly so run_skill_script can use Gemini native exec.
+        tools.append(SkillToolset(skills=skills, code_executor=code_executor))
 
     thinking_config = (
         ThinkingConfig(
@@ -342,6 +373,12 @@ def build_adk_agent(
         code_executor=code_executor,
         tools=tools,
     )
+    automatic_function_calling = _build_automatic_function_calling_config(
+        config,
+        tools=tools,
+        code_executor=code_executor,
+        output_schema=output_schema,
+    )
 
     return LlmAgent(
         name=config.name,
@@ -357,5 +394,6 @@ def build_adk_agent(
             max_output_tokens=config.max_output_tokens,
             thinking_config=thinking_config,
             tool_config=tool_config,
+            automatic_function_calling=automatic_function_calling,
         ),
     )
