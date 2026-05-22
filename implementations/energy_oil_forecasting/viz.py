@@ -904,9 +904,7 @@ def make_trajectory_fan_chart(
         )
 
         # Realised post-origin prices
-        actual_future = price_df[
-            (price_df.index > origin) & (price_df.index <= bday_dates[-1])
-        ]
+        actual_future = price_df[(price_df.index > origin) & (price_df.index <= bday_dates[-1])]
         fig.add_trace(
             go.Scatter(
                 x=actual_future.index.tolist(),
@@ -922,22 +920,16 @@ def make_trajectory_fan_chart(
         )
 
         # Prophet fan
-        p_sub = prophet_traj_df[prophet_traj_df["origin"] == origin].sort_values(
-            "horizon"
-        )
+        p_sub = prophet_traj_df[prophet_traj_df["origin"] == origin].sort_values("horizon")
         if not p_sub.empty:
-            x_fill = pd.concat(
-                [p_sub["forecast_date"], p_sub["forecast_date"].iloc[::-1]]
-            ).tolist()
-            y_fill = pd.concat(
-                [p_sub["yhat_lower"], p_sub["yhat_upper"].iloc[::-1]]
-            ).tolist()
+            x_fill = pd.concat([p_sub["forecast_date"], p_sub["forecast_date"].iloc[::-1]]).tolist()
+            y_fill = pd.concat([p_sub["yhat_lower"], p_sub["yhat_upper"].iloc[::-1]]).tolist()
             fig.add_trace(
                 go.Scatter(
                     x=x_fill,
                     y=y_fill,
                     fill="toself",
-                    fillcolor=f"rgba(99,99,99,0.12)",
+                    fillcolor="rgba(99,99,99,0.12)",
                     line={"width": 0},
                     showlegend=False,
                     hoverinfo="skip",
@@ -965,25 +957,11 @@ def make_trajectory_fan_chart(
             preds = result["predictions"]
             agent_horizons = [5, 10, 21]
             agent_dates = [bday_dates[h - 1] for h in agent_horizons]
-            agent_pts = [
-                preds[i]["payload"]["point_forecast"] for i in range(len(preds))
-            ]
-            agent_lo = [
-                _qval(preds[i]["payload"]["quantiles"], 0.1)
-                for i in range(len(preds))
-            ]
-            agent_hi = [
-                _qval(preds[i]["payload"]["quantiles"], 0.9)
-                for i in range(len(preds))
-            ]
-            err_hi = [
-                hi - pt if not (np.isnan(hi) or np.isnan(pt)) else 0.0
-                for hi, pt in zip(agent_hi, agent_pts)
-            ]
-            err_lo = [
-                pt - lo if not (np.isnan(lo) or np.isnan(pt)) else 0.0
-                for pt, lo in zip(agent_pts, agent_lo)
-            ]
+            agent_pts = [preds[i]["payload"]["point_forecast"] for i in range(len(preds))]
+            agent_lo = [_qval(preds[i]["payload"]["quantiles"], 0.1) for i in range(len(preds))]
+            agent_hi = [_qval(preds[i]["payload"]["quantiles"], 0.9) for i in range(len(preds))]
+            err_hi = [hi - pt if not (np.isnan(hi) or np.isnan(pt)) else 0.0 for hi, pt in zip(agent_hi, agent_pts)]
+            err_lo = [pt - lo if not (np.isnan(lo) or np.isnan(pt)) else 0.0 for pt, lo in zip(agent_pts, agent_lo)]
             fig.add_trace(
                 go.Scatter(
                     x=[d.to_pydatetime() for d in agent_dates],
@@ -1065,10 +1043,7 @@ def make_shock_comparison_chart(
     outcomes = [int(r["outcome"]) for r in shock_results]
 
     agent_briers = [(p - y) ** 2 for p, y in zip(agent_probs, outcomes)]
-    prophet_briers = [
-        (p - y) ** 2 if not np.isnan(p) else float("nan")
-        for p, y in zip(prophet_probs, outcomes)
-    ]
+    prophet_briers = [(p - y) ** 2 if not np.isnan(p) else float("nan") for p, y in zip(prophet_probs, outcomes)]
 
     # Cumulative mean Brier
     def _cum_mean(vals: list[float]) -> list[float]:

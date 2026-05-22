@@ -30,15 +30,15 @@ implementations by method family:
 # This patch is applied here, before any LLM or ADK imports, to ensure it is
 # in place before openinference instruments litellm.
 try:
+    import contextlib
+
     from opentelemetry.context.contextvars_context import ContextVarsRuntimeContext as _CtxVarsRC
 
     _orig_ctx_detach = _CtxVarsRC.detach
 
     def _safe_ctx_detach(self, token):  # type: ignore[no-untyped-def]
-        try:
+        with contextlib.suppress(ValueError):
             _orig_ctx_detach(self, token)
-        except ValueError:
-            pass
 
     _CtxVarsRC.detach = _safe_ctx_detach  # type: ignore[method-assign]
 except ImportError:

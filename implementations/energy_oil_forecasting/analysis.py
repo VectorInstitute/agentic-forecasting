@@ -141,9 +141,7 @@ def trajectory_mae_table(
                 continue
             actual = float(actual_rows.iloc[0]["price"])
             agent_pred = _extract_agent_point(rec, h_idx, h)
-            prophet_row = prophet_traj_df[
-                (prophet_traj_df["origin"] == origin) & (prophet_traj_df["horizon"] == h)
-            ]
+            prophet_row = prophet_traj_df[(prophet_traj_df["origin"] == origin) & (prophet_traj_df["horizon"] == h)]
             prophet_pred = float(prophet_row.iloc[0]["yhat"]) if not prophet_row.empty else float("nan")
             rows.append(
                 {
