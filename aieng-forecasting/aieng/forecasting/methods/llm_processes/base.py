@@ -53,7 +53,7 @@ class LLMPredictorConfig(BaseModel):
     variant_tag: str | None = Field(
         default=None,
         description=(
-            "Optional short identifier for a method recipe (e.g. ``'food_cpi_flash_lite'``, "
+            "Optional short identifier for a method recipe (e.g. ``'food_cpi_v1_h60_n3'``, "
             "``'short_history'``). When set, it is folded into :attr:`predictor_id` "
             "as ``<method_tag>_<variant_tag>[<model>]`` so artifact storage, cached "
             "backtests, and leaderboards keep recipes distinct. ``None`` preserves "
@@ -152,8 +152,8 @@ class LLMPredictor(Predictor):
         distinct from ad-hoc bare-config runs.  Examples:
 
         - ``llmp_sampled_trajectories[anthropic/claude-sonnet-4-5]``
-        - ``llmp_sampled_trajectories_food_cpi_flash_lite[<model>]``
-        - ``llmp_quantile_grid_food_cpi_flash_lite[<model>]``
+        - ``llmp_sampled_trajectories_food_cpi_v1_h60_n3[<model>]``
+        - ``llmp_quantile_grid_food_cpi_v1_h60_rlow[<model>]``
         """
         if self.cfg.variant_tag:
             return f"{self._method_tag}_{self.cfg.variant_tag}[{self.cfg.model}]"

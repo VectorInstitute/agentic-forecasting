@@ -12,8 +12,8 @@ separation between task-agnostic methods (in ``aieng-forecasting``) and
 use-case recipes (here).
 """
 
-from .llmp_quantile_grid_flash_lite import build_llmp_quantile_grid_flash_lite
-from .llmp_sampled_trajectory_flash_lite import build_llmp_sampled_trajectory_flash_lite
+from .llmp_quantile_grid import build_llmp_quantile_grid
+from .llmp_sampled_trajectory import build_llmp_sampled_trajectory
 
 
-__all__ = ["build_llmp_sampled_trajectory_flash_lite", "build_llmp_quantile_grid_flash_lite"]
+__all__ = ["build_llmp_quantile_grid", "build_llmp_sampled_trajectory"]
