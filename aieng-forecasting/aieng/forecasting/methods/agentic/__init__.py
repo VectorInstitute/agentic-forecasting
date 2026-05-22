@@ -60,6 +60,7 @@ from aieng.forecasting.methods.agentic.outputs import (
     AgentQuantileForecast,
     ContinuousAgentForecastOutput,
     ContinuousAgentHorizonForecast,
+    DiscreteAgentForecastOutput,
 )
 from aieng.forecasting.methods.agentic.predictor import AgentPredictor, ForecastPromptBuilder
 
@@ -75,6 +76,7 @@ __all__: list[str] = [
     "ContinuousAgentForecastOutput",
     "ContinuousAgentHorizonForecast",
     "ContextRetrievalConfig",
+    "DiscreteAgentForecastOutput",
     "ForecastPromptBuilder",
     "build_adk_agent",
 ]

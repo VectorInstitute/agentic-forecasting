@@ -212,7 +212,9 @@ def _crps_for_prediction(prediction: Prediction, actual: float) -> float:
     float
         CRPS score (lower is better).
     """
-    payload: ContinuousForecast = prediction.payload
+    if not isinstance(prediction.payload, ContinuousForecast):
+        raise TypeError("CRPS scoring requires a ContinuousForecast payload.")
+    payload = prediction.payload
     ensemble = np.array(sorted(payload.quantiles.values()), dtype=float)
     return float(ps.crps_ensemble(actual, ensemble))
 

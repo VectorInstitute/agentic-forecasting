@@ -23,7 +23,7 @@ from typing import Any, ClassVar, Literal
 
 import pandas as pd
 from aieng.forecasting.data.context import ForecastContext
-from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, ContinuousForecast, Prediction
+from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, BinaryForecast, ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.task import ForecastingTask
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -329,3 +329,68 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
             )
 
         return predictions
+
+
+class DiscreteAgentForecastOutput(AgentForecastOutput):
+    """Agent output for binary / discrete-event forecasting tasks.
+
+    Attributes
+    ----------
+    probability : float
+        Predicted probability the event resolves True, in ``[0, 1]``.
+    reasoning : str
+        Optional explanation propagated to ``Prediction.metadata``.
+    direction_bias : str
+        Optional directional label (``up``, ``down``, ``neutral``).
+    key_signals : list[str]
+        Optional list of supporting signals for the forecast.
+    confidence : str
+        Optional self-reported confidence label.
+    """
+
+    modality: ClassVar[Literal["continuous", "discrete"]] = "discrete"
+
+    model_config = {"extra": "ignore"}
+
+    probability: float = Field(ge=0.0, le=1.0, description="Predicted probability the event occurs.")
+    reasoning: str = Field(default="", description="Optional explanation for the probability estimate.")
+    direction_bias: str = Field(default="", description="Optional directional label: up, down, or neutral.")
+    key_signals: list[str] = Field(default_factory=list, description="Key signals supporting the estimate.")
+    confidence: str = Field(default="", description="Optional self-reported confidence: high, medium, or low.")
+
+    def to_predictions(
+        self,
+        *,
+        task: ForecastingTask,
+        context: ForecastContext,
+        predictor_id: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> list[Prediction]:
+        """Convert agent output to a single binary :class:`Prediction`."""
+        if len(task.horizons) != 1:
+            raise ValueError("Discrete agent output expects exactly one task horizon.")
+
+        horizon = task.horizons[0]
+        issued_at = datetime.utcnow()
+        offset = pd.tseries.frequencies.to_offset(task.frequency)
+        prediction_metadata: dict[str, Any] = dict(metadata) if metadata is not None else {}
+        if self.reasoning.strip():
+            prediction_metadata["agent_rationale"] = self.reasoning
+        if self.direction_bias.strip():
+            prediction_metadata["direction_bias"] = self.direction_bias
+        if self.key_signals:
+            prediction_metadata["key_signals"] = list(self.key_signals)
+        if self.confidence.strip():
+            prediction_metadata["confidence"] = self.confidence
+
+        return [
+            Prediction(
+                predictor_id=predictor_id,
+                task_id=task.task_id,
+                issued_at=issued_at,
+                as_of=context.as_of,
+                forecast_date=(pd.Timestamp(context.as_of) + offset * horizon).to_pydatetime(),
+                payload=BinaryForecast(probability=self.probability),
+                metadata=prediction_metadata,
+            )
+        ]

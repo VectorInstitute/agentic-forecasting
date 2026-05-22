@@ -1,6 +1,7 @@
 """Prediction payload types and the Prediction metadata wrapper."""
 
 from datetime import datetime
+from math import isfinite
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
@@ -53,6 +54,29 @@ class ContinuousForecast(BaseModel):
         return v
 
 
+class BinaryForecast(BaseModel):
+    """Binary event probability payload for discrete-event forecasting tasks.
+
+    Parameters
+    ----------
+    probability : float
+        Predicted probability that the event resolves ``True``, in ``[0, 1]``.
+    """
+
+    probability: float = Field(ge=0.0, le=1.0, description="Predicted probability the event occurs.")
+
+    @field_validator("probability")
+    @classmethod
+    def probability_is_finite(cls, value: float) -> float:
+        """Reject NaN and infinite probabilities."""
+        if not isfinite(value):
+            raise ValueError("Probability must be a finite number.")
+        return value
+
+
+ForecastPayload = ContinuousForecast | BinaryForecast
+
+
 class Prediction(BaseModel):
     """A single forecast submission — metadata wrapper around a forecast payload.
 
@@ -82,7 +106,7 @@ class Prediction(BaseModel):
         predictor.
     forecast_date : datetime
         The future date being predicted (``as_of`` + horizon steps).
-    payload : ContinuousForecast
+    payload : ContinuousForecast | BinaryForecast
         The forecast payload.
     metadata : dict[str, Any]
         Optional free-form metadata the predictor wants to return alongside the
@@ -114,7 +138,7 @@ class Prediction(BaseModel):
     issued_at: datetime = Field(description="Wall-clock time when the prediction was generated.")
     as_of: datetime = Field(description="Information cutoff used when generating this prediction.")
     forecast_date: datetime = Field(description="The future date being predicted.")
-    payload: ContinuousForecast = Field(description="The forecast payload.")
+    payload: ForecastPayload = Field(description="The forecast payload.")
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description=(
