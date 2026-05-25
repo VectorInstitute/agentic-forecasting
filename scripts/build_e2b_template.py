@@ -1,9 +1,9 @@
 """E2B sandbox image: aieng-forecasting + repo scripts for data cache population."""
 
 import asyncio
-import dotenv
 from pathlib import Path
 
+import dotenv
 from e2b import AsyncTemplate, wait_for_url
 from e2b.template.logger import default_build_logger
 
@@ -61,7 +61,9 @@ template = _builder.set_workdir("/home/user/workspace").set_start_cmd(
 async def main() -> None:
     # load E2B_API_KEY
     dotenv.load_dotenv()
-    E2B_API_KEY = dotenv.get_key(".env", "E2B_API_KEY")
+    # Fail hard if E2B_API_KEY is not set
+    if not dotenv.get_key(".env", "E2B_API_KEY"):
+        raise ValueError("E2B_API_KEY is not set")
     await AsyncTemplate.build(
         template,
         "agentic-forecasting-bootcamp",
