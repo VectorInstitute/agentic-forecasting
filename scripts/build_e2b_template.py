@@ -1,6 +1,7 @@
 """E2B sandbox image: aieng-forecasting + repo scripts for data cache population."""
 
 import asyncio
+import dotenv
 from pathlib import Path
 
 from e2b import AsyncTemplate, wait_for_url
@@ -58,6 +59,9 @@ template = _builder.set_workdir("/home/user/workspace").set_start_cmd(
 
 
 async def main() -> None:
+    # load E2B_API_KEY
+    dotenv.load_dotenv()
+    E2B_API_KEY = dotenv.get_key(".env", "E2B_API_KEY")
     await AsyncTemplate.build(
         template,
         "agentic-forecasting-bootcamp",
