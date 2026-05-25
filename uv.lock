@@ -83,7 +83,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "codecov", specifier = ">=2.1.13" },
-    { name = "e2b", specifier = ">=2.22.0" },
+    { name = "e2b", specifier = ">=2.23.1" },
     { name = "mypy", specifier = ">=2.1.0" },
     { name = "nbqa", specifier = ">=1.9.1" },
     { name = "pip-audit", specifier = ">=2.10.0" },
@@ -180,7 +180,7 @@ requires-dist = [
     { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.5.1" },
     { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
-    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.1" },
+    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.0" },
     { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
@@ -1184,7 +1184,7 @@ wheels = [
 
 [[package]]
 name = "e2b"
-version = "2.22.0"
+version = "2.23.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1199,9 +1199,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wcmatch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bb/4a/2d073c68d22bd969153a9f00a35db41cf55459da3b494ba52068621ff019/e2b-2.22.0.tar.gz", hash = "sha256:78163b82a3a90f730e6b33769ef60d2153bd2c3a763a80ffaf0b0e705bb5ec3f", size = 157994, upload-time = "2026-05-22T09:47:53.021Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/78/77/cfa10767468bc338a30f3776a75040c69033eaaf64e6eed4268d5470f477/e2b-2.23.1.tar.gz", hash = "sha256:ce8cfd388c2e4f8a9467cc363000746b68ecf7d48d9e6af5f81ad7e6d4756bce", size = 157359, upload-time = "2026-05-22T19:46:41.721Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/f3/9dc291556266fa63b8775e394a4180f9fe68aa3e4b6487de6c852d08f987/e2b-2.22.0-py3-none-any.whl", hash = "sha256:15986d303ca2ac377c036a373e904f73f3aaf1d62df94fc2b7a9547eab6241a3", size = 298121, upload-time = "2026-05-22T09:47:51.4Z" },
+    { url = "https://files.pythonhosted.org/packages/09/8f/36c314f838ce2f5ecec6843ae058248998448cb3b5f962ba428a441755bb/e2b-2.23.1-py3-none-any.whl", hash = "sha256:55a7d2d51b091a21a972eb4a284170bf8c0fd1a1564c44eaea8f2cd0b1195e9d", size = 297454, upload-time = "2026-05-22T19:46:39.819Z" },
 ]
 
 [[package]]
