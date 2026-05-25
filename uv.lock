@@ -180,7 +180,7 @@ requires-dist = [
     { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.5.1" },
     { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
-    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.1" },
+    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.0" },
     { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
@@ -188,7 +188,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "stats-can", specifier = ">=3.1.0" },
     { name = "statsforecast", marker = "extra == 'numerical'", specifier = ">=2.0.1" },
-    { name = "yfinance", specifier = ">=1.3.0" },
+    { name = "yfinance", specifier = ">=1.4.0" },
 ]
 provides-extras = ["agentic", "llm", "numerical"]
 
@@ -1362,15 +1362,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6f/3c/e9281ecda4c6ee5c7d50a4bcf00dc5df1a7ff325e604c9b9510c5bdd8514/fredapi-0.5.2.tar.gz", hash = "sha256:405ca048abed4207d93dbc9b7ee8c46d6b473483650323e2f1c094af83d4b247", size = 14735, upload-time = "2024-05-05T11:42:11.444Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/73/64/1db43417cf7ed430f104a347126b5260a1724ee9a1b7d0b1622262c9c4df/fredapi-0.5.2-py3-none-any.whl", hash = "sha256:961817ec8d70e58886ff7302d3dda908614ad99f77831a59833c4fc3f6150155", size = 11854, upload-time = "2024-05-05T11:42:09.559Z" },
-]
-
-[[package]]
-name = "frozendict"
-version = "2.4.7"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/90/b2/2a3d1374b7780999d3184e171e25439a8358c47b481f68be883c14086b4c/frozendict-2.4.7.tar.gz", hash = "sha256:e478fb2a1391a56c8a6e10cc97c4a9002b410ecd1ac28c18d780661762e271bd", size = 317082, upload-time = "2025-11-11T22:40:14.251Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/74/f94141b38a51a553efef7f510fc213894161ae49b88bffd037f8d2a7cb2f/frozendict-2.4.7-py3-none-any.whl", hash = "sha256:972af65924ea25cf5b4d9326d549e69a9a4918d8a76a9d3a7cd174d98b237550", size = 16264, upload-time = "2025-11-11T22:40:12.836Z" },
 ]
 
 [[package]]
@@ -5666,12 +5657,11 @@ wheels = [
 
 [[package]]
 name = "yfinance"
-version = "1.3.0"
+version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "curl-cffi" },
-    { name = "frozendict" },
     { name = "multitasking" },
     { name = "numpy" },
     { name = "pandas" },
@@ -5682,9 +5672,9 @@ dependencies = [
     { name = "requests" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/fd/943a7d71ce98a40b9006daccba96a83837acadb8e55361f41c7a81873013/yfinance-1.3.0.tar.gz", hash = "sha256:42c4e64a889dab8eeaffd3a66d4ccf1baffd566910ca63fb6332283f8f9b8a40", size = 145297, upload-time = "2026-04-16T19:51:05.785Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/e2/b81f9cac78f1c23e444164f2135e19f849a66774474f8b156fc3702280c3/yfinance-1.4.0.tar.gz", hash = "sha256:6b049c3f28b0d66be54c32d84838ffd60c429277ba378afb0202c4792013c911", size = 153715, upload-time = "2026-05-23T16:28:08.961Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/bc/e46ed5dfb88c6f7af0f641ffb6227d32f484ea989a2987a52a9c35d17aa9/yfinance-1.3.0-py2.py3-none-any.whl", hash = "sha256:c89539f0cf6af026d570131189bd659a962e8fb942376ef8ff8913e77c9fca75", size = 133706, upload-time = "2026-04-16T19:51:04.298Z" },
+    { url = "https://files.pythonhosted.org/packages/95/58/31561402a60d317f9c36288223be99eabedc25b61f18d0b69f0889726545/yfinance-1.4.0-py2.py3-none-any.whl", hash = "sha256:6513654be21bd80a4e9e4e24193255fb4b1921618443113826494bf6efcedcb0", size = 137749, upload-time = "2026-05-23T16:28:07.656Z" },
 ]
 
 [[package]]
