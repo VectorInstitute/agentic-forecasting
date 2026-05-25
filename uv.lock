@@ -181,7 +181,7 @@ requires-dist = [
     { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
     { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.0" },
-    { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
+    { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.15" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
     { name = "pydantic", specifier = ">=2.0" },
@@ -3256,7 +3256,7 @@ wheels = [
 
 [[package]]
 name = "openinference-instrumentation-google-adk"
-version = "0.1.14"
+version = "0.1.15"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openinference-instrumentation" },
@@ -3267,9 +3267,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/9e/9771a2d88f1d33fec62d7a7d48f9d934a19af1f7490224287d3b7885765a/openinference_instrumentation_google_adk-0.1.14.tar.gz", hash = "sha256:07c0afdd2979209983b589f9193e280dc1f0b8a4ef4877e9c9e10cc898cd15f5", size = 14499, upload-time = "2026-05-18T18:51:35.127Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/1a/f35f3f38dba763e3ab41a73c15125de6107b3dd1aacbff50201b945e7d89/openinference_instrumentation_google_adk-0.1.15.tar.gz", hash = "sha256:1c0c73ad3b128858486f2066ceba3690061cbb8755bcd97a58220d9a5a42cf8e", size = 14739, upload-time = "2026-05-22T21:10:48.449Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5b/ac/3baa4132764ad671f3a6ec6f31dfa5c946a2b83f2b062879b05f1c3bef21/openinference_instrumentation_google_adk-0.1.14-py3-none-any.whl", hash = "sha256:8f92c6fdb720e44ee9326a63566ca2c971984c8b5540c8d6d50af88cf17eace8", size = 16443, upload-time = "2026-05-18T18:51:33.562Z" },
+    { url = "https://files.pythonhosted.org/packages/49/24/dbddd058a5b837c5f50a42dd94b4d9e338dc362c3cf067a6620c18a7f5c3/openinference_instrumentation_google_adk-0.1.15-py3-none-any.whl", hash = "sha256:be6db6bb68922acae5103bbb72fda9b880a809309b49289fa23d685742de8ebe", size = 16661, upload-time = "2026-05-22T21:10:46.054Z" },
 ]
 
 [[package]]
