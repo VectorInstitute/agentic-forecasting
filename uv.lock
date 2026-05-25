@@ -180,7 +180,7 @@ requires-dist = [
     { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.5.1" },
     { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
-    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.1" },
+    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.0" },
     { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
