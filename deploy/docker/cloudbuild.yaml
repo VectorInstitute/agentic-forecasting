@@ -1,0 +1,13 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/coderd/coder/agentic-forecasting-bootcamp:latest'
+      - '-f'
+      - 'deploy/docker/Dockerfile'
+      - '.'
+images:
+  - 'us-central1-docker.pkg.dev/coderd/coder/agentic-forecasting-bootcamp:latest'
+options:
+  logging: CLOUD_LOGGING_ONLY

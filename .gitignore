@@ -49,3 +49,5 @@ implementations/**/data/
 .local-backup/
 
 **/presentations
+deploy/coder-template/terraform.tfvars
+deploy/terraform.tfvars
