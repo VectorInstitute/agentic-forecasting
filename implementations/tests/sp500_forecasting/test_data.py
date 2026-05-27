@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pandas as pd
-from implementations.sp500_forecasting.data import _drop_weekend_timestamp_rows
+from sp500_forecasting.data import _drop_weekend_timestamp_rows
 
 
 def test_drop_weekend_timestamp_rows_removes_sat_sun() -> None:

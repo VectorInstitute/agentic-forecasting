@@ -84,6 +84,11 @@ Unit tests for data helpers live under
 
 ## Prerequisites
 
+From the **repository root**, run `uv sync` once so `sp500_forecasting` is on the
+interpreter path (same pattern as `food_price_forecasting` / `energy_oil_forecasting`).
+Use the project `.venv` as the Jupyter kernel — imports are `from sp500_forecasting import ...`,
+not `from implementations...`.
+
 Warm caches at the repo root (gitignored):
 
 ```bash

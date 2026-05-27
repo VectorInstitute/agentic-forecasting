@@ -17,8 +17,8 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter
 
-from implementations.sp500_forecasting.analysis import style_results_dataframe
-from implementations.sp500_forecasting.data import (
+from sp500_forecasting.analysis import style_results_dataframe
+from sp500_forecasting.data import (
     SP500_LOG_RETURN_SERIES_ID,
 )
 
@@ -126,7 +126,7 @@ def plot_open_forecast_vs_actual(
     """Line + fan chart: realised **open** vs median-implied open (5–95% band when available).
 
     ``compare_df`` is typically from
-    :func:`~implementations.sp500_forecasting.backtest_grid.build_open_price_compare_frame`.
+    :func:`~sp500_forecasting.backtest_grid.build_open_price_compare_frame`.
     """
     fig, ax = plt.subplots(figsize=(11, 5), layout="constrained", facecolor="0.98")
     ax.set_facecolor("#fafafa")

@@ -21,11 +21,11 @@ from aieng.forecasting.methods import (
     DartsLinearRegressionPredictor,
 )
 
-from implementations.sp500_forecasting.analysis import (
+from sp500_forecasting.analysis import (
     build_direction_eval_frame,
     direction_classification_metrics,
 )
-from implementations.sp500_forecasting.data import SP500_LOG_RETURN_SERIES_ID
+from sp500_forecasting.data import SP500_LOG_RETURN_SERIES_ID
 
 
 def _prepare_sp500_price_lookup(price_df: pd.DataFrame) -> pd.DataFrame | None:
