@@ -20,7 +20,6 @@ from aieng.forecasting.methods import (
     DartsLightGBMPredictor,
     DartsLinearRegressionPredictor,
 )
-
 from sp500_forecasting.analysis import (
     build_direction_eval_frame,
     direction_classification_metrics,

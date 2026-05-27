@@ -16,7 +16,6 @@ import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter
-
 from sp500_forecasting.analysis import style_results_dataframe
 from sp500_forecasting.data import (
     SP500_LOG_RETURN_SERIES_ID,
