@@ -175,12 +175,12 @@ requires-dist = [
     { name = "aieng-agents", extras = ["code-interpreter"], marker = "extra == 'agentic'", specifier = ">=0.3.0" },
     { name = "darts", marker = "extra == 'numerical'", specifier = ">=0.44.1" },
     { name = "fredapi", specifier = ">=0.5.2" },
-    { name = "google-adk", marker = "extra == 'agentic'", specifier = ">=2.0.0" },
+    { name = "google-adk", marker = "extra == 'agentic'", specifier = ">=2.1.0" },
     { name = "google-cloud-storage", marker = "extra == 'agentic'", specifier = ">=2.18,<4" },
     { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.5.1" },
     { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
-    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.0" },
+    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.86.0" },
     { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
@@ -188,7 +188,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "stats-can", specifier = ">=3.1.0" },
     { name = "statsforecast", marker = "extra == 'numerical'", specifier = ">=2.0.1" },
-    { name = "yfinance", specifier = ">=1.3.0" },
+    { name = "yfinance", specifier = ">=1.4.0" },
 ]
 provides-extras = ["agentic", "llm", "numerical"]
 
@@ -1365,15 +1365,6 @@ wheels = [
 ]
 
 [[package]]
-name = "frozendict"
-version = "2.4.7"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/90/b2/2a3d1374b7780999d3184e171e25439a8358c47b481f68be883c14086b4c/frozendict-2.4.7.tar.gz", hash = "sha256:e478fb2a1391a56c8a6e10cc97c4a9002b410ecd1ac28c18d780661762e271bd", size = 317082, upload-time = "2025-11-11T22:40:14.251Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/74/f94141b38a51a553efef7f510fc213894161ae49b88bffd037f8d2a7cb2f/frozendict-2.4.7-py3-none-any.whl", hash = "sha256:972af65924ea25cf5b4d9326d549e69a9a4918d8a76a9d3a7cd174d98b237550", size = 16264, upload-time = "2025-11-11T22:40:12.836Z" },
-]
-
-[[package]]
 name = "frozenlist"
 version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1486,7 +1477,7 @@ wheels = [
 
 [[package]]
 name = "google-adk"
-version = "2.0.0"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1503,6 +1494,7 @@ dependencies = [
     { name = "packaging" },
     { name = "pydantic" },
     { name = "python-dotenv" },
+    { name = "python-multipart" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "starlette" },
@@ -1513,9 +1505,9 @@ dependencies = [
     { name = "watchdog" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a5/08/e9af9ab3b0df422f9c9c07251840f8be876694852d3ac06dbe4e15ce01a7/google_adk-2.0.0.tar.gz", hash = "sha256:2f53c70b5de8409d427f0955bc89f1ba30a8397dec5aefa0ac7c3ecd1b4018d4", size = 3337944, upload-time = "2026-05-19T16:17:10.664Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/02/d2/58823ea0d5ac32143773d377b014123191ce420480c003190e1f86a9667c/google_adk-2.1.0.tar.gz", hash = "sha256:fd1709bf5e70e5aaa7d148c7b788d2cd00bb659ee10505a731bb2ad609d28968", size = 3340742, upload-time = "2026-05-23T00:13:56.793Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/f5/596e879aacad5214945ede50a4c8e4a0811979ecff83c91e0df11ef13961/google_adk-2.0.0-py3-none-any.whl", hash = "sha256:6d06d8e3b9119ccd7721505356f8c0a5253dcfdc426dd9a72e0fef1cf9ed4703", size = 3846211, upload-time = "2026-05-19T16:17:08.081Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/5b/56a9992b6f9447437f29e3691a487b16dfdea42aedec16ceced9de88b9f8/google_adk-2.1.0-py3-none-any.whl", hash = "sha256:4ec8a0ccdf8af90f9fa505c740cae921b47590aee3d61bca14f7bfa8bc886e4e", size = 3852259, upload-time = "2026-05-23T00:13:59.611Z" },
 ]
 
 [[package]]
@@ -2517,7 +2509,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.85.1"
+version = "1.86.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -2533,9 +2525,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/da/55/aebffceaa08688a989e9c68b3edc3a520a1f8338eb0346668774bd66ad88/litellm-1.85.1.tar.gz", hash = "sha256:3b8ef0c89ff2736cbd27109f17ff31f1bd0ab59dee9be8cadb28ec3cb167ce0d", size = 15346324, upload-time = "2026-05-21T02:30:38.185Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/a7/26b8b04e4fcff26b60200ffe7458a255552ae51014468188f5db45674eb2/litellm-1.86.0.tar.gz", hash = "sha256:eccab86e0820b60b3f9484b233fb8d818b97afb19d5b4fa08d0d045621350ba4", size = 15379195, upload-time = "2026-05-24T02:42:10.865Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/17/a0/263a13c2253201aa11563a69d9a87f3510030aa765a16f57fc40ceefcdf5/litellm-1.85.1-py3-none-any.whl", hash = "sha256:c89eb5dfd18cce3d40b59e79c74f7f645bc7814a417c6ab25e53c786f0a6ab7b", size = 16980080, upload-time = "2026-05-21T02:30:35.096Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/0b/9a044c061a69e801de042e962c34f5bc2e094810e28b49ce0b3bedee9327/litellm-1.86.0-py3-none-any.whl", hash = "sha256:9d8171ca1a17705b7c7a6fdce8cfc07bbf641284b46c1b6047f83a779159990c", size = 17011225, upload-time = "2026-05-24T02:42:00.629Z" },
 ]
 
 [[package]]
@@ -3054,7 +3046,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "google-adk", specifier = ">=2.0.0" },
+    { name = "google-adk", specifier = ">=2.1.0" },
     { name = "langfuse", specifier = ">=4.5.1" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pydantic-settings", specifier = ">=2.0" },
@@ -3256,7 +3248,7 @@ wheels = [
 
 [[package]]
 name = "openinference-instrumentation-google-adk"
-version = "0.1.14"
+version = "0.1.15"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "openinference-instrumentation" },
@@ -3267,9 +3259,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/9e/9771a2d88f1d33fec62d7a7d48f9d934a19af1f7490224287d3b7885765a/openinference_instrumentation_google_adk-0.1.14.tar.gz", hash = "sha256:07c0afdd2979209983b589f9193e280dc1f0b8a4ef4877e9c9e10cc898cd15f5", size = 14499, upload-time = "2026-05-18T18:51:35.127Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/1a/f35f3f38dba763e3ab41a73c15125de6107b3dd1aacbff50201b945e7d89/openinference_instrumentation_google_adk-0.1.15.tar.gz", hash = "sha256:1c0c73ad3b128858486f2066ceba3690061cbb8755bcd97a58220d9a5a42cf8e", size = 14739, upload-time = "2026-05-22T21:10:48.449Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5b/ac/3baa4132764ad671f3a6ec6f31dfa5c946a2b83f2b062879b05f1c3bef21/openinference_instrumentation_google_adk-0.1.14-py3-none-any.whl", hash = "sha256:8f92c6fdb720e44ee9326a63566ca2c971984c8b5540c8d6d50af88cf17eace8", size = 16443, upload-time = "2026-05-18T18:51:33.562Z" },
+    { url = "https://files.pythonhosted.org/packages/49/24/dbddd058a5b837c5f50a42dd94b4d9e338dc362c3cf067a6620c18a7f5c3/openinference_instrumentation_google_adk-0.1.15-py3-none-any.whl", hash = "sha256:be6db6bb68922acae5103bbb72fda9b880a809309b49289fa23d685742de8ebe", size = 16661, upload-time = "2026-05-22T21:10:46.054Z" },
 ]
 
 [[package]]
@@ -5666,12 +5658,11 @@ wheels = [
 
 [[package]]
 name = "yfinance"
-version = "1.3.0"
+version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "curl-cffi" },
-    { name = "frozendict" },
     { name = "multitasking" },
     { name = "numpy" },
     { name = "pandas" },
@@ -5682,9 +5673,9 @@ dependencies = [
     { name = "requests" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/fd/943a7d71ce98a40b9006daccba96a83837acadb8e55361f41c7a81873013/yfinance-1.3.0.tar.gz", hash = "sha256:42c4e64a889dab8eeaffd3a66d4ccf1baffd566910ca63fb6332283f8f9b8a40", size = 145297, upload-time = "2026-04-16T19:51:05.785Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/e2/b81f9cac78f1c23e444164f2135e19f849a66774474f8b156fc3702280c3/yfinance-1.4.0.tar.gz", hash = "sha256:6b049c3f28b0d66be54c32d84838ffd60c429277ba378afb0202c4792013c911", size = 153715, upload-time = "2026-05-23T16:28:08.961Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/bc/e46ed5dfb88c6f7af0f641ffb6227d32f484ea989a2987a52a9c35d17aa9/yfinance-1.3.0-py2.py3-none-any.whl", hash = "sha256:c89539f0cf6af026d570131189bd659a962e8fb942376ef8ff8913e77c9fca75", size = 133706, upload-time = "2026-04-16T19:51:04.298Z" },
+    { url = "https://files.pythonhosted.org/packages/95/58/31561402a60d317f9c36288223be99eabedc25b61f18d0b69f0889726545/yfinance-1.4.0-py2.py3-none-any.whl", hash = "sha256:6513654be21bd80a4e9e4e24193255fb4b1921618443113826494bf6efcedcb0", size = 137749, upload-time = "2026-05-23T16:28:07.656Z" },
 ]
 
 [[package]]
