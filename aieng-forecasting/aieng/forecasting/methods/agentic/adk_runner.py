@@ -1,15 +1,31 @@
-"""General-purpose ADK runner: text-in / text-out over ``InMemoryRunner``."""
+"""General-purpose ADK runner: text-in / text-out over ``InMemoryRunner``.
+
+This module provides :class:`AdkTextRunner`, a thin wrapper around Google
+ADK's :class:`~google.adk.runners.InMemoryRunner` that exposes a single
+``run_text_async(prompt) -> str`` method, manages per-user session lifecycle,
+and optionally propagates Langfuse trace attributes for each turn.
+
+This module requires the ``agentic`` extra; importing it without the extra
+raises :class:`ImportError`.
+"""
 
 from __future__ import annotations
 
 import types as py_types
 from typing import Any
 
-from google.adk.agents.base_agent import BaseAgent
-from google.adk.agents.run_config import RunConfig
-from google.adk.runners import InMemoryRunner
-from google.genai import types as genai_types
 from pydantic import BaseModel, Field
+
+
+try:
+    from google.adk.agents.base_agent import BaseAgent
+    from google.adk.agents.run_config import RunConfig
+    from google.adk.runners import InMemoryRunner
+    from google.genai import types as genai_types
+except ModuleNotFoundError as exc:
+    raise ImportError(
+        "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
+    ) from exc
 
 
 class AdkTextRunnerConfig(BaseModel):
@@ -118,20 +134,28 @@ class AdkTextRunner:
 
     Examples
     --------
-    >>> from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner
-    >>> from aieng.forecasting.methods.agentic.analyst_agent import (
-    ...     build_analyst_agent,
-    ...     AnalystAgentConfig,
-    ... )
-    >>> analyst_agent = build_analyst_agent(AnalystAgentConfig())
-    >>> cfg = AdkTextRunnerConfig(app_name="demo", enable_langfuse_tracing=True)
-    >>> runner = AdkTextRunner(analyst_agent, config=cfg)
-    >>> await runner.run_text_async("What is the trend in the data?")
+    Build a runner from an :class:`AgentConfig` and send one prompt:
 
+    >>> from aieng.forecasting.methods.agentic import (
+    ...     AgentConfig,
+    ...     build_adk_agent,
+    ... )
+    >>> from aieng.forecasting.methods.agentic.adk_runner import (
+    ...     AdkTextRunner,
+    ...     AdkTextRunnerConfig,
+    ... )
+    >>> agent = build_adk_agent(AgentConfig(instruction="You are a helpful assistant."))
+    >>> runner = AdkTextRunner(
+    ...     agent,
+    ...     config=AdkTextRunnerConfig(app_name="demo"),
+    ... )
+    >>> reply = await runner.run_text_async("Hello.")
     """
 
     def __init__(self, agent: BaseAgent, *, config: AdkTextRunnerConfig) -> None:
-        self._config = config
+        """Construct the runner and optionally initialise Langfuse tracing."""
+        self.config = config
+        self.agent = agent
         self._runner = InMemoryRunner(agent=agent, app_name=config.app_name)
         # Sticky ADK session per user when ``fresh_session_per_message`` is False.
         self._conversation_session_by_user: dict[str, str] = {}
@@ -162,11 +186,11 @@ class AdkTextRunner:
             ADK session id for this turn.
         """
         if user_id is None:
-            user_id = self._config.default_user_id
+            user_id = self.config.default_user_id
 
-        if self._config.fresh_session_per_message:
+        if self.config.fresh_session_per_message:
             new_session = await self._runner.session_service.create_session(
-                app_name=self._config.app_name,
+                app_name=self.config.app_name,
                 user_id=user_id,
             )
             sid = new_session.id
@@ -177,7 +201,7 @@ class AdkTextRunner:
             sid = self._conversation_session_by_user[user_id]
         else:
             new_session = await self._runner.session_service.create_session(
-                app_name=self._config.app_name,
+                app_name=self.config.app_name,
                 user_id=user_id,
             )
             sid = new_session.id
@@ -229,7 +253,7 @@ class AdkTextRunner:
         When ``enable_langfuse_tracing`` is True, each turn runs inside Langfuse
         ``propagate_attributes`` using the resolved ``user_id`` and ADK ``session_id``.
         """
-        user_id = user_id or self._config.default_user_id
+        user_id = user_id or self.config.default_user_id
 
         session_id = await self._resolve_session_id(user_id, session_id)
 
@@ -246,12 +270,12 @@ class AdkTextRunner:
                     return event.content.parts[0].text or ""
             return ""
 
-        if self._config.enable_langfuse_tracing:
+        if self.config.enable_langfuse_tracing:
             from langfuse import propagate_attributes  # noqa: PLC0415
 
-            metadata: dict[str, str] = {"adk_app_name": self._config.app_name}
-            if self._config.langfuse_propagate_metadata:
-                metadata = {**metadata, **self._config.langfuse_propagate_metadata}
+            metadata: dict[str, str] = {"adk_app_name": self.config.app_name}
+            if self.config.langfuse_propagate_metadata:
+                metadata = {**metadata, **self.config.langfuse_propagate_metadata}
 
             pa_kw: dict[str, Any] = {
                 k: v
@@ -259,9 +283,9 @@ class AdkTextRunner:
                     "user_id": user_id,
                     "session_id": session_id,
                     "metadata": metadata,
-                    "tags": self._config.langfuse_tags,
-                    "trace_name": self._config.langfuse_trace_name,
-                    "version": self._config.langfuse_version,
+                    "tags": self.config.langfuse_tags,
+                    "trace_name": self.config.langfuse_trace_name,
+                    "version": self.config.langfuse_version,
                 }.items()
                 if v is not None
             }

@@ -1,6 +1,6 @@
 """Canada Food CPI experiment — helper modules and reference implementations.
 
-The experiment notebook (``food_cpi_experiment.ipynb``) is deliberately kept
+The experiment notebook (``02_food_cpi_experiment.ipynb``) is deliberately kept
 thin; most of the analytical and plotting code lives in the modules in this
 package:
 

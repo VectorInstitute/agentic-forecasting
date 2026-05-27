@@ -1,7 +1,8 @@
-"""Tests for aieng.forecasting.methods.agentic.adk_runner.
+"""Tests for ``aieng.forecasting.methods.agentic.adk_runner``.
 
-Covers session-management logic, response extraction, Langfuse kwargs
-filtering, and lifecycle contracts.
+These tests cover behaviour owned by the wrapper: session policy, text
+extraction, Langfuse propagation kwargs, agent exposure, and lifecycle cleanup.
+They intentionally avoid testing ADK's runner/session internals.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -80,6 +81,27 @@ def mock_agent():
 
 
 # ---------------------------------------------------------------------------
+# Runner and agent exposure
+# ---------------------------------------------------------------------------
+
+
+class TestRunnerExposure:
+    """Expose the wrapped runner and agent for integration seams."""
+
+    def test_agent_attribute_returns_constructor_agent(self, patch_runner_cls, mock_agent) -> None:
+        """``AgentPredictor`` relies on this attribute for runner injection."""
+        runner = AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app"))
+
+        assert runner.agent is mock_agent
+
+    def test_runner_property_returns_underlying_runner(self, patch_runner_cls, mock_agent) -> None:
+        """Expose the ADK runner for advanced callers that need lower-level services."""
+        runner = AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app"))
+
+        assert runner.runner is patch_runner_cls
+
+
+# ---------------------------------------------------------------------------
 # Session resolution — fresh_session_per_message=True
 # ---------------------------------------------------------------------------
 
@@ -89,38 +111,49 @@ class TestFreshSessionMode:
     """Session handling when ``fresh_session_per_message`` is true."""
 
     async def test_returns_a_new_session_id_on_each_call(self, patch_runner_cls, mock_agent) -> None:
-        """Each resolve allocates a new session id from the session service."""
+        """Each message allocates a new session id from the session service."""
         patch_runner_cls.session_service.create_session.side_effect = [
             _session("s1"),
             _session("s2"),
+        ]
+        patch_runner_cls.run_async.side_effect = [
+            _stream(_final_event("one")),
+            _stream(_final_event("two")),
         ]
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=True),
         )
-        sid1 = await runner._resolve_session_id("alice", None)
-        sid2 = await runner._resolve_session_id("alice", None)
-        assert sid1 == "s1"
-        assert sid2 == "s2"
+        await runner.run_text_async("first", user_id="alice")
+        await runner.run_text_async("second", user_id="alice")
+
+        session_ids = [call.kwargs["session_id"] for call in patch_runner_cls.run_async.call_args_list]
+        assert session_ids == ["s1", "s2"]
 
     async def test_sticky_dict_is_never_written(self, patch_runner_cls, mock_agent) -> None:
         """Per-user sticky map stays empty in fresh-session mode."""
+        patch_runner_cls.run_async.return_value = _stream(_final_event("ok"))
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=True),
         )
-        await runner._resolve_session_id("alice", None)
+
+        await runner.run_text_async("hello", user_id="alice")
+
         assert runner._conversation_session_by_user == {}
 
     async def test_caller_supplied_session_id_is_ignored(self, patch_runner_cls, mock_agent) -> None:
         """Caller-provided session id is ignored; a new session is always created."""
         patch_runner_cls.session_service.create_session.return_value = _session("fresh-sid")
+        patch_runner_cls.run_async.return_value = _stream(_final_event("ok"))
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=True),
         )
-        sid = await runner._resolve_session_id("alice", "caller-supplied")
-        assert sid == "fresh-sid"
+
+        await runner.run_text_async("hello", user_id="alice", session_id="caller-supplied")
+
+        assert patch_runner_cls.run_async.call_args.kwargs["session_id"] == "fresh-sid"
 
 
 # ---------------------------------------------------------------------------
@@ -135,34 +168,46 @@ class TestStickySessionMode:
     async def test_first_call_creates_and_caches_session(self, patch_runner_cls, mock_agent) -> None:
         """First resolve creates a session and stores it under the user id."""
         patch_runner_cls.session_service.create_session.return_value = _session("s1")
+        patch_runner_cls.run_async.return_value = _stream(_final_event("ok"))
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=False),
         )
-        sid = await runner._resolve_session_id("alice", None)
-        assert sid == "s1"
+
+        await runner.run_text_async("hello", user_id="alice")
+
+        assert patch_runner_cls.run_async.call_args.kwargs["session_id"] == "s1"
         assert runner._conversation_session_by_user["alice"] == "s1"
 
     async def test_second_call_reuses_session_without_creating_a_new_one(self, patch_runner_cls, mock_agent) -> None:
         """Second resolve returns the cached id without another create_session call."""
         patch_runner_cls.session_service.create_session.return_value = _session("s1")
+        patch_runner_cls.run_async.side_effect = [
+            _stream(_final_event("one")),
+            _stream(_final_event("two")),
+        ]
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=False),
         )
-        await runner._resolve_session_id("alice", None)
-        sid2 = await runner._resolve_session_id("alice", None)
-        assert sid2 == "s1"
+        await runner.run_text_async("first", user_id="alice")
+        await runner.run_text_async("second", user_id="alice")
+
+        session_ids = [call.kwargs["session_id"] for call in patch_runner_cls.run_async.call_args_list]
+        assert session_ids == ["s1", "s1"]
         assert patch_runner_cls.session_service.create_session.call_count == 1
 
     async def test_explicit_session_id_overwrites_cached_entry(self, patch_runner_cls, mock_agent) -> None:
         """Explicit session id updates the cache without calling create_session."""
+        patch_runner_cls.run_async.return_value = _stream(_final_event("ok"))
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=False),
         )
-        sid = await runner._resolve_session_id("alice", "override-sid")
-        assert sid == "override-sid"
+
+        await runner.run_text_async("hello", user_id="alice", session_id="override-sid")
+
+        assert patch_runner_cls.run_async.call_args.kwargs["session_id"] == "override-sid"
         assert runner._conversation_session_by_user["alice"] == "override-sid"
         patch_runner_cls.session_service.create_session.assert_not_called()
 
@@ -172,18 +217,26 @@ class TestStickySessionMode:
             _session("alice-sess"),
             _session("bob-sess"),
         ]
+        patch_runner_cls.run_async.side_effect = [
+            _stream(_final_event("alice")),
+            _stream(_final_event("bob")),
+        ]
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=False),
         )
-        sid_a = await runner._resolve_session_id("alice", None)
-        sid_b = await runner._resolve_session_id("bob", None)
-        assert sid_a == "alice-sess"
-        assert sid_b == "bob-sess"
+        await runner.run_text_async("first", user_id="alice")
+        await runner.run_text_async("second", user_id="bob")
+
+        assert runner._conversation_session_by_user == {
+            "alice": "alice-sess",
+            "bob": "bob-sess",
+        }
 
     async def test_none_user_id_falls_back_to_default_user_id(self, patch_runner_cls, mock_agent) -> None:
         """None user id resolves stickiness under ``default_user_id``."""
         patch_runner_cls.session_service.create_session.return_value = _session("s1")
+        patch_runner_cls.run_async.return_value = _stream(_final_event("ok"))
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(
@@ -192,7 +245,9 @@ class TestStickySessionMode:
                 default_user_id="default-user",
             ),
         )
-        await runner._resolve_session_id(None, None)
+        await runner.run_text_async("hello")
+
+        assert patch_runner_cls.run_async.call_args.kwargs["user_id"] == "default-user"
         assert "default-user" in runner._conversation_session_by_user
 
 

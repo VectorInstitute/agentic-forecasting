@@ -8,6 +8,8 @@ evaluation window parameters.
 
 from __future__ import annotations
 
+import logging
+import time
 from datetime import datetime, timezone
 
 import numpy as np
@@ -19,6 +21,9 @@ from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.prediction import ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
+
+
+logger = logging.getLogger(__name__)
 
 
 def _compute_origins(start: datetime, end: datetime, frequency: str, stride: int) -> list[datetime]:
@@ -59,7 +64,7 @@ class BacktestSpec(BaseModel):
 
     Because ``BacktestSpec`` is a Pydantic model it is YAML-serializable,
     making evaluation windows shareable and reproducible. Reference specs for
-    canonical tasks live in ``reference_specs/`` in the repo root.
+    canonical tasks live in ``implementations/<use-case>/specs/``.
 
     Parameters
     ----------
@@ -89,15 +94,15 @@ class BacktestSpec(BaseModel):
     >>> from datetime import datetime
     >>> spec = BacktestSpec(
     ...     task=ForecastingTask(
-    ...         task_id="cpi_all_items_canada_12m",
-    ...         target_series_id="cpi_all_items_canada",
-    ...         horizon=12,
+    ...         task_id="cpi_gasoline_canada_1m",
+    ...         target_series_id="cpi_gasoline_canada",
+    ...         horizon=1,
     ...         frequency="MS",
-    ...         description="CPI All-items Canada, 12-month ahead forecast",
+    ...         description="CPI Gasoline Canada, 1-month ahead forecast",
     ...     ),
     ...     start=datetime(2000, 1, 1),
-    ...     end=datetime(2026, 1, 1),
-    ...     stride=6,
+    ...     end=datetime(2025, 1, 1),
+    ...     stride=1,
     ...     warmup=24,
     ... )
     >>> origins = spec.origins()
@@ -208,7 +213,9 @@ def _crps_for_prediction(prediction: Prediction, actual: float) -> float:
     float
         CRPS score (lower is better).
     """
-    payload: ContinuousForecast = prediction.payload
+    if not isinstance(prediction.payload, ContinuousForecast):
+        raise TypeError("CRPS scoring requires a ContinuousForecast payload.")
+    payload = prediction.payload
     ensemble = np.array(sorted(payload.quantiles.values()), dtype=float)
     return float(ps.crps_ensemble(actual, ensemble))
 
@@ -246,7 +253,13 @@ def _resolve(task: ForecastingTask, forecast_date: datetime, data_service: DataS
 
 
 def run_eval_loop(
-    predictor: Predictor, task: ForecastingTask, origins: list[datetime], warmup: int, data_service: DataService
+    predictor: Predictor,
+    task: ForecastingTask,
+    origins: list[datetime],
+    warmup: int,
+    data_service: DataService,
+    max_retries: int = 2,
+    retry_delay: float = 2.0,
 ) -> tuple[list[Prediction], list[float], int]:
     """Core evaluation loop shared by ``backtest()`` and ``evaluate()``.
 
@@ -265,6 +278,12 @@ def run_eval_loop(
         Minimum number of observations required before a forecast origin is used.
     data_service : DataService
         Pre-populated data service. Must have the target series registered.
+    max_retries : int, default=2
+        Number of times to retry a failing ``predictor.predict()`` call before
+        skipping the origin.  Handles transient model errors (e.g. malformed
+        structured output) without crashing the whole backtest.
+    retry_delay : float, default=2.0
+        Seconds to wait between retry attempts.
 
     Returns
     -------
@@ -290,7 +309,35 @@ def run_eval_loop(
                 skipped += 1
                 continue
 
-        origin_predictions = predictor.predict(task, ctx)
+        origin_predictions: list[Prediction] = []
+        last_exc: BaseException | None = None
+        for attempt in range(max_retries + 1):
+            try:
+                origin_predictions = predictor.predict(task, ctx)
+                last_exc = None
+                break
+            except Exception as exc:
+                last_exc = exc
+                if attempt < max_retries:
+                    logger.warning(
+                        "predict() failed at origin %s (attempt %d/%d): %s — retrying in %.0fs",
+                        origin.date(),
+                        attempt + 1,
+                        max_retries + 1,
+                        exc,
+                        retry_delay,
+                    )
+                    time.sleep(retry_delay)
+
+        if last_exc is not None:
+            logger.warning(
+                "predict() failed at origin %s after %d attempt(s) — skipping origin: %s",
+                origin.date(),
+                max_retries + 1,
+                last_exc,
+            )
+            skipped += 1
+            continue
 
         origin_scored = 0
         for pred in origin_predictions:
@@ -315,7 +362,13 @@ def run_eval_loop(
     return predictions, scores, skipped
 
 
-def backtest(predictor: Predictor, spec: BacktestSpec, data_service: DataService) -> BacktestResult:
+def backtest(
+    predictor: Predictor,
+    spec: BacktestSpec,
+    data_service: DataService,
+    max_retries: int = 2,
+    retry_delay: float = 2.0,
+) -> BacktestResult:
     """Run a backtest of a predictor against a BacktestSpec.
 
     Iterates over forecast origins derived from the spec, calls the predictor
@@ -335,6 +388,11 @@ def backtest(predictor: Predictor, spec: BacktestSpec, data_service: DataService
         Defines the task, evaluation window, stride, and warmup.
     data_service : DataService
         Pre-populated data service. Must have the target series registered.
+    max_retries : int, default=2
+        Passed through to :func:`run_eval_loop`.  Number of retry attempts per
+        failing origin before it is counted as skipped.
+    retry_delay : float, default=2.0
+        Seconds to wait between retry attempts.
 
     Returns
     -------
@@ -359,6 +417,8 @@ def backtest(predictor: Predictor, spec: BacktestSpec, data_service: DataService
         origins=spec.origins(),
         warmup=spec.warmup,
         data_service=data_service,
+        max_retries=max_retries,
+        retry_delay=retry_delay,
     )
     return BacktestResult(
         spec=spec,

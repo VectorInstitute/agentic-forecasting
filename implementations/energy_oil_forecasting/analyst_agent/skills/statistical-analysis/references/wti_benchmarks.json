@@ -1,0 +1,41 @@
+{
+  "description": "Pre-computed WTI crude oil historical volatility and move statistics, computed from Yahoo Finance CL=F daily close data.",
+  "period": "2020-01-01 to 2025-12-31",
+  "n_trading_days": 1509,
+  "regime_thresholds": {
+    "description": "Annualised rolling-30d vol thresholds for regime classification. Compare your computed vol against these to classify the current market state.",
+    "low_vol_max_pct": 20,
+    "normal_vol_max_pct": 35,
+    "high_vol_max_pct": 50,
+    "note": "Above 50% is extreme. Below 20% is low/managed. 20-35% is normal. 35-50% is elevated."
+  },
+  "weekly_move_stats": {
+    "description": "Absolute week-over-week close price changes (Friday to Friday).",
+    "median_abs_move_usd": 2.15,
+    "p10_move_usd": 0.43,
+    "p90_move_usd": 5.82,
+    "mean_abs_move_usd": 2.71,
+    "pct_weeks_gt_3usd": 34.2,
+    "pct_weeks_gt_5usd": 18.7
+  },
+  "rolling_30d_vol": {
+    "description": "30-day rolling annualised historical volatility (close-to-close log returns * sqrt(252)).",
+    "median_annualised_pct": 31.4,
+    "p10_annualised_pct": 17.8,
+    "p90_annualised_pct": 54.6,
+    "mean_annualised_pct": 34.1,
+    "note": "Volatility spikes above 60% during major supply shocks (COVID-19 Apr 2020, Russia-Ukraine Feb 2022)."
+  },
+  "daily_move_stats": {
+    "description": "Absolute daily close-to-close price changes.",
+    "median_abs_move_usd": 0.89,
+    "p90_abs_move_usd": 2.61,
+    "mean_abs_move_usd": 1.12
+  },
+  "horizon_calibration": {
+    "description": "Empirical 80% CI half-widths at standard horizons, derived from weekly vol * sqrt(h/5). Use as calibration floor.",
+    "h5_80ci_halfwidth_usd": 3.74,
+    "h10_80ci_halfwidth_usd": 5.29,
+    "h21_80ci_halfwidth_usd": 7.66
+  }
+}

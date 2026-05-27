@@ -21,8 +21,8 @@ repository = "https://github.com/VectorInstitute/agentic-forecasting"
 [dependency-groups]
 dev = [
     "codecov>=2.1.13",
-    "e2b>=2.21.0",
-    "mypy>=2.0.0",
+    "e2b>=2.23.1",
+    "mypy>=2.1.0",
     "nbqa>=1.9.1",
     "pip-audit>=2.10.0",
     "pre-commit>=4.6.0",
@@ -30,7 +30,7 @@ dev = [
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.1.0",
     "pytest-mock>=3.15.1",
-    "ruff>=0.15.12",
+    "ruff>=0.15.14",
 ]
 
 # Default dependency groups to be installed
@@ -109,6 +109,7 @@ ignore = [
     "PLR2004", # Replace magic number with named constant
     "PLR0913", # Too many arguments
     "COM812", # Missing trailing comma
+    "N999", # Invalid module name — conflicts with numbered notebook naming convention (01_*, 02_*)
 ]
 
 # Ignore import violations in all `__init__.py` files.

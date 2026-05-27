@@ -263,6 +263,99 @@ class TestMultiTargetArtifacts:
         for p in paths.values():
             assert p.exists()
 
+    def test_failing_task_is_skipped_not_raised(self, tmp_path: Path) -> None:
+        """A task that raises during backtest is skipped; other tasks still complete."""
+        svc = _build_data_service("s_a", "s_b", "s_c")
+        spec = MultiTargetBacktestSpec(
+            spec_id="mt_fault",
+            tasks=[_make_task("a", "s_a"), _make_task("b", "s_b"), _make_task("c", "s_c")],
+            start=datetime(2010, 1, 1),
+            end=datetime(2012, 1, 1),
+            stride=6,
+        )
+
+        class FailOnTaskBPredictor(Predictor):
+            @property
+            def predictor_id(self) -> str:
+                return "fail_on_b"
+
+            def predict(self, task: ForecastingTask, context: object) -> list[Prediction]:
+                if task.task_id == "b":
+                    raise RuntimeError("task b always fails")
+                offset = pd.tseries.frequencies.to_offset(task.frequency)
+                return [
+                    Prediction(
+                        predictor_id=self.predictor_id,
+                        task_id=task.task_id,
+                        issued_at=datetime(2024, 1, 1),
+                        as_of=context.as_of,  # type: ignore[attr-defined]
+                        forecast_date=(pd.Timestamp(context.as_of) + offset * h).to_pydatetime(),  # type: ignore[attr-defined]
+                        payload=ContinuousForecast(
+                            point_forecast=100.0,
+                            quantiles={q: 100.0 + (q - 0.5) * 5 for q in STANDARD_QUANTILES},
+                        ),
+                    )
+                    for h in task.horizons
+                ]
+
+        results = cached_multi_backtest(FailOnTaskBPredictor(), spec, svc, store_dir=tmp_path, retry_delay=0.0)
+        assert "b" not in results
+        assert "a" in results
+        assert "c" in results
+
+    def test_completed_tasks_cached_before_failure(self, tmp_path: Path) -> None:
+        """Tasks completed before a crash are on disk; re-run skips them."""
+        svc = _build_data_service("s_a", "s_b")
+        spec = MultiTargetBacktestSpec(
+            spec_id="mt_crash_recover",
+            tasks=[_make_task("a", "s_a"), _make_task("b", "s_b")],
+            start=datetime(2010, 1, 1),
+            end=datetime(2012, 1, 1),
+            stride=6,
+        )
+        origins_per_task = len(spec.specs()[0].origins())  # same window → same count
+
+        class FailOnTaskBPredictor(Predictor):
+            def __init__(self) -> None:
+                self.call_count = 0
+
+            @property
+            def predictor_id(self) -> str:
+                return "crash_recover"
+
+            def predict(self, task: ForecastingTask, context: object) -> list[Prediction]:
+                self.call_count += 1
+                if task.task_id == "b":
+                    raise RuntimeError("always fails on b")
+                offset = pd.tseries.frequencies.to_offset(task.frequency)
+                return [
+                    Prediction(
+                        predictor_id=self.predictor_id,
+                        task_id=task.task_id,
+                        issued_at=datetime(2024, 1, 1),
+                        as_of=context.as_of,  # type: ignore[attr-defined]
+                        forecast_date=(pd.Timestamp(context.as_of) + offset * h).to_pydatetime(),  # type: ignore[attr-defined]
+                        payload=ContinuousForecast(
+                            point_forecast=100.0,
+                            quantiles={q: 100.0 + (q - 0.5) * 5 for q in STANDARD_QUANTILES},
+                        ),
+                    )
+                    for h in task.horizons
+                ]
+
+        predictor = FailOnTaskBPredictor()
+        max_retries = 2
+        cached_multi_backtest(predictor, spec, svc, store_dir=tmp_path, max_retries=max_retries, retry_delay=0.0)
+        calls_after_first = predictor.call_count
+        # First run: task a = origins_per_task calls;
+        # task b = origins × (max_retries + 1) calls
+        expected_b_calls = origins_per_task * (max_retries + 1)
+        assert calls_after_first == origins_per_task + expected_b_calls
+
+        # Second run: task "a" is a cache hit (0 new calls); task "b" retried again.
+        cached_multi_backtest(predictor, spec, svc, store_dir=tmp_path, max_retries=max_retries, retry_delay=0.0)
+        assert predictor.call_count == calls_after_first + expected_b_calls
+
 
 # ---------------------------------------------------------------------------
 # Eval artefacts
