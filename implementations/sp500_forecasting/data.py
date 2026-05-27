@@ -33,19 +33,13 @@ from __future__ import annotations
 import warnings
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.adapters import FREDAdapter, YFinanceDailyAdapter
-from implementations.experiments.stock_price_forecasting_single_variable.data import (
-    SP500_LOG_RETURN_SERIES_ID,
-    SP500_SERIES_ID,
-    SP500_TICKER,
-    StaticFrameAdapter,
-    build_sp500_log_return_service,
-)
+from aieng.forecasting.data.adapters.base import BaseAdapter
 
 
 _load_dotenv: Callable[..., Any] | None
@@ -80,6 +74,174 @@ def _as_absolute_cache(path: Path | None) -> Path | None:
     if root is not None:
         return (root / path).resolve()
     return path
+
+
+def _yahoo_cache_file_default() -> Path:
+    root = _repo_root()
+    if root is not None:
+        return root / "data/yahoo/sp500_gspc.parquet"
+    return Path("data/yahoo/sp500_gspc.parquet")
+
+
+SP500_TICKER = "^GSPC"
+SP500_SERIES_ID = "sp500_close_adj_usd"
+SP500_LOG_RETURN_SERIES_ID = "sp500_log_ret_1b"
+DEFAULT_CACHE_FILE = _yahoo_cache_file_default()
+
+
+class YahooFinanceDailyAdapter(BaseAdapter):
+    """Fetch ^GSPC from Yahoo Finance with adjusted close and same-day open."""
+
+    def __init__(
+        self,
+        ticker: str,
+        *,
+        start: str = "1990-01-01",
+        end: str | None = None,
+        cache_path: Path | None = DEFAULT_CACHE_FILE,
+        refresh: bool = False,
+    ) -> None:
+        self._ticker = ticker
+        self._start = start
+        self._end = end
+        self._cache_path = _as_absolute_cache(cache_path)
+        self._refresh = refresh
+
+    def fetch(self) -> pd.DataFrame:
+        if self._cache_path is not None and self._cache_path.exists() and not self._refresh:
+            df = self._read_cache(self._cache_path)
+            if "open" not in df.columns:
+                df = self._fetch_from_yahoo()
+                if self._cache_path is not None:
+                    self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+                    df.to_parquet(self._cache_path, index=False)
+        else:
+            df = self._fetch_from_yahoo()
+            if self._cache_path is not None:
+                self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+                df.to_parquet(self._cache_path, index=False)
+        return self._apply_date_range(df)
+
+    def _apply_date_range(self, df: pd.DataFrame) -> pd.DataFrame:
+        out = df
+        if self._start:
+            lo = pd.Timestamp(self._start)
+            out = out[out["timestamp"] >= lo]
+        if self._end is not None:
+            hi = pd.Timestamp(self._end)
+            out = out[out["timestamp"] < hi]
+        if out.empty:
+            raise RuntimeError(
+                f"No rows left after applying date range start={self._start!r} end={self._end!r} "
+                f"for ticker {self._ticker!r}."
+            )
+        return out.reset_index(drop=True)
+
+    def _fetch_from_yahoo(self) -> pd.DataFrame:
+        try:
+            import yfinance as yf  # noqa: PLC0415
+        except ImportError as exc:
+            raise RuntimeError("yfinance is not installed. Add it to dependencies (e.g. `uv add yfinance`).") from exc
+
+        ticker = yf.Ticker(self._ticker)
+        raw = ticker.history(start=self._start, end=self._end, auto_adjust=False)
+        if raw.empty:
+            raise RuntimeError(
+                f"Yahoo Finance returned no rows for ticker {self._ticker!r} between {self._start!r} and {self._end!r}."
+            )
+        if "Adj Close" not in raw.columns or "Open" not in raw.columns:
+            raise RuntimeError(f"Yahoo Finance response for {self._ticker!r} missing required columns.")
+
+        df = raw.reset_index()
+        timestamp_col = "Date" if "Date" in df.columns else df.columns[0]
+        df = df.rename(columns={timestamp_col: "timestamp", "Adj Close": "value", "Open": "open"})
+        df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_localize(None)
+        df["value"] = pd.to_numeric(df["value"], errors="coerce")
+        df["open"] = pd.to_numeric(df["open"], errors="coerce")
+        df = df.dropna(subset=["value", "open"]).sort_values("timestamp").reset_index(drop=True)
+        df["released_at"] = df["timestamp"] + pd.offsets.BDay(1)
+        return df[["timestamp", "value", "released_at", "open"]]
+
+    @staticmethod
+    def _read_cache(cache_path: Path) -> pd.DataFrame:
+        df = pd.read_parquet(cache_path)
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["value"] = pd.to_numeric(df["value"], errors="coerce")
+        df["released_at"] = pd.to_datetime(df["released_at"])
+        cols = ["timestamp", "value", "released_at"]
+        if "open" in df.columns:
+            df["open"] = pd.to_numeric(df["open"], errors="coerce")
+            cols.append("open")
+        out = df[cols].dropna(subset=["value"]).reset_index(drop=True)
+        if "open" in out.columns:
+            out = out.dropna(subset=["open"]).reset_index(drop=True)
+        return out
+
+
+class StaticFrameAdapter(BaseAdapter):
+    """Adapter that returns a precomputed canonical DataFrame."""
+
+    def __init__(self, frame: pd.DataFrame) -> None:
+        self._frame = frame.copy()
+
+    def fetch(self) -> pd.DataFrame:
+        return self._frame.copy()
+
+
+def _build_close_to_next_open_log_return_frame(price_df: pd.DataFrame) -> pd.DataFrame:
+    """One row per open session: value = log(open[t] / adj_close[t-1])."""
+    required = {"timestamp", "value", "open"}
+    missing = required - set(price_df.columns)
+    if missing:
+        raise RuntimeError(
+            "Price data must include same-day 'open' alongside adjusted close ('value'). "
+            f"Missing columns: {sorted(missing)}."
+        )
+    frame = price_df[list(required)].copy().sort_values("timestamp").reset_index(drop=True)
+    for col in ("value", "open"):
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
+    frame = frame.dropna(subset=["value", "open"]).reset_index(drop=True)
+    adj_close_prev = frame["value"].shift(1)
+    open_t = frame["open"]
+    frame["value"] = np.log(open_t / adj_close_prev)
+    frame = frame.dropna(subset=["value"]).reset_index(drop=True)
+    frame["released_at"] = pd.to_datetime(frame["timestamp"])
+    return frame[["timestamp", "value", "released_at"]]
+
+
+def build_sp500_log_return_service(
+    *,
+    refresh: bool = False,
+    start: str = "1990-01-01",
+    end: str | None = None,
+    cache_path: Path | None = DEFAULT_CACHE_FILE,
+) -> DataService:
+    price_adapter = YahooFinanceDailyAdapter(
+        SP500_TICKER,
+        start=start,
+        end=end,
+        cache_path=_as_absolute_cache(cache_path),
+        refresh=refresh,
+    )
+    price_df = price_adapter.fetch()
+    log_return_df = _build_close_to_next_open_log_return_frame(price_df)
+
+    svc = DataService()
+    svc.register(
+        SP500_LOG_RETURN_SERIES_ID,
+        StaticFrameAdapter(log_return_df),
+        SeriesMetadata(
+            series_id=SP500_LOG_RETURN_SERIES_ID,
+            description=(
+                "S&P 500 log return from prior session adjusted close to current session open (Yahoo Finance ^GSPC)"
+            ),
+            source=f"Yahoo Finance ({SP500_TICKER}), derived",
+            units="log-return",
+            frequency="B",
+            table_id="yahoo:^GSPC:log-return-close-to-open",
+        ),
+    )
+    return svc
 
 
 def _default_cache_dir() -> Path:
@@ -365,7 +527,7 @@ def build_sp500_multivariate_service(  # noqa: PLR0912, PLR0915
         sp500_kwargs["cache_path"] = sp500_cache_path
     svc = build_sp500_log_return_service(**sp500_kwargs)
     if not include_covariates:
-        return cast(DataService, svc)
+        return svc
 
     desired = covariate_series_ids or DEFAULT_COVARIATE_SERIES_IDS
     desired_set = set(desired)
@@ -622,7 +784,7 @@ def build_sp500_multivariate_service(  # noqa: PLR0912, PLR0915
         except (RuntimeError, ValueError) as exc:
             _handle_covariate_error(SERIES_ID_DOLLAR_INDEX_RETURN, exc)
 
-    return cast(DataService, svc)
+    return svc
 
 
 __all__ = [
@@ -643,5 +805,7 @@ __all__ = [
     "SP500_LOG_RETURN_SERIES_ID",
     "SP500_SERIES_ID",
     "SP500_TICKER",
+    "StaticFrameAdapter",
+    "build_sp500_log_return_service",
     "build_sp500_multivariate_service",
 ]

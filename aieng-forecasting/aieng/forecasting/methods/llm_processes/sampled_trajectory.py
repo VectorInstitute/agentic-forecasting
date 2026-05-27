@@ -31,8 +31,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field
-
 from aieng.forecasting.evaluation.prediction import (
     STANDARD_QUANTILES,
     ContinuousForecast,
@@ -50,6 +48,7 @@ from aieng.forecasting.methods.llm_processes.base import (
     get_history_and_meta,
     serialize_history,
 )
+from pydantic import BaseModel, ConfigDict, Field
 
 
 if TYPE_CHECKING:

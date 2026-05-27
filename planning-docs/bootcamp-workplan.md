@@ -168,7 +168,7 @@ Net-new reference implementation. Does not block energy or BoC work.
 Deliverables:
 
 - Define the S&P 500 target, horizons, and anti-leakage rules.
-- Add reference specs (co-located under the experiment once the directory exists).
+- Add reference specs under `implementations/sp500_forecasting/specs/`.
 - Build a demo notebook with a deep comparison of numerical methods (statistical, ML, possibly deep NN or TS foundation model).
 - Document the experiment as the reusable financial-markets template.
 

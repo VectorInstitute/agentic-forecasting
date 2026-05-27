@@ -1,8 +1,7 @@
 """Multivariate S&P 500 backtest grid: CRPS leaderboard rows for `RESULTS_DF`.
 
-Used by the smoke and full ``sp500_multivariate_backtest_demo_*.ipynb`` notebooks;
-configuration lives in ``sp500_multivariate_backtest_smoke.yaml`` /
-``sp500_multivariate_backtest_full.yaml``.
+Used by ``01_sp500_multivariate_backtest.ipynb``; configuration lives in
+``specs/sp500_backtest_smoke.yaml`` / ``specs/sp500_backtest_full.yaml``.
 """
 
 from __future__ import annotations
@@ -14,21 +13,19 @@ import pandas as pd
 import properscoring as ps
 from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation import BacktestResult, BacktestSpec, backtest
-from aieng.forecasting.evaluation.prediction import Prediction
+from aieng.forecasting.evaluation.prediction import ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.methods import (
     DartsAutoARIMAPredictor,
     DartsLightGBMPredictor,
     DartsLinearRegressionPredictor,
 )
-from implementations.experiments.stock_price_forecasting_single_variable.analysis import (
+
+from implementations.sp500_forecasting.analysis import (
     build_direction_eval_frame,
     direction_classification_metrics,
 )
-
-from implementations.experiments.stock_price_forecasting_multivariate.data import (
-    SP500_LOG_RETURN_SERIES_ID,
-)
+from implementations.sp500_forecasting.data import SP500_LOG_RETURN_SERIES_ID
 
 
 def _prepare_sp500_price_lookup(price_df: pd.DataFrame) -> pd.DataFrame | None:
@@ -73,6 +70,8 @@ def mean_crps_open_from_log_quantile_forecasts(
         return float("nan")
     scores: list[float] = []
     for pred in predictions:
+        if not isinstance(pred.payload, ContinuousForecast):
+            continue
         row = _lookup_session_row(px, pred.forecast_date)
         if row is None:
             continue
@@ -103,6 +102,8 @@ def build_open_price_compare_frame(
         return pd.DataFrame()
     rows: list[dict[str, object]] = []
     for pred in predictions:
+        if not isinstance(pred.payload, ContinuousForecast):
+            continue
         row = _lookup_session_row(px, pred.forecast_date)
         if row is None:
             continue

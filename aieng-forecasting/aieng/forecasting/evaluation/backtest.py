@@ -15,12 +15,11 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 import properscoring as ps
-from pydantic import BaseModel, Field, model_validator
-
 from aieng.forecasting.data.service import DataService
 from aieng.forecasting.evaluation.prediction import ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
+from pydantic import BaseModel, Field, model_validator
 
 
 logger = logging.getLogger(__name__)

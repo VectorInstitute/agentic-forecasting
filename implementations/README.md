@@ -18,13 +18,15 @@ implementations/
 |   `-- specs/                # backtest YAML
 |-- energy_oil_forecasting/   # Daily WTI oil price forecasting experiment
 |   `-- specs/                # backtest and eval YAML
+|-- sp500_forecasting/        # S&P 500 multivariate numerical comparison (financial markets)
+|   `-- specs/                # backtest YAML (smoke + full)
 |-- tests/                    # tests for implementation-specific helper modules
 `-- pyproject.toml            # local workspace packaging
 ```
 
 YAML backtest and eval specs live under each use case in `specs/`.
 
-The S&P 500 experiment (Behnoosh) is in progress as a net-new financial-markets reference. The BoC rate-decision experiment (Ethan) is planned next on the reference-experiment track.
+The BoC rate-decision experiment (Ethan) is planned next on the reference-experiment track.
 
 ---
 

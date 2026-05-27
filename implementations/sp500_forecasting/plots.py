@@ -17,10 +17,8 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter
 
-from implementations.experiments.stock_price_forecasting_multivariate.analysis import (
-    style_results_dataframe,
-)
-from implementations.experiments.stock_price_forecasting_multivariate.data import (
+from implementations.sp500_forecasting.analysis import style_results_dataframe
+from implementations.sp500_forecasting.data import (
     SP500_LOG_RETURN_SERIES_ID,
 )
 
@@ -128,7 +126,7 @@ def plot_open_forecast_vs_actual(
     """Line + fan chart: realised **open** vs median-implied open (5–95% band when available).
 
     ``compare_df`` is typically from
-    :func:`~implementations.experiments.stock_price_forecasting_multivariate.multivariate_backtest_grid.build_open_price_compare_frame`.
+    :func:`~implementations.sp500_forecasting.backtest_grid.build_open_price_compare_frame`.
     """
     fig, ax = plt.subplots(figsize=(11, 5), layout="constrained", facecolor="0.98")
     ax.set_facecolor("#fafafa")
@@ -291,8 +289,8 @@ def plot_open_forecast_vs_actual_multi(
 
 _RESULTS_EMPTY_HINT = (
     "RESULTS_DF is empty — set at least one run_models entry to true in the "
-    "active YAML (``sp500_multivariate_backtest_smoke.yaml`` or "
-    "``sp500_multivariate_backtest_full.yaml``)."
+    "active YAML (``specs/sp500_backtest_smoke.yaml`` or "
+    "``specs/sp500_backtest_full.yaml``)."
 )
 
 
