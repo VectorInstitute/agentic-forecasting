@@ -26,7 +26,9 @@ try:
     from google.adk.agents import LlmAgent
     from google.adk.skills import load_skill_from_dir
     from google.adk.skills.models import Skill
+    from google.adk.tools.function_tool import FunctionTool
     from google.adk.tools.skill_toolset import SkillToolset
+    from google.adk.tools.tool_context import ToolContext
     from google.genai.types import (
         AutomaticFunctionCallingConfig,
         GenerateContentConfig,
@@ -37,6 +39,42 @@ except ModuleNotFoundError as exc:
     raise ImportError(
         "This module requires the 'agentic' extra. Install it with 'pip install aieng-forecasting[agentic]'."
     ) from exc
+
+
+# Session-state key used by our proxy-compatible set_model_response shim.
+# When a LiteLlm agent has both output_schema and tools, we register a flat
+# set_model_response(json_response: str) tool that stores the JSON here.
+# AdkTextRunner reads this key after each run and returns it in place of the
+# final text, giving the predictor the structured JSON it expects.
+SMR_STATE_KEY = "__smr_output__"
+
+
+def _build_set_model_response_tool() -> FunctionTool:
+    """Return a proxy-compatible ``set_model_response`` shim.
+
+    Gemini thinking models call ``set_model_response`` when they produce
+    structured output alongside other tools — regardless of whether ADK
+    registered the tool.  The real ``SetModelResponseTool`` uses a nested
+    Pydantic schema for its function declaration, which Gemini rejects via the
+    OpenAI-compatible proxy (``$defs``/``$ref`` not supported).
+
+    This shim accepts the JSON as a plain string and stores it in session
+    state under :data:`SMR_STATE_KEY`.  :class:`AdkTextRunner` reads that key
+    after the run and returns it as the final output, bypassing the model's
+    subsequent "Done." text response.
+    """
+
+    async def set_model_response(json_response: str, tool_context: ToolContext) -> str:
+        """Submit your final structured JSON response as a string.
+
+        Call this tool once, passing the complete JSON object that satisfies
+        the required output schema. Do not produce any further text after
+        calling this tool.
+        """
+        tool_context.state[SMR_STATE_KEY] = json_response
+        return "Response submitted. Task complete."
+
+    return FunctionTool(set_model_response)
 
 
 class ContextRetrievalConfig(BaseModel):
@@ -408,20 +446,26 @@ def build_adk_agent(
 
     # For LiteLlm agents with both output_schema and tools, ADK's
     # can_use_output_schema_with_tools() returns True and skips set_model_response
-    # injection, using response_format instead.  However:
-    #   1. Thinking models often ignore response_format after tool calls and
-    #      instead call set_model_response — which is not registered → ValueError.
-    #   2. Registering SetModelResponseTool manually fails for complex nested
-    #      schemas because its function declaration uses JSON Schema $defs/$ref
-    #      which Gemini's function declaration format does not support.
-    # Fix: do not pass output_schema to LlmAgent when tools are present on the
-    # LiteLlm path.  The instruction already specifies the JSON format; the
-    # predictor parses and validates the text output with fallback handling.
+    # injection, using response_format instead.  However, Gemini thinking models
+    # (e.g. gemini-3-flash-preview) are trained to call set_model_response when
+    # producing structured output alongside other tools — and they do so even when
+    # output_schema=None on the Python side.
+    #
+    # The real SetModelResponseTool fails here because its function declaration
+    # uses JSON Schema $defs/$ref (from the Pydantic output schema), which Gemini
+    # rejects via the OpenAI-compatible proxy.
+    #
+    # Fix: register our flat-schema shim (_build_set_model_response_tool) that
+    # accepts the JSON as a plain string and parks it in session state.  Clear
+    # output_schema so ADK does not also try to enforce it via response_format.
+    # AdkTextRunner reads the state key after the run and returns the captured
+    # JSON as the final output.
     effective_output_schema = output_schema
     try:
         from google.adk.models.lite_llm import LiteLlm as _LiteLlm  # noqa: PLC0415
 
         if output_schema is not None and tools and isinstance(model, _LiteLlm):
+            tools.append(_build_set_model_response_tool())
             effective_output_schema = None
     except ImportError:
         pass

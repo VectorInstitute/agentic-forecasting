@@ -253,6 +253,8 @@ class AdkTextRunner:
         When ``enable_langfuse_tracing`` is True, each turn runs inside Langfuse
         ``propagate_attributes`` using the resolved ``user_id`` and ADK ``session_id``.
         """
+        from aieng.forecasting.methods.agentic.agent_factory import SMR_STATE_KEY  # noqa: PLC0415
+
         user_id = user_id or self.config.default_user_id
 
         session_id = await self._resolve_session_id(user_id, session_id)
@@ -269,6 +271,24 @@ class AdkTextRunner:
                 if event.is_final_response() and event.content and event.content.parts:
                     return event.content.parts[0].text or ""
             return ""
+
+        async def run_and_resolve() -> str:
+            """Run the agent and return the best available output string.
+
+            When the agent uses our set_model_response shim (LiteLlm path with
+            tools + output_schema), the structured JSON is stored in session
+            state under SMR_STATE_KEY.  We prefer that over the model's
+            subsequent "Task complete." text response.
+            """
+            text = await drain_run()
+            session = await self._runner.session_service.get_session(
+                app_name=self.config.app_name,
+                user_id=user_id,
+                session_id=session_id,
+            )
+            if session is not None and SMR_STATE_KEY in (session.state or {}):
+                return str(session.state[SMR_STATE_KEY])
+            return text
 
         if self.config.enable_langfuse_tracing:
             from langfuse import propagate_attributes  # noqa: PLC0415
@@ -290,9 +310,9 @@ class AdkTextRunner:
                 if v is not None
             }
             with propagate_attributes(**pa_kw):
-                return await drain_run()
+                return await run_and_resolve()
 
-        return await drain_run()
+        return await run_and_resolve()
 
     def clear_conversation(self, *, user_id: str | None = None) -> None:
         """Drop sticky session id(s). Next ``run_text_async`` starts a new chat.
