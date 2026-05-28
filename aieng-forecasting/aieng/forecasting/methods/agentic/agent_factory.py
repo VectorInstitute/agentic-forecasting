@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 # These filters run at module-import time so they are active before the first
 # litellm import (which happens lazily inside search_web / build_adk_agent).
 
+
 class _LiteLLMNoiseFilter(logging.Filter):
     _NOISE = ("botocore", "Proxy Server is not installed")
 
@@ -300,8 +301,16 @@ class AgentConfig(BaseModel):
         Maximum tokens per model response; ``None`` uses the model default.
     thinking_budget : int or None, default=None
         Token budget for extended thinking (Gemini thinking models only).
+        **Proxy-path caveat:** when routing through the Vector proxy (or any
+        OpenAI-compatible proxy), ``thinking_budget`` is passed via ADK's
+        ``ThinkingConfig`` → ``GenerateContentConfig``. Whether LiteLLM's
+        ``drop_params`` strips it on the proxy path is untested — if you set
+        this and see no change in thinking behaviour, treat it as silently
+        dropped (same root cause as the ``reasoning_effort`` stripping issue
+        documented in ``planning-docs/vector-llm-proxy.md``).
     thinking_level : ThinkingLevel or None, default=None
         Thinking-level preset; overrides ``thinking_budget`` when both are set.
+        Subject to the same proxy-path caveat as ``thinking_budget``.
     code_execution : CodeExecutionConfig
         Configuration for E2B code execution. Disabled by default.
     context_retrieval : ContextRetrievalConfig
