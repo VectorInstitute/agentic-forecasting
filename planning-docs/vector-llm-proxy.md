@@ -81,3 +81,44 @@ Temporarily changed the default model to `gemini-2.5-flash`, which did not exhib
 The Vector team fixed the proxy's translation layer on May 28 2026 to preserve `thoughtSignature` through the round-trip. Both `gemini-3-flash-preview` and `gemini-2.5-flash` now pass multi-turn tool-call tests. Default model restored to `gemini-3-flash-preview`.
 
 **Takeaway for future issues:** report proxy compatibility problems to the Vector team rather than working around them — the proxy is actively maintained and issues get fixed quickly.
+
+---
+
+## History: set_model_response shim for LiteLlm agents (May 28 2026)
+
+### What happened
+
+After the `thoughtSignature` fix, agents using `output_schema` together with tools raised a different error:
+
+> `ValueError: Tool 'set_model_response' not found. Available tools: search_web`
+
+### Root cause
+
+ADK normally injects a `SetModelResponseTool` into agents that have both `output_schema` and other tools, because models need a way to submit structured output alongside a tool-call history. For native Gemini models ADK recognises the capability and injects automatically. For `LiteLlm` models it skips injection, assuming `response_format` is sufficient. However, Gemini thinking models (`gemini-3-flash-preview`) are trained to call `set_model_response` regardless, so the call lands with no registered tool to handle it.
+
+The obvious fix — register ADK's `SetModelResponseTool` explicitly — fails immediately:
+
+> `BadRequestError: Invalid JSON payload received. Unknown name "$defs" at 'tools[0].function_declarations[1].parameters'`
+
+`SetModelResponseTool` builds its function declaration from the full nested Pydantic output schema, which uses JSON Schema `$defs`/`$ref` for references. Gemini's `function_declarations` format does not support references — all schemas must be flat.
+
+### Fix
+
+A flat-schema shim is registered in `agent_factory.py` when a `LiteLlm` agent has both `output_schema` and other tools:
+
+```python
+async def set_model_response(json_response: str, tool_context: ToolContext) -> str:
+    """Submit your final structured JSON response as a string."""
+    tool_context.state[SMR_STATE_KEY] = json_response
+    return "Response submitted. Task complete."
+```
+
+The shim accepts the JSON as a plain string — no nested schema, no `$defs`. The model calls it, the JSON is stored in ADK session state under `SMR_STATE_KEY`. `AdkTextRunner.run_and_resolve()` reads that key after each run and returns the captured JSON in preference to the model's subsequent "Task complete." text response.
+
+### Anthropic / non-thinking models
+
+Claude models are not trained to call `set_model_response` automatically. The instruction explicitly tells them to call it, and since Claude is instruction-following, it does. The shim captures the JSON identically. If a model ignores the instruction and returns JSON as plain text instead, `run_and_resolve()` falls back to the `drain_run` text, which the predictor parses. Both paths are valid.
+
+### Single source of truth for the schema description
+
+Each `AgentForecastOutput` subclass exposes a `prompt_schema_json()` classmethod that returns the exact JSON template the model must pass to `set_model_response`. Agent instructions consume this classmethod rather than hardcoding the schema, so field-name changes and `STANDARD_QUANTILES` updates propagate automatically.

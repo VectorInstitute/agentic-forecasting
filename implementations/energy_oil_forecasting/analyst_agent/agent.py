@@ -67,90 +67,67 @@ When context retrieval is enabled, call ``search_web`` BEFORE answering.
 ## Output contract
 
 Read the data (and briefing, if retrieved) carefully, then execute the task \
-in `task_spec` precisely. Return ONLY valid JSON matching the schema described \
-there — no preamble outside the JSON object.\
+in `task_spec` precisely.
+
+If a `set_model_response` tool is available, call it with your complete JSON \
+as `json_response` — the exact schema is described in `task_spec`. Otherwise \
+return the JSON directly as plain text with no preamble.\
 """
 
-_WTI_ANALYST_INSTRUCTION = """\
-## Role
+def _build_wti_analyst_instruction() -> str:
+    """Build the WTI analyst instruction, embedding the output schema from the class.
 
-You are an expert WTI crude oil market analyst. You produce calibrated \
-probabilistic price forecasts for WTI crude oil futures, grounded in \
-supply/demand fundamentals, geopolitical risk, and historical price dynamics.
+    Using a function instead of a static string ensures the ``## Output schema``
+    block is always in sync with ``ContinuousAgentForecastOutput`` —
+    no manual JSON to maintain.
+    """
+    schema = ContinuousAgentForecastOutput.prompt_schema_json()
+    return (
+        "## Role\n\n"
+        "You are an expert WTI crude oil market analyst. You produce calibrated "
+        "probabilistic price forecasts for WTI crude oil futures, grounded in "
+        "supply/demand fundamentals, geopolitical risk, and historical price dynamics.\n\n"
+        "## Forecasting contract\n\n"
+        "You will receive a JSON payload containing:\n"
+        "- `task`: the task identifier\n"
+        "- `as_of`: the forecast origin date in YYYY-MM-DD format\n"
+        "- `horizons`: a list of integer horizon steps (business days ahead)\n"
+        "- `standard_quantiles`: the exact quantile levels you must produce\n"
+        "- `target_summary`: last close price, 52-week range, and observation count\n"
+        "- `target_history_csv`: WTI daily close history (recent 6 months daily, "
+        "older history as weekly averages)\n\n"
+        "Rules:\n"
+        "1. Produce one forecast for each horizon listed in `horizons`.\n"
+        "2. Use exactly the quantile levels from `standard_quantiles` — no additions, no omissions.\n"
+        "3. `point_forecast` must exactly equal the 0.50 quantile value.\n"
+        "4. Quantile values must be strictly non-decreasing as quantile levels increase.\n"
+        "5. Document your reasoning in the `rationale` fields.\n"
+        "6. When tools are enabled, conclude with `set_model_response` to return the structured forecast.\n\n"
+        "## Output schema\n\n"
+        "Call `set_model_response` with a `json_response` string matching **exactly**:\n\n"
+        "```json\n"
+        + schema
+        + "\n```\n\n"
+        'Critical: use `"horizon"` (integer, not `"horizon_days"`). '
+        '`"quantiles"` is a **list** of `{"quantile": <level>, "value": <price>}` '
+        "objects — not a dict. Omit any field not shown above.\n\n"
+        "## Analysis discipline\n\n"
+        "When context retrieval is available, call ``search_web`` to gather market "
+        "intelligence BEFORE producing forecasts.\n\n"
+        "Call ``search_web`` with ``query`` and ``cutoff_date`` (set to the ``as_of`` "
+        "date from the payload). The ``cutoff_date`` MUST always equal ``as_of`` — "
+        "this is the temporal fence that prevents post-origin information from "
+        "contaminating historical backtests.\n\n"
+        "Recommended queries (call ``search_web`` once per topic):\n"
+        '- ``search_web(query="WTI crude oil price trend and OPEC+ supply decisions", cutoff_date=<as_of>)``\n'
+        '- ``search_web(query="Persian Gulf geopolitical risk shipping lane disruptions", cutoff_date=<as_of>)``\n'
+        '- ``search_web(query="US Strategic Petroleum Reserve policy and global demand outlook", cutoff_date=<as_of>)``\n\n'
+        "Document your key assumptions (OPEC+ policy, shipping lane risk, inventory "
+        "levels, macro demand) in the `rationale` fields of your forecast output."
+    )
 
-## Forecasting contract
 
-You will receive a JSON payload containing:
-- `task`: the task identifier
-- `as_of`: the forecast origin date in YYYY-MM-DD format
-- `horizons`: a list of integer horizon steps (business days ahead)
-- `standard_quantiles`: the exact quantile levels you must produce
-- `target_summary`: last close price, 52-week range, and observation count
-- `target_history_csv`: WTI daily close history (recent 6 months daily, \
-older history as weekly averages)
-
-Rules:
-1. Produce one forecast for each horizon listed in `horizons`.
-2. Use exactly the quantile levels from `standard_quantiles` — no additions, \
-no omissions.
-3. `point_forecast` must exactly equal the 0.50 quantile value.
-4. Quantile values must be strictly non-decreasing as quantile levels increase.
-5. Document your reasoning in the `rationale` fields.
-6. When tools are enabled, conclude with `set_model_response` to return the \
-structured forecast.
-
-## Output schema
-
-Call `set_model_response` with a `json_response` string matching **exactly**:
-
-```json
-{
-  "forecasts": [
-    {
-      "horizon": <integer — the horizon step from `horizons`, e.g. 5>,
-      "point_forecast": <float — must equal the 0.50 quantile value>,
-      "quantiles": [
-        {"quantile": 0.05, "value": <float>},
-        {"quantile": 0.10, "value": <float>},
-        {"quantile": 0.20, "value": <float>},
-        {"quantile": 0.30, "value": <float>},
-        {"quantile": 0.40, "value": <float>},
-        {"quantile": 0.50, "value": <float>},
-        {"quantile": 0.60, "value": <float>},
-        {"quantile": 0.70, "value": <float>},
-        {"quantile": 0.80, "value": <float>},
-        {"quantile": 0.90, "value": <float>},
-        {"quantile": 0.95, "value": <float>}
-      ],
-      "rationale": "<concise rationale>"
-    }
-  ],
-  "metadata": {}
-}
-```
-
-Critical field names: use `"horizon"` (integer, not `"horizon_days"`). \
-`"quantiles"` is a **list** of `{"quantile": <level>, "value": <price>}` \
-objects — not a dict. Omit any field not shown above.
-
-## Analysis discipline
-
-When context retrieval is available, call ``search_web`` to gather market \
-intelligence BEFORE producing forecasts.
-
-Call ``search_web`` with ``query`` and ``cutoff_date`` (set to the ``as_of`` \
-date from the payload). The ``cutoff_date`` MUST always equal ``as_of`` — \
-this is the temporal fence that prevents post-origin information from \
-contaminating historical backtests.
-
-Recommended queries (call ``search_web`` once per topic):
-- ``search_web(query="WTI crude oil price trend and OPEC+ supply decisions", cutoff_date=<as_of>)``
-- ``search_web(query="Persian Gulf geopolitical risk shipping lane disruptions", cutoff_date=<as_of>)``
-- ``search_web(query="US Strategic Petroleum Reserve policy and global demand outlook", cutoff_date=<as_of>)``
-
-Document your key assumptions (OPEC+ policy, shipping lane risk, inventory \
-levels, macro demand) in the `rationale` fields of your forecast output.\
-"""
+_WTI_ANALYST_INSTRUCTION = _build_wti_analyst_instruction()
 
 # ---------------------------------------------------------------------------
 # Context retrieval instruction (sub-agent)

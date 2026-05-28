@@ -52,46 +52,7 @@ TASK_TRAJECTORY_SPEC = (
     "}"
 )
 
-TASK_SHOCK_SPEC = (
-    f"Estimate P(up) — the probability that WTI will close MORE THAN\n"
-    f"${int(SHOCK_THRESHOLD)}/bbl HIGHER than today's price at the end of\n"
-    f"{SHOCK_HORIZON} trading days.\n\n"
-    "Return JSON with exactly these fields:\n"
-    "{\n"
-    '  "probability": <float 0-1>,\n'
-    '  "direction_bias": "<up|down|neutral>",\n'
-    '  "reasoning": "<2-4 sentences>",\n'
-    '  "key_signals": ["<signal 1>", "<signal 2>"],\n'
-    '  "confidence": "<high|medium|low>"\n'
-    "}"
-)
-
-TASK_SCENARIOS_SPEC = (
-    "Identify the three scenarios oil market analysts are debating for WTI over the next 60 days.\n\n"
-    "Return JSON with exactly these fields:\n"
-    "{\n"
-    '  "scenarios": [\n'
-    "    {\n"
-    '      "name": "<string>",\n'
-    '      "description": "<string>",\n'
-    '      "probability": <float>,\n'
-    '      "wti_range_60d": [<float_low>, <float_high>],\n'
-    '      "point_estimate_60d": <float>,\n'
-    '      "key_drivers": ["<driver 1>"]\n'
-    "    }\n"
-    "  ],\n"
-    '  "base_case": "<scenario name>",\n'
-    '  "reasoning": "<paragraph>"\n'
-    "}"
-)
-
 TaskKind = Literal["trajectory", "shock", "scenario"]
-
-TASK_SPECS: dict[TaskKind, str] = {
-    "trajectory": TASK_TRAJECTORY_SPEC,
-    "shock": TASK_SHOCK_SPEC,
-    "scenario": TASK_SCENARIOS_SPEC,
-}
 
 
 class WtiMultitaskPromptBuilder(BaseModel):
@@ -138,6 +99,34 @@ class ScenarioAgentForecastOutput(AgentForecastOutput):
     base_case: str
     reasoning: str = ""
 
+    @classmethod
+    def prompt_schema_json(cls) -> str:
+        """Return a JSON template for use in agent instruction strings.
+
+        Returns
+        -------
+        str
+            Indented JSON string showing the exact structure the agent must
+            pass to ``set_model_response``.
+        """
+        template: dict[str, object] = {
+            "scenarios": [
+                {
+                    "name": "<string>",
+                    "description": "<string>",
+                    "probability": "<float in [0, 1]>",
+                    "wti_range_60d": ["<float_low>", "<float_high>"],
+                    "point_estimate_60d": "<float>",
+                    "key_drivers": ["<driver 1>", "<driver 2>"],
+                }
+            ],
+            "base_case": "<scenario name>",
+            "reasoning": "<paragraph>",
+        }
+        import json  # noqa: PLC0415
+
+        return json.dumps(template, indent=2)
+
     def to_predictions(
         self,
         *,
@@ -171,6 +160,36 @@ class ScenarioAgentForecastOutput(AgentForecastOutput):
                 metadata=prediction_metadata,
             )
         ]
+
+
+# Task specification strings embedded in user prompts for NB3.
+# Defined after the output classes so each spec can reference the
+# corresponding prompt_schema_json() classmethod — single source of truth.
+
+TASK_SHOCK_SPEC = (
+    f"Estimate P(up) — the probability that WTI will close MORE THAN\n"
+    f"${int(SHOCK_THRESHOLD)}/bbl HIGHER than today's price at the end of\n"
+    f"{SHOCK_HORIZON} trading days.\n\n"
+    "If a `set_model_response` tool is available, call it with your complete "
+    "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
+    "Required JSON format:\n"
+    + DiscreteAgentForecastOutput.prompt_schema_json()
+)
+
+TASK_SCENARIOS_SPEC = (
+    "Identify the three scenarios oil market analysts are debating for WTI "
+    "over the next 60 days.\n\n"
+    "If a `set_model_response` tool is available, call it with your complete "
+    "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
+    "Required JSON format:\n"
+    + ScenarioAgentForecastOutput.prompt_schema_json()
+)
+
+TASK_SPECS: dict[TaskKind, str] = {
+    "trajectory": TASK_TRAJECTORY_SPEC,
+    "shock": TASK_SHOCK_SPEC,
+    "scenario": TASK_SCENARIOS_SPEC,
+}
 
 
 TASK_OUTPUT_SCHEMAS: dict[TaskKind, type[AgentForecastOutput]] = {
