@@ -41,6 +41,7 @@ class _LiteLLMNoiseFilter(logging.Filter):
 
 
 logging.getLogger("LiteLLM").addFilter(_LiteLLMNoiseFilter())
+logging.getLogger("opentelemetry").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", message="Tried calling set_status on an ended span")
 warnings.filterwarnings("ignore", message="Setting attribute on ended span")
 
