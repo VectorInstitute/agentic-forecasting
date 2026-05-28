@@ -191,10 +191,21 @@ async def _one_completion_async(
         # default to ``"disable"`` in the config because CoT-induced
         # overconfidence is well-documented for continuous probabilistic
         # forecasting (Welch 2026, Marzoev 2026).
-        kwargs["reasoning_effort"] = reasoning_effort
-        # Some models (e.g. gemini-3.5-flash) don't accept reasoning_effort.
-        # drop_params=True tells LiteLLM to silently omit unsupported params
-        # rather than raising UnsupportedParamsError.
+        #
+        # IMPORTANT: when routing through an OpenAI-compatible proxy (api_base
+        # set), LiteLLM treats the model as a generic OpenAI model and does not
+        # list ``reasoning_effort`` as a supported param for non-o1/o3 model
+        # names (confirmed via litellm.get_supported_openai_params). With
+        # ``drop_params=True`` it is silently stripped before the request
+        # reaches the proxy, so the thinking model runs unconstrained.
+        # Workaround: inject via ``extra_body``, which bypasses LiteLLM's
+        # param-filtering step and is merged directly into the request JSON.
+        if api_base is not None:
+            kwargs.setdefault("extra_body", {})["reasoning_effort"] = reasoning_effort
+        else:
+            kwargs["reasoning_effort"] = reasoning_effort
+        # drop_params=True is still needed for other non-standard params on
+        # models that don't support them (e.g. temperature on some o-series).
         kwargs["drop_params"] = True
 
     resp = await litellm.acompletion(**kwargs)
