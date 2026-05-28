@@ -115,9 +115,18 @@ async def set_model_response(json_response: str, tool_context: ToolContext) -> s
 
 The shim accepts the JSON as a plain string — no nested schema, no `$defs`. The model calls it, the JSON is stored in ADK session state under `SMR_STATE_KEY`. `AdkTextRunner.run_and_resolve()` reads that key after each run and returns the captured JSON in preference to the model's subsequent "Task complete." text response.
 
-### Anthropic / non-thinking models
+### Model-agnostic design — Gemini and Claude handled identically in code
 
-Claude models are not trained to call `set_model_response` automatically. The instruction explicitly tells them to call it, and since Claude is instruction-following, it does. The shim captures the JSON identically. If a model ignores the instruction and returns JSON as plain text instead, `run_and_resolve()` falls back to the `drain_run` text, which the predictor parses. Both paths are valid.
+There is no `if gemini … else claude …` branching. The shim registration condition is simply `isinstance(model, LiteLlm) and tools and output_schema` — true for any model routed through the proxy, regardless of provider.
+
+| Model | Why it calls `set_model_response` |
+|---|---|
+| Gemini thinking models | Trained on ADK patterns; calls it reflexively in structured-output + tool-calling contexts, with or without the instruction |
+| Claude | No ADK training, but is a strong instruction-follower; the explicit "call `set_model_response`" in the system prompt is sufficient |
+
+In both cases the model calls the same flat-schema shim, which stores the JSON in session state. `run_and_resolve()` reads the key and returns the captured JSON.
+
+The **fallback path** — `run_and_resolve()` returning `drain_run` text when the session state key is absent — catches any model that outputs plain JSON text instead of calling the tool. No special-casing required.
 
 ### Single source of truth for the schema description
 
