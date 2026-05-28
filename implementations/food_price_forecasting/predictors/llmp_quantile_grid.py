@@ -20,7 +20,7 @@ _ReasoningEffort = Literal["disable", "low", "medium", "high"]
 
 _DEFAULT_MODEL = "gemini-3-flash-preview"
 _DEFAULT_HISTORY_WINDOW = 120
-_DEFAULT_REASONING_EFFORT: _ReasoningEffort | None = "low"
+_DEFAULT_REASONING_EFFORT: _ReasoningEffort | None = "disable"
 _RECIPE_FAMILY = "food_cpi_v1"
 
 _SERIES_DESCRIPTION = (
