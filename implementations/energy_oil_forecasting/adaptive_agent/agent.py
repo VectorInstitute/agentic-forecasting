@@ -298,7 +298,11 @@ class WtiAdaptiveForecastPromptBuilder(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def build_wti_adaptive_config(model: str = "gemini-3.5-flash") -> AgentConfig:
+def build_wti_adaptive_config(
+    model: str = "gemini-3-flash-preview",
+    search_model: str = "gemini-3-flash-preview",
+    max_output_tokens: int = 16_384,
+) -> AgentConfig:
     """Build the full adaptive WTI analyst :class:`AgentConfig`.
 
     Combines E2B code execution, bounded Google Search with temporal cutoff
@@ -309,7 +313,15 @@ def build_wti_adaptive_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     Parameters
     ----------
     model : str
-        Gemini model identifier.
+        Model for the top-level analyst agent.
+    search_model : str
+        Model for the context-retrieval (web-search) sub-tool. Defaults to
+        ``gemini-3-flash-preview`` independently of ``model`` so that Gemini
+        handles Google Search even when the analyst uses a different provider.
+    max_output_tokens : int, default=16_384
+        Maximum tokens per model response. Set above LiteLLM's OpenAI-compatible
+        default of 4096 so the agent can write a complete ``run_code`` Python
+        script in a single function call without truncation.
 
     Returns
     -------
@@ -319,9 +331,11 @@ def build_wti_adaptive_config(model: str = "gemini-3.5-flash") -> AgentConfig:
         name="wti_adaptive_analyst",
         model=model,
         instruction=_ADAPTIVE_ANALYST_INSTRUCTION,
+        max_output_tokens=max_output_tokens,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
+            search_model=search_model,
         ),
         code_execution=CodeExecutionConfig(
             enabled=True,
