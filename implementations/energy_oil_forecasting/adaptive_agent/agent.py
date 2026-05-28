@@ -337,10 +337,7 @@ def build_wti_adaptive_config(
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
             search_model=search_model,
         ),
-        code_execution=CodeExecutionConfig(
-            enabled=True,
-            provider="e2b",
-        ),
+        code_execution=CodeExecutionConfig(enabled=True),
         skills_dirs=[
             _SKILLS_ROOT / "fetch-yfinance",
             _SKILLS_ROOT / "vol-regime",

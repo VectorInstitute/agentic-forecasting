@@ -223,7 +223,7 @@ def _build_search_tool(
                 {"role": "user", "content": user_content},
             ],
             tools=[{"googleSearch": {}}],
-            max_tokens=config.max_output_tokens or 1024,
+            max_tokens=config.max_output_tokens or 4096,
             temperature=config.temperature or 0.0,
             timeout=60.0,
         )
