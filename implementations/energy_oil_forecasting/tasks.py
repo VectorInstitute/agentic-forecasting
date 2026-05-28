@@ -182,7 +182,7 @@ TASK_OUTPUT_SCHEMAS: dict[TaskKind, type[AgentForecastOutput]] = {
 
 def build_wti_news_predictor(
     task: TaskKind,
-    model: str = "gemini-2.5-flash",
+    model: str = "gemini-3-flash-preview",
 ) -> AgentPredictor:
     """Build a news-grounded agent predictor for the given task kind.
 

@@ -2,7 +2,7 @@
 
 Status: **implemented** — May 2026. The proxy is now the default routing layer for all LLM calls in `aieng.forecasting`.
 
-> **Known limitation — Gemini thinking models + multi-turn tool calls:** see the section at the bottom of this file.
+> **Previously known limitation (now fixed):** Gemini thinking models dropped `thoughtSignature` in multi-turn tool calls. Fixed by the Vector team on May 28 2026 — see the history section at the bottom.
 
 ## What it is
 
@@ -14,7 +14,7 @@ Vector runs a shared LLM gateway at `proxy.vectorinstitute.ai`. It is OpenAI-API
 - **LLMP predictors** (`SampledTrajectoryLLMPredictor`, `QuantileGridLLMPredictor`): `LLMPredictorConfig` reads `PROXY_BASE_URL` and `PROXY_API_KEY` from the environment and passes them as `api_base`/`api_key` to `litellm.acompletion`.
 - **ADK agents** (`build_adk_agent`): `AgentConfig` reads the same env vars. When `proxy_base_url` is set and `model` is a plain string, the factory automatically wraps it in `LiteLlm(model="openai/<model>", api_base=..., api_key=...)`.
 - **Web search / context retrieval**: replaced the Gemini-native `google_search` sub-agent with a `search_web` FunctionTool backed by the proxy's `{"googleSearch": {}}` server-side extension. Grounding metadata (source URLs) is extracted from `choices[0].provider_specific_fields["grounding_metadata"]`.
-- **Default model everywhere**: `gemini-2.5-flash` (see constraint note below — this is not arbitrary).
+- **Default model everywhere**: `gemini-3-flash-preview`.
 
 ## Required environment variables
 
@@ -46,15 +46,17 @@ Both are read via `os.getenv(...)` with `None` as the fallback. If neither is se
 
 ---
 
-## Known limitation: Gemini thinking models + multi-turn tool calls
+## History: thoughtSignature issue with Gemini thinking models (resolved May 28 2026)
 
-**TL;DR:** `gemini-3-flash-preview` (and likely other Gemini 3.x / high-thinking-budget models) cannot be used for ADK agents that call tools through this proxy. `gemini-2.5-flash` works and is the current default.
+### What happened
+
+When we first integrated the proxy we discovered that `gemini-3-flash-preview` (and likely other high-thinking-budget Gemini models) would fail on the second turn of any multi-turn tool call with:
+
+> "Function call is missing a thought_signature in functionCall parts."
 
 ### Root cause
 
-The proxy is OpenAI-API-compatible. OpenAI's chat completions format has no field for Gemini's `thoughtSignature`. This creates an irreversible information loss in the translation layer.
-
-When a Gemini thinking model generates a function call, its native response payload carries a `thoughtSignature` on each `functionCall` part:
+The proxy is OpenAI-API-compatible. When a Gemini thinking model generates a function call, its native response payload carries a `thoughtSignature` on each `functionCall` part:
 
 ```json
 {
@@ -68,18 +70,14 @@ When a Gemini thinking model generates a function call, its native response payl
 }
 ```
 
-The proxy translates this to OpenAI format, which has no slot for `thoughtSignature` — it is silently dropped. When ADK sends the tool result back in the next turn (in OpenAI format), the proxy reconstructs the Gemini-format message history without the signature. Gemini then rejects turn 2:
+OpenAI format has no slot for `thoughtSignature`, so the proxy's outbound translation dropped it. When ADK sent the tool result back in the next turn, the reconstructed Gemini-format history was missing the signature and Gemini rejected it.
 
-> "Function call is missing a thought_signature in functionCall parts."
+### Workaround we applied
 
-The `thought` text (the visible reasoning) is also dropped, but Gemini does not require it to be echoed back — that drop is harmless. Only `thoughtSignature` matters.
+Temporarily changed the default model to `gemini-2.5-flash`, which did not exhibit the issue.
 
-### Why `gemini-2.5-flash` works
+### Fix
 
-Tested and confirmed: `gemini-2.5-flash` handles multi-turn tool calling correctly through the proxy. It likely generates lower-budget or no thought_signatures in this path, or the proxy has partial handling for it. Either way, it is the right default for now.
+The Vector team fixed the proxy's translation layer on May 28 2026 to preserve `thoughtSignature` through the round-trip. Both `gemini-3-flash-preview` and `gemini-2.5-flash` now pass multi-turn tool-call tests. Default model restored to `gemini-3-flash-preview`.
 
-### How the proxy could fix this
-
-The proxy needs to round-trip `thoughtSignature` through the OpenAI layer without requiring any client-side changes. The simplest approach: encode the signature into the `tool_call.id` field on the way out (e.g. `call_{uuid}::{base64(thoughtSignature)}`), then decode and re-inject it into the `functionCall` part when translating the next request back to Gemini format. The `tool_call.id` is opaque to clients, so this would be transparent end-to-end. A stateful server-side cache (`tool_call_id → signature`, short TTL) is an equivalent alternative that keeps IDs clean.
-
-This is a well-scoped proxy-side change. Once fixed, any Gemini thinking model would work for multi-turn tool calling. Worth flagging to the Vector team.
+**Takeaway for future issues:** report proxy compatibility problems to the Vector team rather than working around them — the proxy is actively maintained and issues get fixed quickly.

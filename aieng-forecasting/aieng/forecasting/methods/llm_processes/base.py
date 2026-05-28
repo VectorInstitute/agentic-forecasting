@@ -34,10 +34,10 @@ class LLMPredictorConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     model: str = Field(
-        default="gemini-2.5-flash",
+        default="gemini-3-flash-preview",
         description=(
             "Model name as expected by the proxy (bare, no provider prefix), "
-            "e.g. 'gemini-2.5-flash', 'gpt-4o-mini'. "
+            "e.g. 'gemini-3-flash-preview', 'gpt-4o-mini'. "
             "When proxy_base_url is set, LiteLLM routes this to the proxy via "
             "custom_llm_provider='openai'."
         ),
