@@ -322,11 +322,23 @@ def build_wti_basic_config(model: str = "gemini-3-flash-preview") -> AgentConfig
     )
 
 
-def build_wti_multitask_news_config(model: str = "gemini-3-flash-preview") -> AgentConfig:
+def build_wti_multitask_news_config(
+    model: str = "gemini-3-flash-preview",
+    search_model: str = "gemini-3-flash-preview",
+) -> AgentConfig:
     """News-grounded config for the one-agent-three-tasks demo (NB3).
 
     Uses a task-agnostic analyst instruction; the task schema is supplied in
     the user prompt payload via :class:`~energy_oil_forecasting.tasks.WtiMultitaskPromptBuilder`.
+
+    Parameters
+    ----------
+    model : str
+        Model for the top-level analyst agent.
+    search_model : str
+        Model for the context-retrieval (web-search) sub-tool. Defaults to
+        ``gemini-3-flash-preview`` independently of ``model`` so that Gemini
+        handles Google Search even when the analyst uses a different provider.
     """
     return AgentConfig(
         name="wti_analyst_multitask",
@@ -335,11 +347,15 @@ def build_wti_multitask_news_config(model: str = "gemini-3-flash-preview") -> Ag
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
+            search_model=search_model,
         ),
     )
 
 
-def build_wti_news_config(model: str = "gemini-3-flash-preview") -> AgentConfig:
+def build_wti_news_config(
+    model: str = "gemini-3-flash-preview",
+    search_model: str = "gemini-3-flash-preview",
+) -> AgentConfig:
     """Build an :class:`AgentConfig` with bounded Google Search.
 
     Wires a :class:`~aieng.forecasting.methods.agentic.agent_factory.ContextRetrievalConfig`
@@ -349,7 +365,11 @@ def build_wti_news_config(model: str = "gemini-3-flash-preview") -> AgentConfig:
     Parameters
     ----------
     model : str
-        Gemini model identifier.
+        Model for the top-level analyst agent.
+    search_model : str
+        Model for the context-retrieval (web-search) sub-tool. Defaults to
+        ``gemini-3-flash-preview`` independently of ``model`` so that Gemini
+        handles Google Search even when the analyst uses a different provider.
 
     Returns
     -------
@@ -362,15 +382,19 @@ def build_wti_news_config(model: str = "gemini-3-flash-preview") -> AgentConfig:
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
+            search_model=search_model,
         ),
     )
 
 
-def build_wti_code_exec_config(model: str = "gemini-3-flash-preview") -> AgentConfig:
-    """Build an :class:`AgentConfig` with Gemini native code execution and forecasting skills.
+def build_wti_code_exec_config(
+    model: str = "gemini-3-flash-preview",
+    search_model: str = "gemini-3-flash-preview",
+) -> AgentConfig:
+    """Build an :class:`AgentConfig` with E2B code execution and forecasting skills.
 
-    Combines bounded Google Search (temporal cutoff enforced) with Gemini's
-    native code execution environment and two forecasting skills:
+    Combines bounded Google Search (temporal cutoff enforced) with E2B sandbox
+    code execution and two forecasting skills:
 
     - ``statistical-analysis``: diagnostic patterns for the payload data
       (vol regime, anomaly detection, adaptive trend window).
@@ -380,7 +404,11 @@ def build_wti_code_exec_config(model: str = "gemini-3-flash-preview") -> AgentCo
     Parameters
     ----------
     model : str
-        Gemini model identifier.
+        Model for the top-level analyst agent.
+    search_model : str
+        Model for the context-retrieval (web-search) sub-tool. Defaults to
+        ``gemini-3-flash-preview`` independently of ``model`` so that Gemini
+        handles Google Search even when the analyst uses a different provider.
 
     Returns
     -------
@@ -393,6 +421,7 @@ def build_wti_code_exec_config(model: str = "gemini-3-flash-preview") -> AgentCo
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
+            search_model=search_model,
         ),
         code_execution=CodeExecutionConfig(enabled=True),
         skills_dirs=[
