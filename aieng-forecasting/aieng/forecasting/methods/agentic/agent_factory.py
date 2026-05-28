@@ -406,6 +406,26 @@ def build_adk_agent(
     if skills:
         tools.append(SkillToolset(skills=skills))
 
+    # For LiteLlm agents with both output_schema and tools, ADK's
+    # can_use_output_schema_with_tools() returns True and skips set_model_response
+    # injection, using response_format instead.  However:
+    #   1. Thinking models often ignore response_format after tool calls and
+    #      instead call set_model_response — which is not registered → ValueError.
+    #   2. Registering SetModelResponseTool manually fails for complex nested
+    #      schemas because its function declaration uses JSON Schema $defs/$ref
+    #      which Gemini's function declaration format does not support.
+    # Fix: do not pass output_schema to LlmAgent when tools are present on the
+    # LiteLlm path.  The instruction already specifies the JSON format; the
+    # predictor parses and validates the text output with fallback handling.
+    effective_output_schema = output_schema
+    try:
+        from google.adk.models.lite_llm import LiteLlm as _LiteLlm  # noqa: PLC0415
+
+        if output_schema is not None and tools and isinstance(model, _LiteLlm):
+            effective_output_schema = None
+    except ImportError:
+        pass
+
     thinking_config = (
         ThinkingConfig(
             include_thoughts=True,
@@ -428,7 +448,7 @@ def build_adk_agent(
         model=model,
         instruction=config.instruction,
         tools=tools,
-        output_schema=output_schema,
+        output_schema=effective_output_schema,
         generate_content_config=GenerateContentConfig(
             seed=config.seed,
             temperature=config.temperature,
