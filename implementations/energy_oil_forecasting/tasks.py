@@ -40,8 +40,7 @@ TASK_TRAJECTORY_SPEC = (
     "Forecast the WTI crude oil price at the horizons listed in the payload.\n\n"
     "If a `set_model_response` tool is available, call it with your complete "
     "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
-    "Required JSON format:\n"
-    + ContinuousAgentForecastOutput.prompt_schema_json()
+    "Required JSON format:\n" + ContinuousAgentForecastOutput.prompt_schema_json()
 )
 
 TaskKind = Literal["trajectory", "shock", "scenario"]
@@ -162,8 +161,7 @@ TASK_SHOCK_SPEC = (
     f"{SHOCK_HORIZON} trading days.\n\n"
     "If a `set_model_response` tool is available, call it with your complete "
     "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
-    "Required JSON format:\n"
-    + DiscreteAgentForecastOutput.prompt_schema_json()
+    "Required JSON format:\n" + DiscreteAgentForecastOutput.prompt_schema_json()
 )
 
 TASK_SCENARIOS_SPEC = (
@@ -171,8 +169,7 @@ TASK_SCENARIOS_SPEC = (
     "over the next 60 days.\n\n"
     "If a `set_model_response` tool is available, call it with your complete "
     "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
-    "Required JSON format:\n"
-    + ScenarioAgentForecastOutput.prompt_schema_json()
+    "Required JSON format:\n" + ScenarioAgentForecastOutput.prompt_schema_json()
 )
 
 TASK_SPECS: dict[TaskKind, str] = {

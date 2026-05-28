@@ -74,6 +74,7 @@ as `json_response` — the exact schema is described in `task_spec`. Otherwise \
 return the JSON directly as plain text with no preamble.\
 """
 
+
 def _build_wti_analyst_instruction() -> str:
     """Build the WTI analyst instruction, embedding the output schema from the class.
 
@@ -105,9 +106,7 @@ def _build_wti_analyst_instruction() -> str:
         "6. When tools are enabled, conclude with `set_model_response` to return the structured forecast.\n\n"
         "## Output schema\n\n"
         "Call `set_model_response` with a `json_response` string matching **exactly**:\n\n"
-        "```json\n"
-        + schema
-        + "\n```\n\n"
+        "```json\n" + schema + "\n```\n\n"
         'Critical: use `"horizon"` (integer, not `"horizon_days"`). '
         '`"quantiles"` is a **list** of `{"quantile": <level>, "value": <price>}` '
         "objects — not a dict. Omit any field not shown above.\n\n"

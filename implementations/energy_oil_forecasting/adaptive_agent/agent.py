@@ -84,6 +84,7 @@ _SKILLS_ROOT = Path(__file__).parent / "skills"
 # System prompt
 # ---------------------------------------------------------------------------
 
+
 def _build_adaptive_analyst_instruction() -> str:
     """Build the adaptive analyst instruction with the output schema embedded.
 
@@ -141,9 +142,7 @@ def _build_adaptive_analyst_instruction() -> str:
         "## Prediction output schema\n\n"
         "For **prediction requests**, call `set_model_response` with `json_response` "
         "matching **exactly**:\n\n"
-        "```json\n"
-        + schema
-        + "\n```\n\n"
+        "```json\n" + schema + "\n```\n\n"
         'Critical: use `"horizon"` (integer, not `"horizon_days"`). '
         '`"quantiles"` is a **list** of `{"quantile": <level>, "value": <price>}` '
         "objects — not a dict."
