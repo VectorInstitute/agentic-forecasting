@@ -33,23 +33,15 @@ from pydantic import BaseModel, Field
 
 
 # ── Task specification strings (embedded in user prompts for NB3) ───────────
+# Each spec uses the corresponding output class's prompt_schema_json() so the
+# required JSON format in the prompt is always in sync with the Pydantic schema.
 
 TASK_TRAJECTORY_SPEC = (
-    "Forecast the WTI crude oil price at three forward horizons from today:\n"
-    "  - 5  business days (~1 trading week)\n"
-    "  - 10 business days (~2 trading weeks)\n"
-    "  - 21 business days (~1 calendar month)\n\n"
-    "For each horizon provide a point estimate and an 80% confidence interval.\n\n"
-    "Return JSON with exactly these fields:\n"
-    "{\n"
-    '  "forecasts": [\n'
-    '    {"horizon": 5,  "point_forecast": <float>, "quantiles": [{"quantile": 0.10, "value": <float>}, '
-    '{"quantile": 0.50, "value": <float>}, {"quantile": 0.90, "value": <float>}]},\n'
-    '    {"horizon": 10, "point_forecast": <float>, "quantiles": [...]},\n'
-    '    {"horizon": 21, "point_forecast": <float>, "quantiles": [...]}\n'
-    "  ],\n"
-    '  "rationale": "<2-4 sentences>"\n'
-    "}"
+    "Forecast the WTI crude oil price at the horizons listed in the payload.\n\n"
+    "If a `set_model_response` tool is available, call it with your complete "
+    "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
+    "Required JSON format:\n"
+    + ContinuousAgentForecastOutput.prompt_schema_json()
 )
 
 TaskKind = Literal["trajectory", "shock", "scenario"]
@@ -123,8 +115,6 @@ class ScenarioAgentForecastOutput(AgentForecastOutput):
             "base_case": "<scenario name>",
             "reasoning": "<paragraph>",
         }
-        import json  # noqa: PLC0415
-
         return json.dumps(template, indent=2)
 
     def to_predictions(
@@ -210,10 +200,10 @@ def build_wti_news_predictor(
     task : TaskKind
         One of ``"trajectory"``, ``"shock"``, or ``"scenario"``.
     model : str
-        Gemini model identifier passed through to the underlying
+        Model identifier passed through to the underlying
         :class:`~aieng.forecasting.methods.agentic.agent_factory.AgentConfig`.
-        Defaults to ``"gemini-3.5-flash"``; pass a cheaper model (e.g.
-        ``"gemini-2.0-flash-lite"``) for development runs.
+        Defaults to ``"gemini-3-flash-preview"``; pass a cheaper model (e.g.
+        ``"gemini-3.1-flash-lite-preview"``) for development runs.
     """
     if task == "trajectory":
         return AgentPredictor(

@@ -24,6 +24,7 @@ import contextvars
 import json
 import logging
 import os
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, TypeVar
 
@@ -53,6 +54,14 @@ def bootstrap_litellm() -> None:
         existing = list(getattr(litellm, "callbacks", []) or [])
         if "langfuse_otel" not in existing:
             litellm.callbacks = [*existing, "langfuse_otel"]
+
+    # LiteLLM's OTEL callbacks sometimes fire after spans have already ended,
+    # producing a flood of "Tried calling set_status on an ended span" and
+    # "Setting attribute on ended span" warnings from the opentelemetry SDK.
+    # These are benign noise; suppress them at the warnings level.
+    warnings.filterwarnings("ignore", message="Tried calling set_status on an ended span")
+    warnings.filterwarnings("ignore", message="Setting attribute on ended span")
+    logging.getLogger("opentelemetry").setLevel(logging.ERROR)
 
     _BOOTSTRAP_DONE = True
 

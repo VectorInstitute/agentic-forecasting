@@ -69,6 +69,7 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     CodeExecutionConfig,
     ContextRetrievalConfig,
 )
+from energy_oil_forecasting.analyst_agent import compress_history
 from pydantic import BaseModel
 
 
@@ -158,16 +159,8 @@ _ADAPTIVE_ANALYST_INSTRUCTION = _build_adaptive_analyst_instruction()
 _WTI_CONTEXT_RETRIEVAL_INSTRUCTION = """\
 You are an oil market intelligence specialist with access to web search.
 
-You will receive a request string in the format:
-  "cutoff_date: YYYY-MM-DD | query: <topic>"
-
-CRITICAL TEMPORAL CONSTRAINT:
-- Include ONLY information publicly available strictly BEFORE the cutoff_date.
-- EXCLUDE any events, market moves, or data from cutoff_date or later.
-- If a search result's publication date is on or after cutoff_date, skip it entirely.
-
-Use `google_search` to find information relevant to the query, then return a \
-concise structured markdown summary (3-5 paragraphs) covering relevant aspects of:
+Search for information relevant to the query and return a concise structured \
+markdown summary (3-5 paragraphs) covering relevant aspects of:
 - WTI/Brent crude price level and recent trend
 - OPEC+ production decisions and supply outlook
 - Geopolitical risks in the Persian Gulf, Middle East, key shipping lanes
@@ -175,8 +168,9 @@ concise structured markdown summary (3-5 paragraphs) covering relevant aspects o
 - Notable tanker/shipping incidents or supply disruption signals
 - Published analyst forecasts or unusual price-target revisions
 
-Ground your summary in the search results you actually retrieve. Do not \
-speculate about events that fall after "cutoff_date".\
+Ground your summary in the search results you actually retrieve. \
+When a cutoff date is specified, do not report or speculate about events \
+that occurred after that date.\
 """
 
 # ---------------------------------------------------------------------------
@@ -216,34 +210,6 @@ speculate about events that fall after "cutoff_date".\
 #      the required `name:` and `description:` frontmatter fields?
 #   3. Scope guard — enforce that only _SKILLS_ROOT paths are writable,
 #      not arbitrary filesystem locations.
-
-
-# ---------------------------------------------------------------------------
-# History compression
-# ---------------------------------------------------------------------------
-
-
-def compress_history(df: pd.DataFrame) -> str:
-    """Compress WTI daily history: recent 6 months daily, older as weekly averages."""
-    df = df.copy()
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
-    cutoff = df["timestamp"].max() - pd.DateOffset(months=6)
-
-    recent = df[df["timestamp"] >= cutoff].copy()
-    old = df[df["timestamp"] < cutoff].copy()
-
-    rows: list[str] = ["date,close"]
-
-    if not old.empty:
-        old_indexed = old.set_index("timestamp")["value"]
-        weekly: pd.Series = old_indexed.resample("W").mean().dropna()
-        for date, val in weekly.items():
-            rows.append(f"{date.date()},{val:.2f}")
-
-    for _, row in recent.iterrows():
-        rows.append(f"{row['timestamp'].date()},{row['value']:.2f}")
-
-    return "\n".join(rows)
 
 
 # ---------------------------------------------------------------------------

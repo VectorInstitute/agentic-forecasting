@@ -63,7 +63,19 @@ def _run_coroutine_sync(coro: Coroutine[Any, Any, T]) -> T:
         except BaseException as exc:  # pragma: no cover - defensive thread boundary
             error = exc
         finally:
-            loop.close()
+            # Cancel and drain any background tasks (e.g. LiteLLM's LoggingWorker)
+            # before closing the loop.  Without this, Python emits
+            # "Task was destroyed but it is pending!" warnings for every run.
+            try:
+                pending = asyncio.all_tasks(loop)
+                if pending:
+                    for task in pending:
+                        task.cancel()
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            except Exception:
+                pass
+            finally:
+                loop.close()
 
     thread = threading.Thread(target=run_in_thread, daemon=True)
     thread.start()
