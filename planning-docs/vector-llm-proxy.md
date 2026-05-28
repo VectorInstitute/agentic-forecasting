@@ -131,3 +131,41 @@ The **fallback path** — `run_and_resolve()` returning `drain_run` text when th
 ### Single source of truth for the schema description
 
 Each `AgentForecastOutput` subclass exposes a `prompt_schema_json()` classmethod that returns the exact JSON template the model must pass to `set_model_response`. Agent instructions consume this classmethod rather than hardcoding the schema, so field-name changes and `STANDARD_QUANTILES` updates propagate automatically.
+
+---
+
+## History: reasoning_effort silently dropped by LiteLLM on proxy path (resolved May 28 2026)
+
+### What happened
+
+`QuantileGridLLMPredictor` with `reasoning_effort="low"` and model `gemini-3.1-pro-preview` was producing truncated JSON responses even after `max_tokens` was raised to 8192. The response always ended mid-value on the last quantile of an early horizon, with errors like:
+
+> `Expecting ',' delimiter: line 27 column 17 (char 473)`
+
+### Root cause
+
+Through the proxy path, LiteLLM routes calls with `api_base` set using `custom_llm_provider='openai'` and prepends `openai/` to the model name. With `drop_params=True`, LiteLLM checks whether each parameter is in the supported-params list for the `openai` provider + model name. `reasoning_effort` is only listed as supported for o1/o3 model names:
+
+```python
+litellm.get_supported_openai_params("gemini-3.1-pro-preview", "openai")
+# → [..., "max_tokens", "temperature", ...] — reasoning_effort NOT present
+```
+
+Because `gemini-3.1-pro-preview` doesn't look like an o1/o3 model, LiteLLM silently stripped `reasoning_effort` before the request reached the proxy. The proxy never saw the constraint; the thinking model ran fully unconstrained and consumed 7000–8000 thinking tokens per call. Thinking tokens and text output tokens share the same `max_tokens` budget through the OpenAI-compatible proxy, leaving only ~1000 tokens for a 12-horizon × 11-quantile JSON payload (~1600 tokens needed).
+
+### Fix
+
+Inject `reasoning_effort` via `extra_body` when routing through the proxy (`api_base` is set). `extra_body` fields are merged directly into the request JSON and bypass LiteLLM's param-filtering step entirely:
+
+```python
+if api_base is not None:
+    kwargs.setdefault("extra_body", {})["reasoning_effort"] = reasoning_effort
+else:
+    kwargs["reasoning_effort"] = reasoning_effort
+```
+
+`max_tokens` was also raised from 4096 → 16384 as a defence-in-depth measure: even if `reasoning_effort` is somehow not honoured by a future proxy change, 16384 gives enough headroom for thinking models (the model only generates tokens it needs, so non-thinking models are unaffected in cost). Both food CPI recipe functions now expose `max_tokens` as an explicit parameter so participants can tune it per-model.
+
+### Takeaway
+
+When using `drop_params=True` with LiteLLM via an OpenAI-compatible proxy, **any parameter not in the provider's known-supported list for that model name will be silently dropped**. This is especially subtle for thinking-model parameters (`reasoning_effort`, future analogues) because the model name does not reveal that it is a thinking model. Prefer `extra_body` for pass-through parameters when the proxy is the actual target.
