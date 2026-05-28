@@ -390,6 +390,7 @@ def build_wti_news_config(
 def build_wti_code_exec_config(
     model: str = "gemini-3-flash-preview",
     search_model: str = "gemini-3-flash-preview",
+    max_output_tokens: int = 16_384,
 ) -> AgentConfig:
     """Build an :class:`AgentConfig` with E2B code execution and forecasting skills.
 
@@ -409,6 +410,11 @@ def build_wti_code_exec_config(
         Model for the context-retrieval (web-search) sub-tool. Defaults to
         ``gemini-3-flash-preview`` independently of ``model`` so that Gemini
         handles Google Search even when the analyst uses a different provider.
+    max_output_tokens : int, default=16_384
+        Maximum tokens per model response.  The default is set well above
+        LiteLLM's OpenAI-compatible endpoint default of 4096, which is not
+        enough for Claude to write a complete ``run_code`` Python script in a
+        single function call — causing repeated retries with empty arguments.
 
     Returns
     -------
@@ -418,6 +424,7 @@ def build_wti_code_exec_config(
         name="wti_analyst_code",
         model=model,
         instruction=_WTI_ANALYST_INSTRUCTION + _CODE_EXEC_SKILLS_SUPPLEMENT,
+        max_output_tokens=max_output_tokens,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
