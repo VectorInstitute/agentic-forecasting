@@ -123,7 +123,10 @@ class TestBuildAdkAgent:
         agent = build_adk_agent(config)
 
         assert isinstance(agent.model, LiteLlm)
-        assert agent.model.model == "gemini-3-flash-preview"
+        # LiteLlm receives the "openai/" prefix so LiteLLM routes via the
+        # OpenAI-compatible proxy path; the prefix is stripped before the
+        # proxy sees the model name.
+        assert agent.model.model == "openai/gemini-3-flash-preview"
 
     def test_string_model_kept_as_string_without_proxy(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Without a proxy URL the model is passed as a plain string to LlmAgent."""

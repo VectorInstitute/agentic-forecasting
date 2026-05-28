@@ -132,9 +132,11 @@ async def _one_completion_async(
     }
     if api_base is not None:
         kwargs["api_base"] = api_base
-        # Tell LiteLLM to route via the OpenAI-compatible path so bare model
-        # names like "gemini-3-flash-preview" reach the proxy unchanged.
-        kwargs["custom_llm_provider"] = "openai"
+        # Prefix the model with "openai/" so LiteLLM routes via the
+        # OpenAI-compatible path.  LiteLLM strips the prefix before sending
+        # the request, so the proxy receives the bare model name as expected.
+        if not model.startswith("openai/"):
+            kwargs["model"] = f"openai/{model}"
     if api_key is not None:
         kwargs["api_key"] = api_key
     if reasoning_effort is not None:

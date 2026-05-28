@@ -173,11 +173,13 @@ def _build_search_tool(
         user_content = query
         if cutoff_date and config.enforce_cutoff:
             user_content += f"\n\nOnly include and cite information published strictly before {cutoff_date}."
+        search_model = config.search_model
+        if not search_model.startswith("openai/"):
+            search_model = f"openai/{search_model}"
         resp = await litellm.acompletion(
-            model=config.search_model,
+            model=search_model,
             api_base=proxy_base_url,
             api_key=proxy_api_key,
-            custom_llm_provider="openai",
             messages=[
                 {"role": "system", "content": config.instruction},
                 {"role": "user", "content": user_content},
@@ -364,11 +366,14 @@ def build_adk_agent(
     if isinstance(model, str) and config.proxy_base_url:
         from google.adk.models.lite_llm import LiteLlm  # noqa: PLC0415
 
+        # Prefix with "openai/" so LiteLLM uses the OpenAI-compatible path.
+        # LiteLLM strips the prefix before sending, so the proxy receives the
+        # bare model name.
+        litellm_model = model if model.startswith("openai/") else f"openai/{model}"
         model = LiteLlm(
-            model=model,
+            model=litellm_model,
             api_base=config.proxy_base_url,
             api_key=config.proxy_api_key,
-            custom_llm_provider="openai",
         )
 
     # Configure tools
