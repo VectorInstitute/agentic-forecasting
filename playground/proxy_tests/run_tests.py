@@ -27,10 +27,9 @@ import asyncio
 import json
 import os
 import sys
-import textwrap
 import traceback
 from pathlib import Path
-from typing import Any
+
 
 # ---------------------------------------------------------------------------
 # Bootstrap: load .env so keys are available
@@ -41,14 +40,15 @@ sys.path.insert(0, str(REPO_ROOT / "aieng-forecasting"))
 
 from dotenv import load_dotenv  # noqa: E402
 
+
 load_dotenv(REPO_ROOT / ".env")
 
 PROXY_BASE_URL = "https://proxy.vectorinstitute.ai/v1"
 PROXY_API_KEY = os.environ.get("PROXY_API_KEY", "")
 
 # gpt-4o-mini: reliably handles JSON schema and function calling on the proxy.
-PROXY_MODEL_LITELLM = "openai/gpt-4o-mini"   # LiteLLM provider/model string
-PROXY_MODEL_BARE = "gpt-4o-mini"              # bare model name for proxy calls
+PROXY_MODEL_LITELLM = "openai/gpt-4o-mini"  # LiteLLM provider/model string
+PROXY_MODEL_BARE = "gpt-4o-mini"  # bare model name for proxy calls
 
 
 # ---------------------------------------------------------------------------
@@ -128,13 +128,12 @@ async def test_t2_adk_basic() -> None:
     print("\n── T2: ADK basic (LlmAgent + LiteLlm → proxy, no tools) ──")
 
     try:
-        from google.adk.agents import LlmAgent
-        from google.adk.models.lite_llm import LiteLlm
-
         from aieng.forecasting.methods.agentic.adk_runner import (
             AdkTextRunner,
             AdkTextRunnerConfig,
         )
+        from google.adk.agents import LlmAgent
+        from google.adk.models.lite_llm import LiteLlm
 
         model = LiteLlm(
             model=PROXY_MODEL_LITELLM,
@@ -146,9 +145,7 @@ async def test_t2_adk_basic() -> None:
             model=model,
             instruction="You are a helpful assistant. Answer concisely.",
         )
-        runner = AdkTextRunner(
-            agent, config=AdkTextRunnerConfig(app_name="proxy_test_t2")
-        )
+        runner = AdkTextRunner(agent, config=AdkTextRunnerConfig(app_name="proxy_test_t2"))
         reply = await runner.run_text_async("What is 2 + 2? Reply with just the number.")
         assert reply.strip(), "Empty reply"
         _pass("T2", f"reply={reply.strip()[:80]!r}")
@@ -165,13 +162,12 @@ async def test_t3_adk_function_tool() -> None:
     print("\n── T3: ADK function tool (LiteLlm → proxy + FunctionTool) ──")
 
     try:
-        from google.adk.agents import LlmAgent
-        from google.adk.models.lite_llm import LiteLlm
-
         from aieng.forecasting.methods.agentic.adk_runner import (
             AdkTextRunner,
             AdkTextRunnerConfig,
         )
+        from google.adk.agents import LlmAgent
+        from google.adk.models.lite_llm import LiteLlm
 
         _tool_called: list[str] = []
 
@@ -181,7 +177,8 @@ async def test_t3_adk_function_tool() -> None:
             Args:
                 commodity: The name of the commodity (e.g. 'gold', 'oil').
 
-            Returns:
+            Returns
+            -------
                 A string with the price information.
             """
             _tool_called.append(commodity)
@@ -198,12 +195,8 @@ async def test_t3_adk_function_tool() -> None:
             instruction="Use your tools to answer questions about commodity prices.",
             tools=[get_commodity_price],
         )
-        runner = AdkTextRunner(
-            agent, config=AdkTextRunnerConfig(app_name="proxy_test_t3")
-        )
-        reply = await runner.run_text_async(
-            "What is the current price of gold? Use the tool."
-        )
+        runner = AdkTextRunner(agent, config=AdkTextRunnerConfig(app_name="proxy_test_t3"))
+        reply = await runner.run_text_async("What is the current price of gold? Use the tool.")
         assert reply.strip(), "Empty reply"
         tool_used = bool(_tool_called)
         _pass("T3", f"tool_called={tool_used}, reply={reply.strip()[:80]!r}")
@@ -222,14 +215,13 @@ async def test_t4_adk_output_schema() -> None:
     print("\n── T4: ADK output schema (LlmAgent + LiteLlm → proxy, JSON output) ──")
 
     try:
-        from google.adk.agents import LlmAgent
-        from google.adk.models.lite_llm import LiteLlm
-        from pydantic import BaseModel
-
         from aieng.forecasting.methods.agentic.adk_runner import (
             AdkTextRunner,
             AdkTextRunnerConfig,
         )
+        from google.adk.agents import LlmAgent
+        from google.adk.models.lite_llm import LiteLlm
+        from pydantic import BaseModel
 
         class SimpleForecast(BaseModel):
             point_forecast: float
@@ -246,12 +238,8 @@ async def test_t4_adk_output_schema() -> None:
             instruction="You are a forecasting assistant. Always respond with a JSON object.",
             output_schema=SimpleForecast,
         )
-        runner = AdkTextRunner(
-            agent, config=AdkTextRunnerConfig(app_name="proxy_test_t4")
-        )
-        reply = await runner.run_text_async(
-            "The series is [100, 102, 104, 106]. Forecast the next value."
-        )
+        runner = AdkTextRunner(agent, config=AdkTextRunnerConfig(app_name="proxy_test_t4"))
+        reply = await runner.run_text_async("The series is [100, 102, 104, 106]. Forecast the next value.")
         parsed = SimpleForecast.model_validate_json(reply)
         _pass("T4", f"point_forecast={parsed.point_forecast}, reasoning={parsed.reasoning[:60]!r}")
     except Exception as exc:
@@ -294,7 +282,10 @@ async def test_t5_google_search_raw() -> None:
         has_grounding = grounding is not None
         web_queries = (grounding or {}).get("webSearchQueries", [])
         chunks = (grounding or {}).get("groundingChunks", [])
-        _pass("T5", f"has_grounding_metadata={has_grounding}, queries={web_queries[:2]}, chunks={len(chunks)}, reply={str(content)[:80]!r}")
+        _pass(
+            "T5",
+            f"has_grounding_metadata={has_grounding}, queries={web_queries[:2]}, chunks={len(chunks)}, reply={str(content)[:80]!r}",
+        )
         if not has_grounding:
             print("    NOTE: no grounding_metadata found — inspect resp manually if needed")
     except Exception as exc:
@@ -317,13 +308,12 @@ async def test_t6_google_search_in_adk() -> None:
 
     try:
         import litellm
-        from google.adk.agents import LlmAgent
-        from google.adk.models.lite_llm import LiteLlm
-
         from aieng.forecasting.methods.agentic.adk_runner import (
             AdkTextRunner,
             AdkTextRunnerConfig,
         )
+        from google.adk.agents import LlmAgent
+        from google.adk.models.lite_llm import LiteLlm
 
         async def search_web(query: str) -> str:
             """Search the web for current information and return a summary.
@@ -331,7 +321,8 @@ async def test_t6_google_search_in_adk() -> None:
             Args:
                 query: The search query.
 
-            Returns:
+            Returns
+            -------
                 A summary of search results with sources.
             """
             resp = await litellm.acompletion(
@@ -371,9 +362,7 @@ async def test_t6_google_search_in_adk() -> None:
             ),
             tools=[search_web],
         )
-        runner = AdkTextRunner(
-            agent, config=AdkTextRunnerConfig(app_name="proxy_test_t6")
-        )
+        runner = AdkTextRunner(agent, config=AdkTextRunnerConfig(app_name="proxy_test_t6"))
         reply = await runner.run_text_async(
             "Search for the current WTI crude oil price and give me a one-sentence summary."
         )

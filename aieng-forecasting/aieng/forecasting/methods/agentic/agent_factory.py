@@ -59,7 +59,7 @@ class ContextRetrievalConfig(BaseModel):
     ----------
     enabled : bool, default=False
         Whether to enable context retrieval. Disabled by default.
-    search_model : str, default="gemini-3-flash-preview"
+    search_model : str, default="gemini-2.5-flash"
         Proxy model used inside the ``search_web`` tool call.  Must be a
         model that supports the ``googleSearch`` server-side tool extension.
     instruction : str
@@ -80,7 +80,7 @@ class ContextRetrievalConfig(BaseModel):
     model_config = {"extra": "forbid"}
 
     enabled: bool = False
-    search_model: str = "gemini-3-flash-preview"
+    search_model: str = "gemini-2.5-flash"
     instruction: str = (
         "You are a specialized web search assistant.\n\n"
         "Search for information relevant to the query and return a concise, "
@@ -209,7 +209,7 @@ class AgentConfig(BaseModel):
     ----------
     name : str, default="adk_forecasting_agent"
         Name of the agent.
-    model : str | BaseLlm, default="gemini-3-flash-preview"
+    model : str | BaseLlm, default="gemini-2.5-flash"
         Model name (bare, no provider prefix) or a custom
         :class:`~google.adk.models.base_llm.BaseLlm` instance.  When
         ``proxy_base_url`` is set and ``model`` is a plain string,
@@ -254,7 +254,7 @@ class AgentConfig(BaseModel):
     model_config = {"extra": "forbid"}
 
     name: str = "adk_forecasting_agent"
-    model: str | BaseLlm = "gemini-3-flash-preview"
+    model: str | BaseLlm = "gemini-2.5-flash"
     proxy_base_url: str | None = Field(
         default_factory=lambda: os.getenv("PROXY_BASE_URL"),
         description=(

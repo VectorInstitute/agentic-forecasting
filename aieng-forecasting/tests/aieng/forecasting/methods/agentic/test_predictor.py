@@ -161,8 +161,8 @@ class TestConstruction:
 
     def test_predictor_id_includes_string_model_name(self) -> None:
         """String model identifiers are included in ``predictor_id``."""
-        predictor, _ = _make_predictor(model="gemini-3-flash-preview")
-        assert "gemini-3-flash-preview" in predictor.predictor_id
+        predictor, _ = _make_predictor(model="gemini-2.5-flash")
+        assert "gemini-2.5-flash" in predictor.predictor_id
 
     def test_predictor_id_omits_non_string_model(self) -> None:
         """Non-string models (e.g. ``BaseLlm`` instances) stay out of the id."""
