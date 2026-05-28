@@ -99,6 +99,40 @@ no omissions.
 6. When tools are enabled, conclude with `set_model_response` to return the \
 structured forecast.
 
+## Output schema
+
+Call `set_model_response` with a `json_response` string matching **exactly**:
+
+```json
+{
+  "forecasts": [
+    {
+      "horizon": <integer — the horizon step from `horizons`, e.g. 5>,
+      "point_forecast": <float — must equal the 0.50 quantile value>,
+      "quantiles": [
+        {"quantile": 0.05, "value": <float>},
+        {"quantile": 0.10, "value": <float>},
+        {"quantile": 0.20, "value": <float>},
+        {"quantile": 0.30, "value": <float>},
+        {"quantile": 0.40, "value": <float>},
+        {"quantile": 0.50, "value": <float>},
+        {"quantile": 0.60, "value": <float>},
+        {"quantile": 0.70, "value": <float>},
+        {"quantile": 0.80, "value": <float>},
+        {"quantile": 0.90, "value": <float>},
+        {"quantile": 0.95, "value": <float>}
+      ],
+      "rationale": "<concise rationale>"
+    }
+  ],
+  "metadata": {}
+}
+```
+
+Critical field names: use `"horizon"` (integer, not `"horizon_days"`). \
+`"quantiles"` is a **list** of `{"quantile": <level>, "value": <price>}` \
+objects — not a dict. Omit any field not shown above.
+
 ## Analysis discipline
 
 When context retrieval is available, call ``search_web`` to gather market \
