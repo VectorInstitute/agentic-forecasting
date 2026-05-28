@@ -202,6 +202,10 @@ async def _one_completion_async(
     usage = getattr(resp, "usage", None)
     in_tok = int(getattr(usage, "prompt_tokens", 0) or 0) if usage is not None else 0
     out_tok = int(getattr(usage, "completion_tokens", 0) or 0) if usage is not None else 0
+    # Log full usage so we can see thinking-token breakdown when available.
+    # The OpenAI-compatible proxy may populate completion_tokens_details.reasoning_tokens.
+    if usage is not None:
+        logger.debug("LLM usage: %s", vars(usage) if hasattr(usage, "__dict__") else usage)
     raw = resp.choices[0].message.content
     content = strip_markdown_fence(raw) if raw else raw
     return content, cost, in_tok, out_tok

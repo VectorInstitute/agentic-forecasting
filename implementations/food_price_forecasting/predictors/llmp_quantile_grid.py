@@ -45,7 +45,7 @@ def build_llmp_quantile_grid(
     model: str = _DEFAULT_MODEL,
     history_window: int | None = _DEFAULT_HISTORY_WINDOW,
     reasoning_effort: _ReasoningEffort | None = _DEFAULT_REASONING_EFFORT,
-    max_tokens: int = 8192,
+    max_tokens: int = 16384,
     variant_tag: str | None = None,
 ) -> QuantileGridLLMPredictor:
     """Return the Food CPI quantile-grid LLMP recipe.
@@ -65,10 +65,12 @@ def build_llmp_quantile_grid(
         draw thinking tokens from the same ``max_tokens`` budget via the
         OpenAI-compatible proxy — increase ``max_tokens`` if responses are
         truncated.
-    max_tokens : int, default=8192
-        Per-call output token budget. Raise this when using a thinking model
-        (e.g. ``gemini-3.1-pro-preview``) to avoid truncation: thinking tokens
-        consume part of this budget, leaving less room for the JSON payload.
+    max_tokens : int, default=16384
+        Per-call output token budget. The generous default prevents truncation
+        on thinking models (e.g. ``gemini-3.1-pro-preview``) where thinking
+        tokens consume the same budget via the OpenAI-compatible proxy. The
+        model only generates tokens it needs, so non-thinking models are
+        unaffected in cost.
     variant_tag : str or None
         Override the cache tag suffix. Defaults to a tag encoding the
         recipe family, history window, and reasoning effort.

@@ -57,13 +57,14 @@ class LLMPredictorConfig(BaseModel):
     )
     temperature: float = Field(default=1.0, ge=0.0, le=2.0, description="Sampling temperature.")
     max_tokens: int = Field(
-        default=8192,
+        default=16384,
         ge=1,
         description=(
             "Per-call output token budget. "
             "Thinking models (e.g. gemini-3.1-pro-preview) consume thinking tokens "
-            "from this same budget via the OpenAI-compatible proxy — raise this value "
-            "if responses are truncated when using a thinking model."
+            "from this same budget via the OpenAI-compatible proxy — the 16 k default "
+            "is intentionally generous to prevent truncation; the model only generates "
+            "tokens it needs, so non-thinking models are not affected in cost."
         ),
     )
     timeout_s: float = Field(default=120.0, gt=0.0, description="Per-call timeout in seconds.")

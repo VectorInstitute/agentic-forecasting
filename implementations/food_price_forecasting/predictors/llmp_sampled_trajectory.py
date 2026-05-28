@@ -42,7 +42,7 @@ def build_llmp_sampled_trajectory(
     model: str = _DEFAULT_MODEL,
     n_samples: int = _DEFAULT_N_SAMPLES,
     history_window: int | None = _DEFAULT_HISTORY_WINDOW,
-    max_tokens: int = 8192,
+    max_tokens: int = 16384,
     variant_tag: str | None = None,
 ) -> SampledTrajectoryLLMPredictor:
     """Return the Food CPI sampled-trajectory LLMP recipe.
@@ -59,11 +59,12 @@ def build_llmp_sampled_trajectory(
         Number of trajectory samples to draw per prediction call.
     history_window : int or None
         Number of most-recent periods to include in context.
-    max_tokens : int, default=8192
-        Per-call output token budget. Thinking models (e.g.
-        ``gemini-3.1-pro-preview``) consume thinking tokens from the same
-        budget via the OpenAI-compatible proxy — raise this if responses
-        are truncated.
+    max_tokens : int, default=16384
+        Per-call output token budget. The generous default prevents truncation
+        on thinking models (e.g. ``gemini-3.1-pro-preview``) where thinking
+        tokens consume the same budget via the OpenAI-compatible proxy. The
+        model only generates tokens it needs, so non-thinking models are
+        unaffected in cost.
     variant_tag : str or None
         Override the cache tag suffix.
     """
