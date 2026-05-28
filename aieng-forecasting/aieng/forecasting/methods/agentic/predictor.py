@@ -30,6 +30,7 @@ from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig
 from aieng.forecasting.methods.agentic.agent_factory import AgentConfig, build_adk_agent
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
+from aieng.forecasting.methods.llm_processes._client import strip_markdown_fence
 from google.adk.agents.base_agent import BaseAgent
 from pydantic import ValidationError
 
@@ -266,9 +267,13 @@ class AgentPredictor(Predictor):
         prompt = self.prompt_builder(task=task, context=context)
         output_str = _run_coroutine_sync(self._runner.run_text_async(prompt))
 
+        # Normalise: strip markdown fences before validation so any model can
+        # be swapped in without breaking the parse layer.
+        output_str = strip_markdown_fence(output_str)
+
         # Validate the output against the output schema; tolerate JSON
-        # responses wrapped in a fenced block that ``model_validate_json``
-        # cannot parse but ``json.loads`` + ``model_validate`` can.
+        # responses that ``model_validate_json`` cannot parse but
+        # ``json.loads`` + ``model_validate`` can.
         try:
             output = self.output_schema.model_validate_json(output_str)
         except ValidationError:

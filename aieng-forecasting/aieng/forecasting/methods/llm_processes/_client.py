@@ -117,6 +117,37 @@ def make_json_schema_response_format(name: str, schema: dict[str, Any]) -> dict[
     }
 
 
+def strip_markdown_fence(content: str) -> str:
+    """Strip a Markdown JSON code fence from an LLM response.
+
+    Some models return JSON wrapped in a ```json ... ``` fence even when
+    ``response_format`` is set.  This is a defensive normalisation step so
+    the parse layer works regardless of which model or proxy is in use —
+    participants can swap models freely without hitting parse failures.
+
+    Parameters
+    ----------
+    content : str
+        Raw LLM response content, possibly fenced.
+
+    Returns
+    -------
+    str
+        The inner content with leading/trailing whitespace stripped. If no
+        fence is present the input is returned unchanged (after stripping).
+    """
+    stripped = content.strip()
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        # Drop opening fence line (```json or ```)
+        inner_lines = lines[1:]
+        # Drop closing fence line if present
+        if inner_lines and inner_lines[-1].strip() == "```":
+            inner_lines = inner_lines[:-1]
+        stripped = "\n".join(inner_lines).strip()
+    return stripped
+
+
 # ---------------------------------------------------------------------------
 # Async sampling seam
 # ---------------------------------------------------------------------------
@@ -171,7 +202,9 @@ async def _one_completion_async(
     usage = getattr(resp, "usage", None)
     in_tok = int(getattr(usage, "prompt_tokens", 0) or 0) if usage is not None else 0
     out_tok = int(getattr(usage, "completion_tokens", 0) or 0) if usage is not None else 0
-    return resp.choices[0].message.content, cost, in_tok, out_tok
+    raw = resp.choices[0].message.content
+    content = strip_markdown_fence(raw) if raw else raw
+    return content, cost, in_tok, out_tok
 
 
 async def _one_completion_with_transient_retry(
