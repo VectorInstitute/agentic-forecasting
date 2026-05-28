@@ -12,13 +12,37 @@ raises :class:`ImportError` with installation guidance.
 
 from __future__ import annotations
 
+import logging
 import os
+import warnings
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
 from google.adk.models.base_llm import BaseLlm
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+# ---------------------------------------------------------------------------
+# Suppress LiteLLM startup and OTEL noise
+# ---------------------------------------------------------------------------
+# LiteLLM logs Bedrock/SageMaker "no botocore" warnings and an OTEL proxy-
+# server notice on every import — all harmless when using the Vector proxy.
+# OTEL span-lifecycle warnings ("Tried calling set_status on an ended span")
+# fire when LiteLLM callbacks run after spans close; also benign.
+# These filters run at module-import time so they are active before the first
+# litellm import (which happens lazily inside search_web / build_adk_agent).
+
+class _LiteLLMNoiseFilter(logging.Filter):
+    _NOISE = ("botocore", "Proxy Server is not installed")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not any(n in record.getMessage() for n in self._NOISE)
+
+
+logging.getLogger("LiteLLM").addFilter(_LiteLLMNoiseFilter())
+warnings.filterwarnings("ignore", message="Tried calling set_status on an ended span")
+warnings.filterwarnings("ignore", message="Setting attribute on ended span")
 
 
 try:

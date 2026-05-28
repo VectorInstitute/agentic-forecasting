@@ -55,10 +55,16 @@ def bootstrap_litellm() -> None:
         if "langfuse_otel" not in existing:
             litellm.callbacks = [*existing, "langfuse_otel"]
 
-    # LiteLLM's OTEL callbacks sometimes fire after spans have already ended,
-    # producing a flood of "Tried calling set_status on an ended span" and
-    # "Setting attribute on ended span" warnings from the opentelemetry SDK.
-    # These are benign noise; suppress them at the warnings level.
+    # Suppress LiteLLM startup and OTEL noise (mirrors agent_factory.py filter).
+    # Bedrock/SageMaker "no botocore" and OTEL proxy-server notices are harmless.
+    # OTEL span-lifecycle warnings fire when callbacks run after spans close.
+    class _NoiseFilter(logging.Filter):
+        _NOISE = ("botocore", "Proxy Server is not installed")
+
+        def filter(self, record: logging.LogRecord) -> bool:
+            return not any(n in record.getMessage() for n in self._NOISE)
+
+    logging.getLogger("LiteLLM").addFilter(_NoiseFilter())
     warnings.filterwarnings("ignore", message="Tried calling set_status on an ended span")
     warnings.filterwarnings("ignore", message="Setting attribute on ended span")
     logging.getLogger("opentelemetry").setLevel(logging.ERROR)
