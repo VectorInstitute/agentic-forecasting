@@ -42,6 +42,7 @@ def build_llmp_sampled_trajectory(
     model: str = _DEFAULT_MODEL,
     n_samples: int = _DEFAULT_N_SAMPLES,
     history_window: int | None = _DEFAULT_HISTORY_WINDOW,
+    max_tokens: int = 8192,
     variant_tag: str | None = None,
 ) -> SampledTrajectoryLLMPredictor:
     """Return the Food CPI sampled-trajectory LLMP recipe.
@@ -49,6 +50,22 @@ def build_llmp_sampled_trajectory(
     The model is a normal parameter because the base LLMP ``predictor_id``
     already includes it. The recipe tag records the Food CPI prompt/config family
     and the cache-relevant knobs that are not otherwise visible in the ID.
+
+    Parameters
+    ----------
+    model : str
+        Model identifier. Defaults to ``gemini-3-flash-preview``.
+    n_samples : int
+        Number of trajectory samples to draw per prediction call.
+    history_window : int or None
+        Number of most-recent periods to include in context.
+    max_tokens : int, default=8192
+        Per-call output token budget. Thinking models (e.g.
+        ``gemini-3.1-pro-preview``) consume thinking tokens from the same
+        budget via the OpenAI-compatible proxy — raise this if responses
+        are truncated.
+    variant_tag : str or None
+        Override the cache tag suffix.
     """
     history_tag = "hfull" if history_window is None else f"h{history_window}"
     sample_count_tag = f"n{n_samples}"
@@ -58,6 +75,7 @@ def build_llmp_sampled_trajectory(
         model=model,
         n_samples=n_samples,
         history_window=history_window,
+        max_tokens=max_tokens,
         series_description=_SERIES_DESCRIPTION,
         user_prompt_suffix=_USER_PROMPT_SUFFIX,
         variant_tag=resolved_variant_tag,

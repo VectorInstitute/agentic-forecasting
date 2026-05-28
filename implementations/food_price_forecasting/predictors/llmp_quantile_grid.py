@@ -45,6 +45,7 @@ def build_llmp_quantile_grid(
     model: str = _DEFAULT_MODEL,
     history_window: int | None = _DEFAULT_HISTORY_WINDOW,
     reasoning_effort: _ReasoningEffort | None = _DEFAULT_REASONING_EFFORT,
+    max_tokens: int = 8192,
     variant_tag: str | None = None,
 ) -> QuantileGridLLMPredictor:
     """Return the Food CPI quantile-grid LLMP recipe.
@@ -52,6 +53,25 @@ def build_llmp_quantile_grid(
     The model is a normal parameter because the base LLMP ``predictor_id``
     already includes it. The recipe tag records the Food CPI prompt/config family
     and the cache-relevant knobs that are not otherwise visible in the ID.
+
+    Parameters
+    ----------
+    model : str
+        Model identifier. Defaults to ``gemini-3-flash-preview``.
+    history_window : int or None
+        Number of most-recent periods to include in context.
+    reasoning_effort : str or None
+        Reasoning budget. Thinking models (e.g. ``gemini-3.1-pro-preview``)
+        draw thinking tokens from the same ``max_tokens`` budget via the
+        OpenAI-compatible proxy — increase ``max_tokens`` if responses are
+        truncated.
+    max_tokens : int, default=8192
+        Per-call output token budget. Raise this when using a thinking model
+        (e.g. ``gemini-3.1-pro-preview``) to avoid truncation: thinking tokens
+        consume part of this budget, leaving less room for the JSON payload.
+    variant_tag : str or None
+        Override the cache tag suffix. Defaults to a tag encoding the
+        recipe family, history window, and reasoning effort.
     """
     history_tag = "hfull" if history_window is None else f"h{history_window}"
     reasoning_tag = "rprovider" if reasoning_effort is None else f"r{reasoning_effort}"
@@ -61,6 +81,7 @@ def build_llmp_quantile_grid(
         model=model,
         history_window=history_window,
         reasoning_effort=reasoning_effort,
+        max_tokens=max_tokens,
         series_description=_SERIES_DESCRIPTION,
         user_prompt_suffix=_USER_PROMPT_SUFFIX,
         variant_tag=resolved_variant_tag,
