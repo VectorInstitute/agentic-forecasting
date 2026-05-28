@@ -14,7 +14,7 @@ from aieng.forecasting.methods.llm_processes import (
 )
 
 
-_DEFAULT_MODEL = "gemini/gemini-2.5-flash-lite"
+_DEFAULT_MODEL = "gemini-3-flash-preview"
 _DEFAULT_N_SAMPLES = 20
 _DEFAULT_HISTORY_WINDOW = 120
 _RECIPE_FAMILY = "food_cpi_v1"

@@ -1,4 +1,4 @@
-"""Tests for :class:`YFinanceDailyAdapter` cache behaviour."""
+"""Tests YFinanceDailyAdapter disk cache behaviour (mocks only; no network)."""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch

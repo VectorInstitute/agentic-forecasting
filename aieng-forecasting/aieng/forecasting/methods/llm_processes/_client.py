@@ -116,6 +116,8 @@ async def _one_completion_async(
     max_tokens: int,
     timeout_s: float,
     reasoning_effort: str | None,
+    api_base: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[str | None, float, int, int]:
     """Issue a single ``litellm.acompletion`` and return content + usage."""
     import litellm  # noqa: PLC0415
@@ -128,6 +130,13 @@ async def _one_completion_async(
         "max_tokens": max_tokens,
         "timeout": timeout_s,
     }
+    if api_base is not None:
+        kwargs["api_base"] = api_base
+        # Tell LiteLLM to route via the OpenAI-compatible path so bare model
+        # names like "gemini-3-flash-preview" reach the proxy unchanged.
+        kwargs["custom_llm_provider"] = "openai"
+    if api_key is not None:
+        kwargs["api_key"] = api_key
     if reasoning_effort is not None:
         # LiteLLM unifies the per-provider reasoning-budget kwargs behind
         # ``reasoning_effort`` ∈ {"disable", "low", "medium", "high"}. We
@@ -157,6 +166,8 @@ async def _one_completion_with_transient_retry(
     max_tokens: int,
     timeout_s: float,
     reasoning_effort: str | None,
+    api_base: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[str | None, float, int, int]:
     """Call ``_one_completion_async`` with retries for transient API errors.
 
@@ -176,6 +187,8 @@ async def _one_completion_with_transient_retry(
                 max_tokens=max_tokens,
                 timeout_s=timeout_s,
                 reasoning_effort=reasoning_effort,
+                api_base=api_base,
+                api_key=api_key,
             )
         except _transient as exc:
             if attempt == 2:
@@ -202,6 +215,8 @@ async def _sample_one_with_retry(
     timeout_s: float,
     reasoning_effort: str | None,
     sample_index: int,
+    api_base: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[T | None, float, int, int, int]:
     """Single sample with one retry on parse failure and transient-error backoff."""
     cost = 0.0
@@ -218,6 +233,8 @@ async def _sample_one_with_retry(
             max_tokens=max_tokens,
             timeout_s=timeout_s,
             reasoning_effort=reasoning_effort,
+            api_base=api_base,
+            api_key=api_key,
         )
         cost += c
         in_tok += i
@@ -248,6 +265,8 @@ async def sample_n_async(
     max_tokens: int,
     timeout_s: float,
     reasoning_effort: str | None,
+    api_base: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[list[T], float, int, int, int]:
     """Fan ``n_samples`` calls out via ``asyncio.gather`` and aggregate usage.
 
@@ -266,6 +285,8 @@ async def sample_n_async(
             timeout_s=timeout_s,
             reasoning_effort=reasoning_effort,
             sample_index=i,
+            api_base=api_base,
+            api_key=api_key,
         )
         for i in range(n_samples)
     ]
