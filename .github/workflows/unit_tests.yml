@@ -57,4 +57,4 @@ jobs:
           uv venv .venv
           source .venv/bin/activate
           uv sync --all-extras --dev
-          uv run pytest -m "not integration_test" tests
+          uv run pytest -m "not integration_test" tests ../implementations/tests

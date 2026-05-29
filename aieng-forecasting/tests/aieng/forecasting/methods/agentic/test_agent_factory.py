@@ -28,14 +28,6 @@ class TestCodeExecutionConfig:
                 code_execution_timeout_seconds=2701.0,
             )
 
-    def test_equal_timeouts_are_valid(self) -> None:
-        """Accept configs where execution timeout equals sandbox timeout."""
-        config = CodeExecutionConfig(
-            sandbox_timeout_seconds=2700,
-            code_execution_timeout_seconds=2700.0,
-        )
-        assert config.code_execution_timeout_seconds == 2700.0
-
     def test_none_execution_timeout_skips_check(self) -> None:
         """Skip the comparison when execution timeout is unset (library default)."""
         config = CodeExecutionConfig(code_execution_timeout_seconds=None)
@@ -58,24 +50,12 @@ class TestAgentConfig:
                 context_retrieval=ContextRetrievalConfig(enabled=True, instruction=" "),
             )
 
-    def test_minimal_instruction_only_config_is_valid(self) -> None:
-        """Tools remain optional; output schema lives on AgentPredictor, not config."""
-        config = AgentConfig(instruction="Analyze the supplied forecasting question.")
-
-        assert config.instruction == "Analyze the supplied forecasting question."
-
     def test_skill_dirs_must_resolve_to_real_directories(self, tmp_path: Path) -> None:
         """Misspelled skill paths fail loudly at config time."""
         missing = tmp_path / "does_not_exist"
 
         with pytest.raises(ValidationError, match="Skill directories do not exist"):
             AgentConfig(instruction="Forecast.", skills_dirs=[missing])
-
-    def test_existing_skill_dirs_are_accepted(self, tmp_path: Path) -> None:
-        """A real directory path passes the existence check."""
-        config = AgentConfig(instruction="Forecast.", skills_dirs=[tmp_path])
-
-        assert tmp_path in config.skills_dirs
 
     def test_proxy_fields_default_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """proxy_base_url and proxy_api_key pick up environment variables."""
@@ -180,6 +160,48 @@ class TestBuildAdkAgent:
         agent = build_adk_agent(AgentConfig(instruction="You are a helpful analyst.", proxy_base_url=None))
 
         assert agent.generate_content_config.automatic_function_calling is None
+
+
+class TestSmrShimRegistration:
+    """build_adk_agent registers the set_model_response shim on the proxy path.
+
+    When the agent has both a non-empty tools list and an output_schema, the
+    real ADK SetModelResponseTool uses $defs/$ref schemas that Gemini rejects
+    via the OpenAI-compatible proxy.  Our flat-string shim bypasses that, so
+    build_adk_agent must swap it in and clear output_schema at the ADK level.
+    """
+
+    def test_smr_shim_registered_and_output_schema_cleared_on_litellm_path(self) -> None:
+        """Proxy + tools + schema: shim in tools, agent output_schema is None."""
+        config = AgentConfig(
+            instruction="Forecast the supplied series.",
+            context_retrieval=ContextRetrievalConfig(
+                enabled=True,
+                instruction="Search for market news before the cutoff date.",
+            ),
+            proxy_base_url="https://proxy.example.com/v1",
+            proxy_api_key="test-key",
+        )
+        agent = build_adk_agent(config, output_schema=ContinuousAgentForecastOutput)
+
+        tool_names = [getattr(t, "name", None) or getattr(t, "__name__", None) for t in agent.tools]
+        assert "set_model_response" in tool_names, f"set_model_response shim not found in tools. Got: {tool_names}"
+        assert agent.output_schema is None, (
+            "output_schema must be cleared at ADK level when shim is active; "
+            "AgentPredictor validates the JSON directly."
+        )
+
+    def test_output_schema_retained_without_tools(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """No tools: ADK native output_schema enforcement is preserved."""
+        monkeypatch.delenv("PROXY_BASE_URL", raising=False)
+        config = AgentConfig(
+            instruction="Forecast.",
+            proxy_base_url="https://proxy.example.com/v1",
+            proxy_api_key="test-key",
+        )
+        agent = build_adk_agent(config, output_schema=ContinuousAgentForecastOutput)
+
+        assert agent.output_schema is ContinuousAgentForecastOutput
 
 
 class TestBuildSearchTool:

@@ -211,6 +211,21 @@ class TestPredictHappyPath:
 
         builder.assert_called_once_with(task=task, context=context)
 
+    def test_fenced_json_is_accepted_and_converts_to_predictions(self) -> None:
+        """JSON wrapped in a ```json ... ``` fence still produces valid predictions.
+
+        Models sometimes emit fenced JSON even when response_format is set.
+        strip_markdown_fence runs before validation; this test confirms the
+        full strip → validate → convert pipeline works end-to-end.
+        """
+        fenced = f"```json\n{_output_json([1])}\n```"
+        predictor, _ = _make_predictor(response=fenced)
+
+        predictions = predictor.predict(_task([1]), _context())
+
+        assert len(predictions) == 1
+        assert predictions[0].payload.point_forecast == 101.0
+
 
 # ---------------------------------------------------------------------------
 # Tolerant JSON parsing
