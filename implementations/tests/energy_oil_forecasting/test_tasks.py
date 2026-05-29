@@ -45,8 +45,7 @@ def test_build_wti_news_predictor_schema_and_prompt_builder(
 
     assert isinstance(predictor, AgentPredictor)
     assert predictor.output_schema is expected_schema, (
-        f"task={task!r}: expected output_schema={expected_schema.__name__}, "
-        f"got {predictor.output_schema.__name__}"
+        f"task={task!r}: expected output_schema={expected_schema.__name__}, got {predictor.output_schema.__name__}"
     )
     assert isinstance(predictor.prompt_builder, expected_prompt_builder), (
         f"task={task!r}: expected prompt_builder type={expected_prompt_builder.__name__}, "
