@@ -24,6 +24,7 @@ T6  googleSearch in ADK can we inject the proxy googleSearch tool into an ADK co
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
 import os
 import sys
@@ -70,15 +71,32 @@ def _skip(label: str, reason: str) -> None:
     print(f"  SKIP  {label}  — {reason}")
 
 
+def _litellm() -> object:
+    """Return the litellm module via dynamic import."""
+    return importlib.import_module("litellm")
+
+
+def _import_adk_stack() -> tuple[object, object, object, object]:
+    """Import ADK runner and LiteLlm stack used by T2/T3/T4/T6."""
+    adk_runner_mod = importlib.import_module("aieng.forecasting.methods.agentic.adk_runner")
+    agents_mod = importlib.import_module("google.adk.agents")
+    lite_llm_mod = importlib.import_module("google.adk.models.lite_llm")
+    return (
+        adk_runner_mod.AdkTextRunner,
+        adk_runner_mod.AdkTextRunnerConfig,
+        agents_mod.LlmAgent,
+        lite_llm_mod.LiteLlm,
+    )
+
+
 # ---------------------------------------------------------------------------
 # T1: LLMP basic — litellm.acompletion → proxy → JSON-constrained response
 # ---------------------------------------------------------------------------
 
 
 async def test_t1_llmp_basic() -> None:
+    """Check a basic structured LLMP call through the proxy."""
     print("\n── T1: LLMP basic (litellm → proxy → structured JSON) ──")
-
-    import litellm
 
     schema = {
         "type": "object",
@@ -92,6 +110,7 @@ async def test_t1_llmp_basic() -> None:
     }
 
     try:
+        litellm = _litellm()
         resp = await litellm.acompletion(
             model=PROXY_MODEL_LITELLM,
             api_base=PROXY_BASE_URL,
@@ -125,27 +144,23 @@ async def test_t1_llmp_basic() -> None:
 
 
 async def test_t2_adk_basic() -> None:
+    """Check basic ADK text responses through LiteLlm + proxy."""
     print("\n── T2: ADK basic (LlmAgent + LiteLlm → proxy, no tools) ──")
 
     try:
-        from aieng.forecasting.methods.agentic.adk_runner import (
-            AdkTextRunner,
-            AdkTextRunnerConfig,
-        )
-        from google.adk.agents import LlmAgent
-        from google.adk.models.lite_llm import LiteLlm
+        adk_text_runner_cls, adk_text_runner_config_cls, llm_agent_cls, lite_llm_cls = _import_adk_stack()
 
-        model = LiteLlm(
+        model = lite_llm_cls(
             model=PROXY_MODEL_LITELLM,
             api_base=PROXY_BASE_URL,
             api_key=PROXY_API_KEY,
         )
-        agent = LlmAgent(
+        agent = llm_agent_cls(
             name="proxy_test_agent",
             model=model,
             instruction="You are a helpful assistant. Answer concisely.",
         )
-        runner = AdkTextRunner(agent, config=AdkTextRunnerConfig(app_name="proxy_test_t2"))
+        runner = adk_text_runner_cls(agent, config=adk_text_runner_config_cls(app_name="proxy_test_t2"))
         reply = await runner.run_text_async("What is 2 + 2? Reply with just the number.")
         assert reply.strip(), "Empty reply"
         _pass("T2", f"reply={reply.strip()[:80]!r}")
@@ -159,15 +174,11 @@ async def test_t2_adk_basic() -> None:
 
 
 async def test_t3_adk_function_tool() -> None:
+    """Check ADK tool-calling through the proxy-backed LiteLlm path."""
     print("\n── T3: ADK function tool (LiteLlm → proxy + FunctionTool) ──")
 
     try:
-        from aieng.forecasting.methods.agentic.adk_runner import (
-            AdkTextRunner,
-            AdkTextRunnerConfig,
-        )
-        from google.adk.agents import LlmAgent
-        from google.adk.models.lite_llm import LiteLlm
+        adk_text_runner_cls, adk_text_runner_config_cls, llm_agent_cls, lite_llm_cls = _import_adk_stack()
 
         _tool_called: list[str] = []
 
@@ -184,18 +195,18 @@ async def test_t3_adk_function_tool() -> None:
             _tool_called.append(commodity)
             return f"The current price of {commodity} is $1234.56 per unit."
 
-        model = LiteLlm(
+        model = lite_llm_cls(
             model=PROXY_MODEL_LITELLM,
             api_base=PROXY_BASE_URL,
             api_key=PROXY_API_KEY,
         )
-        agent = LlmAgent(
+        agent = llm_agent_cls(
             name="proxy_tool_agent",
             model=model,
             instruction="Use your tools to answer questions about commodity prices.",
             tools=[get_commodity_price],
         )
-        runner = AdkTextRunner(agent, config=AdkTextRunnerConfig(app_name="proxy_test_t3"))
+        runner = adk_text_runner_cls(agent, config=adk_text_runner_config_cls(app_name="proxy_test_t3"))
         reply = await runner.run_text_async("What is the current price of gold? Use the tool.")
         assert reply.strip(), "Empty reply"
         tool_used = bool(_tool_called)
@@ -212,33 +223,30 @@ async def test_t3_adk_function_tool() -> None:
 
 
 async def test_t4_adk_output_schema() -> None:
+    """Check ADK structured output schema behavior through proxy."""
     print("\n── T4: ADK output schema (LlmAgent + LiteLlm → proxy, JSON output) ──")
 
     try:
-        from aieng.forecasting.methods.agentic.adk_runner import (
-            AdkTextRunner,
-            AdkTextRunnerConfig,
-        )
-        from google.adk.agents import LlmAgent
-        from google.adk.models.lite_llm import LiteLlm
-        from pydantic import BaseModel
+        adk_text_runner_cls, adk_text_runner_config_cls, llm_agent_cls, lite_llm_cls = _import_adk_stack()
+        pydantic_mod = importlib.import_module("pydantic")
+        base_model_cls = pydantic_mod.BaseModel
 
-        class SimpleForecast(BaseModel):
+        class SimpleForecast(base_model_cls):
             point_forecast: float
             reasoning: str
 
-        model = LiteLlm(
+        model = lite_llm_cls(
             model=PROXY_MODEL_LITELLM,
             api_base=PROXY_BASE_URL,
             api_key=PROXY_API_KEY,
         )
-        agent = LlmAgent(
+        agent = llm_agent_cls(
             name="proxy_schema_agent",
             model=model,
             instruction="You are a forecasting assistant. Always respond with a JSON object.",
             output_schema=SimpleForecast,
         )
-        runner = AdkTextRunner(agent, config=AdkTextRunnerConfig(app_name="proxy_test_t4"))
+        runner = adk_text_runner_cls(agent, config=adk_text_runner_config_cls(app_name="proxy_test_t4"))
         reply = await runner.run_text_async("The series is [100, 102, 104, 106]. Forecast the next value.")
         parsed = SimpleForecast.model_validate_json(reply)
         _pass("T4", f"point_forecast={parsed.point_forecast}, reasoning={parsed.reasoning[:60]!r}")
@@ -252,15 +260,15 @@ async def test_t4_adk_output_schema() -> None:
 
 
 async def test_t5_google_search_raw() -> None:
+    """Check raw proxy googleSearch extension and grounding metadata."""
     print("\n── T5: googleSearch extension (raw litellm call with proxy) ──")
-
-    import litellm
 
     # Try the gemini-2.5-flash model on the proxy since googleSearch
     # is a Gemini-side feature that the proxy exposes via its translator layer.
     model = "openai/gemini-2.5-flash"
 
     try:
+        litellm = _litellm()
         resp = await litellm.acompletion(
             model=model,
             api_base=PROXY_BASE_URL,
@@ -276,7 +284,8 @@ async def test_t5_google_search_raw() -> None:
             timeout=45,
         )
         content = resp.choices[0].message.content
-        # grounding_metadata lives in choices[0].provider_specific_fields (LiteLLM wraps it there)
+        # grounding_metadata lives in choices[0].provider_specific_fields;
+        # LiteLLM wraps it there.
         psf = getattr(resp.choices[0], "provider_specific_fields", {}) or {}
         grounding = psf.get("grounding_metadata")
         has_grounding = grounding is not None
@@ -304,16 +313,12 @@ async def test_t5_google_search_raw() -> None:
 
 
 async def test_t6_google_search_in_adk() -> None:
+    """Check ADK FunctionTool wrapper around proxy googleSearch calls."""
     print("\n── T6: proxy googleSearch wrapped as ADK FunctionTool ──")
 
     try:
-        import litellm
-        from aieng.forecasting.methods.agentic.adk_runner import (
-            AdkTextRunner,
-            AdkTextRunnerConfig,
-        )
-        from google.adk.agents import LlmAgent
-        from google.adk.models.lite_llm import LiteLlm
+        litellm = _litellm()
+        adk_text_runner_cls, adk_text_runner_config_cls, llm_agent_cls, lite_llm_cls = _import_adk_stack()
 
         async def search_web(query: str) -> str:
             """Search the web for current information and return a summary.
@@ -336,7 +341,8 @@ async def test_t6_google_search_in_adk() -> None:
             )
             content = resp.choices[0].message.content or ""
 
-            # Append source URLs from grounding_metadata (lives in provider_specific_fields)
+            # Append source URLs from grounding_metadata
+            # (lives in provider_specific_fields).
             sources: list[str] = []
             psf = getattr(resp.choices[0], "provider_specific_fields", {}) or {}
             gm = psf.get("grounding_metadata") or {}
@@ -348,12 +354,12 @@ async def test_t6_google_search_in_adk() -> None:
                 content += "\n\nSources:\n" + "\n".join(sources[:5])
             return content
 
-        model = LiteLlm(
+        model = lite_llm_cls(
             model=PROXY_MODEL_LITELLM,
             api_base=PROXY_BASE_URL,
             api_key=PROXY_API_KEY,
         )
-        agent = LlmAgent(
+        agent = llm_agent_cls(
             name="proxy_search_agent",
             model=model,
             instruction=(
@@ -362,7 +368,7 @@ async def test_t6_google_search_in_adk() -> None:
             ),
             tools=[search_web],
         )
-        runner = AdkTextRunner(agent, config=AdkTextRunnerConfig(app_name="proxy_test_t6"))
+        runner = adk_text_runner_cls(agent, config=adk_text_runner_config_cls(app_name="proxy_test_t6"))
         reply = await runner.run_text_async(
             "Search for the current WTI crude oil price and give me a one-sentence summary."
         )
@@ -378,6 +384,7 @@ async def test_t6_google_search_in_adk() -> None:
 
 
 async def main() -> None:
+    """Run all proxy integration checks in sequence."""
     if not PROXY_API_KEY:
         print("ERROR: PROXY_API_KEY not set. Check your .env file.")
         sys.exit(1)
