@@ -188,6 +188,13 @@ class AgentConfig(BaseModel):
     skills_dirs : Sequence[Path], default=()
         Sequence of paths to skill directories. Skills extend the agent's capabilities
         with additional instructions.
+    function_tools : Sequence[Any], default=()
+        Conventional ADK tools (e.g. :class:`~google.adk.tools.FunctionTool`
+        instances or plain callables) appended directly to the agent's tool
+        list. Use this to give the agent a rigid, pre-specified capability such
+        as the
+        :class:`~aieng.forecasting.methods.agentic.forecast_tool.ForecastTool`
+        (in contrast to open-ended code execution). Stored as-is; not validated.
     seed : int or None, default=None
         Generation seed forwarded to the model for reproducibility.
     temperature : float or None, default=None
@@ -215,13 +222,14 @@ class AgentConfig(BaseModel):
         whenever tools, code execution, or an ``output_schema`` are configured.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
 
     name: str = "adk_forecasting_agent"
     model: str | BaseLlm = "gemini-3-flash-preview"
     description: str = ""
     instruction: str = ""
     skills_dirs: Sequence[Path] = ()
+    function_tools: Sequence[Any] = ()
     # Optional generation overrides (None = model/provider defaults).
     seed: int | None = None
     temperature: float | None = None
@@ -355,6 +363,9 @@ def build_adk_agent(
     if skills:
         # Pass code_executor explicitly so run_skill_script can use Gemini native exec.
         tools.append(SkillToolset(skills=skills, code_executor=code_executor))
+
+    # Conventional function tools (e.g. ForecastTool) attach directly.
+    tools.extend(config.function_tools)
 
     thinking_config = (
         ThinkingConfig(

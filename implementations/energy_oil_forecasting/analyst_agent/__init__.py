@@ -11,6 +11,7 @@ from energy_oil_forecasting.analyst_agent.agent import (
     build_wti_code_exec_config,
     build_wti_multitask_news_config,
     build_wti_news_config,
+    build_wti_tool_config,
     compress_history,
 )
 
@@ -22,5 +23,6 @@ __all__ = [
     "build_wti_code_exec_config",
     "build_wti_multitask_news_config",
     "build_wti_news_config",
+    "build_wti_tool_config",
     "compress_history",
 ]

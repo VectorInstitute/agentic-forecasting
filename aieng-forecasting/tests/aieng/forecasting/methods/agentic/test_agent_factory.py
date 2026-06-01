@@ -154,3 +154,14 @@ class TestBuildAdkAgent:
         agent = build_adk_agent(AgentConfig(instruction="You are a helpful analyst."))
 
         assert agent.generate_content_config.automatic_function_calling is None
+
+    def test_function_tools_are_attached(self) -> None:
+        """Conventional function tools in the config are appended to the agent."""
+
+        def my_tool(x: str) -> str:
+            """Echo the input. Args: x: anything. Returns: the same string."""
+            return x
+
+        agent = build_adk_agent(AgentConfig(instruction="Forecast the supplied series.", function_tools=[my_tool]))
+
+        assert len(agent.tools) == 1

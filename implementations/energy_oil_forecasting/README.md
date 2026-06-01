@@ -20,6 +20,7 @@ Run the notebooks in order. Notebook 1 is Prophet-only; agents are introduced in
 | **[`02_intro_agentic_predictor.ipynb`](02_intro_agentic_predictor.ipynb)** | **The Agentic Staircase** — 4 capability levels on Mar 2, 2026; inspect configs and prompts | Yes |
 | **[`03_one_agent_three_tasks.ipynb`](03_one_agent_three_tasks.ipynb)** | **One Agent, Three Tasks** — trajectory, binary shock, scenario analysis via shared agent identity | Yes |
 | **[`04_systematic_backtest_eval.ipynb`](04_systematic_backtest_eval.ipynb)** | **Systematic Competition** — 2025 backtest → leaderboard → 2026 protected eval | Yes |
+| **[`05_forecast_tool_demo.ipynb`](05_forecast_tool_demo.ipynb)** | **The Forecast Tool** — a conventional AutoARIMA function tool (`build_wti_tool_config`) as a controlled alternative to open-ended code execution | Yes |
 
 The original May 21 playground notebooks remain in [`playground/energy_case_study/`](../../playground/energy_case_study/) as a port reference until parity is verified.
 

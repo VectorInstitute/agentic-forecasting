@@ -55,6 +55,7 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     ContextRetrievalConfig,
     build_adk_agent,
 )
+from aieng.forecasting.methods.agentic.forecast_tool import ForecastTool
 from aieng.forecasting.methods.agentic.outputs import (
     AgentForecastOutput,
     AgentQuantileForecast,
@@ -78,5 +79,6 @@ __all__: list[str] = [
     "ContextRetrievalConfig",
     "DiscreteAgentForecastOutput",
     "ForecastPromptBuilder",
+    "ForecastTool",
     "build_adk_agent",
 ]

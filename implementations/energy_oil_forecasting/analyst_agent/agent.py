@@ -1,6 +1,6 @@
 """WTI crude oil analyst agent configurations and prompt builder.
 
-Provides three :class:`~aieng.forecasting.methods.agentic.agent_factory.AgentConfig`
+Provides four :class:`~aieng.forecasting.methods.agentic.agent_factory.AgentConfig`
 factories that define progressive agent capability levels:
 
 1. :func:`build_wti_basic_config` — LLM reasons from price history alone (no tools).
@@ -9,6 +9,10 @@ factories that define progressive agent capability levels:
    sub-agent with strict temporal cutoffs.
 3. :func:`build_wti_code_exec_config` — Adds Gemini native code execution and
    three forecasting skills on top of the news-grounded configuration.
+4. :func:`build_wti_tool_config` — Adds a conventional
+   :class:`~aieng.forecasting.methods.agentic.forecast_tool.ForecastTool`
+   (AutoARIMA) on top of news grounding — a rigid, pre-specified alternative to
+   open-ended code execution.
 
 Also provides:
 
@@ -29,12 +33,14 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from aieng.forecasting.data import DataService
 from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic import (
     AgentPredictor,
     ContinuousAgentForecastOutput,
+    ForecastTool,
     build_adk_agent,
 )
 from aieng.forecasting.methods.agentic.agent_factory import (
@@ -42,6 +48,8 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     CodeExecutionConfig,
     ContextRetrievalConfig,
 )
+from aieng.forecasting.methods.numerical.darts_arima import DartsAutoARIMAPredictor
+from energy_oil_forecasting.data import WTI_SERIES_ID, build_wti_service
 from pydantic import BaseModel
 
 
@@ -179,6 +187,32 @@ there are no disk files to read.
    reference file (e.g. `references/wti_benchmarks.json`).
 
 These skills have NO scripts. Do not call `run_skill_script`.\
+"""
+
+# ---------------------------------------------------------------------------
+# Forecast tool supplement (appended to instruction when the forecast tool is attached)
+# ---------------------------------------------------------------------------
+
+_FORECAST_TOOL_SUPPLEMENT = f"""
+
+## Statistical forecast tool
+
+You have access to `run_forecast`, a conventional statistical baseline
+(AutoARIMA) you can call directly. Unlike open-ended code, this tool has a fixed,
+auditable interface and returns a structured forecast you can reason from.
+
+Call it ONCE before producing your forecast, with:
+- `series_id`: "{WTI_SERIES_ID}"
+- `cutoff_date`: the `as_of` date from the payload (YYYY-MM-DD). This is the
+  information cutoff — the model uses only data on or before it.
+- `horizons`: the `horizons` list from the payload.
+- `frequency`: "B" (WTI trades on business days).
+
+The tool returns JSON with point forecasts and 80%/90% prediction intervals per
+horizon. Treat it as a disciplined statistical anchor: combine it with the
+market context from the search sub-agent. You may adjust away from the baseline
+when fundamentals or geopolitical risk justify it — document your reasoning in
+the `rationale` fields.\
 """
 
 # ---------------------------------------------------------------------------
@@ -400,6 +434,54 @@ def build_wti_code_exec_config(model: str = "gemini-3.5-flash") -> AgentConfig:
             _SKILLS_ROOT / "statistical-analysis",
             _SKILLS_ROOT / "trend-projection",
         ],
+    )
+
+
+def build_wti_tool_config(
+    model: str = "gemini-3.5-flash",
+    *,
+    data_service: DataService | None = None,
+    num_samples: int = 200,
+) -> AgentConfig:
+    """Build an :class:`AgentConfig` with a conventional statistical forecast tool.
+
+    This is the fourth analyst capability level. It combines bounded Google
+    Search (temporal cutoff enforced) with a
+    :class:`~aieng.forecasting.methods.agentic.forecast_tool.ForecastTool`
+    that runs AutoARIMA on the WTI series. In contrast to
+    :func:`build_wti_code_exec_config` — which gives the agent open-ended code
+    execution — this path exposes a rigid, pre-specified tool, trading
+    flexibility for control and reproducibility.
+
+    Parameters
+    ----------
+    model : str
+        Gemini model identifier.
+    data_service : DataService or None
+        Pre-populated data service with the WTI series registered. When
+        ``None``, one is constructed via
+        :func:`~energy_oil_forecasting.data.build_wti_service` (cache-backed).
+        Series data is read by the tool but never enters the LLM context.
+    num_samples : int, default=200
+        Monte Carlo sample count for AutoARIMA. Kept modest to bound agent
+        latency, since AutoARIMA can be slow per origin.
+
+    Returns
+    -------
+    AgentConfig
+    """
+    service = data_service if data_service is not None else build_wti_service()
+    forecast_tool = ForecastTool(service, predictor=DartsAutoARIMAPredictor(num_samples=num_samples))
+
+    return AgentConfig(
+        name="wti_analyst_tool",
+        model=model,
+        instruction=_WTI_ANALYST_INSTRUCTION + _FORECAST_TOOL_SUPPLEMENT,
+        context_retrieval=ContextRetrievalConfig(
+            enabled=True,
+            instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
+        ),
+        function_tools=[forecast_tool.as_function_tool()],
     )
 
 
