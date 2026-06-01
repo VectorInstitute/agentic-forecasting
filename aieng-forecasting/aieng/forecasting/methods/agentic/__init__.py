@@ -12,6 +12,17 @@ raises :class:`ImportError` with installation guidance.
 
 Public API
 ----------
+AdaptiveSkillState, AdaptiveSkillStore
+    Abstract base and generic persistence layer for learnable agent skills.
+    Subclass ``AdaptiveSkillState`` with domain-specific fields and implement
+    ``build_markdown()`` to render the strategy to a ``SKILL.md`` the agent
+    reads.  ``AdaptiveSkillStore`` handles YAML serialisation, ``SKILL.md``
+    rendering, and timestamped backup on every mutation.
+format_backtest_report, load_context_documents, build_curriculum_prompt
+    Curriculum assembly utilities for adaptive agent training.  Format a
+    :class:`~aieng.forecasting.evaluation.backtest.BacktestResult` as a
+    structured markdown document, load pre-cached context files by date, and
+    assemble both into a single curriculum message for the agent.
 AgentConfig, CodeExecutionConfig, ContextRetrievalConfig
     Pydantic configuration for building an ADK ``LlmAgent`` with optional
     code execution and a Google Search sub-agent.
@@ -48,12 +59,18 @@ Building a predictor from a config::
     )
 """
 
+from aieng.forecasting.methods.agentic.adaptive_skill import AdaptiveSkillState, AdaptiveSkillStore
 from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig
 from aieng.forecasting.methods.agentic.agent_factory import (
     AgentConfig,
     CodeExecutionConfig,
     ContextRetrievalConfig,
     build_adk_agent,
+)
+from aieng.forecasting.methods.agentic.curriculum import (
+    build_curriculum_prompt,
+    format_backtest_report,
+    load_context_documents,
 )
 from aieng.forecasting.methods.agentic.outputs import (
     AgentForecastOutput,
@@ -66,7 +83,12 @@ from aieng.forecasting.methods.agentic.predictor import AgentPredictor, Forecast
 
 
 __all__: list[str] = [
+    "AdaptiveSkillState",
+    "AdaptiveSkillStore",
     "AdkTextRunner",
+    "build_curriculum_prompt",
+    "format_backtest_report",
+    "load_context_documents",
     "AdkTextRunnerConfig",
     "AgentConfig",
     "AgentForecastOutput",

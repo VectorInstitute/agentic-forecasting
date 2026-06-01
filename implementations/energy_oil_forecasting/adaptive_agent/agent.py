@@ -41,12 +41,15 @@ Uses E2B (real sandbox). Each ``run_code`` call is a **fresh Python process** �
 no state, variables, or files carry over between calls. All imports, data
 fetching, and analysis must be in a single self-contained block.
 
-Skill mutability (outstanding)
--------------------------------
-The mechanism for writing updated skill content back to the host filesystem
-is not yet implemented. A locally-defined ADK tool is needed; see the
-``_TODO_update_skill`` stub below and the ``meta-learning`` skill for the
-planned interface.
+Skill mutability
+----------------
+The ``wti-strategy`` skill is backed by a :class:`~energy_oil_forecasting.adaptive_agent.skill_state.WtiStrategyState`
+Pydantic model persisted in ``skills/wti-strategy/skill_state.yaml``.
+``SKILL.md`` is rendered from that model on every mutation and is never
+hand-edited.  Five typed mutation tools (from :mod:`skill_tools`) are
+registered via ``AgentConfig(extra_tools=WTI_SKILL_TOOLS)`` and run in the
+host process — not inside E2B.  See :mod:`skill_tools` for the full tool
+signatures and evidence governance rules.
 """
 
 from __future__ import annotations
@@ -69,6 +72,7 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     CodeExecutionConfig,
     ContextRetrievalConfig,
 )
+from energy_oil_forecasting.adaptive_agent.skill_tools import build_skill_tools
 from energy_oil_forecasting.analyst_agent import compress_history
 from pydantic import BaseModel
 
@@ -123,8 +127,21 @@ def _build_adaptive_analyst_instruction() -> str:
         "| fetch-yfinance   | Download market / futures data from Yahoo Finance       |\n"
         "| vol-regime       | Classify vol regime, detect anomalies, choose window    |\n"
         "| trend-projection | Fit trend, project to horizons, calibrate intervals     |\n"
-        "| wti-strategy     | Your current forecasting strategy — load only for prediction requests |\n"
+        "| wti-strategy     | Your current forecasting strategy — load at the start of every prediction |\n"
         "| meta-learning    | Governs when and how to update wti-strategy             |\n\n"
+        "## Strategy mutation tools\n\n"
+        "These tools write directly to `wti-strategy` on the host filesystem. "
+        "They run outside the E2B sandbox. Consult `meta-learning` before calling "
+        "any of them.\n\n"
+        "| Tool | Evidence layer | Evidence bar |\n"
+        "|------|---------------|---------------|\n"
+        "| `record_observation(finding, linked_hypothesis?)` | Observations | Pattern visible across ≥2 forecasts — not a single surprise |\n"
+        "| `open_hypothesis(claim, initial_evidence)` | Hypotheses | One strong observation suggesting a durable pattern |\n"
+        "| `record_hypothesis_outcome(hypothesis_id, outcome)` | Hypotheses | Each resolution relevant to an open hypothesis |\n"
+        "| `graduate_hypothesis(hypothesis_id, condition, adjustment, horizon_scope)` | Calibration | Tool enforces confirmation threshold — will reject if not met |\n"
+        "| `update_approach_narrative(new_text, rationale)` | Approach | Only when the calibration record reveals a structural insight |\n\n"
+        "Active calibration corrections from `wti-strategy` are **not optional** — "
+        "apply every listed correction when the stated condition is met.\n\n"
         "## Code execution discipline\n\n"
         "Treat `run_code` like submitting to a batch queue: plan your complete "
         "analysis upfront, write one self-contained script, and read the results. "
@@ -171,44 +188,6 @@ Ground your summary in the search results you actually retrieve. \
 When a cutoff date is specified, do not report or speculate about events \
 that occurred after that date.\
 """
-
-# ---------------------------------------------------------------------------
-# Skill-update tool (not yet implemented)
-# ---------------------------------------------------------------------------
-
-# TODO: Implement a locally-defined ADK tool that writes updated skill content
-# to the host filesystem. This is the mechanism that makes wti-strategy mutable.
-#
-# Design sketch:
-#
-#   def update_skill(skill_name: str, updated_content: str) -> str:
-#       """Overwrite a mutable skill's SKILL.md with updated content.
-#
-#       Only skills under adaptive_agent/skills/ may be written; baseline
-#       skills (statistical-analysis, trend-projection) are read-only.
-#
-#       Parameters
-#       ----------
-#       skill_name : str
-#           The skill directory name, e.g. "wti-strategy".
-#       updated_content : str
-#           Full updated SKILL.md content. Must include valid frontmatter.
-#
-#       Returns
-#       -------
-#       str
-#           Confirmation, or an error message if the skill is not found or
-#           the content fails a basic frontmatter check.
-#       """
-#       ...
-#
-# Outstanding questions before implementing:
-#   1. ADK tool registration — plain Python callables must be passed to
-#      LlmAgent.tools; confirm the correct wrapper/type for ADK 2.x.
-#   2. Frontmatter validation — should the tool reject content that lacks
-#      the required `name:` and `description:` frontmatter fields?
-#   3. Scope guard — enforce that only _SKILLS_ROOT paths are writable,
-#      not arbitrary filesystem locations.
 
 
 # ---------------------------------------------------------------------------
@@ -267,13 +246,13 @@ def build_wti_adaptive_config(
     model: str = "gemini-3-flash-preview",
     search_model: str = "gemini-3-flash-preview",
     max_output_tokens: int = 16_384,
+    strategy_dir: Path | None = None,
 ) -> AgentConfig:
     """Build the full adaptive WTI analyst :class:`AgentConfig`.
 
     Combines E2B code execution, bounded Google Search with temporal cutoff
-    enforcement, and four skills: ``wti-strategy``, ``statistical-analysis``
-    (shared with baseline), ``trend-projection`` (shared with baseline), and
-    ``meta-learning``.
+    enforcement, and five skills: ``fetch-yfinance``, ``vol-regime``,
+    ``trend-projection``, the selected strategy skill, and ``meta-learning``.
 
     Parameters
     ----------
@@ -287,11 +266,20 @@ def build_wti_adaptive_config(
         Maximum tokens per model response. Set above LiteLLM's OpenAI-compatible
         default of 4096 so the agent can write a complete ``run_code`` Python
         script in a single function call without truncation.
+    strategy_dir : Path or None, default=None
+        Directory containing the strategy skill (``skill_state.yaml``,
+        ``SKILL.md``).  Defaults to ``skills/wti-strategy`` (the base variant).
+        Pass an alternative path (e.g. ``skills/wti-strategy-stats`` or
+        ``skills/wti-strategy-news``) to instantiate a named training variant.
+        The same directory is used for both the ADK skill load and the mutation
+        tool bindings, ensuring the tools always write to the skill the agent
+        is reading.
 
     Returns
     -------
     AgentConfig
     """
+    resolved_strategy_dir = strategy_dir or (_SKILLS_ROOT / "wti-strategy")
     return AgentConfig(
         name="wti_adaptive_analyst",
         model=model,
@@ -307,9 +295,10 @@ def build_wti_adaptive_config(
             _SKILLS_ROOT / "fetch-yfinance",
             _SKILLS_ROOT / "vol-regime",
             _SKILLS_ROOT / "trend-projection",
-            _SKILLS_ROOT / "wti-strategy",
+            resolved_strategy_dir,
             _SKILLS_ROOT / "meta-learning",
         ],
+        extra_tools=build_skill_tools(resolved_strategy_dir),
     )
 
 
@@ -318,7 +307,10 @@ def build_wti_adaptive_config(
 # ---------------------------------------------------------------------------
 
 
-def build_wti_adaptive_predictor(config: AgentConfig | None = None) -> AgentPredictor:
+def build_wti_adaptive_predictor(
+    config: AgentConfig | None = None,
+    strategy_dir: Path | None = None,
+) -> AgentPredictor:
     """Wrap the adaptive agent in an :class:`AgentPredictor` for eval harness use.
 
     This allows the adaptive agent to be evaluated against the same
@@ -332,14 +324,18 @@ def build_wti_adaptive_predictor(config: AgentConfig | None = None) -> AgentPred
     Parameters
     ----------
     config : AgentConfig, optional
-        Agent config to use. Defaults to :func:`build_wti_adaptive_config`.
+        Agent config to use.  When provided, ``strategy_dir`` is ignored.
+        Defaults to ``build_wti_adaptive_config(strategy_dir=strategy_dir)``.
+    strategy_dir : Path or None, optional
+        Strategy directory passed to :func:`build_wti_adaptive_config` when
+        ``config`` is not provided.  Defaults to ``skills/wti-strategy``.
 
     Returns
     -------
     AgentPredictor
     """
     if config is None:
-        config = build_wti_adaptive_config()
+        config = build_wti_adaptive_config(strategy_dir=strategy_dir)
     return AgentPredictor(
         agent_config=config,
         prompt_builder=WtiAdaptiveForecastPromptBuilder(),

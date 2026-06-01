@@ -321,9 +321,16 @@ class AgentConfig(BaseModel):
         not the genai SDK's Automatic Function Calling (AFC) helper.
         ``None`` (default) auto-disables AFC whenever tools or an
         ``output_schema`` are configured.
+    extra_tools : Sequence[Callable[..., Any]], default=()
+        Additional callable tools to register with the agent beyond the
+        standard code-execution and context-retrieval tools.  Use this to
+        inject implementation-specific tools (e.g. adaptive skill mutation
+        tools) without coupling the shared factory to implementation code.
+        Each callable is appended to the tool list after skills are loaded
+        and will be wrapped by ADK as a ``FunctionTool``.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
 
     name: str = "adk_forecasting_agent"
     model: str | BaseLlm = "gemini-3-flash-preview"
@@ -351,6 +358,7 @@ class AgentConfig(BaseModel):
     code_execution: CodeExecutionConfig = Field(default_factory=CodeExecutionConfig)
     context_retrieval: ContextRetrievalConfig = Field(default_factory=ContextRetrievalConfig)
     disable_automatic_function_calling: bool | None = None
+    extra_tools: Sequence[Callable[..., Any]] = ()
 
     @field_validator("skills_dirs")
     @classmethod
@@ -477,6 +485,11 @@ def build_adk_agent(
 
     if skills:
         tools.append(SkillToolset(skills=skills))
+
+    # Append any extra implementation-specific tools (e.g. adaptive skill
+    # mutation tools).  These run in the host process, not in E2B.
+    for extra in config.extra_tools:
+        tools.append(extra)
 
     # For LiteLlm agents with both output_schema and tools, ADK's
     # can_use_output_schema_with_tools() returns True and skips set_model_response
