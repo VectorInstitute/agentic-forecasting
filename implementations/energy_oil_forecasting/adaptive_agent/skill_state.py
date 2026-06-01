@@ -144,14 +144,9 @@ class WtiStrategyState(AdaptiveSkillState):
                 "|-----------|-----------|---------------|--------------|",
             ]
             for c in self.calibration_corrections:
-                lines.append(
-                    f"| {c.condition} | {c.adjustment} | {c.horizon_scope} | {c.confirmed_on} |"
-                )
+                lines.append(f"| {c.condition} | {c.adjustment} | {c.horizon_scope} | {c.confirmed_on} |")
         else:
-            lines.append(
-                "*(No calibration corrections yet. "
-                "Graduate a confirmed hypothesis to add one.)*"
-            )
+            lines.append("*(No calibration corrections yet. Graduate a confirmed hypothesis to add one.)*")
         lines.append("")
 
         # Open hypotheses
@@ -166,9 +161,7 @@ class WtiStrategyState(AdaptiveSkillState):
                 "|----|-------|---------------|-------------|",
             ]
             for h in open_hyps:
-                lines.append(
-                    f"| {h.id} | {h.claim} | {h.confirmations} | {h.refutations} |"
-                )
+                lines.append(f"| {h.id} | {h.claim} | {h.confirmations} | {h.refutations} |")
         else:
             lines.append("*(No open hypotheses.)*")
         lines.append("")
@@ -183,10 +176,7 @@ class WtiStrategyState(AdaptiveSkillState):
                 "|----|-------|--------|---------------|-------------|",
             ]
             for h in closed_hyps:
-                lines.append(
-                    f"| {h.id} | {h.claim} | {h.status} "
-                    f"| {h.confirmations} | {h.refutations} |"
-                )
+                lines.append(f"| {h.id} | {h.claim} | {h.status} | {h.confirmations} | {h.refutations} |")
             lines.append("")
 
         # Observations
@@ -203,9 +193,7 @@ class WtiStrategyState(AdaptiveSkillState):
                 linked = o.linked_hypothesis or "—"
                 lines.append(f"| {o.date} | {o.finding} | {linked} |")
         else:
-            lines.append(
-                "*(No observations yet. Record findings from resolutions and self-reviews.)*"
-            )
+            lines.append("*(No observations yet. Record findings from resolutions and self-reviews.)*")
         lines.append("")
 
         # Version history

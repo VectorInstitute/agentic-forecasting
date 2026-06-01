@@ -1,6 +1,6 @@
-"""Pre-cache weekly WTI news summaries for the 2024 curriculum training period.
+"""Pre-cache weekly WTI news summaries for the 2025 curriculum training period.
 
-Generates one markdown file per week (every Monday in 2024) by calling the
+Generates one markdown file per week (every Monday in 2025) by calling the
 proxy-backed web search with a temporal cutoff, and writes the results to:
 
     implementations/energy_oil_forecasting/adaptive_agent/curriculum/context/
@@ -67,22 +67,13 @@ from aieng.forecasting.methods.agentic.agent_factory import (
 # Output directory
 # ---------------------------------------------------------------------------
 
-_OUTPUT_DIR = (
-    _REPO_ROOT
-    / "implementations"
-    / "energy_oil_forecasting"
-    / "adaptive_agent"
-    / "curriculum"
-    / "context"
-)
+_OUTPUT_DIR = _REPO_ROOT / "implementations" / "energy_oil_forecasting" / "adaptive_agent" / "curriculum" / "context"
 
 # ---------------------------------------------------------------------------
 # Search configuration
 # ---------------------------------------------------------------------------
 
-_SEARCH_QUERY = (
-    "WTI crude oil price market conditions supply demand OPEC outlook"
-)
+_SEARCH_QUERY = "WTI crude oil price market conditions supply demand OPEC outlook"
 
 _SEARCH_INSTRUCTION = """\
 You are a commodity market analyst. Search for information about WTI crude oil
@@ -157,8 +148,7 @@ async def main(
 
     if not proxy_base_url and not dry_run:
         print(
-            "ERROR: PROXY_BASE_URL is not set. "
-            "Export it or add it to your .env file.",
+            "ERROR: PROXY_BASE_URL is not set. Export it or add it to your .env file.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -199,13 +189,13 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--start",
-        default="2024-01-01",
-        help="Start date (YYYY-MM-DD). Default: 2024-01-01",
+        default="2025-01-01",
+        help="Start date (YYYY-MM-DD). Default: 2025-01-01",
     )
     parser.add_argument(
         "--end",
-        default="2024-12-31",
-        help="End date (YYYY-MM-DD). Default: 2024-12-31",
+        default="2025-12-31",
+        help="End date (YYYY-MM-DD). Default: 2025-12-31",
     )
     parser.add_argument(
         "--dry-run",

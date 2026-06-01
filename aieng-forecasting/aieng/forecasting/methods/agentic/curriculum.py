@@ -34,11 +34,8 @@ Typical usage::
     prompt = build_curriculum_prompt(
         report=report,
         context_documents=context_docs,
-        as_of="2024-12-31",
-        preamble=(
-            "You are reviewing your forecasting performance for 2024 "
-            "to identify systematic patterns worth recording."
-        ),
+        as_of="2025-12-31",
+        preamble="Review 2025 WTI forecasting performance for systematic patterns.",
     )
 
     reply = await runner.run_text_async(prompt)
@@ -184,8 +181,7 @@ def format_backtest_report(
             )
         elif coverage > 0.90:
             lines.append(
-                f"> **Coverage {coverage:.1%} is above target** — intervals may be "
-                f"overly conservative at this horizon."
+                f"> **Coverage {coverage:.1%} is above target** — intervals may be overly conservative at this horizon."
             )
         lines.append("")
 
@@ -221,8 +217,7 @@ def load_context_documents(
         matches = sorted(context_dir.glob(f"*{d}.md"))
         if not matches:
             warnings.warn(
-                f"No cached context file found for date {d} in {context_dir}. "
-                "Skipping.",
+                f"No cached context file found for date {d} in {context_dir}. Skipping.",
                 stacklevel=2,
             )
             continue

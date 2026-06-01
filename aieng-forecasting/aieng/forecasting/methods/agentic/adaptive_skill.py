@@ -36,12 +36,13 @@ implementation's ``skill_tools.py``::
         AdaptiveSkillStore,
     )
 
+
     class MyStrategyState(AdaptiveSkillState):
         approach_narrative: str
         ...
 
-        def build_markdown(self) -> str:
-            ...
+        def build_markdown(self) -> str: ...
+
 
     STORE: AdaptiveSkillStore[MyStrategyState] = AdaptiveSkillStore(
         skill_dir=Path(__file__).parent / "skills" / "my-strategy",
@@ -71,8 +72,7 @@ from pydantic import BaseModel
 
 
 class AdaptiveSkillState(BaseModel, ABC):
-    """Abstract base for skill states that an agent can modify through typed
-    tool calls.
+    """Abstract base for skill states that an agent can modify through typed tool calls.
 
     Subclasses define domain-specific fields (observations, hypotheses,
     calibration corrections, etc.) and implement ``build_markdown()`` to
@@ -153,14 +153,17 @@ class AdaptiveSkillStore(Generic[S]):
 
     @property
     def state_path(self) -> Path:
+        """Path to ``skill_state.yaml``."""
         return self._skill_dir / _YAML_STATE_FILENAME
 
     @property
     def skill_md_path(self) -> Path:
+        """Path to the rendered ``SKILL.md``."""
         return self._skill_dir / _SKILL_MD_FILENAME
 
     @property
     def history_dir(self) -> Path:
+        """Path to the ``.history/`` backup directory."""
         return self._skill_dir / _HISTORY_DIR
 
     # ------------------------------------------------------------------
@@ -178,8 +181,7 @@ class AdaptiveSkillStore(Generic[S]):
         """
         if not self.state_path.exists():
             raise FileNotFoundError(
-                f"skill_state.yaml not found in {self._skill_dir}. "
-                "Run the seed script to initialise the skill state."
+                f"skill_state.yaml not found in {self._skill_dir}. Run the seed script to initialise the skill state."
             )
         raw = yaml.safe_load(self.state_path.read_text(encoding="utf-8"))
         return self._state_type.model_validate(raw)
@@ -223,8 +225,4 @@ class AdaptiveSkillStore(Generic[S]):
         rendered = _GENERATED_HEADER + state.build_markdown()
         self.skill_md_path.write_text(rendered, encoding="utf-8")
 
-        return (
-            f"State saved to {self.state_path.name}. "
-            f"SKILL.md re-rendered. "
-            f"Backup written to {_HISTORY_DIR}/."
-        )
+        return f"State saved to {self.state_path.name}. SKILL.md re-rendered. Backup written to {_HISTORY_DIR}/."

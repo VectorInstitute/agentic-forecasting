@@ -163,7 +163,7 @@ def build_skill_tools(  # noqa: PLR0915
         state.observations.append(obs)
         store.save(state)
         linked_note = f" (linked to {obs.linked_hypothesis})" if obs.linked_hypothesis else ""
-        return f'Observation recorded{linked_note}: "{finding[:80]}{'...' if len(finding) > 80 else ''}"'
+        return f'Observation recorded{linked_note}: "{finding[:80]}{"..." if len(finding) > 80 else ""}"'
 
     def open_hypothesis(claim: str, initial_evidence: str) -> str:
         """Open a new hypothesis about a suspected systematic forecasting pattern.
@@ -207,7 +207,7 @@ def build_skill_tools(  # noqa: PLR0915
         state.observations.append(obs)
         store.save(state)
         return (
-            f'Hypothesis {hyp_id} opened: "{claim[:80]}{'...' if len(claim) > 80 else ''}". '
+            f'Hypothesis {hyp_id} opened: "{claim[:80]}{"..." if len(claim) > 80 else ""}". '
             f"Initial evidence recorded as an observation linked to {hyp_id}. "
             f"Confirmations needed to graduate: {store.confirmation_threshold}."
         )
@@ -244,10 +244,7 @@ def build_skill_tools(  # noqa: PLR0915
             ids = [h.id for h in state.hypotheses]
             return f"Hypothesis '{hypothesis_id}' not found. Known IDs: {ids}."
         if hyp.status != "open":
-            return (
-                f"Hypothesis {hypothesis_id} is already {hyp.status}. "
-                "Only open hypotheses can receive new outcomes."
-            )
+            return f"Hypothesis {hypothesis_id} is already {hyp.status}. Only open hypotheses can receive new outcomes."
 
         if outcome == "confirmed":
             hyp.confirmations += 1
@@ -266,8 +263,7 @@ def build_skill_tools(  # noqa: PLR0915
             ready_msg = f" {remaining} more confirmation(s) needed to graduate."
 
         return (
-            f"{hypothesis_id} updated: {hyp.confirmations} confirmation(s), "
-            f"{hyp.refutations} refutation(s).{ready_msg}"
+            f"{hypothesis_id} updated: {hyp.confirmations} confirmation(s), {hyp.refutations} refutation(s).{ready_msg}"
         )
 
     def graduate_hypothesis(
@@ -312,10 +308,7 @@ def build_skill_tools(  # noqa: PLR0915
             ids = [h.id for h in state.hypotheses]
             return f"Hypothesis '{hypothesis_id}' not found. Known IDs: {ids}."
         if hyp.status != "open":
-            return (
-                f"Hypothesis {hypothesis_id} is already {hyp.status}. "
-                "Only open hypotheses can be graduated."
-            )
+            return f"Hypothesis {hypothesis_id} is already {hyp.status}. Only open hypotheses can be graduated."
 
         if hyp.confirmations < store.confirmation_threshold:
             shortfall = store.confirmation_threshold - hyp.confirmations
@@ -402,10 +395,7 @@ def build_skill_tools(  # noqa: PLR0915
             )
         )
         store.save(state)
-        return (
-            f"Approach narrative updated ({len(new_text)} chars). "
-            f"Rationale recorded in version history."
-        )
+        return f"Approach narrative updated ({len(new_text)} chars). Rationale recorded in version history."
 
     return [
         record_observation,

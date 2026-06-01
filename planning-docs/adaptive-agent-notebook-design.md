@@ -1,8 +1,8 @@
 # Adaptive Agent Notebook Design
 
-**Status:** Draft — pending Ethan review before construction begins.  
-**Owner:** Ethan  
-**Session:** June 1, 2026 design session (Ethan + Claude Sonnet 4.6)  
+**Status:** Draft — pending Ethan review before construction begins.
+**Owner:** Ethan
+**Session:** June 1, 2026 design session (Ethan + Claude Sonnet 4.6)
 **Depends on:** Adaptive skill state implementation (complete as of Jun 1, 2026 — see commit history)
 
 ---
@@ -69,7 +69,7 @@ Two activity types are planned:
 
 **Activity 1 — Agent-initiated exploration**
 
-The agent is given a specific analytical question and access to historical WTI data via code execution. Example: *"Here is the WTI price history for 2024. Analyze the distribution of vol regimes and their relationship to forecast error patterns for a trend-projection-based forecaster. What systematic biases, if any, would you expect?"*
+The agent is given a specific analytical question and access to historical WTI data via code execution. Example: *"Here is the WTI price history for 2025. Analyze the distribution of vol regimes and their relationship to forecast error patterns for a trend-projection-based forecaster. What systematic biases, if any, would you expect?"*
 
 The agent uses `run_code` to fetch and analyze the data, then reflects on whether its findings meet the evidence threshold defined in `meta-learning`. If they do, it calls the mutation tools. If they don't, it records an observation for future reference.
 
@@ -105,15 +105,17 @@ The notebook then assembles the curriculum package by loading these cached files
 
 ## Training / evaluation period split
 
-**Training period: January 2024 – December 2024**
+**Training period: January 2025 – December 2025**
 
-WTI had meaningful vol regime variation across 2024. The Iran escalation signals (IAEA reports, diplomatic ultimatums) began in late 2024. This gives the agent rich material to study without exposing it to the war period it will be evaluated against. ((Could the training period not be much longer? Or I suppose the issue is that building a curriculum for more than one year could be super costly. We can always leave this up to participants, and we can also consider much longer training periods for the other reference implementations since their prediction origin frequency could also be much less.))
+2025 is already the backtest period for NB04 (`energy_oil_backtest.yaml`, 51 weekly origins). This means the adaptive agent's curriculum can be built directly from the backtest results NB04 already computes — no separate training backtest is needed. The agent studies the same evidence the reader sees in NB04's scorecard, creating a tight pedagogical loop: "here is what stateless methods did on 2025 data; now let's let the adaptive agent study that record."
 
-**Protected evaluation period: January 2025 onwards**
+2025 also contains meaningful vol regime variation and the build-up to the 2026 geopolitical shock, giving the agent substantive material to study.
 
-This choice has a critical additional property: **Gemini LLMs have a knowledge cutoff of January 2025.** Evaluating on post-cutoff data means the model's parametric knowledge cannot contaminate its forecasts — it must rely on the tools (web search, code execution) and its accumulated strategy state. This is a cleaner test of the agentic capabilities, and it is a useful teaching point worth surfacing explicitly in the notebook.
+**Protected evaluation period: 2026 (existing `energy_oil_eval.yaml` spec)**
 
-The evaluation period also includes the US-Iran war (March 2026), which is the most extreme vol regime shock in the dataset. Evaluating whether the agent's calibration holds up under an extreme regime it did not train on is a meaningful and interesting test.
+The evaluation runs on the same `energy_oil_eval.yaml` origins already used in NB04 (Feb–Mar 2026, the Persian Gulf shock period). No new spec is needed. NB06 compares all predictors — stateless and adaptive — on identical origins, making the comparison clean.
+
+This split has an additional property worth surfacing in NB05: **Gemini LLMs have a knowledge cutoff of January 2025**, so the 2025 training data is itself recent-historical (post-cutoff for the model's parametric knowledge). The curriculum delivery via `search_web` with `cutoff_date` enforcement ensures no future leakage. When the agent moves into 2026 eval, it must rely entirely on tools and its accumulated strategy state — a clean test of what learning adds.
 
 ---
 
@@ -153,7 +155,7 @@ The current four-notebook sequence is restructured. All existing notebooks are p
 **Supporting code needed (not yet built):**
 - `compile_backtest_curriculum(backtest_results, training_period)` — formats error statistics into a structured markdown document for the agent
 - `assemble_news_curriculum(cached_context_dir, dates)` — loads pre-cached news summaries and assembles them into the curriculum package
-- Pre-cached news summary files at ~4 quarterly WTI-relevant dates in 2024
+- Pre-cached news summary files at weekly WTI-relevant dates across 2025 (generated by `scripts/cache_wti_curriculum_news.py`)
 - A skill state snapshot utility (copy YAML before/after for diff display)
 
 ((Ahh okay this is for the curriculum learning -- not the "live" eval mode where the agent will actually have access to running live web/news searches itself. I do still think we should do a lot more than quarterly pulls. I think we could go with weekly news reports.))
@@ -169,7 +171,7 @@ The current four-notebook sequence is restructured. All existing notebooks are p
 ### New notebook 06: protected evaluation
 
 **Narrative arc:**
-1. Declare the eval period and the knowledge-cutoff teaching point (Gemini cutoff = Jan 2025; eval starts Jan 2025)
+1. Declare the eval period and the knowledge-cutoff teaching point (Gemini cutoff = Jan 2025; training was on 2025 data post-cutoff; eval is on 2026 data)
 2. Load the frozen post-training skill state (copy to `skill_state_eval_frozen.yaml` before eval begins)
 3. Run the full evaluation: all stateless predictors ((+ untrained agent)) + trained adaptive agent on the held-out period
 4. Present comparative metrics: coverage, CRPS, MAE, calibration, scoring rules
@@ -235,7 +237,7 @@ The key utility functions to build:
 
 3. **Freeze mechanism:** the `AdaptiveSkillStore` `read_only` flag is not yet implemented. Is this blocking for 06, or can we implement a simpler freeze (backup YAML, restore after eval) in notebook code? ((We can just do this the easy way, with files/backups/code switches at the notebook level.))
 
-4. **Pre-cached news dates:** which specific 2024 dates would make the most compelling training material? Candidates: quarterly OPEC+ meetings, major price moves, the IAEA report dates already annotated in Notebook 01. ((Like I added above, I think it just makes sense to do this weekly. We could test things out using a smaller period, but I think any longer than weekly and it's hard to think the information would still be relevant.))
+4. **Pre-cached news dates:** weekly Mondays across 2025 (~52 files), generated by `scripts/cache_wti_curriculum_news.py`. This aligns with the weekly stride of `energy_oil_backtest.yaml` so the news context at each backtest origin is available.
 
 5. **Activity 2 variant sequencing:** should Variant A (statistics-only) and Variant B (news-grounded) be sequential cells in one notebook, or separate runs with a state-reset between them? Sequential makes the comparison cleaner but requires the reset machinery. ((Could they not result in two different configurations? Maybe this is worth dealing with now...))
 
