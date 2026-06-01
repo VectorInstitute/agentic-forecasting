@@ -165,7 +165,7 @@ async def main(
     config = ContextRetrievalConfig(
         enabled=True,
         instruction=_SEARCH_INSTRUCTION,
-        search_model="gemini-3-flash-preview",
+        search_model="gemini-3.5-flash",
         enforce_cutoff=True,
     )
     search_web = _build_search_tool(

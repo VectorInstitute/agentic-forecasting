@@ -1,0 +1,519 @@
+"""Script to generate 05_adaptive_agent_training.ipynb."""
+
+import json
+from pathlib import Path
+
+
+def md(source: str) -> dict:
+    return {"cell_type": "markdown", "metadata": {}, "source": source}
+
+
+def code(source: str) -> dict:
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": source,
+    }
+
+
+cells = []
+
+# ── Title ─────────────────────────────────────────────────────────────────────
+cells.append(
+    md(
+        "# WTI Crude Oil — Adaptive Agent Training (Notebook 5 of 7)\n"
+        "\n"
+        "> **Part 5 of 7.** Builds on the stateless backtest in "
+        "[`04_systematic_backtest_eval.ipynb`](04_systematic_backtest_eval.ipynb).\n"
+        "\n"
+        "Every method in Notebook 4 was **stateless** — configured once and run.  \n"
+        "This notebook introduces an agent that is different: it has a **training phase**.\n"
+        "\n"
+        "The paradigm shift: instead of configuring a model, we onboard an analyst.  \n"
+        "We give the analyst historical performance data to study, let it draw conclusions\n"
+        "and update its own strategy, then put it on live forecasting duty in Notebook 6.\n"
+        "\n"
+        "The training paradigm is **curriculum learning** — not time-travel simulation.  \n"
+        "We prepare structured learning material (backtest reports, pre-cached news context)\n"
+        "and hand it to the agent for reflection. The agent decides what to record, based\n"
+        "on the evidence governance rules in its `meta-learning` skill.\n"
+        "\n"
+        "**Two training variants are produced:**\n"
+        "\n"
+        "| Variant | Strategy dir | Training material |\n"
+        "|---------|-------------|------------------|\n"
+        "| Stats-only | `wti-strategy-stats/` | Activity 1 (exploration) + Activity 2a (backtest report) |\n"
+        "| News-grounded | `wti-strategy-news/` | Activity 2b (same report + weekly news context) |"
+    )
+)
+
+# ── Setup ─────────────────────────────────────────────────────────────────────
+cells.append(md("---\n## 0. Setup"))
+
+cells.append(
+    code(
+        "import asyncio\n"
+        "import warnings\n"
+        "from datetime import date\n"
+        "from pathlib import Path\n"
+        "\n"
+        "import pandas as pd\n"
+        "import yaml\n"
+        "from IPython.display import Markdown, display\n"
+        "\n"
+        "from aieng.forecasting.evaluation.backtest import BacktestResult\n"
+        "from aieng.forecasting.methods.agentic import (\n"
+        "    build_adk_agent,\n"
+        "    build_curriculum_prompt,\n"
+        "    format_backtest_report,\n"
+        "    load_context_documents,\n"
+        ")\n"
+        "from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig\n"
+        "from energy_oil_forecasting.adaptive_agent import (\n"
+        "    build_wti_adaptive_config,\n"
+        ")\n"
+        "from energy_oil_forecasting.adaptive_agent.curriculum.snapshot_utils import (\n"
+        "    restore_state,\n"
+        "    snapshot_state,\n"
+        ")\n"
+        "from energy_oil_forecasting.data import WTI_SERIES_ID, build_wti_service\n"
+        "\n"
+        "warnings.filterwarnings('ignore')\n"
+        "\n"
+        "# ── Paths ─────────────────────────────────────────────────────────────────────\n"
+        "_NB_DIR = Path('.')\n"
+        "_SKILLS_ROOT = _NB_DIR / 'adaptive_agent' / 'skills'\n"
+        "_CURRICULUM_DIR = _NB_DIR / 'adaptive_agent' / 'curriculum'\n"
+        "_CONTEXT_DIR = _CURRICULUM_DIR / 'context'\n"
+        "\n"
+        "STATS_STRATEGY_DIR = _SKILLS_ROOT / 'wti-strategy-stats'\n"
+        "NEWS_STRATEGY_DIR  = _SKILLS_ROOT / 'wti-strategy-news'\n"
+        "\n"
+        "# ── Model ─────────────────────────────────────────────────────────────────────\n"
+        "AGENT_MODEL = 'gemini-3.1-flash-preview'\n"
+        "\n"
+        "# ── Run guards ────────────────────────────────────────────────────────────────\n"
+        "# Expensive activities default to False (outputs committed after first run).\n"
+        "# Set True only when you want to regenerate outputs from scratch.\n"
+        "RUN_ACTIVITY_1  = False   # Agent-initiated code-execution exploration\n"
+        "RUN_ACTIVITY_2A = False   # Statistics-only curriculum delivery\n"
+        "RUN_ACTIVITY_2B = False   # News-grounded curriculum delivery\n"
+        "\n"
+        "# ── Data service ──────────────────────────────────────────────────────────────\n"
+        "data_service = build_wti_service()\n"
+        "print('Setup complete.')"
+    )
+)
+
+# ── Section 1: Snapshot & initial state ───────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 1. Initial State & Pre-Training Snapshot\n"
+        "\n"
+        "Before any training activity, we snapshot the clean initial strategy state  \n"
+        "in both variant directories. The reset cell at the end of this notebook  \n"
+        "restores from these snapshots, so you can re-run training from scratch  \n"
+        "without re-running Notebook 4."
+    )
+)
+
+cells.append(
+    code(
+        "# Snapshot both variant dirs (no-op if snapshot already exists)\n"
+        "print('Snapshotting initial strategy states...')\n"
+        "snapshot_state(STATS_STRATEGY_DIR)\n"
+        "snapshot_state(NEWS_STRATEGY_DIR)\n"
+        "print()\n"
+        "\n"
+        "# Show the initial wti-strategy-stats state\n"
+        "print('Initial wti-strategy-stats/SKILL.md:')\n"
+        "print('─' * 60)\n"
+        "print((STATS_STRATEGY_DIR / 'SKILL.md').read_text())"
+    )
+)
+
+# ── Section 2: Activity 1 ──────────────────────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 2. Activity 1 — Agent-Initiated Exploration\n"
+        "\n"
+        "We give the adaptive agent a structured analytical question and access to  \n"
+        "historical WTI price data via code execution. The agent fetches the data,  \n"
+        "analyzes vol regime distribution and forecast error patterns for a  \n"
+        "trend-projection approach, then decides whether its findings meet the  \n"
+        "evidence threshold in `meta-learning`.\n"
+        "\n"
+        "This activity targets `wti-strategy-stats/`. Any observations or hypotheses  \n"
+        "the agent generates here become the starting point for Activity 2a.\n"
+        "\n"
+        "> **Run guard:** `RUN_ACTIVITY_1 = False` by default — outputs are committed  \n"
+        "> so the notebook runs reproducibly without real API calls."
+    )
+)
+
+cells.append(
+    code(
+        "_ACTIVITY_1_PROMPT = (\n"
+        "    'You have access to historical WTI crude oil price data via run_code. '\n"
+        "    'Please do the following:\\n\\n'\n"
+        "    '1. Fetch the daily WTI close price series for the full year 2025 using '\n"
+        "    'yfinance (ticker: CL=F).\\n'\n"
+        "    '2. Compute 21-day rolling realized volatility. Classify each day into a '\n"
+        "    'vol regime: low (<15% annualized), medium (15-30%), elevated (30-50%), '\n"
+        "    'or extreme (>50%).\\n'\n"
+        "    '3. Simulate the errors a simple trend-projection forecaster would make '\n"
+        "    'at 5, 10, and 21 business-day horizons during each regime. Approximate '\n"
+        "    'this using the historical return distribution within each regime window.\\n'\n"
+        "    '4. Summarize: in which regimes and at which horizons does trend-projection '\n"
+        "    'tend to produce the largest errors? Is there a directional bias?\\n\\n'\n"
+        "    'Based on your analysis, decide whether any findings meet the evidence '\n"
+        "    'threshold in your meta-learning skill. If they do, record them. '\n"
+        "    'If not, explain what additional evidence you would need.'\n"
+        ")\n"
+        "\n"
+        "if RUN_ACTIVITY_1:\n"
+        "    config = build_wti_adaptive_config(\n"
+        "        model=AGENT_MODEL, strategy_dir=STATS_STRATEGY_DIR\n"
+        "    )\n"
+        "    agent = build_adk_agent(config)\n"
+        "    runner = AdkTextRunner(\n"
+        "        agent, config=AdkTextRunnerConfig(app_name='wti_training_act1')\n"
+        "    )\n"
+        "    print('Running Activity 1 (code execution + reflection)...')\n"
+        "    print('This may take several minutes.\\n')\n"
+        "    reply_act1 = asyncio.run(runner.run_text_async(_ACTIVITY_1_PROMPT))\n"
+        "    (_CURRICULUM_DIR / 'activity1_response.txt').write_text(\n"
+        "        reply_act1, encoding='utf-8'\n"
+        "    )\n"
+        "    print(reply_act1)\n"
+        "else:\n"
+        "    _f = _CURRICULUM_DIR / 'activity1_response.txt'\n"
+        "    if _f.exists():\n"
+        "        print(_f.read_text())\n"
+        "    else:\n"
+        "        print('[Activity 1 output not yet committed. '\n"
+        "              'Set RUN_ACTIVITY_1 = True and re-run.]')"
+    )
+)
+
+cells.append(
+    code(
+        "print('wti-strategy-stats/SKILL.md after Activity 1:')\n"
+        "print('─' * 60)\n"
+        "print((STATS_STRATEGY_DIR / 'SKILL.md').read_text())"
+    )
+)
+
+# ── Section 3: Activity 2a ─────────────────────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 3. Activity 2a — Statistics-Only Curriculum\n"
+        "\n"
+        "We compile the 2025 backtest results from Notebook 4 into a structured  \n"
+        "report and send it to the adaptive agent as a curriculum document.  \n"
+        "The agent reads the per-horizon coverage and MAE tables, identifies  \n"
+        "systematic patterns, and decides what to record.\n"
+        "\n"
+        "This variant continues training `wti-strategy-stats/`."
+    )
+)
+
+cells.append(
+    code(
+        "# ── Load 2025 backtest results saved by NB04 ────────────────────────────────\n"
+        "_backtest_jsons = sorted(_CURRICULUM_DIR.glob('backtest_*.json'))\n"
+        "if not _backtest_jsons:\n"
+        "    raise FileNotFoundError(\n"
+        "        'No backtest result files found in adaptive_agent/curriculum/. '\n"
+        "        'Run 04_systematic_backtest_eval.ipynb first.'\n"
+        "    )\n"
+        "\n"
+        "backtest_results = {}\n"
+        "for f in _backtest_jsons:\n"
+        "    name = f.stem.removeprefix('backtest_')\n"
+        "    backtest_results[name] = BacktestResult.model_validate_json(f.read_text())\n"
+        "\n"
+        "print(f'Loaded {len(backtest_results)} backtest result(s):')\n"
+        "for name, r in backtest_results.items():\n"
+        "    print(f'  {name}: {len(r.predictions)} predictions, '\n"
+        "          f'mean CRPS = {r.mean_crps:.4f}')"
+    )
+)
+
+cells.append(
+    code(
+        "# ── Build actuals dict (needed by format_backtest_report) ───────────────────\n"
+        "_best_name = min(backtest_results, key=lambda n: backtest_results[n].mean_crps)\n"
+        "_best_result = backtest_results[_best_name]\n"
+        "print(f\"Using '{_best_name}' (mean CRPS = {_best_result.mean_crps:.4f}) \"\n"
+        "      'as curriculum basis.\\n')\n"
+        "\n"
+        "actuals: dict[tuple[str, int], float] = {}\n"
+        "for pred in _best_result.predictions:\n"
+        "    horizon = (pred.forecast_date - pred.as_of).days\n"
+        "    series = data_service.get_series(WTI_SERIES_ID, as_of=pred.forecast_date)\n"
+        "    target_ts = pd.Timestamp(pred.forecast_date)\n"
+        "    row = series[series.index == target_ts]\n"
+        "    if not row.empty:\n"
+        "        actuals[(str(pred.as_of.date()), horizon)] = float(row.iloc[0])\n"
+        "\n"
+        "print(f'Resolved {len(actuals)} actuals.')"
+    )
+)
+
+cells.append(
+    code(
+        "# ── Format and display the backtest report ───────────────────────────────────\n"
+        "report = format_backtest_report(\n"
+        "    result=_best_result,\n"
+        "    actuals=actuals,\n"
+        "    title=f'2025 WTI Backtest — {_best_name}',\n"
+        "    training_start=date(2025, 1, 1),\n"
+        "    training_end=date(2025, 12, 31),\n"
+        ")\n"
+        "display(Markdown(report))"
+    )
+)
+
+cells.append(
+    code(
+        "_PREAMBLE_2A = (\n"
+        "    'You are reviewing the 2025 WTI forecasting performance of the strongest '\n"
+        "    'stateless predictor from a systematic backtest. Study the per-horizon '\n"
+        "    'coverage and error statistics. Identify systematic patterns — particularly '\n"
+        "    'where coverage deviates from the 80% target or where MAE is unexpectedly '\n"
+        "    'large. Decide whether any findings meet the evidence threshold in your '\n"
+        "    'meta-learning skill, and if so, record them using the appropriate tools.'\n"
+        ")\n"
+        "\n"
+        "prompt_2a = build_curriculum_prompt(\n"
+        "    report=report,\n"
+        "    context_documents=[],\n"
+        "    as_of='2025-12-31',\n"
+        "    preamble=_PREAMBLE_2A,\n"
+        ")\n"
+        "\n"
+        "if RUN_ACTIVITY_2A:\n"
+        "    config_2a = build_wti_adaptive_config(\n"
+        "        model=AGENT_MODEL, strategy_dir=STATS_STRATEGY_DIR\n"
+        "    )\n"
+        "    agent_2a = build_adk_agent(config_2a)\n"
+        "    runner_2a = AdkTextRunner(\n"
+        "        agent_2a, config=AdkTextRunnerConfig(app_name='wti_training_2a')\n"
+        "    )\n"
+        "    print('Sending statistics-only curriculum...')\n"
+        "    reply_2a = asyncio.run(runner_2a.run_text_async(prompt_2a))\n"
+        "    (_CURRICULUM_DIR / 'activity2a_response.txt').write_text(\n"
+        "        reply_2a, encoding='utf-8'\n"
+        "    )\n"
+        "    print(reply_2a)\n"
+        "else:\n"
+        "    _f = _CURRICULUM_DIR / 'activity2a_response.txt'\n"
+        "    if _f.exists():\n"
+        "        print(_f.read_text())\n"
+        "    else:\n"
+        "        print('[Activity 2a output not yet committed. '\n"
+        "              'Set RUN_ACTIVITY_2A = True and re-run.]')"
+    )
+)
+
+cells.append(
+    code(
+        "print('wti-strategy-stats/SKILL.md after Activity 2a:')\n"
+        "print('─' * 60)\n"
+        "print((STATS_STRATEGY_DIR / 'SKILL.md').read_text())"
+    )
+)
+
+# ── Section 4: Activity 2b ─────────────────────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 4. Activity 2b — News-Grounded Curriculum\n"
+        "\n"
+        "Same backtest report as Activity 2a, now augmented with pre-cached weekly  \n"
+        "news summaries from 2025. Each summary was generated by  \n"
+        "`scripts/cache_wti_curriculum_news.py` with strict `cutoff_date` enforcement,  \n"
+        "so it contains only information publicly available on that Monday.\n"
+        "\n"
+        "This variant trains `wti-strategy-news/` — a clean initial state.  \n"
+        "The comparison in Section 5 shows what the news context adds."
+    )
+)
+
+cells.append(
+    code(
+        "# ── Representative news dates — one per month across 2025 ───────────────────\n"
+        "# Selected to cover OPEC+ meeting windows and seasonal demand inflection points.\n"
+        "_CURRICULUM_NEWS_DATES = [\n"
+        "    '2025-01-06',  # start of year\n"
+        "    '2025-02-03',  # pre-OPEC+ ministerial\n"
+        "    '2025-03-03',  # OPEC+ output decision period\n"
+        "    '2025-04-07',  # post-OPEC+ adjustment\n"
+        "    '2025-05-05',  # spring demand season\n"
+        "    '2025-06-09',  # OPEC+ June meeting\n"
+        "    '2025-07-07',  # summer demand peak\n"
+        "    '2025-08-04',  # late-summer\n"
+        "    '2025-09-08',  # OPEC+ September review\n"
+        "    '2025-10-06',  # Q4 demand build\n"
+        "    '2025-11-03',  # OPEC+ November decisions\n"
+        "    '2025-12-08',  # year-end\n"
+        "]\n"
+        "\n"
+        "context_docs = load_context_documents(_CONTEXT_DIR, _CURRICULUM_NEWS_DATES)\n"
+        "print(f'Loaded {len(context_docs)} context documents:')\n"
+        "for d, content in context_docs:\n"
+        "    print(f'  {d}: {len(content):,} chars')"
+    )
+)
+
+cells.append(
+    code(
+        "_PREAMBLE_2B = (\n"
+        "    'You are reviewing 2025 WTI forecasting performance alongside weekly market '\n"
+        "    'context summaries from the same period. The backtest report shows '\n"
+        "    'statistical patterns; the context summaries show what information was '\n"
+        "    'available at key dates. Study both together: does the news context help '\n"
+        "    'explain the error patterns? Identify systematic patterns and decide '\n"
+        "    'whether they meet the evidence threshold in your meta-learning skill. '\n"
+        "    'If so, record them using the appropriate tools.'\n"
+        ")\n"
+        "\n"
+        "prompt_2b = build_curriculum_prompt(\n"
+        "    report=report,\n"
+        "    context_documents=context_docs,\n"
+        "    as_of='2025-12-31',\n"
+        "    preamble=_PREAMBLE_2B,\n"
+        ")\n"
+        "print(f'Curriculum prompt: {len(prompt_2b):,} chars '\n"
+        "      f'({len(context_docs)} context documents)')"
+    )
+)
+
+cells.append(
+    code(
+        "if RUN_ACTIVITY_2B:\n"
+        "    config_2b = build_wti_adaptive_config(\n"
+        "        model=AGENT_MODEL, strategy_dir=NEWS_STRATEGY_DIR\n"
+        "    )\n"
+        "    agent_2b = build_adk_agent(config_2b)\n"
+        "    runner_2b = AdkTextRunner(\n"
+        "        agent_2b, config=AdkTextRunnerConfig(app_name='wti_training_2b')\n"
+        "    )\n"
+        "    print('Sending news-grounded curriculum...')\n"
+        "    reply_2b = asyncio.run(runner_2b.run_text_async(prompt_2b))\n"
+        "    (_CURRICULUM_DIR / 'activity2b_response.txt').write_text(\n"
+        "        reply_2b, encoding='utf-8'\n"
+        "    )\n"
+        "    print(reply_2b)\n"
+        "else:\n"
+        "    _f = _CURRICULUM_DIR / 'activity2b_response.txt'\n"
+        "    if _f.exists():\n"
+        "        print(_f.read_text())\n"
+        "    else:\n"
+        "        print('[Activity 2b output not yet committed. '\n"
+        "              'Set RUN_ACTIVITY_2B = True and re-run.]')"
+    )
+)
+
+cells.append(
+    code(
+        "print('wti-strategy-news/SKILL.md after Activity 2b:')\n"
+        "print('─' * 60)\n"
+        "print((NEWS_STRATEGY_DIR / 'SKILL.md').read_text())"
+    )
+)
+
+# ── Section 5: Side-by-side comparison ────────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 5. Side-by-Side Comparison\n"
+        "\n"
+        "What did each training variant learn from the same underlying backtest signal?  \n"
+        "The table below counts each learning layer; the rendered SKILL.md files show  \n"
+        "the qualitative content."
+    )
+)
+
+cells.append(
+    code(
+        "def _load_yaml_state(strategy_dir: Path) -> dict:\n"
+        "    return yaml.safe_load((strategy_dir / 'skill_state.yaml').read_text())\n"
+        "\n"
+        "stats_state = _load_yaml_state(STATS_STRATEGY_DIR)\n"
+        "news_state  = _load_yaml_state(NEWS_STRATEGY_DIR)\n"
+        "\n"
+        "rows = []\n"
+        "for label, state in [\n"
+        "    ('wti-strategy-stats (Activity 1 + 2a)', stats_state),\n"
+        "    ('wti-strategy-news  (Activity 2b only)', news_state),\n"
+        "]:\n"
+        "    rows.append({\n"
+        "        'Variant': label,\n"
+        "        'Observations':            len(state.get('observations', [])),\n"
+        "        'Hypotheses':              len(state.get('hypotheses', [])),\n"
+        "        'Calibration corrections': len(state.get('calibration_corrections', [])),\n"
+        "    })\n"
+        "\n"
+        "df_comparison = pd.DataFrame(rows).set_index('Variant')\n"
+        "print('Training outcomes summary:')\n"
+        "print(df_comparison.to_string())"
+    )
+)
+
+cells.append(
+    code(
+        "print('\\n── wti-strategy-stats SKILL.md ──')\n"
+        "print((STATS_STRATEGY_DIR / 'SKILL.md').read_text())\n"
+        "print('\\n── wti-strategy-news SKILL.md ──')\n"
+        "print((NEWS_STRATEGY_DIR / 'SKILL.md').read_text())"
+    )
+)
+
+# ── Section 6: Reset ──────────────────────────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 6. Reset\n"
+        "\n"
+        "Run the cell below to undo all training activities and restore both  \n"
+        "strategy variants to their pre-training state. This lets you re-run  \n"
+        "training from a clean slate without re-running Notebook 4."
+    )
+)
+
+cells.append(
+    code(
+        "# ── RESET: restore pre-training state ───────────────────────────────────────\n"
+        "# Uncomment and run to undo all training activities:\n"
+        "#\n"
+        "# restore_state(STATS_STRATEGY_DIR)\n"
+        "# restore_state(NEWS_STRATEGY_DIR)\n"
+        "# print('Both strategy variants restored to pre-training snapshots.')"
+    )
+)
+
+# ── Write notebook ─────────────────────────────────────────────────────────────
+nb = {
+    "nbformat": 4,
+    "nbformat_minor": 5,
+    "metadata": {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3",
+        },
+        "language_info": {"name": "python", "version": "3.11.0"},
+    },
+    "cells": cells,
+}
+
+out = Path("implementations/energy_oil_forecasting/05_adaptive_agent_training.ipynb")
+out.write_text(json.dumps(nb, indent=1, ensure_ascii=False))
+print(f"Wrote {len(cells)} cells to {out}")
