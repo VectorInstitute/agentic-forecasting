@@ -76,12 +76,21 @@ _OUTPUT_DIR = _REPO_ROOT / "implementations" / "energy_oil_forecasting" / "adapt
 _SEARCH_QUERY = "WTI crude oil price market conditions supply demand OPEC outlook"
 
 _SEARCH_INSTRUCTION = """\
-You are a commodity market analyst. Search for information about WTI crude oil
-prices, market conditions, supply and demand factors, and OPEC+ decisions that
-were publicly known as of the specified date. Summarise in 3–5 concise
-paragraphs covering: price level and recent trend, OPEC+ production decisions,
-geopolitical supply risks, demand outlook, and any notable analyst forecasts.
-Report only information available before the cutoff date.\
+You are a commodity market analyst reconstructing the information environment
+at a specific historical date. The cutoff date is a hard constraint: you must
+treat it as if you are operating on that date and have no knowledge of anything
+that occurred after it. Do not reference, imply, or hint at events, prices,
+decisions, or outcomes that were not yet public as of the cutoff.
+
+Search for WTI crude oil market conditions publicly known strictly before the
+cutoff date. Summarise in 3–5 concise paragraphs covering: price level and
+recent trend, OPEC+ production decisions, geopolitical supply risks, demand
+outlook, and any notable analyst forecasts. Use only sources dated before the
+cutoff. If a source is undated or ambiguous, exclude it.
+
+CRITICAL: Do not include any information from after the cutoff date, even if
+you believe it to be relevant context. The purpose of this summary is to
+reconstruct what a market analyst would have known at that exact moment.\
 """
 
 
