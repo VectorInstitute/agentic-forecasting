@@ -1,0 +1,4521 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2025-01-06T00:00:00'
+  end: '2025-12-22T00:00:00'
+  stride: 5
+  warmup: 250
+  description: Weekly rolling backtest in 2025 for daily WTI crude oil price forecasting.
+    Evaluates trajectory forecasts (5, 10, 21 business days) with CRPS/MAE and binary
+    up-shock forecasts (climb > $5 in 5 business days) with Brier Score. Used to select
+    the top contender models.
+predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+predictions:
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:13.561945'
+  as_of: '2025-01-06T00:00:00'
+  forecast_date: '2025-01-13T00:00:00'
+  payload:
+    point_forecast: 74.88
+    quantiles:
+      '0.05': 74.00699999999999
+      '0.1': 74.104
+      '0.2': 74.298
+      '0.3': 74.49199999999999
+      '0.4': 74.68599999999999
+      '0.5': 74.88
+      '0.6': 74.97
+      '0.7': 75.06
+      '0.8': 75.14999999999999
+      '0.9': 75.24
+      '0.95': 75.285
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 287598
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 49b956feae4f584f1d27fcd020108536
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/49b956feae4f584f1d27fcd020108536
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:13.561945'
+  as_of: '2025-01-06T00:00:00'
+  forecast_date: '2025-02-04T00:00:00'
+  payload:
+    point_forecast: 80.21
+    quantiles:
+      '0.05': 75.269
+      '0.1': 75.818
+      '0.2': 76.916
+      '0.3': 78.014
+      '0.4': 79.112
+      '0.5': 80.21
+      '0.6': 80.75399999999999
+      '0.7': 81.298
+      '0.8': 81.842
+      '0.9': 82.38600000000001
+      '0.95': 82.658
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 287598
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 49b956feae4f584f1d27fcd020108536
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/49b956feae4f584f1d27fcd020108536
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:16.082055'
+  as_of: '2025-01-13T00:00:00'
+  forecast_date: '2025-01-27T00:00:00'
+  payload:
+    point_forecast: 76.48
+    quantiles:
+      '0.05': 75.724
+      '0.1': 75.808
+      '0.2': 75.976
+      '0.3': 76.144
+      '0.4': 76.312
+      '0.5': 76.48
+      '0.6': 76.94800000000001
+      '0.7': 77.416
+      '0.8': 77.884
+      '0.9': 78.35199999999999
+      '0.95': 78.586
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 287868
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 9fac1979fa1891777f9f1b135fb230ba
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/9fac1979fa1891777f9f1b135fb230ba
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:16.082055'
+  as_of: '2025-01-13T00:00:00'
+  forecast_date: '2025-02-11T00:00:00'
+  payload:
+    point_forecast: 77.26
+    quantiles:
+      '0.05': 75.595
+      '0.1': 75.78
+      '0.2': 76.15
+      '0.3': 76.52
+      '0.4': 76.89
+      '0.5': 77.26
+      '0.6': 78.08800000000001
+      '0.7': 78.91600000000001
+      '0.8': 79.744
+      '0.9': 80.572
+      '0.95': 80.986
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 287868
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 9fac1979fa1891777f9f1b135fb230ba
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/9fac1979fa1891777f9f1b135fb230ba
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:18.104898'
+  as_of: '2025-01-20T00:00:00'
+  forecast_date: '2025-01-27T00:00:00'
+  payload:
+    point_forecast: 78.43
+    quantiles:
+      '0.05': 77.70100000000001
+      '0.1': 77.78200000000001
+      '0.2': 77.944
+      '0.3': 78.10600000000001
+      '0.4': 78.268
+      '0.5': 78.43
+      '0.6': 78.438
+      '0.7': 78.446
+      '0.8': 78.45400000000001
+      '0.9': 78.462
+      '0.95': 78.466
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288138
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: b289aa81634feeceb38ec707e7f7fe80
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/b289aa81634feeceb38ec707e7f7fe80
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:18.104898'
+  as_of: '2025-01-20T00:00:00'
+  forecast_date: '2025-02-03T00:00:00'
+  payload:
+    point_forecast: 78.18
+    quantiles:
+      '0.05': 76.668
+      '0.1': 76.836
+      '0.2': 77.172
+      '0.3': 77.50800000000001
+      '0.4': 77.84400000000001
+      '0.5': 78.18
+      '0.6': 78.35000000000001
+      '0.7': 78.52000000000001
+      '0.8': 78.69
+      '0.9': 78.86
+      '0.95': 78.94500000000001
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288138
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: b289aa81634feeceb38ec707e7f7fe80
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/b289aa81634feeceb38ec707e7f7fe80
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:18.104898'
+  as_of: '2025-01-20T00:00:00'
+  forecast_date: '2025-02-18T00:00:00'
+  payload:
+    point_forecast: 74.98
+    quantiles:
+      '0.05': 74.17
+      '0.1': 74.26
+      '0.2': 74.44
+      '0.3': 74.62
+      '0.4': 74.8
+      '0.5': 74.98
+      '0.6': 76.08
+      '0.7': 77.18
+      '0.8': 78.28
+      '0.9': 79.38000000000001
+      '0.95': 79.93
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288138
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: b289aa81634feeceb38ec707e7f7fe80
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/b289aa81634feeceb38ec707e7f7fe80
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:20.572180'
+  as_of: '2025-01-27T00:00:00'
+  forecast_date: '2025-02-03T00:00:00'
+  payload:
+    point_forecast: 73.35
+    quantiles:
+      '0.05': 73.323
+      '0.1': 73.326
+      '0.2': 73.332
+      '0.3': 73.338
+      '0.4': 73.344
+      '0.5': 73.35
+      '0.6': 73.804
+      '0.7': 74.258
+      '0.8': 74.712
+      '0.9': 75.166
+      '0.95': 75.393
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288354
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 97d0518cc8179c5b72bbae6c66028002
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/97d0518cc8179c5b72bbae6c66028002
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:20.572180'
+  as_of: '2025-01-27T00:00:00'
+  forecast_date: '2025-02-10T00:00:00'
+  payload:
+    point_forecast: 72.76
+    quantiles:
+      '0.05': 72.544
+      '0.1': 72.568
+      '0.2': 72.616
+      '0.3': 72.664
+      '0.4': 72.712
+      '0.5': 72.76
+      '0.6': 73.55
+      '0.7': 74.34
+      '0.8': 75.13
+      '0.9': 75.92
+      '0.95': 76.315
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288354
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 97d0518cc8179c5b72bbae6c66028002
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/97d0518cc8179c5b72bbae6c66028002
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:20.572180'
+  as_of: '2025-01-27T00:00:00'
+  forecast_date: '2025-02-25T00:00:00'
+  payload:
+    point_forecast: 71.37
+    quantiles:
+      '0.05': 70.776
+      '0.1': 70.842
+      '0.2': 70.974
+      '0.3': 71.106
+      '0.4': 71.238
+      '0.5': 71.37
+      '0.6': 72.932
+      '0.7': 74.494
+      '0.8': 76.05600000000001
+      '0.9': 77.61800000000001
+      '0.95': 78.399
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288354
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 97d0518cc8179c5b72bbae6c66028002
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/97d0518cc8179c5b72bbae6c66028002
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:23.100880'
+  as_of: '2025-02-03T00:00:00'
+  forecast_date: '2025-02-10T00:00:00'
+  payload:
+    point_forecast: 71.74
+    quantiles:
+      '0.05': 71.47
+      '0.1': 71.5
+      '0.2': 71.56
+      '0.3': 71.61999999999999
+      '0.4': 71.67999999999999
+      '0.5': 71.74
+      '0.6': 72.10799999999999
+      '0.7': 72.476
+      '0.8': 72.844
+      '0.9': 73.212
+      '0.95': 73.396
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288624
+    output_tokens: 489
+    parse_failures: 0
+    langfuse_trace_id: 0cdd4b130b73e92779a23e2110cc6ea8
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/0cdd4b130b73e92779a23e2110cc6ea8
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:23.100880'
+  as_of: '2025-02-03T00:00:00'
+  forecast_date: '2025-03-04T00:00:00'
+  payload:
+    point_forecast: 69.56
+    quantiles:
+      '0.05': 68.3
+      '0.1': 68.44
+      '0.2': 68.72
+      '0.3': 69.0
+      '0.4': 69.28
+      '0.5': 69.56
+      '0.6': 71.23
+      '0.7': 72.9
+      '0.8': 74.57
+      '0.9': 76.24
+      '0.95': 77.075
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288624
+    output_tokens: 489
+    parse_failures: 0
+    langfuse_trace_id: 0cdd4b130b73e92779a23e2110cc6ea8
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/0cdd4b130b73e92779a23e2110cc6ea8
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:25.034873'
+  as_of: '2025-02-10T00:00:00'
+  forecast_date: '2025-02-24T00:00:00'
+  payload:
+    point_forecast: 69.56
+    quantiles:
+      '0.05': 69.047
+      '0.1': 69.104
+      '0.2': 69.218
+      '0.3': 69.332
+      '0.4': 69.446
+      '0.5': 69.56
+      '0.6': 69.638
+      '0.7': 69.71600000000001
+      '0.8': 69.794
+      '0.9': 69.872
+      '0.95': 69.911
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288894
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 82bce5801f526af1255bbe89963ebaa7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/82bce5801f526af1255bbe89963ebaa7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:25.034873'
+  as_of: '2025-02-10T00:00:00'
+  forecast_date: '2025-03-11T00:00:00'
+  payload:
+    point_forecast: 66.98
+    quantiles:
+      '0.05': 66.566
+      '0.1': 66.612
+      '0.2': 66.704
+      '0.3': 66.796
+      '0.4': 66.888
+      '0.5': 66.98
+      '0.6': 67.322
+      '0.7': 67.664
+      '0.8': 68.006
+      '0.9': 68.348
+      '0.95': 68.51899999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 288894
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 82bce5801f526af1255bbe89963ebaa7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/82bce5801f526af1255bbe89963ebaa7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:27.024416'
+  as_of: '2025-02-17T00:00:00'
+  forecast_date: '2025-02-24T00:00:00'
+  payload:
+    point_forecast: 70.45
+    quantiles:
+      '0.05': 69.928
+      '0.1': 69.986
+      '0.2': 70.102
+      '0.3': 70.218
+      '0.4': 70.334
+      '0.5': 70.45
+      '0.6': 70.72200000000001
+      '0.7': 70.994
+      '0.8': 71.266
+      '0.9': 71.538
+      '0.95': 71.674
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289164
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 356ff37f17c36e231fdef5936f103052
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/356ff37f17c36e231fdef5936f103052
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:27.024416'
+  as_of: '2025-02-17T00:00:00'
+  forecast_date: '2025-03-03T00:00:00'
+  payload:
+    point_forecast: 69.95
+    quantiles:
+      '0.05': 69.63499999999999
+      '0.1': 69.67
+      '0.2': 69.74
+      '0.3': 69.81
+      '0.4': 69.88
+      '0.5': 69.95
+      '0.6': 70.476
+      '0.7': 71.002
+      '0.8': 71.528
+      '0.9': 72.054
+      '0.95': 72.317
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289164
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 356ff37f17c36e231fdef5936f103052
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/356ff37f17c36e231fdef5936f103052
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:27.024416'
+  as_of: '2025-02-17T00:00:00'
+  forecast_date: '2025-03-18T00:00:00'
+  payload:
+    point_forecast: 69.41
+    quantiles:
+      '0.05': 68.24900000000001
+      '0.1': 68.378
+      '0.2': 68.636
+      '0.3': 68.894
+      '0.4': 69.152
+      '0.5': 69.41
+      '0.6': 70.342
+      '0.7': 71.274
+      '0.8': 72.20599999999999
+      '0.9': 73.13799999999999
+      '0.95': 73.604
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289164
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 356ff37f17c36e231fdef5936f103052
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/356ff37f17c36e231fdef5936f103052
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:29.098327'
+  as_of: '2025-02-24T00:00:00'
+  forecast_date: '2025-03-03T00:00:00'
+  payload:
+    point_forecast: 69.44
+    quantiles:
+      '0.05': 68.95400000000001
+      '0.1': 69.00800000000001
+      '0.2': 69.116
+      '0.3': 69.224
+      '0.4': 69.332
+      '0.5': 69.44
+      '0.6': 69.636
+      '0.7': 69.832
+      '0.8': 70.028
+      '0.9': 70.224
+      '0.95': 70.322
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289380
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: c19f7a1bf404d520c81ad8fefba75167
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/c19f7a1bf404d520c81ad8fefba75167
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:29.098327'
+  as_of: '2025-02-24T00:00:00'
+  forecast_date: '2025-03-10T00:00:00'
+  payload:
+    point_forecast: 68.58
+    quantiles:
+      '0.05': 67.455
+      '0.1': 67.58
+      '0.2': 67.83
+      '0.3': 68.08
+      '0.4': 68.33
+      '0.5': 68.58
+      '0.6': 68.78
+      '0.7': 68.98
+      '0.8': 69.17999999999999
+      '0.9': 69.38
+      '0.95': 69.48
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289380
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: c19f7a1bf404d520c81ad8fefba75167
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/c19f7a1bf404d520c81ad8fefba75167
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:29.098327'
+  as_of: '2025-02-24T00:00:00'
+  forecast_date: '2025-03-25T00:00:00'
+  payload:
+    point_forecast: 66.94
+    quantiles:
+      '0.05': 64.204
+      '0.1': 64.508
+      '0.2': 65.116
+      '0.3': 65.724
+      '0.4': 66.332
+      '0.5': 66.94
+      '0.6': 67.05199999999999
+      '0.7': 67.164
+      '0.8': 67.276
+      '0.9': 67.388
+      '0.95': 67.444
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289380
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: c19f7a1bf404d520c81ad8fefba75167
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/c19f7a1bf404d520c81ad8fefba75167
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:31.256044'
+  as_of: '2025-03-03T00:00:00'
+  forecast_date: '2025-03-10T00:00:00'
+  payload:
+    point_forecast: 69.14
+    quantiles:
+      '0.05': 68.87
+      '0.1': 68.9
+      '0.2': 68.96000000000001
+      '0.3': 69.02
+      '0.4': 69.08
+      '0.5': 69.14
+      '0.6': 69.434
+      '0.7': 69.728
+      '0.8': 70.022
+      '0.9': 70.316
+      '0.95': 70.463
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289650
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 5e04c0b76586f68639c3e3ab5e0cd21f
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5e04c0b76586f68639c3e3ab5e0cd21f
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:31.256044'
+  as_of: '2025-03-03T00:00:00'
+  forecast_date: '2025-03-17T00:00:00'
+  payload:
+    point_forecast: 68.29
+    quantiles:
+      '0.05': 68.155
+      '0.1': 68.17
+      '0.2': 68.2
+      '0.3': 68.23
+      '0.4': 68.26
+      '0.5': 68.29
+      '0.6': 68.596
+      '0.7': 68.902
+      '0.8': 69.208
+      '0.9': 69.514
+      '0.95': 69.66699999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289650
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 5e04c0b76586f68639c3e3ab5e0cd21f
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5e04c0b76586f68639c3e3ab5e0cd21f
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:31.256044'
+  as_of: '2025-03-03T00:00:00'
+  forecast_date: '2025-04-01T00:00:00'
+  payload:
+    point_forecast: 66.58
+    quantiles:
+      '0.05': 66.436
+      '0.1': 66.452
+      '0.2': 66.484
+      '0.3': 66.516
+      '0.4': 66.548
+      '0.5': 66.58
+      '0.6': 66.88
+      '0.7': 67.17999999999999
+      '0.8': 67.48
+      '0.9': 67.78
+      '0.95': 67.92999999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289650
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 5e04c0b76586f68639c3e3ab5e0cd21f
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5e04c0b76586f68639c3e3ab5e0cd21f
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:33.328389'
+  as_of: '2025-03-10T00:00:00'
+  forecast_date: '2025-03-17T00:00:00'
+  payload:
+    point_forecast: 67.55
+    quantiles:
+      '0.05': 66.64999999999999
+      '0.1': 66.75
+      '0.2': 66.95
+      '0.3': 67.14999999999999
+      '0.4': 67.35
+      '0.5': 67.55
+      '0.6': 67.744
+      '0.7': 67.938
+      '0.8': 68.13199999999999
+      '0.9': 68.326
+      '0.95': 68.423
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289920
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 5cf1ca56f03c1ef13cd17d72a793cf67
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5cf1ca56f03c1ef13cd17d72a793cf67
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:33.328389'
+  as_of: '2025-03-10T00:00:00'
+  forecast_date: '2025-03-24T00:00:00'
+  payload:
+    point_forecast: 67.95
+    quantiles:
+      '0.05': 65.09700000000001
+      '0.1': 65.414
+      '0.2': 66.048
+      '0.3': 66.682
+      '0.4': 67.316
+      '0.5': 67.95
+      '0.6': 67.992
+      '0.7': 68.034
+      '0.8': 68.076
+      '0.9': 68.118
+      '0.95': 68.139
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289920
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 5cf1ca56f03c1ef13cd17d72a793cf67
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5cf1ca56f03c1ef13cd17d72a793cf67
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:33.328389'
+  as_of: '2025-03-10T00:00:00'
+  forecast_date: '2025-04-08T00:00:00'
+  payload:
+    point_forecast: 64.12
+    quantiles:
+      '0.05': 61.690000000000005
+      '0.1': 61.96
+      '0.2': 62.5
+      '0.3': 63.040000000000006
+      '0.4': 63.580000000000005
+      '0.5': 64.12
+      '0.6': 65.302
+      '0.7': 66.48400000000001
+      '0.8': 67.666
+      '0.9': 68.848
+      '0.95': 69.43900000000001
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 289920
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 5cf1ca56f03c1ef13cd17d72a793cf67
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5cf1ca56f03c1ef13cd17d72a793cf67
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:35.248988'
+  as_of: '2025-03-17T00:00:00'
+  forecast_date: '2025-03-24T00:00:00'
+  payload:
+    point_forecast: 68.12
+    quantiles:
+      '0.05': 66.65299999999999
+      '0.1': 66.816
+      '0.2': 67.142
+      '0.3': 67.468
+      '0.4': 67.794
+      '0.5': 68.12
+      '0.6': 68.166
+      '0.7': 68.212
+      '0.8': 68.258
+      '0.9': 68.304
+      '0.95': 68.327
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 290190
+    output_tokens: 460
+    parse_failures: 0
+    langfuse_trace_id: bb632ac5d06f75ff37fc3c745780efef
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/bb632ac5d06f75ff37fc3c745780efef
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:35.248988'
+  as_of: '2025-03-17T00:00:00'
+  forecast_date: '2025-03-31T00:00:00'
+  payload:
+    point_forecast: 68.62
+    quantiles:
+      '0.05': 66.154
+      '0.1': 66.428
+      '0.2': 66.976
+      '0.3': 67.524
+      '0.4': 68.072
+      '0.5': 68.62
+      '0.6': 68.702
+      '0.7': 68.784
+      '0.8': 68.866
+      '0.9': 68.94800000000001
+      '0.95': 68.989
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 290190
+    output_tokens: 460
+    parse_failures: 0
+    langfuse_trace_id: bb632ac5d06f75ff37fc3c745780efef
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/bb632ac5d06f75ff37fc3c745780efef
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:35.248988'
+  as_of: '2025-03-17T00:00:00'
+  forecast_date: '2025-04-15T00:00:00'
+  payload:
+    point_forecast: 69.92
+    quantiles:
+      '0.05': 65.24900000000001
+      '0.1': 65.768
+      '0.2': 66.806
+      '0.3': 67.84400000000001
+      '0.4': 68.882
+      '0.5': 69.92
+      '0.6': 70.146
+      '0.7': 70.372
+      '0.8': 70.598
+      '0.9': 70.824
+      '0.95': 70.937
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 290190
+    output_tokens: 460
+    parse_failures: 0
+    langfuse_trace_id: bb632ac5d06f75ff37fc3c745780efef
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/bb632ac5d06f75ff37fc3c745780efef
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:37.191156'
+  as_of: '2025-03-24T00:00:00'
+  forecast_date: '2025-03-31T00:00:00'
+  payload:
+    point_forecast: 68.91
+    quantiles:
+      '0.05': 68.12700000000001
+      '0.1': 68.214
+      '0.2': 68.388
+      '0.3': 68.562
+      '0.4': 68.736
+      '0.5': 68.91
+      '0.6': 68.95
+      '0.7': 68.99
+      '0.8': 69.03
+      '0.9': 69.07
+      '0.95': 69.09
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 290460
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: df7f909f47f2f2a8eda359f4209eb4a9
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/df7f909f47f2f2a8eda359f4209eb4a9
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:37.191156'
+  as_of: '2025-03-24T00:00:00'
+  forecast_date: '2025-04-07T00:00:00'
+  payload:
+    point_forecast: 69.15
+    quantiles:
+      '0.05': 66.81
+      '0.1': 67.07
+      '0.2': 67.59
+      '0.3': 68.11
+      '0.4': 68.63000000000001
+      '0.5': 69.15
+      '0.6': 69.28200000000001
+      '0.7': 69.414
+      '0.8': 69.546
+      '0.9': 69.678
+      '0.95': 69.744
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 290460
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: df7f909f47f2f2a8eda359f4209eb4a9
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/df7f909f47f2f2a8eda359f4209eb4a9
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:37.191156'
+  as_of: '2025-03-24T00:00:00'
+  forecast_date: '2025-04-22T00:00:00'
+  payload:
+    point_forecast: 69.65
+    quantiles:
+      '0.05': 64.673
+      '0.1': 65.226
+      '0.2': 66.33200000000001
+      '0.3': 67.438
+      '0.4': 68.54400000000001
+      '0.5': 69.65
+      '0.6': 69.98400000000001
+      '0.7': 70.318
+      '0.8': 70.652
+      '0.9': 70.98599999999999
+      '0.95': 71.15299999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 290460
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: df7f909f47f2f2a8eda359f4209eb4a9
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/df7f909f47f2f2a8eda359f4209eb4a9
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:39.050972'
+  as_of: '2025-03-31T00:00:00'
+  forecast_date: '2025-04-07T00:00:00'
+  payload:
+    point_forecast: 69.12
+    quantiles:
+      '0.05': 68.787
+      '0.1': 68.824
+      '0.2': 68.898
+      '0.3': 68.97200000000001
+      '0.4': 69.046
+      '0.5': 69.12
+      '0.6': 69.36
+      '0.7': 69.6
+      '0.8': 69.84
+      '0.9': 70.08
+      '0.95': 70.19999999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 290730
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 2c3849ae12a87c3154fb65e345d1275a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/2c3849ae12a87c3154fb65e345d1275a
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:39.050972'
+  as_of: '2025-03-31T00:00:00'
+  forecast_date: '2025-04-14T00:00:00'
+  payload:
+    point_forecast: 68.91
+    quantiles:
+      '0.05': 67.68599999999999
+      '0.1': 67.822
+      '0.2': 68.094
+      '0.3': 68.366
+      '0.4': 68.63799999999999
+      '0.5': 68.91
+      '0.6': 69.338
+      '0.7': 69.76599999999999
+      '0.8': 70.194
+      '0.9': 70.622
+      '0.95': 70.836
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 290730
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 2c3849ae12a87c3154fb65e345d1275a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/2c3849ae12a87c3154fb65e345d1275a
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:39.050972'
+  as_of: '2025-03-31T00:00:00'
+  forecast_date: '2025-04-29T00:00:00'
+  payload:
+    point_forecast: 68.88
+    quantiles:
+      '0.05': 65.43299999999999
+      '0.1': 65.816
+      '0.2': 66.582
+      '0.3': 67.348
+      '0.4': 68.11399999999999
+      '0.5': 68.88
+      '0.6': 69.604
+      '0.7': 70.328
+      '0.8': 71.05199999999999
+      '0.9': 71.776
+      '0.95': 72.138
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 290730
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 2c3849ae12a87c3154fb65e345d1275a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/2c3849ae12a87c3154fb65e345d1275a
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:44.545783'
+  as_of: '2025-04-07T00:00:00'
+  forecast_date: '2025-04-14T00:00:00'
+  payload:
+    point_forecast: 60.71
+    quantiles:
+      '0.05': 60.242
+      '0.1': 60.294
+      '0.2': 60.397999999999996
+      '0.3': 60.502
+      '0.4': 60.606
+      '0.5': 60.71
+      '0.6': 61.392
+      '0.7': 62.074000000000005
+      '0.8': 62.756
+      '0.9': 63.438
+      '0.95': 63.779
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291000
+    output_tokens: 513
+    parse_failures: 0
+    langfuse_trace_id: 0ef734ca1b5a4567f4a4191c98797612
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/0ef734ca1b5a4567f4a4191c98797612
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:44.545783'
+  as_of: '2025-04-07T00:00:00'
+  forecast_date: '2025-04-21T00:00:00'
+  payload:
+    point_forecast: 59.72
+    quantiles:
+      '0.05': 58.559
+      '0.1': 58.688
+      '0.2': 58.946
+      '0.3': 59.204
+      '0.4': 59.461999999999996
+      '0.5': 59.72
+      '0.6': 60.751999999999995
+      '0.7': 61.784
+      '0.8': 62.815999999999995
+      '0.9': 63.848
+      '0.95': 64.36399999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291000
+    output_tokens: 513
+    parse_failures: 0
+    langfuse_trace_id: 0ef734ca1b5a4567f4a4191c98797612
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/0ef734ca1b5a4567f4a4191c98797612
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:44.545783'
+  as_of: '2025-04-07T00:00:00'
+  forecast_date: '2025-05-06T00:00:00'
+  payload:
+    point_forecast: 57.65
+    quantiles:
+      '0.05': 55.004
+      '0.1': 55.298
+      '0.2': 55.886
+      '0.3': 56.474
+      '0.4': 57.062
+      '0.5': 57.65
+      '0.6': 59.461999999999996
+      '0.7': 61.273999999999994
+      '0.8': 63.086
+      '0.9': 64.898
+      '0.95': 65.80399999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291000
+    output_tokens: 513
+    parse_failures: 0
+    langfuse_trace_id: 0ef734ca1b5a4567f4a4191c98797612
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/0ef734ca1b5a4567f4a4191c98797612
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:46.515070'
+  as_of: '2025-04-14T00:00:00'
+  forecast_date: '2025-04-21T00:00:00'
+  payload:
+    point_forecast: 61.22
+    quantiles:
+      '0.05': 60.824
+      '0.1': 60.868
+      '0.2': 60.956
+      '0.3': 61.044
+      '0.4': 61.132
+      '0.5': 61.22
+      '0.6': 61.36
+      '0.7': 61.5
+      '0.8': 61.64
+      '0.9': 61.78
+      '0.95': 61.85
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291270
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 17b8713ee877240b1c30065991153dc7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/17b8713ee877240b1c30065991153dc7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:46.515070'
+  as_of: '2025-04-14T00:00:00'
+  forecast_date: '2025-04-28T00:00:00'
+  payload:
+    point_forecast: 61.44
+    quantiles:
+      '0.05': 60.738
+      '0.1': 60.815999999999995
+      '0.2': 60.971999999999994
+      '0.3': 61.128
+      '0.4': 61.284
+      '0.5': 61.44
+      '0.6': 61.48
+      '0.7': 61.519999999999996
+      '0.8': 61.56
+      '0.9': 61.6
+      '0.95': 61.62
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291270
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 17b8713ee877240b1c30065991153dc7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/17b8713ee877240b1c30065991153dc7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:46.515070'
+  as_of: '2025-04-14T00:00:00'
+  forecast_date: '2025-05-13T00:00:00'
+  payload:
+    point_forecast: 61.01
+    quantiles:
+      '0.05': 59.372
+      '0.1': 59.553999999999995
+      '0.2': 59.918
+      '0.3': 60.282
+      '0.4': 60.646
+      '0.5': 61.01
+      '0.6': 61.326
+      '0.7': 61.642
+      '0.8': 61.958
+      '0.9': 62.274
+      '0.95': 62.432
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291270
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 17b8713ee877240b1c30065991153dc7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/17b8713ee877240b1c30065991153dc7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:48.321819'
+  as_of: '2025-04-21T00:00:00'
+  forecast_date: '2025-04-28T00:00:00'
+  payload:
+    point_forecast: 63.76
+    quantiles:
+      '0.05': 63.022
+      '0.1': 63.104
+      '0.2': 63.268
+      '0.3': 63.431999999999995
+      '0.4': 63.596
+      '0.5': 63.76
+      '0.6': 64.054
+      '0.7': 64.348
+      '0.8': 64.642
+      '0.9': 64.936
+      '0.95': 65.083
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291486
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 62a5ad3dd48af227c4375cf94ed358df
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/62a5ad3dd48af227c4375cf94ed358df
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:48.321819'
+  as_of: '2025-04-21T00:00:00'
+  forecast_date: '2025-05-05T00:00:00'
+  payload:
+    point_forecast: 64.67
+    quantiles:
+      '0.05': 62.573
+      '0.1': 62.806000000000004
+      '0.2': 63.272000000000006
+      '0.3': 63.738
+      '0.4': 64.20400000000001
+      '0.5': 64.67
+      '0.6': 65.092
+      '0.7': 65.514
+      '0.8': 65.936
+      '0.9': 66.358
+      '0.95': 66.569
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291486
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 62a5ad3dd48af227c4375cf94ed358df
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/62a5ad3dd48af227c4375cf94ed358df
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:48.321819'
+  as_of: '2025-04-21T00:00:00'
+  forecast_date: '2025-05-20T00:00:00'
+  payload:
+    point_forecast: 66.71
+    quantiles:
+      '0.05': 61.373
+      '0.1': 61.966
+      '0.2': 63.152
+      '0.3': 64.338
+      '0.4': 65.524
+      '0.5': 66.71
+      '0.6': 67.28399999999999
+      '0.7': 67.85799999999999
+      '0.8': 68.432
+      '0.9': 69.006
+      '0.95': 69.29299999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291486
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 62a5ad3dd48af227c4375cf94ed358df
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/62a5ad3dd48af227c4375cf94ed358df
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:50.026989'
+  as_of: '2025-04-28T00:00:00'
+  forecast_date: '2025-05-05T00:00:00'
+  payload:
+    point_forecast: 63.48
+    quantiles:
+      '0.05': 62.427
+      '0.1': 62.544000000000004
+      '0.2': 62.778
+      '0.3': 63.012
+      '0.4': 63.245999999999995
+      '0.5': 63.48
+      '0.6': 63.546
+      '0.7': 63.612
+      '0.8': 63.678
+      '0.9': 63.744
+      '0.95': 63.777
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291756
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 94d798ebdf3fd19432aec199bf762728
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/94d798ebdf3fd19432aec199bf762728
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:50.026989'
+  as_of: '2025-04-28T00:00:00'
+  forecast_date: '2025-05-12T00:00:00'
+  payload:
+    point_forecast: 61.62
+    quantiles:
+      '0.05': 61.377
+      '0.1': 61.404
+      '0.2': 61.458
+      '0.3': 61.512
+      '0.4': 61.565999999999995
+      '0.5': 61.62
+      '0.6': 61.919999999999995
+      '0.7': 62.22
+      '0.8': 62.519999999999996
+      '0.9': 62.82
+      '0.95': 62.97
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291756
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 94d798ebdf3fd19432aec199bf762728
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/94d798ebdf3fd19432aec199bf762728
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:50.026989'
+  as_of: '2025-04-28T00:00:00'
+  forecast_date: '2025-05-27T00:00:00'
+  payload:
+    point_forecast: 60.16
+    quantiles:
+      '0.05': 58.576
+      '0.1': 58.751999999999995
+      '0.2': 59.104
+      '0.3': 59.455999999999996
+      '0.4': 59.808
+      '0.5': 60.16
+      '0.6': 60.663999999999994
+      '0.7': 61.168
+      '0.8': 61.672
+      '0.9': 62.176
+      '0.95': 62.428
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 291756
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 94d798ebdf3fd19432aec199bf762728
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/94d798ebdf3fd19432aec199bf762728
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:53.892522'
+  as_of: '2025-05-05T00:00:00'
+  forecast_date: '2025-05-12T00:00:00'
+  payload:
+    point_forecast: 59.18
+    quantiles:
+      '0.05': 58.946
+      '0.1': 58.972
+      '0.2': 59.024
+      '0.3': 59.076
+      '0.4': 59.128
+      '0.5': 59.18
+      '0.6': 59.334
+      '0.7': 59.488
+      '0.8': 59.642
+      '0.9': 59.796
+      '0.95': 59.873000000000005
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292026
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: fa323844b92965005aa89b966ae10c00
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/fa323844b92965005aa89b966ae10c00
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:53.892522'
+  as_of: '2025-05-05T00:00:00'
+  forecast_date: '2025-05-19T00:00:00'
+  payload:
+    point_forecast: 60.92
+    quantiles:
+      '0.05': 58.985
+      '0.1': 59.2
+      '0.2': 59.63
+      '0.3': 60.06
+      '0.4': 60.49
+      '0.5': 60.92
+      '0.6': 61.044000000000004
+      '0.7': 61.168
+      '0.8': 61.292
+      '0.9': 61.416
+      '0.95': 61.478
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292026
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: fa323844b92965005aa89b966ae10c00
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/fa323844b92965005aa89b966ae10c00
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:53.892522'
+  as_of: '2025-05-05T00:00:00'
+  forecast_date: '2025-06-03T00:00:00'
+  payload:
+    point_forecast: 63.15
+    quantiles:
+      '0.05': 59.091
+      '0.1': 59.542
+      '0.2': 60.444
+      '0.3': 61.346
+      '0.4': 62.248
+      '0.5': 63.15
+      '0.6': 63.45
+      '0.7': 63.75
+      '0.8': 64.05
+      '0.9': 64.35000000000001
+      '0.95': 64.5
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292026
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: fa323844b92965005aa89b966ae10c00
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/fa323844b92965005aa89b966ae10c00
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:55.822289'
+  as_of: '2025-05-12T00:00:00'
+  forecast_date: '2025-05-19T00:00:00'
+  payload:
+    point_forecast: 60.32
+    quantiles:
+      '0.05': 59.969
+      '0.1': 60.008
+      '0.2': 60.086
+      '0.3': 60.164
+      '0.4': 60.242
+      '0.5': 60.32
+      '0.6': 60.476
+      '0.7': 60.632
+      '0.8': 60.788000000000004
+      '0.9': 60.944
+      '0.95': 61.022
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292296
+    output_tokens: 489
+    parse_failures: 0
+    langfuse_trace_id: cd8222cb07fbf59310cde80438836b24
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/cd8222cb07fbf59310cde80438836b24
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:55.822289'
+  as_of: '2025-05-12T00:00:00'
+  forecast_date: '2025-06-10T00:00:00'
+  payload:
+    point_forecast: 61.35
+    quantiles:
+      '0.05': 57.867
+      '0.1': 58.254
+      '0.2': 59.028
+      '0.3': 59.802
+      '0.4': 60.576
+      '0.5': 61.35
+      '0.6': 61.78
+      '0.7': 62.21
+      '0.8': 62.64
+      '0.9': 63.07
+      '0.95': 63.285
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292296
+    output_tokens: 489
+    parse_failures: 0
+    langfuse_trace_id: cd8222cb07fbf59310cde80438836b24
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/cd8222cb07fbf59310cde80438836b24
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:57.919168'
+  as_of: '2025-05-19T00:00:00'
+  forecast_date: '2025-06-02T00:00:00'
+  payload:
+    point_forecast: 66.19
+    quantiles:
+      '0.05': 58.198
+      '0.1': 59.086
+      '0.2': 60.862
+      '0.3': 62.638
+      '0.4': 64.414
+      '0.5': 66.19
+      '0.6': 66.242
+      '0.7': 66.294
+      '0.8': 66.346
+      '0.9': 66.398
+      '0.95': 66.424
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292566
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 12d09c9623536bc9de366ca61230d831
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/12d09c9623536bc9de366ca61230d831
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:57.919168'
+  as_of: '2025-05-19T00:00:00'
+  forecast_date: '2025-06-17T00:00:00'
+  payload:
+    point_forecast: 68.66
+    quantiles:
+      '0.05': 54.755
+      '0.1': 56.3
+      '0.2': 59.39
+      '0.3': 62.48
+      '0.4': 65.57
+      '0.5': 68.66
+      '0.6': 68.966
+      '0.7': 69.27199999999999
+      '0.8': 69.578
+      '0.9': 69.884
+      '0.95': 70.03699999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292566
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 12d09c9623536bc9de366ca61230d831
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/12d09c9623536bc9de366ca61230d831
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:59.808398'
+  as_of: '2025-05-26T00:00:00'
+  forecast_date: '2025-06-02T00:00:00'
+  payload:
+    point_forecast: 61.41
+    quantiles:
+      '0.05': 60.635999999999996
+      '0.1': 60.721999999999994
+      '0.2': 60.894
+      '0.3': 61.065999999999995
+      '0.4': 61.238
+      '0.5': 61.41
+      '0.6': 61.604
+      '0.7': 61.798
+      '0.8': 61.992
+      '0.9': 62.186
+      '0.95': 62.283
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292836
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 3ad3a08058a722553507641a9da9ad2b
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/3ad3a08058a722553507641a9da9ad2b
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:59.808398'
+  as_of: '2025-05-26T00:00:00'
+  forecast_date: '2025-06-09T00:00:00'
+  payload:
+    point_forecast: 60.65
+    quantiles:
+      '0.05': 59.993
+      '0.1': 60.066
+      '0.2': 60.212
+      '0.3': 60.358
+      '0.4': 60.504
+      '0.5': 60.65
+      '0.6': 61.1
+      '0.7': 61.55
+      '0.8': 62.0
+      '0.9': 62.449999999999996
+      '0.95': 62.675
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292836
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 3ad3a08058a722553507641a9da9ad2b
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/3ad3a08058a722553507641a9da9ad2b
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:20:59.808398'
+  as_of: '2025-05-26T00:00:00'
+  forecast_date: '2025-06-24T00:00:00'
+  payload:
+    point_forecast: 58.91
+    quantiles:
+      '0.05': 57.758
+      '0.1': 57.886
+      '0.2': 58.142
+      '0.3': 58.397999999999996
+      '0.4': 58.653999999999996
+      '0.5': 58.91
+      '0.6': 60.092
+      '0.7': 61.273999999999994
+      '0.8': 62.455999999999996
+      '0.9': 63.63799999999999
+      '0.95': 64.229
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 292836
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 3ad3a08058a722553507641a9da9ad2b
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/3ad3a08058a722553507641a9da9ad2b
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:02.006400'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-09T00:00:00'
+  payload:
+    point_forecast: 61.35
+    quantiles:
+      '0.05': 61.26
+      '0.1': 61.27
+      '0.2': 61.29
+      '0.3': 61.31
+      '0.4': 61.33
+      '0.5': 61.35
+      '0.6': 61.416000000000004
+      '0.7': 61.482
+      '0.8': 61.548
+      '0.9': 61.614
+      '0.95': 61.647
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293052
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: d44c0491d8499399114a513eac874601
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/d44c0491d8499399114a513eac874601
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:02.006400'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 61.22
+    quantiles:
+      '0.05': 60.212
+      '0.1': 60.324
+      '0.2': 60.548
+      '0.3': 60.772
+      '0.4': 60.996
+      '0.5': 61.22
+      '0.6': 61.461999999999996
+      '0.7': 61.704
+      '0.8': 61.946
+      '0.9': 62.188
+      '0.95': 62.309
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293052
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: d44c0491d8499399114a513eac874601
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/d44c0491d8499399114a513eac874601
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:02.006400'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-07-01T00:00:00'
+  payload:
+    point_forecast: 62.03
+    quantiles:
+      '0.05': 58.493
+      '0.1': 58.886
+      '0.2': 59.672000000000004
+      '0.3': 60.458
+      '0.4': 61.244
+      '0.5': 62.03
+      '0.6': 62.404
+      '0.7': 62.778
+      '0.8': 63.152
+      '0.9': 63.525999999999996
+      '0.95': 63.713
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293052
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: d44c0491d8499399114a513eac874601
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/d44c0491d8499399114a513eac874601
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:05.065578'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 64.55
+    quantiles:
+      '0.05': 63.803
+      '0.1': 63.885999999999996
+      '0.2': 64.05199999999999
+      '0.3': 64.218
+      '0.4': 64.384
+      '0.5': 64.55
+      '0.6': 64.722
+      '0.7': 64.89399999999999
+      '0.8': 65.066
+      '0.9': 65.238
+      '0.95': 65.324
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293322
+    output_tokens: 455
+    parse_failures: 0
+    langfuse_trace_id: b60236184ad372ae3b31aed54422805c
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/b60236184ad372ae3b31aed54422805c
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:05.065578'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-23T00:00:00'
+  payload:
+    point_forecast: 64.72
+    quantiles:
+      '0.05': 63.253
+      '0.1': 63.416000000000004
+      '0.2': 63.742000000000004
+      '0.3': 64.068
+      '0.4': 64.394
+      '0.5': 64.72
+      '0.6': 65.094
+      '0.7': 65.468
+      '0.8': 65.842
+      '0.9': 66.21600000000001
+      '0.95': 66.403
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293322
+    output_tokens: 455
+    parse_failures: 0
+    langfuse_trace_id: b60236184ad372ae3b31aed54422805c
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/b60236184ad372ae3b31aed54422805c
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:05.065578'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-07-08T00:00:00'
+  payload:
+    point_forecast: 67.45
+    quantiles:
+      '0.05': 62.239
+      '0.1': 62.818
+      '0.2': 63.976
+      '0.3': 65.134
+      '0.4': 66.292
+      '0.5': 67.45
+      '0.6': 67.8
+      '0.7': 68.15
+      '0.8': 68.5
+      '0.9': 68.85000000000001
+      '0.95': 69.025
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293322
+    output_tokens: 455
+    parse_failures: 0
+    langfuse_trace_id: b60236184ad372ae3b31aed54422805c
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/b60236184ad372ae3b31aed54422805c
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:06.888485'
+  as_of: '2025-06-16T00:00:00'
+  forecast_date: '2025-06-23T00:00:00'
+  payload:
+    point_forecast: 74.65
+    quantiles:
+      '0.05': 71.41
+      '0.1': 71.77
+      '0.2': 72.49
+      '0.3': 73.21000000000001
+      '0.4': 73.93
+      '0.5': 74.65
+      '0.6': 74.742
+      '0.7': 74.834
+      '0.8': 74.926
+      '0.9': 75.018
+      '0.95': 75.064
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293592
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: ca1b1003d4c5ff3d19ef2b0291b87d72
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ca1b1003d4c5ff3d19ef2b0291b87d72
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:06.888485'
+  as_of: '2025-06-16T00:00:00'
+  forecast_date: '2025-06-30T00:00:00'
+  payload:
+    point_forecast: 75.82
+    quantiles:
+      '0.05': 70.44699999999999
+      '0.1': 71.044
+      '0.2': 72.238
+      '0.3': 73.43199999999999
+      '0.4': 74.62599999999999
+      '0.5': 75.82
+      '0.6': 76.018
+      '0.7': 76.216
+      '0.8': 76.414
+      '0.9': 76.612
+      '0.95': 76.711
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293592
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: ca1b1003d4c5ff3d19ef2b0291b87d72
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ca1b1003d4c5ff3d19ef2b0291b87d72
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:06.888485'
+  as_of: '2025-06-16T00:00:00'
+  forecast_date: '2025-07-15T00:00:00'
+  payload:
+    point_forecast: 74.88
+    quantiles:
+      '0.05': 67.878
+      '0.1': 68.65599999999999
+      '0.2': 70.21199999999999
+      '0.3': 71.768
+      '0.4': 73.324
+      '0.5': 74.88
+      '0.6': 75.574
+      '0.7': 76.268
+      '0.8': 76.96199999999999
+      '0.9': 77.65599999999999
+      '0.95': 78.003
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293592
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: ca1b1003d4c5ff3d19ef2b0291b87d72
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ca1b1003d4c5ff3d19ef2b0291b87d72
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:09.234918'
+  as_of: '2025-06-23T00:00:00'
+  forecast_date: '2025-06-30T00:00:00'
+  payload:
+    point_forecast: 73.09
+    quantiles:
+      '0.05': 72.964
+      '0.1': 72.97800000000001
+      '0.2': 73.006
+      '0.3': 73.034
+      '0.4': 73.062
+      '0.5': 73.09
+      '0.6': 73.114
+      '0.7': 73.138
+      '0.8': 73.16199999999999
+      '0.9': 73.18599999999999
+      '0.95': 73.198
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293808
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 62110da2eb310b904d4bba3b5c68a776
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/62110da2eb310b904d4bba3b5c68a776
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:09.234918'
+  as_of: '2025-06-23T00:00:00'
+  forecast_date: '2025-07-07T00:00:00'
+  payload:
+    point_forecast: 71.65
+    quantiles:
+      '0.05': 71.569
+      '0.1': 71.578
+      '0.2': 71.596
+      '0.3': 71.614
+      '0.4': 71.632
+      '0.5': 71.65
+      '0.6': 71.742
+      '0.7': 71.834
+      '0.8': 71.926
+      '0.9': 72.018
+      '0.95': 72.064
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293808
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 62110da2eb310b904d4bba3b5c68a776
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/62110da2eb310b904d4bba3b5c68a776
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:09.234918'
+  as_of: '2025-06-23T00:00:00'
+  forecast_date: '2025-07-22T00:00:00'
+  payload:
+    point_forecast: 68.32
+    quantiles:
+      '0.05': 68.077
+      '0.1': 68.104
+      '0.2': 68.158
+      '0.3': 68.21199999999999
+      '0.4': 68.26599999999999
+      '0.5': 68.32
+      '0.6': 68.43199999999999
+      '0.7': 68.544
+      '0.8': 68.65599999999999
+      '0.9': 68.768
+      '0.95': 68.824
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 293808
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 62110da2eb310b904d4bba3b5c68a776
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/62110da2eb310b904d4bba3b5c68a776
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:11.356146'
+  as_of: '2025-06-30T00:00:00'
+  forecast_date: '2025-07-07T00:00:00'
+  payload:
+    point_forecast: 66.47
+    quantiles:
+      '0.05': 65.16499999999999
+      '0.1': 65.31
+      '0.2': 65.6
+      '0.3': 65.89
+      '0.4': 66.17999999999999
+      '0.5': 66.47
+      '0.6': 66.698
+      '0.7': 66.926
+      '0.8': 67.154
+      '0.9': 67.382
+      '0.95': 67.496
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294078
+    output_tokens: 455
+    parse_failures: 0
+    langfuse_trace_id: a60a5a3409cfb33af3c30dad43e2dd7a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/a60a5a3409cfb33af3c30dad43e2dd7a
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:11.356146'
+  as_of: '2025-06-30T00:00:00'
+  forecast_date: '2025-07-14T00:00:00'
+  payload:
+    point_forecast: 67.81
+    quantiles:
+      '0.05': 64.858
+      '0.1': 65.186
+      '0.2': 65.842
+      '0.3': 66.498
+      '0.4': 67.154
+      '0.5': 67.81
+      '0.6': 67.996
+      '0.7': 68.182
+      '0.8': 68.368
+      '0.9': 68.554
+      '0.95': 68.64699999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294078
+    output_tokens: 455
+    parse_failures: 0
+    langfuse_trace_id: a60a5a3409cfb33af3c30dad43e2dd7a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/a60a5a3409cfb33af3c30dad43e2dd7a
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:11.356146'
+  as_of: '2025-06-30T00:00:00'
+  forecast_date: '2025-07-29T00:00:00'
+  payload:
+    point_forecast: 70.3
+    quantiles:
+      '0.05': 63.982
+      '0.1': 64.684
+      '0.2': 66.088
+      '0.3': 67.492
+      '0.4': 68.896
+      '0.5': 70.3
+      '0.6': 70.38799999999999
+      '0.7': 70.476
+      '0.8': 70.564
+      '0.9': 70.652
+      '0.95': 70.696
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294078
+    output_tokens: 455
+    parse_failures: 0
+    langfuse_trace_id: a60a5a3409cfb33af3c30dad43e2dd7a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/a60a5a3409cfb33af3c30dad43e2dd7a
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:13.301714'
+  as_of: '2025-07-07T00:00:00'
+  forecast_date: '2025-07-14T00:00:00'
+  payload:
+    point_forecast: 65.77
+    quantiles:
+      '0.05': 65.005
+      '0.1': 65.09
+      '0.2': 65.26
+      '0.3': 65.42999999999999
+      '0.4': 65.6
+      '0.5': 65.77
+      '0.6': 65.79599999999999
+      '0.7': 65.822
+      '0.8': 65.848
+      '0.9': 65.87400000000001
+      '0.95': 65.887
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294348
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: ef51d33ce66bd82552014b745a8e3e4e
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ef51d33ce66bd82552014b745a8e3e4e
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:13.301714'
+  as_of: '2025-07-07T00:00:00'
+  forecast_date: '2025-07-21T00:00:00'
+  payload:
+    point_forecast: 64.22
+    quantiles:
+      '0.05': 64.15700000000001
+      '0.1': 64.164
+      '0.2': 64.178
+      '0.3': 64.19200000000001
+      '0.4': 64.206
+      '0.5': 64.22
+      '0.6': 64.7
+      '0.7': 65.18
+      '0.8': 65.66
+      '0.9': 66.14
+      '0.95': 66.38000000000001
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294348
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: ef51d33ce66bd82552014b745a8e3e4e
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ef51d33ce66bd82552014b745a8e3e4e
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:13.301714'
+  as_of: '2025-07-07T00:00:00'
+  forecast_date: '2025-08-05T00:00:00'
+  payload:
+    point_forecast: 61.42
+    quantiles:
+      '0.05': 61.33
+      '0.1': 61.34
+      '0.2': 61.36
+      '0.3': 61.38
+      '0.4': 61.4
+      '0.5': 61.42
+      '0.6': 62.398
+      '0.7': 63.376000000000005
+      '0.8': 64.354
+      '0.9': 65.33200000000001
+      '0.95': 65.821
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294348
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: ef51d33ce66bd82552014b745a8e3e4e
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ef51d33ce66bd82552014b745a8e3e4e
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:15.213985'
+  as_of: '2025-07-14T00:00:00'
+  forecast_date: '2025-07-21T00:00:00'
+  payload:
+    point_forecast: 69.95
+    quantiles:
+      '0.05': 68.87
+      '0.1': 68.99
+      '0.2': 69.23
+      '0.3': 69.47
+      '0.4': 69.71000000000001
+      '0.5': 69.95
+      '0.6': 69.964
+      '0.7': 69.978
+      '0.8': 69.992
+      '0.9': 70.006
+      '0.95': 70.01299999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294618
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 879cdf25bce617cb927e9de71ad5ca79
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/879cdf25bce617cb927e9de71ad5ca79
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:15.213985'
+  as_of: '2025-07-14T00:00:00'
+  forecast_date: '2025-07-28T00:00:00'
+  payload:
+    point_forecast: 71.05
+    quantiles:
+      '0.05': 67.765
+      '0.1': 68.13000000000001
+      '0.2': 68.86
+      '0.3': 69.59
+      '0.4': 70.32
+      '0.5': 71.05
+      '0.6': 71.14999999999999
+      '0.7': 71.25
+      '0.8': 71.35
+      '0.9': 71.45
+      '0.95': 71.5
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294618
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 879cdf25bce617cb927e9de71ad5ca79
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/879cdf25bce617cb927e9de71ad5ca79
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:15.213985'
+  as_of: '2025-07-14T00:00:00'
+  forecast_date: '2025-08-12T00:00:00'
+  payload:
+    point_forecast: 73.55
+    quantiles:
+      '0.05': 66.35
+      '0.1': 67.14999999999999
+      '0.2': 68.75
+      '0.3': 70.35
+      '0.4': 71.95
+      '0.5': 73.55
+      '0.6': 73.864
+      '0.7': 74.178
+      '0.8': 74.492
+      '0.9': 74.806
+      '0.95': 74.96300000000001
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294618
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 879cdf25bce617cb927e9de71ad5ca79
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/879cdf25bce617cb927e9de71ad5ca79
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:17.096238'
+  as_of: '2025-07-21T00:00:00'
+  forecast_date: '2025-07-28T00:00:00'
+  payload:
+    point_forecast: 68.21
+    quantiles:
+      '0.05': 65.54599999999999
+      '0.1': 65.842
+      '0.2': 66.434
+      '0.3': 67.026
+      '0.4': 67.618
+      '0.5': 68.21
+      '0.6': 68.27
+      '0.7': 68.33
+      '0.8': 68.39
+      '0.9': 68.45
+      '0.95': 68.48
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294888
+    output_tokens: 489
+    parse_failures: 0
+    langfuse_trace_id: 33711060f8101dba17bee245963620d7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/33711060f8101dba17bee245963620d7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:17.096238'
+  as_of: '2025-07-21T00:00:00'
+  forecast_date: '2025-08-04T00:00:00'
+  payload:
+    point_forecast: 69.05
+    quantiles:
+      '0.05': 66.71000000000001
+      '0.1': 66.97
+      '0.2': 67.49
+      '0.3': 68.01
+      '0.4': 68.53
+      '0.5': 69.05
+      '0.6': 69.192
+      '0.7': 69.334
+      '0.8': 69.476
+      '0.9': 69.61800000000001
+      '0.95': 69.68900000000001
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294888
+    output_tokens: 489
+    parse_failures: 0
+    langfuse_trace_id: 33711060f8101dba17bee245963620d7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/33711060f8101dba17bee245963620d7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:17.096238'
+  as_of: '2025-07-21T00:00:00'
+  forecast_date: '2025-08-19T00:00:00'
+  payload:
+    point_forecast: 70.82
+    quantiles:
+      '0.05': 68.687
+      '0.1': 68.924
+      '0.2': 69.398
+      '0.3': 69.872
+      '0.4': 70.34599999999999
+      '0.5': 70.82
+      '0.6': 70.884
+      '0.7': 70.948
+      '0.8': 71.012
+      '0.9': 71.076
+      '0.95': 71.108
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 294888
+    output_tokens: 489
+    parse_failures: 0
+    langfuse_trace_id: 33711060f8101dba17bee245963620d7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/33711060f8101dba17bee245963620d7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:19.186072'
+  as_of: '2025-07-28T00:00:00'
+  forecast_date: '2025-08-04T00:00:00'
+  payload:
+    point_forecast: 66.02
+    quantiles:
+      '0.05': 65.507
+      '0.1': 65.56400000000001
+      '0.2': 65.678
+      '0.3': 65.792
+      '0.4': 65.90599999999999
+      '0.5': 66.02
+      '0.6': 66.1
+      '0.7': 66.17999999999999
+      '0.8': 66.26
+      '0.9': 66.34
+      '0.95': 66.38
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295158
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 4e1de6ed42f4fa2ae41b1ff596aaf3c5
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/4e1de6ed42f4fa2ae41b1ff596aaf3c5
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:19.186072'
+  as_of: '2025-07-28T00:00:00'
+  forecast_date: '2025-08-11T00:00:00'
+  payload:
+    point_forecast: 66.75
+    quantiles:
+      '0.05': 65.94
+      '0.1': 66.03
+      '0.2': 66.21
+      '0.3': 66.39
+      '0.4': 66.57
+      '0.5': 66.75
+      '0.6': 66.976
+      '0.7': 67.202
+      '0.8': 67.428
+      '0.9': 67.654
+      '0.95': 67.767
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295158
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 4e1de6ed42f4fa2ae41b1ff596aaf3c5
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/4e1de6ed42f4fa2ae41b1ff596aaf3c5
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:19.186072'
+  as_of: '2025-07-28T00:00:00'
+  forecast_date: '2025-08-26T00:00:00'
+  payload:
+    point_forecast: 68.52
+    quantiles:
+      '0.05': 66.792
+      '0.1': 66.984
+      '0.2': 67.368
+      '0.3': 67.752
+      '0.4': 68.136
+      '0.5': 68.52
+      '0.6': 68.806
+      '0.7': 69.092
+      '0.8': 69.378
+      '0.9': 69.664
+      '0.95': 69.807
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295158
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 4e1de6ed42f4fa2ae41b1ff596aaf3c5
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/4e1de6ed42f4fa2ae41b1ff596aaf3c5
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:20.981034'
+  as_of: '2025-08-04T00:00:00'
+  forecast_date: '2025-08-11T00:00:00'
+  payload:
+    point_forecast: 68.85
+    quantiles:
+      '0.05': 68.06700000000001
+      '0.1': 68.154
+      '0.2': 68.328
+      '0.3': 68.502
+      '0.4': 68.676
+      '0.5': 68.85
+      '0.6': 68.942
+      '0.7': 69.03399999999999
+      '0.8': 69.126
+      '0.9': 69.218
+      '0.95': 69.264
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295428
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 1f743d5497a9db21a7c944413a5e94b3
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/1f743d5497a9db21a7c944413a5e94b3
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:20.981034'
+  as_of: '2025-08-04T00:00:00'
+  forecast_date: '2025-08-18T00:00:00'
+  payload:
+    point_forecast: 67.35
+    quantiles:
+      '0.05': 66.936
+      '0.1': 66.982
+      '0.2': 67.074
+      '0.3': 67.166
+      '0.4': 67.258
+      '0.5': 67.35
+      '0.6': 68.112
+      '0.7': 68.874
+      '0.8': 69.636
+      '0.9': 70.398
+      '0.95': 70.779
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295428
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 1f743d5497a9db21a7c944413a5e94b3
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/1f743d5497a9db21a7c944413a5e94b3
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:20.981034'
+  as_of: '2025-08-04T00:00:00'
+  forecast_date: '2025-09-02T00:00:00'
+  payload:
+    point_forecast: 65.65
+    quantiles:
+      '0.05': 63.283
+      '0.1': 63.54600000000001
+      '0.2': 64.072
+      '0.3': 64.598
+      '0.4': 65.12400000000001
+      '0.5': 65.65
+      '0.6': 67.62400000000001
+      '0.7': 69.598
+      '0.8': 71.572
+      '0.9': 73.54599999999999
+      '0.95': 74.533
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295428
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 1f743d5497a9db21a7c944413a5e94b3
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/1f743d5497a9db21a7c944413a5e94b3
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:22.933501'
+  as_of: '2025-08-11T00:00:00'
+  forecast_date: '2025-08-18T00:00:00'
+  payload:
+    point_forecast: 64.97
+    quantiles:
+      '0.05': 64.358
+      '0.1': 64.426
+      '0.2': 64.562
+      '0.3': 64.69800000000001
+      '0.4': 64.834
+      '0.5': 64.97
+      '0.6': 65.09
+      '0.7': 65.21
+      '0.8': 65.33
+      '0.9': 65.44999999999999
+      '0.95': 65.50999999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295698
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 5f3ddf5166c68130ce41f1e09348db2a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5f3ddf5166c68130ce41f1e09348db2a
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:22.933501'
+  as_of: '2025-08-11T00:00:00'
+  forecast_date: '2025-08-25T00:00:00'
+  payload:
+    point_forecast: 66.07
+    quantiles:
+      '0.05': 65.638
+      '0.1': 65.686
+      '0.2': 65.782
+      '0.3': 65.878
+      '0.4': 65.97399999999999
+      '0.5': 66.07
+      '0.6': 66.29799999999999
+      '0.7': 66.526
+      '0.8': 66.75399999999999
+      '0.9': 66.982
+      '0.95': 67.09599999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295698
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 5f3ddf5166c68130ce41f1e09348db2a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5f3ddf5166c68130ce41f1e09348db2a
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:22.933501'
+  as_of: '2025-08-11T00:00:00'
+  forecast_date: '2025-09-09T00:00:00'
+  payload:
+    point_forecast: 68.49
+    quantiles:
+      '0.05': 68.463
+      '0.1': 68.466
+      '0.2': 68.472
+      '0.3': 68.478
+      '0.4': 68.484
+      '0.5': 68.49
+      '0.6': 68.948
+      '0.7': 69.40599999999999
+      '0.8': 69.864
+      '0.9': 70.322
+      '0.95': 70.551
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295698
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: 5f3ddf5166c68130ce41f1e09348db2a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5f3ddf5166c68130ce41f1e09348db2a
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:25.010411'
+  as_of: '2025-08-18T00:00:00'
+  forecast_date: '2025-08-25T00:00:00'
+  payload:
+    point_forecast: 62.54
+    quantiles:
+      '0.05': 62.062999999999995
+      '0.1': 62.116
+      '0.2': 62.222
+      '0.3': 62.327999999999996
+      '0.4': 62.434
+      '0.5': 62.54
+      '0.6': 62.708
+      '0.7': 62.876
+      '0.8': 63.044000000000004
+      '0.9': 63.212
+      '0.95': 63.296
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295968
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: ad1cf52016fc71cf63ed21d72f55a707
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ad1cf52016fc71cf63ed21d72f55a707
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:25.010411'
+  as_of: '2025-08-18T00:00:00'
+  forecast_date: '2025-09-16T00:00:00'
+  payload:
+    point_forecast: 62.14
+    quantiles:
+      '0.05': 61.492000000000004
+      '0.1': 61.564
+      '0.2': 61.708
+      '0.3': 61.852000000000004
+      '0.4': 61.996
+      '0.5': 62.14
+      '0.6': 62.902
+      '0.7': 63.664
+      '0.8': 64.426
+      '0.9': 65.188
+      '0.95': 65.569
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 295968
+    output_tokens: 537
+    parse_failures: 0
+    langfuse_trace_id: ad1cf52016fc71cf63ed21d72f55a707
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ad1cf52016fc71cf63ed21d72f55a707
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:27.174023'
+  as_of: '2025-08-25T00:00:00'
+  forecast_date: '2025-09-08T00:00:00'
+  payload:
+    point_forecast: 63.25
+    quantiles:
+      '0.05': 62.26
+      '0.1': 62.37
+      '0.2': 62.589999999999996
+      '0.3': 62.81
+      '0.4': 63.03
+      '0.5': 63.25
+      '0.6': 63.644
+      '0.7': 64.038
+      '0.8': 64.432
+      '0.9': 64.826
+      '0.95': 65.023
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296238
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: d5a04dc03e57d96c781cdb3c97ae0391
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/d5a04dc03e57d96c781cdb3c97ae0391
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:27.174023'
+  as_of: '2025-08-25T00:00:00'
+  forecast_date: '2025-09-23T00:00:00'
+  payload:
+    point_forecast: 63.3
+    quantiles:
+      '0.05': 60.762
+      '0.1': 61.044
+      '0.2': 61.608
+      '0.3': 62.172
+      '0.4': 62.736
+      '0.5': 63.3
+      '0.6': 64.068
+      '0.7': 64.836
+      '0.8': 65.604
+      '0.9': 66.372
+      '0.95': 66.756
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296238
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: d5a04dc03e57d96c781cdb3c97ae0391
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/d5a04dc03e57d96c781cdb3c97ae0391
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:29.399596'
+  as_of: '2025-09-01T00:00:00'
+  forecast_date: '2025-09-08T00:00:00'
+  payload:
+    point_forecast: 64.21
+    quantiles:
+      '0.05': 62.742999999999995
+      '0.1': 62.906
+      '0.2': 63.232
+      '0.3': 63.55799999999999
+      '0.4': 63.88399999999999
+      '0.5': 64.21
+      '0.6': 64.21199999999999
+      '0.7': 64.214
+      '0.8': 64.216
+      '0.9': 64.218
+      '0.95': 64.219
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296508
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 8495b2bf9059675243d606364b517a8f
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/8495b2bf9059675243d606364b517a8f
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:29.399596'
+  as_of: '2025-09-01T00:00:00'
+  forecast_date: '2025-09-15T00:00:00'
+  payload:
+    point_forecast: 64.35
+    quantiles:
+      '0.05': 63.9
+      '0.1': 63.95
+      '0.2': 64.05
+      '0.3': 64.14999999999999
+      '0.4': 64.25
+      '0.5': 64.35
+      '0.6': 64.52
+      '0.7': 64.69
+      '0.8': 64.86
+      '0.9': 65.03
+      '0.95': 65.115
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296508
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 8495b2bf9059675243d606364b517a8f
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/8495b2bf9059675243d606364b517a8f
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:29.399596'
+  as_of: '2025-09-01T00:00:00'
+  forecast_date: '2025-09-30T00:00:00'
+  payload:
+    point_forecast: 63.3
+    quantiles:
+      '0.05': 62.876999999999995
+      '0.1': 62.924
+      '0.2': 63.018
+      '0.3': 63.111999999999995
+      '0.4': 63.205999999999996
+      '0.5': 63.3
+      '0.6': 63.449999999999996
+      '0.7': 63.599999999999994
+      '0.8': 63.75
+      '0.9': 63.9
+      '0.95': 63.974999999999994
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296508
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 8495b2bf9059675243d606364b517a8f
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/8495b2bf9059675243d606364b517a8f
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:31.608580'
+  as_of: '2025-09-08T00:00:00'
+  forecast_date: '2025-09-15T00:00:00'
+  payload:
+    point_forecast: 61.12
+    quantiles:
+      '0.05': 61.056999999999995
+      '0.1': 61.064
+      '0.2': 61.077999999999996
+      '0.3': 61.092
+      '0.4': 61.105999999999995
+      '0.5': 61.12
+      '0.6': 61.12
+      '0.7': 61.12
+      '0.8': 61.12
+      '0.9': 61.12
+      '0.95': 61.12
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296724
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 97a29141a42b517987415a7d48925c52
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/97a29141a42b517987415a7d48925c52
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:31.608580'
+  as_of: '2025-09-08T00:00:00'
+  forecast_date: '2025-09-22T00:00:00'
+  payload:
+    point_forecast: 60.47
+    quantiles:
+      '0.05': 59.957
+      '0.1': 60.013999999999996
+      '0.2': 60.128
+      '0.3': 60.242
+      '0.4': 60.356
+      '0.5': 60.47
+      '0.6': 60.494
+      '0.7': 60.518
+      '0.8': 60.542
+      '0.9': 60.566
+      '0.95': 60.578
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296724
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 97a29141a42b517987415a7d48925c52
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/97a29141a42b517987415a7d48925c52
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:31.608580'
+  as_of: '2025-09-08T00:00:00'
+  forecast_date: '2025-10-07T00:00:00'
+  payload:
+    point_forecast: 59.16
+    quantiles:
+      '0.05': 57.576
+      '0.1': 57.751999999999995
+      '0.2': 58.104
+      '0.3': 58.455999999999996
+      '0.4': 58.808
+      '0.5': 59.16
+      '0.6': 59.284
+      '0.7': 59.408
+      '0.8': 59.532
+      '0.9': 59.656
+      '0.95': 59.718
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296724
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 97a29141a42b517987415a7d48925c52
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/97a29141a42b517987415a7d48925c52
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:33.786614'
+  as_of: '2025-09-15T00:00:00'
+  forecast_date: '2025-09-22T00:00:00'
+  payload:
+    point_forecast: 62.75
+    quantiles:
+      '0.05': 62.021
+      '0.1': 62.102
+      '0.2': 62.263999999999996
+      '0.3': 62.426
+      '0.4': 62.588
+      '0.5': 62.75
+      '0.6': 62.816
+      '0.7': 62.882
+      '0.8': 62.948
+      '0.9': 63.013999999999996
+      '0.95': 63.047
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296994
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 9440a7cf6af85ed4b7960d8783898bc5
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/9440a7cf6af85ed4b7960d8783898bc5
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:33.786614'
+  as_of: '2025-09-15T00:00:00'
+  forecast_date: '2025-09-29T00:00:00'
+  payload:
+    point_forecast: 62.81
+    quantiles:
+      '0.05': 61.658
+      '0.1': 61.786
+      '0.2': 62.042
+      '0.3': 62.298
+      '0.4': 62.554
+      '0.5': 62.81
+      '0.6': 62.872
+      '0.7': 62.934
+      '0.8': 62.996
+      '0.9': 63.058
+      '0.95': 63.089
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296994
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 9440a7cf6af85ed4b7960d8783898bc5
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/9440a7cf6af85ed4b7960d8783898bc5
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:33.786614'
+  as_of: '2025-09-15T00:00:00'
+  forecast_date: '2025-10-14T00:00:00'
+  payload:
+    point_forecast: 62.91
+    quantiles:
+      '0.05': 61.334999999999994
+      '0.1': 61.51
+      '0.2': 61.86
+      '0.3': 62.209999999999994
+      '0.4': 62.559999999999995
+      '0.5': 62.91
+      '0.6': 63.046
+      '0.7': 63.182
+      '0.8': 63.318
+      '0.9': 63.454
+      '0.95': 63.522000000000006
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 296994
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 9440a7cf6af85ed4b7960d8783898bc5
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/9440a7cf6af85ed4b7960d8783898bc5
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:35.658805'
+  as_of: '2025-09-22T00:00:00'
+  forecast_date: '2025-09-29T00:00:00'
+  payload:
+    point_forecast: 63.66
+    quantiles:
+      '0.05': 62.111999999999995
+      '0.1': 62.284
+      '0.2': 62.628
+      '0.3': 62.971999999999994
+      '0.4': 63.315999999999995
+      '0.5': 63.66
+      '0.6': 63.837999999999994
+      '0.7': 64.01599999999999
+      '0.8': 64.194
+      '0.9': 64.372
+      '0.95': 64.461
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 297264
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 7e1b5c7ee21d9a7a9e1dbce583213c2b
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7e1b5c7ee21d9a7a9e1dbce583213c2b
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:35.658805'
+  as_of: '2025-09-22T00:00:00'
+  forecast_date: '2025-10-06T00:00:00'
+  payload:
+    point_forecast: 62.6
+    quantiles:
+      '0.05': 61.528999999999996
+      '0.1': 61.647999999999996
+      '0.2': 61.885999999999996
+      '0.3': 62.124
+      '0.4': 62.362
+      '0.5': 62.6
+      '0.6': 63.014
+      '0.7': 63.428000000000004
+      '0.8': 63.842
+      '0.9': 64.256
+      '0.95': 64.46300000000001
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 297264
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 7e1b5c7ee21d9a7a9e1dbce583213c2b
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7e1b5c7ee21d9a7a9e1dbce583213c2b
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:35.658805'
+  as_of: '2025-09-22T00:00:00'
+  forecast_date: '2025-10-21T00:00:00'
+  payload:
+    point_forecast: 61.0
+    quantiles:
+      '0.05': 60.379000000000005
+      '0.1': 60.448
+      '0.2': 60.586
+      '0.3': 60.724000000000004
+      '0.4': 60.862
+      '0.5': 61.0
+      '0.6': 61.864
+      '0.7': 62.727999999999994
+      '0.8': 63.592
+      '0.9': 64.45599999999999
+      '0.95': 64.88799999999999
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 297264
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 7e1b5c7ee21d9a7a9e1dbce583213c2b
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7e1b5c7ee21d9a7a9e1dbce583213c2b
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:38.032353'
+  as_of: '2025-09-29T00:00:00'
+  forecast_date: '2025-10-06T00:00:00'
+  payload:
+    point_forecast: 64.88
+    quantiles:
+      '0.05': 64.583
+      '0.1': 64.616
+      '0.2': 64.682
+      '0.3': 64.74799999999999
+      '0.4': 64.814
+      '0.5': 64.88
+      '0.6': 64.966
+      '0.7': 65.05199999999999
+      '0.8': 65.138
+      '0.9': 65.224
+      '0.95': 65.267
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 297534
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 84a18522f89590e7d53b6c27898d5f29
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/84a18522f89590e7d53b6c27898d5f29
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:38.032353'
+  as_of: '2025-09-29T00:00:00'
+  forecast_date: '2025-10-13T00:00:00'
+  payload:
+    point_forecast: 65.48
+    quantiles:
+      '0.05': 63.788000000000004
+      '0.1': 63.976
+      '0.2': 64.352
+      '0.3': 64.72800000000001
+      '0.4': 65.104
+      '0.5': 65.48
+      '0.6': 65.60600000000001
+      '0.7': 65.732
+      '0.8': 65.858
+      '0.9': 65.984
+      '0.95': 66.047
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 297534
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 84a18522f89590e7d53b6c27898d5f29
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/84a18522f89590e7d53b6c27898d5f29
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:38.032353'
+  as_of: '2025-09-29T00:00:00'
+  forecast_date: '2025-10-28T00:00:00'
+  payload:
+    point_forecast: 66.07
+    quantiles:
+      '0.05': 62.245
+      '0.1': 62.67
+      '0.2': 63.519999999999996
+      '0.3': 64.36999999999999
+      '0.4': 65.22
+      '0.5': 66.07
+      '0.6': 66.618
+      '0.7': 67.166
+      '0.8': 67.714
+      '0.9': 68.262
+      '0.95': 68.536
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 297534
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 84a18522f89590e7d53b6c27898d5f29
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/84a18522f89590e7d53b6c27898d5f29
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:40.352163'
+  as_of: '2025-10-06T00:00:00'
+  forecast_date: '2025-10-13T00:00:00'
+  payload:
+    point_forecast: 61.76
+    quantiles:
+      '0.05': 61.238
+      '0.1': 61.296
+      '0.2': 61.412
+      '0.3': 61.528
+      '0.4': 61.644
+      '0.5': 61.76
+      '0.6': 61.876
+      '0.7': 61.992
+      '0.8': 62.108000000000004
+      '0.9': 62.224000000000004
+      '0.95': 62.282000000000004
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 297804
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 6ad0a36a4ff17ee29653bbc9f55977da
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/6ad0a36a4ff17ee29653bbc9f55977da
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:40.352163'
+  as_of: '2025-10-06T00:00:00'
+  forecast_date: '2025-10-20T00:00:00'
+  payload:
+    point_forecast: 61.08
+    quantiles:
+      '0.05': 60.909
+      '0.1': 60.928
+      '0.2': 60.966
+      '0.3': 61.004
+      '0.4': 61.042
+      '0.5': 61.08
+      '0.6': 61.36
+      '0.7': 61.64
+      '0.8': 61.919999999999995
+      '0.9': 62.199999999999996
+      '0.95': 62.339999999999996
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 297804
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 6ad0a36a4ff17ee29653bbc9f55977da
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/6ad0a36a4ff17ee29653bbc9f55977da
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:40.352163'
+  as_of: '2025-10-06T00:00:00'
+  forecast_date: '2025-11-04T00:00:00'
+  payload:
+    point_forecast: 59.65
+    quantiles:
+      '0.05': 57.931000000000004
+      '0.1': 58.122
+      '0.2': 58.504
+      '0.3': 58.886
+      '0.4': 59.268
+      '0.5': 59.65
+      '0.6': 60.536
+      '0.7': 61.422
+      '0.8': 62.308
+      '0.9': 63.193999999999996
+      '0.95': 63.637
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 297804
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 6ad0a36a4ff17ee29653bbc9f55977da
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/6ad0a36a4ff17ee29653bbc9f55977da
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:42.127224'
+  as_of: '2025-10-13T00:00:00'
+  forecast_date: '2025-10-20T00:00:00'
+  payload:
+    point_forecast: 59.1
+    quantiles:
+      '0.05': 58.605
+      '0.1': 58.66
+      '0.2': 58.769999999999996
+      '0.3': 58.88
+      '0.4': 58.99
+      '0.5': 59.1
+      '0.6': 59.246
+      '0.7': 59.392
+      '0.8': 59.538
+      '0.9': 59.684
+      '0.95': 59.757
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298074
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 5d7f9fbbacd079703a4a004d443fe676
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5d7f9fbbacd079703a4a004d443fe676
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:42.127224'
+  as_of: '2025-10-13T00:00:00'
+  forecast_date: '2025-10-27T00:00:00'
+  payload:
+    point_forecast: 58.12
+    quantiles:
+      '0.05': 57.418000000000006
+      '0.1': 57.496
+      '0.2': 57.652
+      '0.3': 57.808
+      '0.4': 57.964
+      '0.5': 58.12
+      '0.6': 58.477999999999994
+      '0.7': 58.836
+      '0.8': 59.193999999999996
+      '0.9': 59.552
+      '0.95': 59.730999999999995
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298074
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 5d7f9fbbacd079703a4a004d443fe676
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5d7f9fbbacd079703a4a004d443fe676
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:42.127224'
+  as_of: '2025-10-13T00:00:00'
+  forecast_date: '2025-11-11T00:00:00'
+  payload:
+    point_forecast: 56.05
+    quantiles:
+      '0.05': 55.798
+      '0.1': 55.826
+      '0.2': 55.882
+      '0.3': 55.938
+      '0.4': 55.994
+      '0.5': 56.05
+      '0.6': 56.87
+      '0.7': 57.69
+      '0.8': 58.51
+      '0.9': 59.33
+      '0.95': 59.739999999999995
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298074
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 5d7f9fbbacd079703a4a004d443fe676
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5d7f9fbbacd079703a4a004d443fe676
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:44.049284'
+  as_of: '2025-10-20T00:00:00'
+  forecast_date: '2025-10-27T00:00:00'
+  payload:
+    point_forecast: 57.42
+    quantiles:
+      '0.05': 57.15
+      '0.1': 57.18
+      '0.2': 57.24
+      '0.3': 57.3
+      '0.4': 57.36
+      '0.5': 57.42
+      '0.6': 57.53
+      '0.7': 57.64
+      '0.8': 57.75
+      '0.9': 57.86
+      '0.95': 57.915
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298344
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 5033ae0aefcf6824cacdc20a3ba815b8
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5033ae0aefcf6824cacdc20a3ba815b8
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:44.049284'
+  as_of: '2025-10-20T00:00:00'
+  forecast_date: '2025-11-03T00:00:00'
+  payload:
+    point_forecast: 57.84
+    quantiles:
+      '0.05': 57.273
+      '0.1': 57.336
+      '0.2': 57.462
+      '0.3': 57.588
+      '0.4': 57.714000000000006
+      '0.5': 57.84
+      '0.6': 57.924
+      '0.7': 58.008
+      '0.8': 58.092
+      '0.9': 58.176
+      '0.95': 58.217999999999996
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298344
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 5033ae0aefcf6824cacdc20a3ba815b8
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5033ae0aefcf6824cacdc20a3ba815b8
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:44.049284'
+  as_of: '2025-10-20T00:00:00'
+  forecast_date: '2025-11-18T00:00:00'
+  payload:
+    point_forecast: 57.21
+    quantiles:
+      '0.05': 56.489999999999995
+      '0.1': 56.57
+      '0.2': 56.73
+      '0.3': 56.89
+      '0.4': 57.05
+      '0.5': 57.21
+      '0.6': 57.552
+      '0.7': 57.894
+      '0.8': 58.236000000000004
+      '0.9': 58.578
+      '0.95': 58.749
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298344
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 5033ae0aefcf6824cacdc20a3ba815b8
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5033ae0aefcf6824cacdc20a3ba815b8
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:46.022466'
+  as_of: '2025-10-27T00:00:00'
+  forecast_date: '2025-11-03T00:00:00'
+  payload:
+    point_forecast: 61.05
+    quantiles:
+      '0.05': 60.986999999999995
+      '0.1': 60.994
+      '0.2': 61.007999999999996
+      '0.3': 61.022
+      '0.4': 61.035999999999994
+      '0.5': 61.05
+      '0.6': 61.269999999999996
+      '0.7': 61.489999999999995
+      '0.8': 61.71
+      '0.9': 61.93
+      '0.95': 62.04
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298614
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 9cf23845e5c990970a269a13519610c8
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/9cf23845e5c990970a269a13519610c8
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:46.022466'
+  as_of: '2025-10-27T00:00:00'
+  forecast_date: '2025-11-10T00:00:00'
+  payload:
+    point_forecast: 60.88
+    quantiles:
+      '0.05': 60.277
+      '0.1': 60.344
+      '0.2': 60.478
+      '0.3': 60.612
+      '0.4': 60.746
+      '0.5': 60.88
+      '0.6': 61.28
+      '0.7': 61.68
+      '0.8': 62.080000000000005
+      '0.9': 62.480000000000004
+      '0.95': 62.68
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298614
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 9cf23845e5c990970a269a13519610c8
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/9cf23845e5c990970a269a13519610c8
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:46.022466'
+  as_of: '2025-10-27T00:00:00'
+  forecast_date: '2025-11-25T00:00:00'
+  payload:
+    point_forecast: 59.7
+    quantiles:
+      '0.05': 58.575
+      '0.1': 58.7
+      '0.2': 58.95
+      '0.3': 59.2
+      '0.4': 59.45
+      '0.5': 59.7
+      '0.6': 60.718
+      '0.7': 61.736000000000004
+      '0.8': 62.754000000000005
+      '0.9': 63.772000000000006
+      '0.95': 64.281
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298614
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 9cf23845e5c990970a269a13519610c8
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/9cf23845e5c990970a269a13519610c8
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:48.138885'
+  as_of: '2025-11-03T00:00:00'
+  forecast_date: '2025-11-10T00:00:00'
+  payload:
+    point_forecast: 60.33
+    quantiles:
+      '0.05': 60.195
+      '0.1': 60.21
+      '0.2': 60.24
+      '0.3': 60.269999999999996
+      '0.4': 60.3
+      '0.5': 60.33
+      '0.6': 60.622
+      '0.7': 60.914
+      '0.8': 61.205999999999996
+      '0.9': 61.498
+      '0.95': 61.644
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298884
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 1c59da12675746ca3db54a3cbc5d5459
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/1c59da12675746ca3db54a3cbc5d5459
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:48.138885'
+  as_of: '2025-11-03T00:00:00'
+  forecast_date: '2025-11-17T00:00:00'
+  payload:
+    point_forecast: 59.48
+    quantiles:
+      '0.05': 59.21
+      '0.1': 59.24
+      '0.2': 59.3
+      '0.3': 59.36
+      '0.4': 59.419999999999995
+      '0.5': 59.48
+      '0.6': 60.111999999999995
+      '0.7': 60.744
+      '0.8': 61.376
+      '0.9': 62.008
+      '0.95': 62.324
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298884
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 1c59da12675746ca3db54a3cbc5d5459
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/1c59da12675746ca3db54a3cbc5d5459
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:48.138885'
+  as_of: '2025-11-03T00:00:00'
+  forecast_date: '2025-12-02T00:00:00'
+  payload:
+    point_forecast: 57.61
+    quantiles:
+      '0.05': 57.34
+      '0.1': 57.370000000000005
+      '0.2': 57.43
+      '0.3': 57.49
+      '0.4': 57.55
+      '0.5': 57.61
+      '0.6': 58.99
+      '0.7': 60.370000000000005
+      '0.8': 61.75
+      '0.9': 63.13
+      '0.95': 63.82000000000001
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 298884
+    output_tokens: 484
+    parse_failures: 0
+    langfuse_trace_id: 1c59da12675746ca3db54a3cbc5d5459
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/1c59da12675746ca3db54a3cbc5d5459
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:50.072420'
+  as_of: '2025-11-10T00:00:00'
+  forecast_date: '2025-11-17T00:00:00'
+  payload:
+    point_forecast: 60.67
+    quantiles:
+      '0.05': 59.257000000000005
+      '0.1': 59.414
+      '0.2': 59.728
+      '0.3': 60.042
+      '0.4': 60.356
+      '0.5': 60.67
+      '0.6': 60.706
+      '0.7': 60.742000000000004
+      '0.8': 60.778
+      '0.9': 60.814
+      '0.95': 60.832
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299154
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 5ca8c00285bd7a33003dc37f8f88384e
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5ca8c00285bd7a33003dc37f8f88384e
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:50.072420'
+  as_of: '2025-11-10T00:00:00'
+  forecast_date: '2025-11-24T00:00:00'
+  payload:
+    point_forecast: 61.26
+    quantiles:
+      '0.05': 57.596999999999994
+      '0.1': 58.004
+      '0.2': 58.818
+      '0.3': 59.632
+      '0.4': 60.446
+      '0.5': 61.26
+      '0.6': 61.263999999999996
+      '0.7': 61.268
+      '0.8': 61.272
+      '0.9': 61.276
+      '0.95': 61.278
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299154
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 5ca8c00285bd7a33003dc37f8f88384e
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5ca8c00285bd7a33003dc37f8f88384e
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:50.072420'
+  as_of: '2025-11-10T00:00:00'
+  forecast_date: '2025-12-09T00:00:00'
+  payload:
+    point_forecast: 62.28
+    quantiles:
+      '0.05': 54.783
+      '0.1': 55.616
+      '0.2': 57.282000000000004
+      '0.3': 58.948
+      '0.4': 60.614000000000004
+      '0.5': 62.28
+      '0.6': 62.382
+      '0.7': 62.484
+      '0.8': 62.586
+      '0.9': 62.688
+      '0.95': 62.739
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299154
+    output_tokens: 450
+    parse_failures: 0
+    langfuse_trace_id: 5ca8c00285bd7a33003dc37f8f88384e
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/5ca8c00285bd7a33003dc37f8f88384e
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:51.976347'
+  as_of: '2025-11-17T00:00:00'
+  forecast_date: '2025-11-24T00:00:00'
+  payload:
+    point_forecast: 60.75
+    quantiles:
+      '0.05': 60.714
+      '0.1': 60.718
+      '0.2': 60.726
+      '0.3': 60.734
+      '0.4': 60.742
+      '0.5': 60.75
+      '0.6': 60.782
+      '0.7': 60.814
+      '0.8': 60.846
+      '0.9': 60.878
+      '0.95': 60.894
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299424
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 34038e381f30e880097dcc146b6a48c9
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/34038e381f30e880097dcc146b6a48c9
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:51.976347'
+  as_of: '2025-11-17T00:00:00'
+  forecast_date: '2025-12-01T00:00:00'
+  payload:
+    point_forecast: 61.5
+    quantiles:
+      '0.05': 61.302
+      '0.1': 61.324
+      '0.2': 61.368
+      '0.3': 61.412
+      '0.4': 61.456
+      '0.5': 61.5
+      '0.6': 61.596
+      '0.7': 61.692
+      '0.8': 61.788
+      '0.9': 61.884
+      '0.95': 61.931999999999995
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299424
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 34038e381f30e880097dcc146b6a48c9
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/34038e381f30e880097dcc146b6a48c9
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:51.976347'
+  as_of: '2025-11-17T00:00:00'
+  forecast_date: '2025-12-16T00:00:00'
+  payload:
+    point_forecast: 63.42
+    quantiles:
+      '0.05': 63.141
+      '0.1': 63.172
+      '0.2': 63.234
+      '0.3': 63.296
+      '0.4': 63.358000000000004
+      '0.5': 63.42
+      '0.6': 63.56
+      '0.7': 63.7
+      '0.8': 63.84
+      '0.9': 63.980000000000004
+      '0.95': 64.05
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299424
+    output_tokens: 479
+    parse_failures: 0
+    langfuse_trace_id: 34038e381f30e880097dcc146b6a48c9
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/34038e381f30e880097dcc146b6a48c9
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:54.183820'
+  as_of: '2025-11-24T00:00:00'
+  forecast_date: '2025-12-01T00:00:00'
+  payload:
+    point_forecast: 58.85
+    quantiles:
+      '0.05': 58.337
+      '0.1': 58.394
+      '0.2': 58.508
+      '0.3': 58.622
+      '0.4': 58.736000000000004
+      '0.5': 58.85
+      '0.6': 58.888
+      '0.7': 58.926
+      '0.8': 58.964
+      '0.9': 59.002
+      '0.95': 59.021
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299694
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: fc2c8f94f9e899ac15934616859adb00
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/fc2c8f94f9e899ac15934616859adb00
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:54.183820'
+  as_of: '2025-11-24T00:00:00'
+  forecast_date: '2025-12-08T00:00:00'
+  payload:
+    point_forecast: 57.99
+    quantiles:
+      '0.05': 57.72
+      '0.1': 57.75
+      '0.2': 57.81
+      '0.3': 57.87
+      '0.4': 57.93
+      '0.5': 57.99
+      '0.6': 58.362
+      '0.7': 58.734
+      '0.8': 59.106
+      '0.9': 59.478
+      '0.95': 59.664
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299694
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: fc2c8f94f9e899ac15934616859adb00
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/fc2c8f94f9e899ac15934616859adb00
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:54.183820'
+  as_of: '2025-11-24T00:00:00'
+  forecast_date: '2025-12-23T00:00:00'
+  payload:
+    point_forecast: 59.82
+    quantiles:
+      '0.05': 56.489999999999995
+      '0.1': 56.86
+      '0.2': 57.6
+      '0.3': 58.339999999999996
+      '0.4': 59.08
+      '0.5': 59.82
+      '0.6': 60.118
+      '0.7': 60.416000000000004
+      '0.8': 60.714
+      '0.9': 61.012
+      '0.95': 61.161
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299694
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: fc2c8f94f9e899ac15934616859adb00
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/fc2c8f94f9e899ac15934616859adb00
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:56.141212'
+  as_of: '2025-12-01T00:00:00'
+  forecast_date: '2025-12-08T00:00:00'
+  payload:
+    point_forecast: 59.45
+    quantiles:
+      '0.05': 59.288000000000004
+      '0.1': 59.306000000000004
+      '0.2': 59.342000000000006
+      '0.3': 59.378
+      '0.4': 59.414
+      '0.5': 59.45
+      '0.6': 59.462
+      '0.7': 59.474000000000004
+      '0.8': 59.486
+      '0.9': 59.498
+      '0.95': 59.504
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299910
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: ac33d98de0cc850ed86c5a963adc5c3d
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ac33d98de0cc850ed86c5a963adc5c3d
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:56.141212'
+  as_of: '2025-12-01T00:00:00'
+  forecast_date: '2025-12-15T00:00:00'
+  payload:
+    point_forecast: 60.14
+    quantiles:
+      '0.05': 59.519000000000005
+      '0.1': 59.588
+      '0.2': 59.726
+      '0.3': 59.864000000000004
+      '0.4': 60.002
+      '0.5': 60.14
+      '0.6': 60.166000000000004
+      '0.7': 60.192
+      '0.8': 60.218
+      '0.9': 60.244
+      '0.95': 60.257000000000005
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299910
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: ac33d98de0cc850ed86c5a963adc5c3d
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ac33d98de0cc850ed86c5a963adc5c3d
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:56.141212'
+  as_of: '2025-12-01T00:00:00'
+  forecast_date: '2025-12-30T00:00:00'
+  payload:
+    point_forecast: 61.69
+    quantiles:
+      '0.05': 61.663
+      '0.1': 61.666
+      '0.2': 61.672
+      '0.3': 61.678
+      '0.4': 61.684
+      '0.5': 61.69
+      '0.6': 61.762
+      '0.7': 61.833999999999996
+      '0.8': 61.906
+      '0.9': 61.977999999999994
+      '0.95': 62.013999999999996
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 299910
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: ac33d98de0cc850ed86c5a963adc5c3d
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/ac33d98de0cc850ed86c5a963adc5c3d
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:58.289121'
+  as_of: '2025-12-08T00:00:00'
+  forecast_date: '2025-12-15T00:00:00'
+  payload:
+    point_forecast: 61.05
+    quantiles:
+      '0.05': 59.511
+      '0.1': 59.682
+      '0.2': 60.024
+      '0.3': 60.366
+      '0.4': 60.708
+      '0.5': 61.05
+      '0.6': 61.242
+      '0.7': 61.434
+      '0.8': 61.626
+      '0.9': 61.818
+      '0.95': 61.913999999999994
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 300180
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 7f0f14779c6d371f51dbcd57c71f83a7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7f0f14779c6d371f51dbcd57c71f83a7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:58.289121'
+  as_of: '2025-12-08T00:00:00'
+  forecast_date: '2025-12-22T00:00:00'
+  payload:
+    point_forecast: 61.34
+    quantiles:
+      '0.05': 59.009
+      '0.1': 59.268
+      '0.2': 59.786
+      '0.3': 60.304
+      '0.4': 60.822
+      '0.5': 61.34
+      '0.6': 61.442
+      '0.7': 61.544000000000004
+      '0.8': 61.646
+      '0.9': 61.748000000000005
+      '0.95': 61.799
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 300180
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 7f0f14779c6d371f51dbcd57c71f83a7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7f0f14779c6d371f51dbcd57c71f83a7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:21:58.289121'
+  as_of: '2025-12-08T00:00:00'
+  forecast_date: '2026-01-06T00:00:00'
+  payload:
+    point_forecast: 63.5
+    quantiles:
+      '0.05': 58.433
+      '0.1': 58.995999999999995
+      '0.2': 60.122
+      '0.3': 61.248
+      '0.4': 62.374
+      '0.5': 63.5
+      '0.6': 63.79
+      '0.7': 64.08
+      '0.8': 64.37
+      '0.9': 64.66
+      '0.95': 64.805
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 300180
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 7f0f14779c6d371f51dbcd57c71f83a7
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7f0f14779c6d371f51dbcd57c71f83a7
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:22:00.153894'
+  as_of: '2025-12-15T00:00:00'
+  forecast_date: '2025-12-22T00:00:00'
+  payload:
+    point_forecast: 57.06
+    quantiles:
+      '0.05': 56.898
+      '0.1': 56.916000000000004
+      '0.2': 56.952000000000005
+      '0.3': 56.988
+      '0.4': 57.024
+      '0.5': 57.06
+      '0.6': 57.286
+      '0.7': 57.512
+      '0.8': 57.738
+      '0.9': 57.964
+      '0.95': 58.077
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 300450
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 99117c4664ef279853c7f1ed1d3a2cdc
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/99117c4664ef279853c7f1ed1d3a2cdc
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:22:00.153894'
+  as_of: '2025-12-15T00:00:00'
+  forecast_date: '2025-12-29T00:00:00'
+  payload:
+    point_forecast: 57.32
+    quantiles:
+      '0.05': 56.239999999999995
+      '0.1': 56.36
+      '0.2': 56.6
+      '0.3': 56.839999999999996
+      '0.4': 57.08
+      '0.5': 57.32
+      '0.6': 57.660000000000004
+      '0.7': 58.0
+      '0.8': 58.34
+      '0.9': 58.68
+      '0.95': 58.85
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 300450
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 99117c4664ef279853c7f1ed1d3a2cdc
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/99117c4664ef279853c7f1ed1d3a2cdc
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:22:00.153894'
+  as_of: '2025-12-15T00:00:00'
+  forecast_date: '2026-01-13T00:00:00'
+  payload:
+    point_forecast: 57.01
+    quantiles:
+      '0.05': 55.012
+      '0.1': 55.234
+      '0.2': 55.678
+      '0.3': 56.122
+      '0.4': 56.565999999999995
+      '0.5': 57.01
+      '0.6': 57.774
+      '0.7': 58.538
+      '0.8': 59.302
+      '0.9': 60.065999999999995
+      '0.95': 60.448
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 300450
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 99117c4664ef279853c7f1ed1d3a2cdc
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/99117c4664ef279853c7f1ed1d3a2cdc
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:22:02.137007'
+  as_of: '2025-12-22T00:00:00'
+  forecast_date: '2025-12-29T00:00:00'
+  payload:
+    point_forecast: 57.51
+    quantiles:
+      '0.05': 56.132999999999996
+      '0.1': 56.285999999999994
+      '0.2': 56.592
+      '0.3': 56.897999999999996
+      '0.4': 57.204
+      '0.5': 57.51
+      '0.6': 57.538
+      '0.7': 57.565999999999995
+      '0.8': 57.594
+      '0.9': 57.622
+      '0.95': 57.635999999999996
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 300720
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 1c51d45addf1cb2cdc07135e8796f6e9
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/1c51d45addf1cb2cdc07135e8796f6e9
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:22:02.137007'
+  as_of: '2025-12-22T00:00:00'
+  forecast_date: '2026-01-05T00:00:00'
+  payload:
+    point_forecast: 58.42
+    quantiles:
+      '0.05': 55.171
+      '0.1': 55.532000000000004
+      '0.2': 56.254000000000005
+      '0.3': 56.976
+      '0.4': 57.698
+      '0.5': 58.42
+      '0.6': 58.42
+      '0.7': 58.42
+      '0.8': 58.42
+      '0.9': 58.42
+      '0.95': 58.42
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 300720
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 1c51d45addf1cb2cdc07135e8796f6e9
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/1c51d45addf1cb2cdc07135e8796f6e9
+- predictor_id: llmp_continuous[gemini/gemini-3.1-flash-lite]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T15:22:02.137007'
+  as_of: '2025-12-22T00:00:00'
+  forecast_date: '2026-01-20T00:00:00'
+  payload:
+    point_forecast: 59.85
+    quantiles:
+      '0.05': 53.073
+      '0.1': 53.826
+      '0.2': 55.332
+      '0.3': 56.838
+      '0.4': 58.344
+      '0.5': 59.85
+      '0.6': 60.024
+      '0.7': 60.198
+      '0.8': 60.372
+      '0.9': 60.546
+      '0.95': 60.632999999999996
+  metadata:
+    model: gemini/gemini-3.1-flash-lite
+    n_samples: 3
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 300720
+    output_tokens: 508
+    parse_failures: 0
+    langfuse_trace_id: 1c51d45addf1cb2cdc07135e8796f6e9
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/1c51d45addf1cb2cdc07135e8796f6e9
+scores:
+- 3.8306443229233964
+- 5.354854291427231
+- 3.153555550062954
+- 3.5041408010435515
+- 4.909481169897668
+- 4.362087246981537
+- 3.2319849969532877
+- 0.38136823871706604
+- 0.6909011316220619
+- 2.854999694824218
+- 0.28404950354710334
+- 1.4401218307116792
+- 1.020839923448798
+- 0.6829338842975212
+- 0.19748732587325657
+- 1.6638980798642473
+- 2.3658083914764667
+- 0.9221956005254086
+- 2.093596262025438
+- 2.0890247933884303
+- 3.1112656835130443
+- 0.7822461028296125
+- 3.9786250474157434
+- 0.1801902491041458
+- 1.3537526764672654
+- 3.8919733755568857
+- 1.0362816020871
+- 2.927581869330285
+- 6.422775028449446
+- 2.560937241231115
+- 7.372759567639061
+- 3.0727793009103856
+- 8.366338080035753
+- 6.978199567810559
+- 7.111662988079478
+- 0.4536608241057592
+- 1.5933978594314975
+- 1.2119008403179068
+- 1.5936051368398114
+- 0.5928256833415401
+- 2.1331882515899405
+- 1.4839263827741622
+- 6.711420419488075
+- 2.1398173079057146
+- 5.868213807917823
+- 0.19490103452067814
+- 0.4930080980032941
+- 2.456785886906394
+- 1.6926184614197273
+- 0.565033043979614
+- 2.064122593651133
+- 3.0386645139583877
+- 1.5228097092809756
+- 6.90287237094848
+- 0.763397151978549
+- 3.722083560155445
+- 2.9915151432762506
+- 3.8047364527174263
+- 10.121889205049879
+- 2.956476287085163
+- 6.918781767033351
+- 3.1192913924288135
+- 0.8883148818843617
+- 4.607551582777797
+- 8.18915641444182
+- 5.271251290817887
+- 7.929602695433564
+- 3.722090603915132
+- 2.042405874205025
+- 1.092223445671651
+- 0.48633792744786175
+- 0.771107521246286
+- 1.2297388941236764
+- 1.9370465350190444
+- 1.7626056362183624
+- 2.2316807377082273
+- 2.789298436188501
+- 7.0239109219637745
+- 0.6525789285454853
+- 1.6872635472825743
+- 7.4626874762921265
+- 0.17192620244302206
+- 2.4983232295769287
+- 4.559413223140492
+- 4.551083560155441
+- 4.072109269071214
+- 1.1314879362248187
+- 1.3067621616332015
+- 1.1628399234487972
+- 6.053172485603769
+- 1.9405071839892176
+- 1.091344971207547
+- 0.6865553974750599
+- 0.6099503993515144
+- 1.2382826702023297
+- 0.9079759695510211
+- 0.7920837127433308
+- 2.1863050221845164
+- 2.1688836871690977
+- 2.457487145542114
+- 0.11269427036253872
+- 0.6197776224435851
+- 3.5061727907795524
+- 0.2542065422121153
+- 0.6131248408546138
+- 3.2674961729443774
+- 3.0844641832083677
+- 5.224833032277008
+- 4.308767069162412
+- 2.068676007483615
+- 3.603049129013186
+- 0.6582152505669706
+- 1.4053053273602942
+- 2.4776955881670517
+- 3.2227447171802392
+- 3.6765716212249
+- 3.083131468465505
+- 2.8544727528469616
+- 0.10539676357300799
+- 0.6372468657690646
+- 1.6620322949117892
+- 0.2659410806450954
+- 0.35077684563250605
+- 0.7422313494721722
+- 0.3318265156391247
+- 1.0244379471707925
+- 1.7194214876033058
+- 1.90692546724682
+- 2.1270581564154503
+- 8.077528467856164
+- 0.43828068655975505
+- 0.3962153615399823
+- 0.7257104524974984
+- 0.49670967568642144
+- 3.0300498919526433
+- 3.7593132866473207
+- 3.5688846026964423
+- 2.2436215131775423
+- 4.039238601306252
+- 0.48437052753543025
+- 0.42124050171907296
+- 2.6699188812508092
+- 0.6466216657654335
+- 0.3342892839416002
+- 0.8845124660523465
+mean_crps: 2.5502540078268323
+ran_at: '2026-05-22T15:22:02.240972'
+skipped_origins: 0

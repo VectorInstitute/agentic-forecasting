@@ -1,0 +1,109 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2026-02-02T00:00:00'
+  end: '2026-02-09T00:00:00'
+  stride: 5
+  warmup: 250
+  description: Two-origin smoke evaluation for local and CI testing of the NB04 pipeline.
+    Uses the same tasks, horizons, warmup, and geopolitical period as energy_oil_eval
+    but with only 2 origins to keep cost negligible.
+predictor_id: last_value_naive
+predictions:
+- predictor_id: last_value_naive
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T17:32:21.616757'
+  as_of: '2026-02-02T00:00:00'
+  forecast_date: '2026-02-09T00:00:00'
+  payload:
+    point_forecast: 65.20999908447266
+    quantiles:
+      '0.05': 65.20999908447266
+      '0.1': 65.20999908447266
+      '0.2': 65.20999908447266
+      '0.3': 65.20999908447266
+      '0.4': 65.20999908447266
+      '0.5': 65.20999908447266
+      '0.6': 65.20999908447266
+      '0.7': 65.20999908447266
+      '0.8': 65.20999908447266
+      '0.9': 65.20999908447266
+      '0.95': 65.20999908447266
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T17:32:21.616757'
+  as_of: '2026-02-02T00:00:00'
+  forecast_date: '2026-03-03T00:00:00'
+  payload:
+    point_forecast: 65.20999908447266
+    quantiles:
+      '0.05': 65.20999908447266
+      '0.1': 65.20999908447266
+      '0.2': 65.20999908447266
+      '0.3': 65.20999908447266
+      '0.4': 65.20999908447266
+      '0.5': 65.20999908447266
+      '0.6': 65.20999908447266
+      '0.7': 65.20999908447266
+      '0.8': 65.20999908447266
+      '0.9': 65.20999908447266
+      '0.95': 65.20999908447266
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T17:32:21.633061'
+  as_of: '2026-02-09T00:00:00'
+  forecast_date: '2026-02-23T00:00:00'
+  payload:
+    point_forecast: 63.54999923706055
+    quantiles:
+      '0.05': 63.54999923706055
+      '0.1': 63.54999923706055
+      '0.2': 63.54999923706055
+      '0.3': 63.54999923706055
+      '0.4': 63.54999923706055
+      '0.5': 63.54999923706055
+      '0.6': 63.54999923706055
+      '0.7': 63.54999923706055
+      '0.8': 63.54999923706055
+      '0.9': 63.54999923706055
+      '0.95': 63.54999923706055
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T17:32:21.633061'
+  as_of: '2026-02-09T00:00:00'
+  forecast_date: '2026-03-10T00:00:00'
+  payload:
+    point_forecast: 63.54999923706055
+    quantiles:
+      '0.05': 63.54999923706055
+      '0.1': 63.54999923706055
+      '0.2': 63.54999923706055
+      '0.3': 63.54999923706055
+      '0.4': 63.54999923706055
+      '0.5': 63.54999923706055
+      '0.6': 63.54999923706055
+      '0.7': 63.54999923706055
+      '0.8': 63.54999923706055
+      '0.9': 63.54999923706055
+      '0.95': 63.54999923706055
+  metadata: {}
+scores:
+- 0.8499984741210938
+- 9.349998474121094
+- 2.759998321533203
+- 19.89999771118164
+mean_crps: 8.214998245239258
+ran_at: '2026-05-22T17:32:21.642784'
+skipped_origins: 0

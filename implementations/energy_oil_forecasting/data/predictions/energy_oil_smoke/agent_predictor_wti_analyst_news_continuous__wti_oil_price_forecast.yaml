@@ -1,0 +1,210 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2025-06-02T00:00:00'
+  end: '2025-06-09T00:00:00'
+  stride: 5
+  warmup: 250
+  description: "Two-origin smoke backtest for local and CI testing of the NB04 pipeline.\
+    \ Uses the same tasks, horizons, and warmup as energy_oil_backtest but with only\
+    \ 2 weekly origins so the full notebook can be exercised without burning tokens\
+    \ on 51 \xD7 5 predictor evaluations."
+predictor_id: agent_predictor_wti_analyst_news_continuous
+predictions:
+- predictor_id: agent_predictor_wti_analyst_news_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:26:24.217646'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-09T00:00:00'
+  payload:
+    point_forecast: 60.5
+    quantiles:
+      '0.05': 57.5
+      '0.1': 58.2
+      '0.2': 59.0
+      '0.3': 59.7
+      '0.4': 60.1
+      '0.5': 60.5
+      '0.6': 60.9
+      '0.7': 61.4
+      '0.8': 62.0
+      '0.9': 62.8
+      '0.95': 63.5
+  metadata:
+    agent_rationale: The outlook for June 2025 is fundamentally bearish. Market participants
+      are focused on the supply side, specifically the planned output increases from
+      OPEC+ and robust non-OPEC growth, while demand expectations are dampened by
+      global trade tensions and potential economic slowdown. My forecast centers on
+      a slow, grinding decline, punctuated by technical support near $60-$58, with
+      upside limited by the prevailing bearish macroeconomic narrative and lack of
+      significant supply disruptions.
+    horizon_rationale: Short-term horizon (5 days) reflects technical consolidation
+      following the May price decline. With the market absorbing news of OPEC+ output
+      increases, downward pressure remains, but prices are likely to find near-term
+      support near the psychological $60 level as speculative selling exhausts.
+- predictor_id: agent_predictor_wti_analyst_news_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:26:24.217646'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 59.8
+    quantiles:
+      '0.05': 56.5
+      '0.1': 57.2
+      '0.2': 58.1
+      '0.3': 58.8
+      '0.4': 59.3
+      '0.5': 59.8
+      '0.6': 60.3
+      '0.7': 60.8
+      '0.8': 61.5
+      '0.9': 62.2
+      '0.95': 63.0
+  metadata:
+    agent_rationale: The outlook for June 2025 is fundamentally bearish. Market participants
+      are focused on the supply side, specifically the planned output increases from
+      OPEC+ and robust non-OPEC growth, while demand expectations are dampened by
+      global trade tensions and potential economic slowdown. My forecast centers on
+      a slow, grinding decline, punctuated by technical support near $60-$58, with
+      upside limited by the prevailing bearish macroeconomic narrative and lack of
+      significant supply disruptions.
+    horizon_rationale: The 10-day horizon is expected to reflect continued bearish
+      sentiment driven by macro-economic data and persistent fears of demand destruction
+      due to trade tensions. The gradual implementation of OPEC+ supply increases
+      will likely keep a cap on upside attempts, leading to a moderate grind lower.
+- predictor_id: agent_predictor_wti_analyst_news_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:26:24.217646'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-07-01T00:00:00'
+  payload:
+    point_forecast: 58.5
+    quantiles:
+      '0.05': 55.0
+      '0.1': 55.8
+      '0.2': 56.7
+      '0.3': 57.5
+      '0.4': 58.0
+      '0.5': 58.5
+      '0.6': 59.1
+      '0.7': 59.7
+      '0.8': 60.5
+      '0.9': 61.5
+      '0.95': 62.5
+  metadata:
+    agent_rationale: The outlook for June 2025 is fundamentally bearish. Market participants
+      are focused on the supply side, specifically the planned output increases from
+      OPEC+ and robust non-OPEC growth, while demand expectations are dampened by
+      global trade tensions and potential economic slowdown. My forecast centers on
+      a slow, grinding decline, punctuated by technical support near $60-$58, with
+      upside limited by the prevailing bearish macroeconomic narrative and lack of
+      significant supply disruptions.
+    horizon_rationale: Over the 21-day period, the market will likely fully price
+      in the June supply additions. As non-OPEC production growth and demand-side
+      pessimism dominate, WTI is expected to retest support levels established in
+      early 2025. Upside risks are limited to unexpected geopolitical escalation in
+      the Middle East.
+- predictor_id: agent_predictor_wti_analyst_news_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:27:27.746943'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 64.0
+    quantiles:
+      '0.05': 62.1
+      '0.1': 62.5
+      '0.2': 63.0
+      '0.3': 63.4
+      '0.4': 63.7
+      '0.5': 64.0
+      '0.6': 64.3
+      '0.7': 64.7
+      '0.8': 65.2
+      '0.9': 65.8
+      '0.95': 66.2
+  metadata:
+    agent_rationale: The WTI forecast is driven by a fundamental shift toward an oversupplied
+      market following the OPEC+ June production hike. While short-term technical
+      resistance and potential SPR support provide a price floor around $59-$60, the
+      overall outlook remains bearish as supply increases meet uncertain global demand
+      growth.
+    horizon_rationale: Short-term momentum is slightly positive following the late-week
+      recovery from early June lows. However, the market remains capped by the broader
+      bearish sentiment regarding OPEC+ supply increases.
+- predictor_id: agent_predictor_wti_analyst_news_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:27:27.746943'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-23T00:00:00'
+  payload:
+    point_forecast: 63.2
+    quantiles:
+      '0.05': 60.5
+      '0.1': 61.2
+      '0.2': 61.8
+      '0.3': 62.4
+      '0.4': 62.8
+      '0.5': 63.2
+      '0.6': 63.6
+      '0.7': 64.1
+      '0.8': 64.8
+      '0.9': 65.5
+      '0.95': 66.0
+  metadata:
+    agent_rationale: The WTI forecast is driven by a fundamental shift toward an oversupplied
+      market following the OPEC+ June production hike. While short-term technical
+      resistance and potential SPR support provide a price floor around $59-$60, the
+      overall outlook remains bearish as supply increases meet uncertain global demand
+      growth.
+    horizon_rationale: Over a two-week horizon, the fundamental pressure from increased
+      OPEC+ supply and concerns about demand-side weakness is expected to resume,
+      exerting mild downward pressure on the recent rebound.
+- predictor_id: agent_predictor_wti_analyst_news_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:27:27.746943'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-07-08T00:00:00'
+  payload:
+    point_forecast: 61.5
+    quantiles:
+      '0.05': 58.0
+      '0.1': 58.8
+      '0.2': 59.7
+      '0.3': 60.4
+      '0.4': 61.0
+      '0.5': 61.5
+      '0.6': 62.1
+      '0.7': 62.8
+      '0.8': 63.7
+      '0.9': 64.8
+      '0.95': 65.5
+  metadata:
+    agent_rationale: The WTI forecast is driven by a fundamental shift toward an oversupplied
+      market following the OPEC+ June production hike. While short-term technical
+      resistance and potential SPR support provide a price floor around $59-$60, the
+      overall outlook remains bearish as supply increases meet uncertain global demand
+      growth.
+    horizon_rationale: By the end of the month, the accumulation of bearish supply
+      data and the market's digestion of the new OPEC+ production reality likely drag
+      prices back toward the $60-$62 range, consistent with institutional forecasts.
+scores:
+- 3.7627281882546177
+- 10.878261105876325
+- 5.55578207220913
+- 6.969170196785415
+- 4.289340979205677
+- 5.353968773203449
+mean_crps: 6.134875219255768
+ran_at: '2026-05-28T19:27:27.766415'
+skipped_origins: 0

@@ -1,0 +1,89 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2025-06-02T00:00:00'
+  end: '2025-06-09T00:00:00'
+  stride: 5
+  warmup: 250
+  description: "Two-origin smoke backtest for local and CI testing of the NB04 pipeline.\
+    \ Uses the same tasks, horizons, and warmup as energy_oil_backtest but with only\
+    \ 2 weekly origins so the full notebook can be exercised without burning tokens\
+    \ on 51 \xD7 5 predictor evaluations."
+predictor_id: prophet_daily
+predictions:
+- predictor_id: prophet_daily
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T17:30:14.644845'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-12T00:00:00'
+  payload:
+    point_forecast: 83.80723021557417
+    quantiles:
+      '0.05': 71.9273268338316
+      '0.1': 74.55126450049237
+      '0.2': 77.72864743164588
+      '0.3': 80.01976407133495
+      '0.4': 81.97743876302052
+      '0.5': 83.80723021557417
+      '0.6': 85.63702166812782
+      '0.7': 87.59469635981338
+      '0.8': 89.88581299950245
+      '0.9': 93.06319593065597
+      '0.95': 95.68713359731672
+  metadata: {}
+- predictor_id: prophet_daily
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T17:30:14.645104'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-23T00:00:00'
+  payload:
+    point_forecast: 84.41712501307698
+    quantiles:
+      '0.05': 72.81577916689774
+      '0.1': 75.37819128184232
+      '0.2': 78.48107159033955
+      '0.3': 80.71846659742504
+      '0.4': 82.63023813484854
+      '0.5': 84.41712501307698
+      '0.6': 86.20401189130543
+      '0.7': 88.11578342872893
+      '0.8': 90.35317843581443
+      '0.9': 93.45605874431165
+      '0.95': 96.01847085925623
+  metadata: {}
+- predictor_id: prophet_daily
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-22T17:30:15.905524'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-30T00:00:00'
+  payload:
+    point_forecast: 84.06996886930908
+    quantiles:
+      '0.05': 72.50403744847245
+      '0.1': 75.05862750951526
+      '0.2': 78.15203592358841
+      '0.3': 80.38260102839438
+      '0.4': 82.28853666614883
+      '0.5': 84.06996886930908
+      '0.6': 85.85140107246933
+      '0.7': 87.75733671022378
+      '0.8': 89.98790181502974
+      '0.9': 93.0813102291029
+      '0.95': 95.63590029014571
+  metadata: {}
+scores:
+- 11.665944940977168
+- 11.902004591438928
+- 14.967076051833214
+mean_crps: 12.845008528083104
+ran_at: '2026-05-22T17:30:15.913293'
+skipped_origins: 0
