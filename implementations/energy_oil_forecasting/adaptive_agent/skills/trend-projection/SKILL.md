@@ -1,10 +1,10 @@
 ---
 name: trend-projection
 description: >-
-  One-shot code patterns for fitting a linear trend to recent price history and
-  projecting point forecasts with calibrated prediction intervals to standard
-  horizons. Load this skill when you need quantitative price projections. Load
-  references/examples.md for working code. Run vol-regime first to determine trend_window.
+  Code patterns for fitting a linear trend and projecting calibrated forecasts.
+  Always load alongside fetch-yfinance and vol-regime — references/examples.md
+  includes a Full Pipeline Example showing the complete self-contained script
+  from yfinance data fetch through vol regime to final interval output.
 ---
 
 # Linear trend projection
