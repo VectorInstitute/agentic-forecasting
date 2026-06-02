@@ -1,63 +1,59 @@
-An analysis of the 2025 WTI crude oil backtest performance of the `darts_autoarima` model has been conducted, synthesizing the statistical performance metrics with the weekly market context from the same period. 
+Based on a comprehensive review of the 2025 WTI backtest report and the accompanying weekly market context summaries, we have identified systematic forecasting errors in the AutoARIMA statistical baseline. These errors are not random noise; they are directly explained by the structural macro and policy shifts that characterized the global crude market in 2025.
 
-Two highly systematic forecasting patterns have been identified that meet the evidence threshold specified in the `meta-learning` skill. The appropriate strategy mutation tools have been invoked to record these observations and open two formal hypotheses for active tracking.
-
----
-
-# 2025 WTI Backtest Analysis & Market Context Synthesis
-
-## 1. Summary of Statistical Findings
-Over the 51 historical origins in 2025, the AutoARIMA model achieved a Mean CRPS of **2.4721**, which represents a significant improvement over the naive baseline (**2.9299**). However, a closer look at the horizon-specific metrics reveals two major, persistent errors:
-1. **Severe Over-Forecasting Bias:** The model exhibits a positive bias across all horizons, which escalates as the horizon lengthens:
-   * **h=7d:** $+0.44$ bias
-   * **h=14d:** $+0.86$ bias
-   * **h=29d:** $+1.49$ bias
-2. **Extreme Interval Over-Conservatism (Over-Coverage):** The model’s 80% prediction intervals are systematically too wide, leading to actual coverage rates well above the 80% target:
-   * **h=7d:** $91.5\%$ coverage (average width $10.94$, but only $\pm 3.65$ or a total width of $7.30$ was needed)
-   * **h=14d:** $93.6\%$ coverage (average width $15.55$, but only $8.20$ was needed)
-   * **h=29d:** $98.0\%$ coverage (average width $22.31$, but only $10.72$ was needed)
+In accordance with the **meta-learning** strategy governance guidelines, I have recorded pattern-level observations, opened two testable hypotheses, and updated our strategic **Approach Narrative** to establish concrete calibration rules.
 
 ---
 
-## 2. Linking the News Context to the Error Patterns
+### I. Analysis of Systematic Patterns & Market Context Synthesis
 
-By aligning the weekly market summaries with the backtest results, we can explain *why* the pure statistical model failed in these specific ways.
+The 2025 backtest reveals two major systematic failures in the AutoARIMA statistical baseline:
 
-### A. Explaining the Over-Forecasting Bias: The 2025 Structural Bear Market
-The positive bias is not a series of random errors; it is a direct consequence of a **persistent, fundamentally driven downward trend** that characterized WTI throughout 2025. 
-* **The Trend:** WTI began the year in the high $60s$ to low $70s$, peaked briefly near $80.40$ in mid-January, and then embarked on a controlled, grinding slide to end the year in the high $58s$ by late November/December—a total decline of over $20\%$.
-* **The Drivers:** This slide was driven by structural shifts that a backward-looking statistical model could not anticipate:
-  1. **Demand-Side Destruction:** Global demand growth forecasts were repeatedly slashed. The IEA began the year projecting $1.1$ million bpd of growth but ended the year forecasting just $700,000$ bpd due to a combination of US-China tariff escalations (particularly in April, October, and November) and accelerating electric vehicle (EV) adoption in China.
-  2. **Supply-Side Expansion:** Non-OPEC+ supply (particularly the US, which reached a record $13.6$ million bpd) surged. Concurrently, OPEC+ shifted its strategy from supporting prices to defending market share, implementing multiple voluntary cut unwinds of $411,000$ bpd (May, June, July) and $137,000$ bpd (October, November).
-* **Statistical Failure Mode:** AutoARIMA models rely on historical averages and mean-reversion tendencies. When a market enters a structural, fundamentally driven downtrend, the model constantly expects prices to revert upward toward trailing means (e.g., reverting to $70$ when the physical market is heading to $60$). This explains why the bias grows progressively worse at longer horizons ($+1.49$ at 29d) and is highly pronounced in the "medium" volatility regime ($+1.96$ at 29d), where prices were steadily grinding downward without high-volatility spikes.
+#### 1. Severe Over-Conservatism in Prediction Intervals (Overestimation of Uncertainty)
+*   **The Pattern:** 80% prediction interval coverage is excessively high across all horizons: **91.5% at 7d**, **93.6% at 14d**, and **98.0% at 29d**. The actual intervals were **1.5x to 2x wider** than needed to achieve the target 80% coverage.
+*   **The Market Context Explanation:** Throughout 2025, WTI experienced sharp, short-lived volatility spikes (e.g., the North American winter freeze-offs and new sanctions in mid-January that pushed WTI to $80.40, and the Israeli airstrikes on Iranian assets in mid-June). 
+    Because the statistical model is backward-looking, it incorporated these high-volatility events and projected wide, conservative prediction intervals far into the future. However, the physical reality was that these risk premiums **quickly evaporated** (e.g., the US-brokered Israel-Iran ceasefire on June 24 immediately stripped the geopolitical premium, resulting in a 17% drop). The model failed to realize that in a structurally oversupplied market, price spikes are transitory, resulting in overly wide intervals that missed their 80% calibration target.
 
-### B. Explaining the Overly Wide Intervals: Capped Volatility and Market Boundaries
-The massive over-coverage ($98\%$ at 29d) indicates that the model prepared for extreme price swings that never occurred.
-* **The Drivers:** 2025 was characterized by significant geopolitical threats (e.g., Israeli airstrikes on Iranian nuclear facilities in June, Red Sea transit risks, and US/UK sanctions on Russian crude). However, the price impact of these events was consistently **short-lived and capped**:
-  1. **Supply Caps:** High OPEC+ spare capacity (estimated at over $6$ million bpd in the Gulf) acted as a firm ceiling on price spikes. When geopolitical tensions escalated, traders knew OPEC+ could easily fill any gap. 
-  2. **Ceasefire Dynamics:** Geopolitical risk premiums evaporated rapidly (e.g., the June 13 Israeli strikes drove a spike that was completely stripped out by a US-brokered ceasefire on June 24, dropping prices by $17\%$).
-  3. **Demand Floors:** Downward movements were capped by the economic breakeven for US shale producers and OPEC+'s willingness to intervene (such as their November 30 decision to pause planned increases for Q1 2026).
-* **Statistical Failure Mode:** Statistical models calculate prediction intervals based on historical volatility (which included the highly volatile 2022–2024 period). Because 2025 traded in a remarkably range-bound "smile" or "tug-of-war" pattern (mostly bounded between $58$ and $72$), the actual volatility was far lower than historical averages. The model projected a standard, ever-widening uncertainty cone (reaching a massive $22.31$ average width at 29d), whereas the physical market was bounded by strong fundamental floors and ceilings.
-
----
-
-## 3. Strategy Mutation Actions Taken
-
-To ensure these insights directly improve our future forecasts, the following tool calls have been executed in accordance with `meta-learning` guidelines:
-
-1. **Observations Recorded:**
-   * **Observation 1:** Over-coverage of 80% prediction intervals across all horizons ($7$d: $91.5\%$, $14$d: $93.6\%$, $29$d: $98.0\%$), indicating that intervals are consistently too wide.
-   * **Observation 2:** Systematic over-forecasting bias across all horizons, which increases with the horizon length ($+0.44$ at $7$d, $+0.86$ at $14$d, $+1.49$ at $29$d), driven by a persistent downward market trend throughout 2025.
-
-2. **Hypotheses Opened:**
-   * **`hyp-001` (Interval Calibration):** *"The 80% prediction intervals of the statistical forecasting model are systematically too wide across all horizons (7d, 14d, 29d), leading to substantial over-coverage (91.5% to 98.0%) relative to the 80% target."*
-   * **`hyp-002` (Bias Correction):** *"The forecasting model exhibits a systematic over-forecasting bias during persistent downward-trending market regimes, which worsens as the forecast horizon increases."*
+#### 2. Persistent Positive Bias (Over-Forecasting)
+*   **The Pattern:** There is a persistent positive mean bias across all horizons: **+0.44 at 7d**, **+0.86 at 14d**, and **+1.49 at 29d**. 
+    *   At **short-to-medium horizons (7d & 14d)**, the positive bias is highly concentrated in the **elevated volatility regime (+1.68 at 7d, +1.58 at 14d)**.
+    *   At **long horizons (29d)**, the positive bias is most severe in the **medium volatility regime (+1.96)**.
+*   **The Market Context Explanation:** 2025 was a structurally bearish, well-supplied market where WTI fell from $71.00 in early January to $58.52 by late November (a decline of over 17%). This steady downward drift was driven by:
+    1.  **OPEC+ Cut Unwinding:** The cartel added substantial physical barrels to the market, proceeding with 411,000 bpd monthly increases in May, June, and July, followed by 137,000 bpd increases in September, October, and November.
+    2.  **Slowing Demand Growth:** The IEA repeatedly downgraded global demand growth projections from 1.1 million bpd in late 2024 to just 700,000 bpd in late 2025, citing rapid electric vehicle (EV) adoption in China and macro headwinds.
+    3.  **Tariff/Trade Shocks:** Repeated tariff threats (e.g., Trump's threats in late January and new global tariffs in April) created downward demand shocks.
+    
+    A purely statistical model like AutoARIMA assumes historical mean-reversion or flat trends. During a structural bearish shift:
+    *   In **elevated regimes (short-to-medium horizons)**, the model projected that temporary price spikes would persist or mean-revert to a higher average, whereas they actually collapsed rapidly back into the downward trend.
+    *   In **medium regimes (long horizons)**, the quiet, steady downward drift was misclassified by the model as a flat, range-bound trend, causing it to consistently over-forecast the price a month out by nearly $2.00.
 
 ---
 
-## 4. Operational Guidelines for Live Forecasting
+### II. Applied Strategy Mutations
 
-While we accumulate the subsequent resolutions (confirmations) required to formally graduate these hypotheses into automated calibration corrections, we must manually apply these insights to our forecasting pipeline:
+Because these patterns are durable, systematic, and verified across **51 historical origins**, I have called the mutation tools to codify these insights.
 
-1. **Incorporate Macro-Demand and OPEC+ Flows:** When the news context shows a persistent downward trend in demand growth (e.g., Chinese EV adoption, tariff trade wars) and an active unwinding of OPEC+ voluntary cuts, we must expect a negative drift. In these conditions, we should shade our point forecasts downwards relative to the pure statistical output (particularly at the 14-day and 21-day horizons).
-2. **Manually Tighten Prediction Intervals:** In range-bound markets bounded by OPEC+ spare capacity on the upside and shale breakevens on the downside, the statistical model's uncertainty cones will be overly conservative. We should compress our 80% prediction intervals—especially at longer horizons—by approximately $30\%$ to $40\%$ to align with the actual physical boundaries of the market.
+#### 1. Observations Recorded
+I recorded three pattern-level findings via `record_observation`:
+*   *Observation 1:* Statistical baseline 80% prediction intervals are systematically too wide across all horizons (coverage >90%), indicating a severe overestimation of uncertainty.
+*   *Observation 2:* The baseline exhibits a persistent positive bias (over-forecasting) across all horizons, concentrated in elevated regimes at 7d/14d and medium regimes at 29d.
+*   *Observation 3:* The over-forecasting bias coincides with the 2025 structural bearish cycle (OPEC+ unwinding, slowing demand, tariff shocks) which the statistical model failed to anticipate.
+
+#### 2. Open Hypotheses
+I have opened two testable hypotheses via `open_hypothesis` to begin active tracking and calibration corrections on future resolutions:
+*   **`hyp-001` (Uncertainty Calibration):** The statistical baseline (AutoARIMA) overestimates WTI price uncertainty, producing 80% prediction intervals that are systematically too wide across all horizons, leading to coverage rates above 90%.
+*   **`hyp-002` (Directional Bias Calibration):** The statistical baseline (AutoARIMA) exhibits a systematic over-forecasting bias during bearish market cycles, which manifests as severe positive bias in elevated vol regimes at short-to-medium horizons (7d/14d) and medium vol regimes at long horizons (29d).
+
+#### 3. Strategic Approach Narrative Updated
+To translate these findings into immediate, actionable forecasting behavior, I have called `update_approach_narrative` to replace the **## Approach** section of the `wti-strategy` skill. 
+
+The updated strategy establishes **concrete calibration parameters** to adjust the statistical baseline when generating forecasts:
+
+*   **Interval Narrowing Rules:**
+    *   At **short horizons (5-7 bd)**: Systematically narrow the baseline interval width by **~30%** (target half-width of $\pm\$3.65$).
+    *   At **medium horizons (10-14 bd)**: Systematically narrow the baseline interval width by **~45%** (target half-width of $\pm\$4.10$).
+    *   At **long horizons (21-29 bd)**: Systematically narrow the baseline interval width by **~50%** (target half-width of $\pm\$5.36$).
+*   **Directional Adjustments (Bearish Cycle):**
+    *   At **short-to-medium horizons (5-14 bd) in Elevated Vol Regimes**: Apply a downward point-forecast adjustment of **-\$1.50 to -\$1.70** to account for the rapid fading of transitory price spikes.
+    *   At **long horizons (21-29 bd) in Medium Vol Regimes**: Apply a downward point-forecast adjustment of **-\$1.50 to -\$2.00** to account for the steady, un-modeled downward trend driven by structural oversupply.
+
+These changes are now saved on the filesystem and will be automatically applied to future prediction tasks. This completes the curriculum session for the 2025 training period.

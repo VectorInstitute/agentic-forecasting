@@ -53,3 +53,4 @@ implementations/**/data/
 .local-backup/
 
 **/presentations
+data/yfinance/
