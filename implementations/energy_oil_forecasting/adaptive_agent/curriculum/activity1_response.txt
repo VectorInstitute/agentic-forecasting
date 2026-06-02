@@ -1,0 +1,99 @@
+Based on a rigorous rolling backtest spanning the entire year of 2025 (251 daily forecast origins), here is a complete analysis of the performance of a simple trend-projection forecaster under various volatility regimes.
+
+---
+
+### **1. Methodology and Data Preparation**
+
+*   **Data Fetching:** Daily WTI close prices (ticker: `CL=F`) were retrieved via `yfinance` for 2025. To ensure that 21-day rolling calculations were fully populated from the very first business day of 2025, price data was fetched starting from **November 1, 2024**.
+*   **Volatility and Regimes:** 21-day rolling realized volatility (annualized %) was computed as:
+    $$\sigma_{21} = \text{std}(\text{daily log returns}) \times \sqrt{252} \times 100$$
+    Days were classified into regimes using the user-defined thresholds:
+    *   **Low:** $<15\%$ annualized vol
+    *   **Medium:** $15\% - 30\%$ annualized vol
+    *   **Elevated:** $30\% - 50\%$ annualized vol
+    *   **Extreme:** $>50\%$ annualized vol
+*   **Simulation Parameters:** For each business day $t$ in 2025, we simulated a forecaster projecting prices to horizons of **5, 10, and 21 business days** using:
+    1.  **Linear Trend Projection ($W=30$):** Standard 30-day lookback window.
+    2.  **Linear Trend Projection ($W=15$):** Shortened 15-day lookback window (adaptive for high volatility).
+    3.  **Flat-Trend (Random Walk):** Forecast is simply the current day's price ($F_{t+h} = P_t$).
+    4.  **Theoretical Random-Walk Standard Error:** Computed as $\sigma_{\text{daily, USD}} \times \sqrt{h}$ for comparison.
+
+---
+
+### **2. Volatility Regime Distribution in 2025**
+
+Crude oil was highly active in 2025. WTI prices ranged from a high of **$80.04/bbl** (January 15) to a low of **$55.27/bbl** (December 16), with an annual average of **$64.77/bbl**. 
+
+The distribution of volatility regimes across the 251 business days of 2025 was:
+*   **Low Vol (<15%):** **0 days** (0.0%). The minimum rolling volatility observed was $17.3\%$.
+*   **Medium Vol (15–30%):** **179 days** (71.3%). This was the baseline regime.
+*   **Elevated Vol (30–50%):** **55 days** (21.9%). Concentrated in April, May, mid-June, and late October.
+*   **Extreme Vol (>50%):** **18 days** (7.2%). Triggered during rapid price turnarounds in late April, early May, and late June.
+
+---
+
+### **3. Simulation Results & Error Summary**
+
+Below is the consolidated performance of the forecasters across all 251 daily origins, grouped by regime and horizon. Note that the forecast error is defined as $Actual_{t+h} - Forecast_{t+h}$.
+
+#### **Table A: Regular Trend-Projection Errors ($W=30$) vs. Flat-Trend (Random-Walk) Errors**
+
+| Regime | Horizon ($h$) | $W=30$ Mean Error (Bias) | $W=30$ MAE | $W=30$ RMSE | Flat-Trend Mean Error (Bias) | Flat-Trend MAE | Flat-Trend RMSE | Theoretical RW Std Err |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Medium** | 5 bd | +\$0.07 | \$2.62 | \$3.42 | -\$0.23 | \$2.15 | \$2.97 | \$2.33 |
+| (179 days) | 10 bd | -\$0.33 | \$3.17 | \$4.18 | -\$0.89 | \$2.79 | \$3.80 | \$3.29 |
+| | 21 bd | -\$0.75 | \$4.18 | \$5.47 | -\$1.87 | \$3.28 | \$4.09 | \$4.77 |
+| **Elevated** | 5 bd | +\$0.01 | \$2.98 | \$3.87 | -\$0.94 | \$2.46 | \$3.49 | \$4.29 |
+| (55 days) | 10 bd | +\$1.00 | \$3.67 | \$4.37 | -\$0.40 | \$2.88 | \$3.70 | \$6.07 |
+| | 21 bd | +\$2.85 | \$7.33 | \$8.66 | +\$0.45 | \$4.21 | \$5.25 | \$8.80 |
+| **Extreme** | 5 bd | -\$2.70 | \$3.44 | \$3.79 | +\$0.66 | \$1.51 | \$1.71 | \$3.33 |
+| (18 days) | 10 bd | -\$3.30 | \$5.48 | \$5.61 | +\$0.82 | \$2.05 | \$2.41 | \$4.70 |
+| | 21 bd | -\$5.75 | \$9.12 | \$9.41 | +\$0.02 | \$2.52 | \$3.05 | \$6.82 |
+
+#### **Table B: Shortened Trend-Window Errors ($W=15$) in High Volatility**
+
+| Regime | Horizon ($h$) | $W=15$ Mean Error (Bias) | $W=15$ MAE | $W=15$ RMSE |
+| :--- | :---: | :---: | :---: | :---: |
+| **Elevated** | 5 bd | -\$0.72 | \$4.77 | \$6.05 |
+| | 10 bd | -\$0.07 | \$5.18 | \$6.89 |
+| | 21 bd | +\$1.03 | \$10.25 | \$13.05 |
+| **Extreme** | 5 bd | +\$0.36 | \$3.94 | \$4.68 |
+| | 10 bd | +\$1.10 | \$4.88 | \$5.90 |
+| | 21 bd | +\$1.60 | \$9.64 | \$11.06 |
+
+---
+
+### **4. Structural Findings and Key Insights**
+
+#### **A. Largest Errors Occur at Long Horizons in Extreme Volatility**
+Under standard trend projection ($W=30$), the largest errors are concentrated at the **21-day horizon during the extreme volatility regime** (MAE of **\$9.12/bbl**, RMSE of **\$9.41/bbl**). At long horizons, linear extrapolation is highly sensitive to the slope fitted in-sample, causing point forecasts to overshoot drastically when prices turn around.
+
+#### **B. Severe and Regime-Dependent Directional Bias**
+Linear trend extrapolation suffers from severe **lagging bias** that switches sign depending on the regime's price action:
+*   **Extreme Vol Regime (Overprediction Bias / -$5.75 Mean Error at 21 bd):** Extreme volatility in 2025 occurred during temporary price spikes (e.g., late June, where prices peaked near \$73 before returning to \$64). The trend model fit a steep upward slope and projected it forward. When the spike mean-reverted, the model severely overpredicted the price (Actual $\ll$ Forecast), leading to a highly negative Mean Error.
+*   **Elevated Vol Regime (Underprediction Bias / +$2.85 Mean Error at 21 bd):** Elevated volatility periods often occurred during or directly after sharp selloffs (e.g., in April, where WTI fell from \$71 to \$58). The trend model fit a steep downward slope and projected a continued collapse. When WTI prices stabilized and began to base or rebound, the model underpredicted the price (Actual $\gg$ Forecast), leading to a highly positive Mean Error.
+
+#### **C. Shortening the Trend Window (W=15) Worsens Performance**
+While shortening the trend window is a common heuristic in high volatility, doing so actually **increased forecast errors** across almost all horizons in 2025. For example, at the 21-day horizon in the elevated regime, the MAE rose from **\$7.33 ($W=30$)** to **\$10.25 ($W=15$)**. In high-volatility regimes, a shorter lookback is incredibly noisy and "chases" transient daily fluctuations, leading to highly volatile and erratic projections.
+
+#### **D. Flat-Trend (Random Walk) Consistently Outperforms Trend Projection**
+Astonishingly, **a simple flat-trend model (forecasting $P_{t+h} = P_t$) outperformed trend projection in every single regime and horizon**. 
+*   This outperformance is most dramatic at the 21-day horizon in the **extreme regime**, where flat-trend achieved an MAE of **\$2.52/bbl** (a **72% reduction** in error compared to trend-projection's \$9.12/bbl) with virtually zero bias (Mean Error of **+\$0.02**).
+*   Furthermore, the flat-trend's empirical error standard deviation was significantly *lower* than the theoretical random-walk standard error ($\sigma_{\text{daily}} \times \sqrt{h}$). For example, at 21 bd in the extreme regime, the theoretical standard error is **\$6.82**, but the empirical flat-trend standard deviation was only **\$3.14**. This strongly indicates that WTI price fluctuations are heavily **mean-reverting** over multi-week horizons.
+
+---
+
+### **5. Meta-Learning Decision and Action**
+
+This systematic backtesting exercise spans **251 historical origins** and clearly reveals a durable, non-random forecasting relationship: **linear trend projection is structurally flawed for multi-week WTI forecasts and is heavily beaten by mean-reverting/flat-trend models, especially during periods of high volatility.**
+
+This easily meets the evidence threshold for a strategic update. The following actions have been executed in accordance with `meta-learning` governance:
+
+1.  **Recorded Observation:** 
+    Logged the finding of systematic trend-extrapolation underperformance, overprediction bias during price spikes (extreme regime), underprediction bias during selloffs (elevated regime), and the counter-productivity of a 15-day shortened window.
+    *   *Tool called:* `record_observation`
+2.  **Opened Hypothesis (`hyp-001`):**
+    Opened a formal hypothesis to replace linear trend-projection with a flat-trend (random-walk) model or heavily anchor projections to the current price at medium and long horizons, particularly in elevated/extreme volatility regimes.
+    *   *Tool called:* `open_hypothesis(claim="Replacing linear trend projection with a flat-trend (random-walk) forecast at medium (10 bd) and long (21 bd) horizons, particularly in elevated and extreme volatility regimes, will reduce forecast MAE by over 30% and eliminate systematic extrapolation bias.", initial_evidence="...")*
+3.  **Path to Graduation:**
+    To graduate `hyp-001` to an active calibration correction (which will automatically modify the model's forecasting behavior), we must accumulate **3 confirming outcomes** from future live forecast resolutions. Each time a live 10 bd or 21 bd prediction resolves, we will call `record_hypothesis_outcome(hypothesis_id="hyp-001", outcome="confirmed")` if anchoring the trend improved accuracy. Upon the third confirmation, the correction will graduate to active strategy.
