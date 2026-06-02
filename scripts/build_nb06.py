@@ -305,6 +305,7 @@ cells.append(
 
 cells.append(
     code(
+        "from datetime import datetime\n"
         "import plotly.graph_objects as go\n"
         "from plotly.subplots import make_subplots\n"
         "from aieng.forecasting.evaluation.prediction import ContinuousForecast\n"
