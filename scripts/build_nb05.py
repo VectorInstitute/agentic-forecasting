@@ -249,21 +249,27 @@ cells.append(
 cells.append(
     code(
         "# ── Build actuals dict (needed by format_backtest_report) ───────────────────\n"
+        "# get_series returns a DataFrame with 'timestamp' and 'value' columns.\n"
+        "# We use as_of=datetime.now() so all 2025 actuals are available (no cutoff).\n"
+        "from datetime import datetime  # noqa: PLC0415\n"
+        "\n"
         "_best_name = min(backtest_results, key=lambda n: backtest_results[n].mean_crps)\n"
         "_best_result = backtest_results[_best_name]\n"
         "print(f\"Using '{_best_name}' (mean CRPS = {_best_result.mean_crps:.4f}) \"\n"
-        "      'as curriculum basis.\\n')\n"
+        "      'as curriculum basis.')\n"
+        "\n"
+        "_full_series = data_service.get_series(WTI_SERIES_ID, as_of=datetime.now())\n"
         "\n"
         "actuals: dict[tuple[str, int], float] = {}\n"
         "for pred in _best_result.predictions:\n"
         "    horizon = (pred.forecast_date - pred.as_of).days\n"
-        "    series = data_service.get_series(WTI_SERIES_ID, as_of=pred.forecast_date)\n"
         "    target_ts = pd.Timestamp(pred.forecast_date)\n"
-        "    row = series[series.index == target_ts]\n"
-        "    if not row.empty:\n"
-        "        actuals[(str(pred.as_of.date()), horizon)] = float(row.iloc[0])\n"
+        "    match = _full_series[pd.to_datetime(_full_series['timestamp']) == target_ts]\n"
+        "    if not match.empty:\n"
+        "        actuals[(str(pred.as_of.date()), horizon)] = float(match['value'].iloc[0])\n"
         "\n"
-        "print(f'Resolved {len(actuals)} actuals.')"
+        "print(f'Resolved {len(actuals)} actuals for '\n"
+        "      f'{len(_best_result.predictions)} predictions.')"
     )
 )
 
