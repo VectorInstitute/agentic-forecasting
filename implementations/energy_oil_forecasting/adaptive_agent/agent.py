@@ -342,8 +342,12 @@ def build_wti_adaptive_config(
     AgentConfig
     """
     resolved_strategy_dir = strategy_dir or (_SKILLS_ROOT / "wti-strategy")
+    # Include strategy dir name in agent name so cached_multi_backtest writes a
+    # separate cache file per variant (cache key is derived from predictor_id,
+    # which is derived from agent name).
+    agent_name = f"wti_adaptive_analyst_{resolved_strategy_dir.name.replace('-', '_')}"
     return AgentConfig(
-        name="wti_adaptive_analyst",
+        name=agent_name,
         model=model,
         instruction=_ADAPTIVE_ANALYST_INSTRUCTION,
         max_output_tokens=max_output_tokens,
@@ -373,6 +377,7 @@ def build_wti_adaptive_predictor(
     config: AgentConfig | None = None,
     strategy_dir: Path | None = None,
     base_predictor: Predictor | None = None,
+    model: str = "gemini-3-flash-preview",
 ) -> AgentPredictor:
     """Wrap the adaptive agent in an :class:`AgentPredictor` for eval harness use.
 
@@ -412,7 +417,7 @@ def build_wti_adaptive_predictor(
     AgentPredictor
     """
     if config is None:
-        config = build_wti_adaptive_config(strategy_dir=strategy_dir)
+        config = build_wti_adaptive_config(model=model, strategy_dir=strategy_dir)
     prompt_builder = WtiAdaptiveForecastPromptBuilder(
         base_predictor=base_predictor or DartsAutoARIMAPredictor()
     )
