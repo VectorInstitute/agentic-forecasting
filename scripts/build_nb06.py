@@ -309,7 +309,7 @@ cells.append(
         "from plotly.subplots import make_subplots\n"
         "from aieng.forecasting.evaluation.prediction import ContinuousForecast\n"
         "\n"
-        "_full_series = data_service.get_series('wti_crude_oil_price')\n"
+        "_full_series = data_service.get_series('wti_crude_oil_price', as_of=datetime.now())\n"
         "_price_ts = pd.to_datetime(_full_series['timestamp'])\n"
         "_price_vals = _full_series['value'].values\n"
         "\n"
