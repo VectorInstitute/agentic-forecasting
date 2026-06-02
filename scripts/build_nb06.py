@@ -275,21 +275,6 @@ cells.append(
         "print('2026 PROTECTED EVAL — ALL PREDICTORS (sorted by CRPS, lower is better):')\n"
         "print('━' * 72)\n"
         "print(df_scorecard.to_string())\n"
-        "\n"
-        "# Key CRPS reductions (positive = improvement over the baseline on the right)\n"
-        "_crps = {r['Predictor']: r['Mean CRPS'] for r in scorecard_rows}\n"
-        "print('\\nKey CRPS reductions (better → baseline):')\n"
-        "for better, baseline, label in [\n"
-        "    ('Agent — untrained', 'AutoARIMA',\n"
-        "     'LLM layer over AutoARIMA, zero training (untrained vs AutoARIMA)'),\n"
-        "    ('Agent — Act 2b (news)', 'Agent — untrained',\n"
-        "     'news-grounded curriculum training (Act 2b vs untrained)'),\n"
-        "    ('Agent — Act 2b (news)', 'Agent — Act 2a (stats)',\n"
-        "     'news in training curriculum (Act 2b vs Act 2a — both have news at inference)'),\n"
-        "]:\n"
-        "    if better in _crps and baseline in _crps:\n"
-        "        reduction = _crps[baseline] - _crps[better]\n"
-        "        print(f'  {label}: −{reduction:.3f}')"
     )
 )
 
