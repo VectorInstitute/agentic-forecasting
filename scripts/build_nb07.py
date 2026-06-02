@@ -195,13 +195,13 @@ cells.append(
         "# Use the stats-trained variant\n"
         "cp adaptive_agent/skills/wti-strategy-stats/skill_state.yaml \\\n"
         "   adaptive_agent/skills/wti-strategy/skill_state.yaml\n"
-        "uv run python -c \"\n"
+        'uv run python -c "\n'
         "from pathlib import Path\n"
         "from aieng.forecasting.methods.agentic.adaptive_skill import AdaptiveSkillStore\n"
         "from energy_oil_forecasting.adaptive_agent.skill_state import WtiStrategyState\n"
         "store = AdaptiveSkillStore(Path('adaptive_agent/skills/wti-strategy'), WtiStrategyState)\n"
         "store.save(store.load())  # re-render SKILL.md\n"
-        "\"\n"
+        '"\n'
         "```\n"
         "\n"
         "### What to watch for\n"

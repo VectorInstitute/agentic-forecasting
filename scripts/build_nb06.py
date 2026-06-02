@@ -217,14 +217,7 @@ cells.append(
 )
 
 # ── Section 4: Scorecard ───────────────────────────────────────────────────────
-cells.append(
-    md(
-        "---\n"
-        "## 4. Comparative Scorecard\n"
-        "\n"
-        "All predictors on the same 2026 eval origins."
-    )
-)
+cells.append(md("---\n## 4. Comparative Scorecard\n\nAll predictors on the same 2026 eval origins."))
 
 cells.append(
     code(
@@ -278,8 +271,8 @@ cells.append(
         "news_ok  = _checksum_news_after  == _checksum_news_before\n"
         "\n"
         "print('State integrity check:')\n"
-        "print(f'  wti-strategy-stats: {\"✓ unchanged\" if stats_ok else \"⚠ MODIFIED\"}')\n"
-        "print(f'  wti-strategy-news:  {\"✓ unchanged\" if news_ok  else \"⚠ MODIFIED\"}')\n"
+        'print(f\'  wti-strategy-stats: {"✓ unchanged" if stats_ok else "⚠ MODIFIED"}\')\n'
+        'print(f\'  wti-strategy-news:  {"✓ unchanged" if news_ok  else "⚠ MODIFIED"}\')\n'
         "\n"
         "if not (stats_ok and news_ok):\n"
         "    print('\\nWarning: the agent updated its strategy during evaluation.')\n"

@@ -61,7 +61,8 @@ cells.append(
         "\n"
         "import pandas as pd\n"
         "import yaml\n"
-        "from IPython.display import Markdown, display\n"
+        "from IPython.display import Markdown\n"
+        "from IPython.display import display as ipy_display  # noqa: F401\n"
         "\n"
         "from aieng.forecasting.evaluation.backtest import BacktestResult\n"
         "from aieng.forecasting.methods.agentic import (\n"
@@ -276,7 +277,7 @@ cells.append(
         "    training_start=date(2025, 1, 1),\n"
         "    training_end=date(2025, 12, 31),\n"
         ")\n"
-        "display(Markdown(report))"
+        "ipy_display(Markdown(report))"
     )
 )
 
