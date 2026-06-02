@@ -108,14 +108,14 @@ class WtiStrategyState(AdaptiveSkillState):
     observations: list[Observation] = []
     version_history: list[VersionEntry] = []
 
-    def build_markdown(self) -> str:  # noqa: PLR0912
+    def build_markdown(self, skill_name: str | None = None) -> str:  # noqa: PLR0912
         """Render the full ``SKILL.md`` content from current state."""
         lines: list[str] = []
 
-        # Frontmatter
+        # Frontmatter — skill_name must match the containing directory name (ADK requirement)
         lines += [
             "---",
-            "name: wti-strategy",
+            f"name: {skill_name or 'wti-strategy'}",
             "description: >-",
             "  The adaptive WTI analyst's current forecasting strategy. Load this at the",
             "  start of every prediction task. This file is generated — edit the state",

@@ -87,11 +87,18 @@ class AdaptiveSkillState(BaseModel, ABC):
     schema_version: str = "1.0"
 
     @abstractmethod
-    def build_markdown(self) -> str:
+    def build_markdown(self, skill_name: str | None = None) -> str:
         """Render the current state to full ``SKILL.md`` content.
 
         The output must include valid YAML frontmatter (``---`` fences) at the
         top so that ``load_skill_from_dir`` can parse the skill metadata.
+
+        Parameters
+        ----------
+        skill_name : str or None
+            The value to embed in the frontmatter ``name:`` field.  Must match
+            the containing directory name exactly (ADK enforces this).  When
+            ``None``, subclasses should fall back to their default skill name.
 
         Returns
         -------
@@ -221,8 +228,8 @@ class AdaptiveSkillStore(Generic[S]):
             encoding="utf-8",
         )
 
-        # 3. Re-render SKILL.md
-        rendered = _GENERATED_HEADER + state.build_markdown()
+        # 3. Re-render SKILL.md — pass dir name so frontmatter matches ADK requirement
+        rendered = state.build_markdown(skill_name=self._skill_dir.name)
         self.skill_md_path.write_text(rendered, encoding="utf-8")
 
         return f"State saved to {self.state_path.name}. SKILL.md re-rendered. Backup written to {_HISTORY_DIR}/."
