@@ -1,9 +1,28 @@
 # Adaptive Agent Notebook Design
 
-**Status:** Draft — pending Ethan review before construction begins.
+**Status:** Implemented (simplified — see revision note below).
 **Owner:** Ethan
-**Session:** June 1, 2026 design session (Ethan + Claude Sonnet 4.6)
+**Original session:** June 1, 2026 design session (Ethan + Claude Sonnet 4.6)
 **Depends on:** Adaptive skill state implementation (complete as of Jun 1, 2026 — see commit history)
+
+---
+
+## Revision: Simplified to Before/After (June 2, 2026)
+
+The multi-activity experiment originally designed below has been simplified to a clean **before/after comparison** for the bootcamp reference:
+
+| Aspect | Original design | Implemented |
+|---|---|---|
+| Training activities | Act 1 (self-directed) + Act 2a (stats) + Act 2b (news) | **One activity: self-directed exploration only** |
+| Strategy variants | 4 (untrained + 3 trained) | **2 (untrained + trained)** |
+| Strategy dirs | `wti-strategy/`, `wti-strategy-act1/`, `wti-strategy-stats/`, `wti-strategy-news/` | **`wti-strategy/` (untrained) + `wti-strategy-trained/`** |
+| AutoARIMA at inference | Injected into agent prompt | **Removed — agent runs its own tools** |
+| NB05 | Three activities, three strategy variants | **One self-directed study session, `RESEED=False` guard** |
+| NB06 | Four predictors + stateless | **Two agent variants (before/after) + stateless reference** |
+
+The simplified design tells the clearest bootcamp story: one self-directed study session → measurable improvement on held-out 2026 data. Complexity can be added in later cohorts.
+
+The original design thinking below remains intact as a record of the design space. Parenthetical notes `((…))` are Ethan's live annotations from the planning session.
 
 ---
 

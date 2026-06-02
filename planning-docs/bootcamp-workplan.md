@@ -236,15 +236,17 @@ Design and rationale: [`planning-docs/adaptive-agent-notebook-design.md`](adapti
 
 Expands the energy/oil reference from 4 to 7 notebooks to showcase the adaptive agent as a learnable forecasting system:
 
-- **Notebook 05** — Adaptive agent training: curriculum delivery (stats + news variants)
-- **Notebook 06** — Protected eval: frozen agent vs. stateless methods on 2025+ data
+- **Notebook 05** — Adaptive agent training: one self-directed study session on 2025 data
+- **Notebook 06** — Protected eval: before/after comparison (untrained vs trained) on 2026 data
 - **Notebook 07** — Interactive use: live predictions, resolutions, self-review
 
-Iteration 1 (infra) complete: `build_skill_tools()` factory; `strategy_dir` parameterization; `wti-strategy-stats/` and `wti-strategy-news/` variant dirs; `curriculum.py` utilities; `cache_wti_curriculum_news.py` script (2025 dates, aligning with `energy_oil_backtest.yaml`); notebook 02–04 forward-reference updates.
+**Simplified to a clean before/after narrative:** a single self-directed study activity (NB05) produces `wti-strategy-trained/`. NB06 compares untrained vs trained on the 2026 eval spec alongside AutoARIMA and Naive baselines. The multi-variant experiment (Act 1 / Act 2a stats / Act 2b news) has been dropped.
 
-Training/eval split: **2025 training / 2026 eval.** Curriculum reuses NB04's 2025 backtest results directly; eval runs on the existing `energy_oil_eval.yaml` (Feb–Mar 2026) without new specs.
+Iteration 1 (infra) complete: `build_skill_tools()` factory; `strategy_dir` parameterization; `AdaptiveSkillStore`-backed skill state; `curriculum.py` utilities; notebook 02–04 forward-reference updates.
 
-Iteration 2 (notebooks) is a prerequisite for cohort 1 readiness if the adaptive agent is included as a reference. Run `scripts/cache_wti_curriculum_news.py` (defaults to 2025) before Iteration 2 begins.
+Training/eval split: **2025 training / 2026 eval.** Agent uses code execution + yfinance (no pre-packaged curriculum report) to explore 2025 data and update its strategy. Eval runs on `energy_oil_eval.yaml` (Feb–Mar 2026).
+
+Iteration 2 (notebooks) is a prerequisite for cohort 1 readiness if the adaptive agent is included as a reference.
 
 ### I. Memory-augmented agent (Ali + Ethan) — late bootcamp / stretch
 
