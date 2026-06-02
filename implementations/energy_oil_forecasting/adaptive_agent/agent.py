@@ -55,12 +55,14 @@ signatures and evidence governance rules.
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 from aieng.forecasting.data.context import ForecastContext
-from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES
+from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, ContinuousForecast
+from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic import (
     AgentPredictor,
@@ -72,9 +74,12 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     CodeExecutionConfig,
     ContextRetrievalConfig,
 )
+from aieng.forecasting.methods.numerical.darts_arima import DartsAutoARIMAPredictor
 from energy_oil_forecasting.adaptive_agent.skill_tools import build_skill_tools
 from energy_oil_forecasting.analyst_agent import compress_history
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -105,9 +110,19 @@ def _build_adaptive_analyst_instruction() -> str:
         "You receive messages through a single chat interface. Determine from context "
         "what kind of invocation this is and respond accordingly:\n\n"
         "**Prediction request** — contains a JSON payload with `task`, `as_of`, "
-        "`horizons`, and price history. Load `wti-strategy` first to read your current "
-        "approach, then compose the relevant pipeline skills to produce a grounded "
-        "forecast. Conclude with `set_model_response` (schema below).\n\n"
+        "`horizons`, price history, and a **pre-computed AutoARIMA baseline forecast** "
+        "(`arima_baseline`). Load `wti-strategy` first to read your current approach "
+        "and any active calibration corrections. Then:\n"
+        "1. Use `run_code` to classify the current vol regime (load `vol-regime` skill).\n"
+        "2. Use the context-retrieval tool to gather current market news.\n"
+        "3. Apply calibration corrections from `wti-strategy` to the AutoARIMA estimates — "
+        "adjust point forecasts and/or interval widths based on the current regime and "
+        "any active corrections. If no corrections apply, the AutoARIMA baseline is a "
+        "sound starting point.\n"
+        "4. Conclude with `set_model_response` (schema below).\n\n"
+        "You are **calibrating a statistical baseline**, not generating a raw estimate "
+        "from scratch. The `arima_baseline` is the reference your strategy was trained "
+        "against — treat it as your anchor.\n\n"
         "**Resolution** — describes how a past forecast resolved (actual value, error, "
         "horizon). Reflect carefully. If the error points to a systematic pattern — not "
         "a one-off surprise — consult `meta-learning` to assess whether a strategy update "
@@ -169,6 +184,43 @@ def _build_adaptive_analyst_instruction() -> str:
 _ADAPTIVE_ANALYST_INSTRUCTION = _build_adaptive_analyst_instruction()
 
 # ---------------------------------------------------------------------------
+# AutoARIMA baseline helper
+# ---------------------------------------------------------------------------
+
+
+def _run_arima_baseline(
+    task: ForecastingTask,
+    context: ForecastContext,
+    predictor: Predictor,
+) -> list[dict[str, Any]] | None:
+    """Run the base predictor and return a JSON-serialisable list of horizon entries.
+
+    Returns ``None`` if the predictor fails so callers can degrade gracefully.
+    Each entry has keys ``horizon``, ``point``, ``q0.1``, ``q0.9``.
+    """
+    try:
+        preds = predictor.predict(task, context)
+    except Exception as exc:
+        logger.warning("AutoARIMA baseline failed — omitting from prompt: %s", exc)
+        return None
+
+    entries: list[dict[str, Any]] = []
+    for pred in preds:
+        if not isinstance(pred.payload, ContinuousForecast):
+            continue
+        h = (pred.forecast_date - pred.as_of).days
+        entries.append(
+            {
+                "horizon": h,
+                "point": round(pred.payload.point_forecast, 2),
+                "q0.1": round(pred.payload.quantiles.get(0.1, float("nan")), 2),
+                "q0.9": round(pred.payload.quantiles.get(0.9, float("nan")), 2),
+            }
+        )
+    return sorted(entries, key=lambda e: e["horizon"])
+
+
+# ---------------------------------------------------------------------------
 # Context retrieval instruction
 # ---------------------------------------------------------------------------
 
@@ -198,17 +250,23 @@ that occurred after that date.\
 class WtiAdaptiveForecastPromptBuilder(BaseModel):
     """Prompt builder for prediction-request messages to the adaptive agent.
 
-    Produces a structured JSON payload in the same format as the baseline
-    agent, so the adaptive agent can be evaluated with the same
-    :class:`~aieng.forecasting.evaluation.backtest.BacktestSpec` and
-    :class:`~aieng.forecasting.methods.agentic.predictor.AgentPredictor`
-    machinery.
+    Produces a structured JSON payload that includes a pre-computed AutoARIMA
+    baseline forecast alongside the compressed price history. The agent uses
+    the baseline as its statistical anchor and applies calibration corrections
+    from its ``wti-strategy`` skill on top.
+
+    The base predictor defaults to :class:`~aieng.forecasting.methods.numerical.darts_arima.DartsAutoARIMAPredictor`
+    — the same method the agent's training curriculum was built against.  If the
+    predictor fails at any origin (e.g. model fitting error) the ``arima_baseline``
+    key is omitted from the payload and the agent falls back to self-directed estimation.
 
     For resolution, self-review, and user-question invocations, construct
     plain-text messages directly and send them via the ADK runner.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
+
+    base_predictor: Predictor = DartsAutoARIMAPredictor()
 
     def __call__(self, *, task: ForecastingTask, context: ForecastContext) -> str:
         df = context.get_series(task.target_series_id)
@@ -233,6 +291,10 @@ class WtiAdaptiveForecastPromptBuilder(BaseModel):
             },
             "target_history_csv": compressed,
         }
+
+        baseline = _run_arima_baseline(task, context, self.base_predictor)
+        if baseline is not None:
+            payload["arima_baseline"] = baseline
 
         return json.dumps(payload, indent=2)
 
@@ -310,12 +372,23 @@ def build_wti_adaptive_config(
 def build_wti_adaptive_predictor(
     config: AgentConfig | None = None,
     strategy_dir: Path | None = None,
+    base_predictor: Predictor | None = None,
 ) -> AgentPredictor:
     """Wrap the adaptive agent in an :class:`AgentPredictor` for eval harness use.
 
-    This allows the adaptive agent to be evaluated against the same
-    :class:`~aieng.forecasting.evaluation.backtest.BacktestSpec` as the
-    baseline, enabling a direct performance comparison.
+    At each forecast origin the predictor:
+
+    1. Runs ``base_predictor`` (AutoARIMA by default) to obtain a statistical
+       baseline forecast.
+    2. Injects the baseline into the agent's prediction-request payload as
+       ``arima_baseline``.
+    3. The agent applies calibration corrections from its ``wti-strategy`` skill
+       and any market-context signals it retrieves, then returns the adjusted
+       probabilistic forecast.
+
+    This mirrors the training paradigm exactly — the curriculum report the agent
+    studied was derived from AutoARIMA outputs, so its calibration corrections
+    are specific to AutoARIMA's error patterns.
 
     For resolution delivery and self-review invocations — the interactions
     through which the agent actually learns — use the ADK runner directly
@@ -329,6 +402,10 @@ def build_wti_adaptive_predictor(
     strategy_dir : Path or None, optional
         Strategy directory passed to :func:`build_wti_adaptive_config` when
         ``config`` is not provided.  Defaults to ``skills/wti-strategy``.
+    base_predictor : Predictor or None, optional
+        Statistical predictor whose output is injected into the agent's prompt
+        as ``arima_baseline``.  Defaults to
+        :class:`~aieng.forecasting.methods.numerical.darts_arima.DartsAutoARIMAPredictor`.
 
     Returns
     -------
@@ -336,9 +413,12 @@ def build_wti_adaptive_predictor(
     """
     if config is None:
         config = build_wti_adaptive_config(strategy_dir=strategy_dir)
+    prompt_builder = WtiAdaptiveForecastPromptBuilder(
+        base_predictor=base_predictor or DartsAutoARIMAPredictor()
+    )
     return AgentPredictor(
         agent_config=config,
-        prompt_builder=WtiAdaptiveForecastPromptBuilder(),
+        prompt_builder=prompt_builder,
         output_schema=ContinuousAgentForecastOutput,
     )
 
