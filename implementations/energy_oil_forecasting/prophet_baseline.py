@@ -247,7 +247,7 @@ class ProphetPredictor(Predictor):
             interval_width=self._interval_width,
             daily_seasonality=False,
             weekly_seasonality=False,
-            yearly_seasonality=True,
+            yearly_seasonality=False,
             seasonality_mode=self._seasonality_mode,
         )
         model.fit(train_df)
