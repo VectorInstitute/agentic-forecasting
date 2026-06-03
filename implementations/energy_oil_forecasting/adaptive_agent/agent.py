@@ -272,8 +272,8 @@ class WtiAdaptiveForecastPromptBuilder(BaseModel):
 
 
 def build_wti_adaptive_config(
-    model: str = "gemini-3-flash-preview",
-    search_model: str = "gemini-3-flash-preview",
+    model: str = "gemini-3.5-flash",
+    search_model: str = "gemini-3.5-flash",
     max_output_tokens: int = 16_384,
     strategy_dir: Path | None = None,
 ) -> AgentConfig:
@@ -343,7 +343,7 @@ def build_wti_adaptive_config(
 def build_wti_adaptive_predictor(
     config: AgentConfig | None = None,
     strategy_dir: Path | None = None,
-    model: str = "gemini-3-flash-preview",
+    model: str = "gemini-3.5-flash",
 ) -> AgentPredictor:
     """Wrap the adaptive agent in an :class:`AgentPredictor` for eval harness use.
 
