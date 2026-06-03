@@ -182,7 +182,7 @@ cells.append(
         "    )\n"
         "    print('Running self-directed study session...')\n"
         "    print('(Live API calls + E2B sandbox — may take several minutes.)\\n')\n"
-        "    reply = await runner.run_text_async(_STUDY_PROMPT)\n"
+        "    reply = await runner.run_text_async(_STUDY_PROMPT)  # noqa: F704, PLE1142\n"
         "    (_CURRICULUM_DIR / 'study_response.txt').write_text(reply, encoding='utf-8')\n"
         "    print(reply)\n"
         "else:\n"
@@ -324,7 +324,7 @@ cells.append(
         "        ),\n"
         "    )\n"
         "    print('Running Task A: cross-period robustness test (2023-2024)...')\n"
-        "    reply_a = await runner.run_text_async(_FOLLOWUP_A_PROMPT)\n"
+        "    reply_a = await runner.run_text_async(_FOLLOWUP_A_PROMPT)  # noqa: F704, PLE1142\n"
         "    print(reply_a)\n"
         "else:\n"
         "    _f = _CURRICULUM_DIR / 'followup_a_response.txt'\n"
@@ -365,7 +365,7 @@ cells.append(
         "\n"
         "if RUN_FOLLOWUP:\n"
         "    print('\\nRunning Task B: horizon scope check...')\n"
-        "    reply_b = await runner.run_text_async(_FOLLOWUP_B_PROMPT)\n"
+        "    reply_b = await runner.run_text_async(_FOLLOWUP_B_PROMPT)  # noqa: F704, PLE1142\n"
         "    (_CURRICULUM_DIR / 'followup_a_response.txt').write_text(reply_a, encoding='utf-8')\n"
         "    (_CURRICULUM_DIR / 'followup_b_response.txt').write_text(reply_b, encoding='utf-8')\n"
         "    print(reply_b)\n"
@@ -378,11 +378,7 @@ cells.append(
     )
 )
 
-cells.append(
-    md(
-        "### Strategy state after robustness testing"
-    )
-)
+cells.append(md("### Strategy state after robustness testing"))
 
 cells.append(
     code(
@@ -395,12 +391,12 @@ cells.append(
         "print('wti-strategy-trained/ after robustness testing:')\n"
         "print('─' * 60)\n"
         "for hyp in hyps:\n"
-        "    print(f'  hyp {hyp[\"id\"]}: {hyp[\"status\"]}  '\n"
-        "          f'confirmations={hyp[\"confirmations\"]}  refutations={hyp[\"refutations\"]}')\n"
+        '    print(f\'  hyp {hyp["id"]}: {hyp["status"]}  \'\n'
+        '          f\'confirmations={hyp["confirmations"]}  refutations={hyp["refutations"]}\')\n'
         "print(f'  Calibration corrections: {len(corrections)}')\n"
         "if corrections:\n"
         "    for c in corrections:\n"
-        "        print(f'    [{c[\"condition\"]}] → {c[\"adjustment\"]}')\n"
+        '        print(f\'    [{c["condition"]}] → {c["adjustment"]}\')\n'
         "print()\n"
         "print((TRAINED_STRATEGY_DIR / 'SKILL.md').read_text())"
     )
@@ -434,11 +430,11 @@ cells.append(
         "\n"
         "**Suggested conversation starters:**\n"
         "\n"
-        "- *\"What's your current forecasting strategy? Summarize it in plain language and tell me what calibration corrections are active.\"*\n"
-        "- *\"Look at the 2022 Russia-Ukraine oil shock (Feb–Mar 2022). Does your flat-line finding hold during a sharp upward move driven by geopolitical shock?\"*\n"
-        "- *\"Explore early 2020 (COVID demand collapse). Does the flat-line advantage hold during a sharp downward move as well as the recovery?\"*\n"
-        "- *\"Given your current strategy, what would your 21-day WTI forecast be as of today?\"*\n"
-        "- *\"What would it take for you to open a second hypothesis? What's the next most interesting pattern to investigate?\"*\n"
+        '- *"What\'s your current forecasting strategy? Summarize it in plain language and tell me what calibration corrections are active."*\n'
+        '- *"Look at the 2022 Russia-Ukraine oil shock (Feb–Mar 2022). Does your flat-line finding hold during a sharp upward move driven by geopolitical shock?"*\n'
+        '- *"Explore early 2020 (COVID demand collapse). Does the flat-line advantage hold during a sharp downward move as well as the recovery?"*\n'
+        '- *"Given your current strategy, what would your 21-day WTI forecast be as of today?"*\n'
+        '- *"What would it take for you to open a second hypothesis? What\'s the next most interesting pattern to investigate?"*\n'
         "\n"
         "---\n"
         "## Next: Protected Evaluation\n"
