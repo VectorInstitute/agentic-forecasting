@@ -44,6 +44,29 @@ def test_strip_markdown_fence_strips_surrounding_whitespace() -> None:
     assert strip_markdown_fence("  hello  ") == "hello"
 
 
+def test_strip_markdown_fence_trims_trailing_prose() -> None:
+    """Prose appended after the JSON is discarded (e.g. Claude via the proxy)."""
+    response = '{"point_forecast": 100}\n\n**Method:** linear extrapolation of trend.'
+    assert strip_markdown_fence(response) == '{"point_forecast": 100}'
+
+
+def test_strip_markdown_fence_trims_fence_and_trailing_prose() -> None:
+    """A fenced JSON block followed by prose is reduced to the JSON payload."""
+    response = '```json\n{"point_forecast": 100}\n```\n\n**Method:** trend.'
+    assert strip_markdown_fence(response) == '{"point_forecast": 100}'
+
+
+def test_strip_markdown_fence_ignores_braces_in_leading_prose() -> None:
+    """A stray brace inside prose does not derail extraction of the real JSON."""
+    response = 'Use {x} notation. Here is the forecast: {"point_forecast": 100}'
+    assert strip_markdown_fence(response) == '{"point_forecast": 100}'
+
+
+def test_strip_markdown_fence_leaves_non_json_unchanged() -> None:
+    """Content with no JSON object/array passes through fence-stripped only."""
+    assert strip_markdown_fence("no json here") == "no json here"
+
+
 # ---------------------------------------------------------------------------
 # _one_completion_async — proxy routing via mocked litellm.acompletion
 # ---------------------------------------------------------------------------

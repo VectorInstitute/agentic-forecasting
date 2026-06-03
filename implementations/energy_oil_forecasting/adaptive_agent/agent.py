@@ -388,14 +388,14 @@ def build_wti_adaptive_predictor(
 
 
 def __getattr__(name: str) -> Any:
-    """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``.
+    r"""Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``.
 
     By default the agent loads the seed strategy (``wti-strategy``).  To load
     a different strategy — e.g. after a training session — set the
     ``WTI_STRATEGY_DIR`` environment variable to an absolute or repo-relative
     path before launching::
 
-        WTI_STRATEGY_DIR=adaptive_agent/skills/wti-strategy-trained \\
+        WTI_STRATEGY_DIR=adaptive_agent/skills/wti-strategy-trained \
             uv run adk web adaptive_agent/
     """
     if name == "root_agent":

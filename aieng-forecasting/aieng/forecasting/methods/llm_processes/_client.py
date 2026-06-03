@@ -118,23 +118,34 @@ def make_json_schema_response_format(name: str, schema: dict[str, Any]) -> dict[
 
 
 def strip_markdown_fence(content: str) -> str:
-    """Strip a Markdown JSON code fence from an LLM response.
+    r"""Normalise an LLM response down to its JSON payload.
 
-    Some models return JSON wrapped in a ```json ... ``` fence even when
-    ``response_format`` is set.  This is a defensive normalisation step so
-    the parse layer works regardless of which model or proxy is in use —
-    participants can swap models freely without hitting parse failures.
+    Defends the parse layer against two model/proxy quirks so participants can
+    swap models freely without hitting parse failures:
+
+    1. **Markdown fences.** Some models wrap JSON in a ```json ... ``` fence
+       even when ``response_format`` is set.
+    2. **Surrounding prose.** Some models (notably Claude through the proxy)
+       append an explanation *after* the JSON — e.g. ``{...}\n\n**Method:**
+       ...`` — or leak a stray closing fence when prose follows it. This is a
+       Predictor-interface concern, not LLMP-specific: every methodology that
+       parses a structured JSON response needs the payload isolated.
+
+    The prose-trimming step is best-effort: it isolates the first complete
+    JSON object via :meth:`json.JSONDecoder.raw_decode` and discards anything
+    after it. When no JSON object is present the fence-stripped string is
+    returned unchanged, so non-JSON content passes through untouched.
 
     Parameters
     ----------
     content : str
-        Raw LLM response content, possibly fenced.
+        Raw LLM response content, possibly fenced and/or surrounded by prose.
 
     Returns
     -------
     str
-        The inner content with leading/trailing whitespace stripped. If no
-        fence is present the input is returned unchanged (after stripping).
+        The isolated JSON payload, or the fence-stripped, whitespace-trimmed
+        input when no JSON object can be located.
     """
     stripped = content.strip()
     if stripped.startswith("```"):
@@ -145,7 +156,33 @@ def strip_markdown_fence(content: str) -> str:
         if inner_lines and inner_lines[-1].strip() == "```":
             inner_lines = inner_lines[:-1]
         stripped = "\n".join(inner_lines).strip()
-    return stripped
+    payload = _extract_json_payload(stripped)
+    return payload if payload is not None else stripped
+
+
+def _extract_json_payload(text: str) -> str | None:
+    """Return the first complete JSON object in ``text``, or ``None``.
+
+    Scans for the first ``{`` and uses ``raw_decode`` to consume a single
+    balanced JSON object, ignoring any trailing (or leading) prose. Candidate
+    start positions that do not begin a valid object are skipped, so a stray
+    brace inside prose cannot derail extraction.
+
+    Only objects are matched (not arrays): every structured forecast payload in
+    the Predictor interface is a top-level JSON object, so anchoring on ``{``
+    avoids accidentally capturing an echoed numeric array (e.g. the input
+    series) that some models repeat in their prose.
+    """
+    decoder = json.JSONDecoder()
+    for start, char in enumerate(text):
+        if char != "{":
+            continue
+        try:
+            _, end = decoder.raw_decode(text, start)
+        except json.JSONDecodeError:
+            continue
+        return text[start:end]
+    return None
 
 
 # ---------------------------------------------------------------------------
