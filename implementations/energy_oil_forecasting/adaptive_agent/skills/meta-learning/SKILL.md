@@ -21,7 +21,7 @@ graduating to a calibration correction.
 | **Observations** | `record_observation` | Pattern visible across ≥2 forecasts — not a single surprise |
 | **Hypotheses** | `open_hypothesis` | One strong observation suggesting a durable pattern |
 | **Hypothesis outcomes** | `record_hypothesis_outcome` | Each resolution relevant to an open hypothesis |
-| **Calibration corrections** | `graduate_hypothesis` | Tool enforces threshold (currently 3 confirmations) — rejects if not met |
+| **Calibration corrections** | `graduate_hypothesis` | Tool enforces threshold (currently 2 confirmations) — rejects if not met |
 | **Approach narrative** | `update_approach_narrative` | Only when the calibration record reveals a structural insight |
 
 ## When to update

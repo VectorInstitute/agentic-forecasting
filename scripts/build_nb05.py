@@ -251,8 +251,199 @@ cells.append(
     )
 )
 
+# ── Section 4: Optional robustness testing ────────────────────────────────────
 cells.append(
     md(
+        "---\n"
+        "## 4. Optional: Robustness Testing\n"
+        "\n"
+        "The self-directed study found a striking result on 2025 data: flat-line  \n"
+        "forecasting outperforms trend-projection by 3× in elevated vol regimes at  \n"
+        "21bd. But one dataset is one dataset.\n"
+        "\n"
+        "The two cells below run follow-up tasks designed to test whether the finding  \n"
+        "holds across earlier time periods and at shorter horizons. If both tasks  \n"
+        "confirm the hypothesis, the agent graduates it to an active calibration  \n"
+        "correction — meaning it will actually behave differently at inference in  \n"
+        "Notebook 6.\n"
+        "\n"
+        "| Task | Question | Goal |\n"
+        "|---|---|---|\n"
+        "| A — Cross-period | Does the finding hold in 2023-2024 data? | `record_hypothesis_outcome(confirmed)` → 1 confirmation |\n"
+        "| B — Horizon scope | Does flat-line still win at 5bd, or only at longer horizons? | Second confirmation → `graduate_hypothesis` |\n"
+        "\n"
+        "> **Run guard:** `RUN_FOLLOWUP = False` by default. Both tasks use the same  \n"
+        "> agent session and must run together — outputs are committed after first run."
+    )
+)
+
+cells.append(
+    code(
+        "# ── Run guard ─────────────────────────────────────────────────────────────────\n"
+        "# Set True to run the robustness tasks. Both run sequentially in one session.\n"
+        "# Outputs are saved and committed — leave False for reproducibility.\n"
+        "RUN_FOLLOWUP = False"
+    )
+)
+
+cells.append(
+    md(
+        "### Task A — Cross-Period Robustness (2023–2024)\n"
+        "\n"
+        "Ask the agent to replicate its 2025 analysis on 2023-2024 data and record  \n"
+        "whether the result confirms or refutes `hyp-001`."
+    )
+)
+
+cells.append(
+    code(
+        "_FOLLOWUP_A_PROMPT = (\n"
+        "    'In your earlier analysis you found that flat-line forecasts significantly '\n"
+        "    'outperform trend-projection in elevated and extreme vol regimes, based on '\n"
+        "    '2025 WTI data. Before committing this as a calibration correction, we should '\n"
+        "    'test whether the finding is robust across time.\\n\\n'\n"
+        "    'Please do the following:\\n'\n"
+        "    '1. Fetch WTI daily close prices for 2023 and 2024 (ticker: CL=F, '\n"
+        "    'end=\"2025-01-01\").\\n'\n"
+        "    '2. Apply the same vol regime classification and 21-day rolling vol window.\\n'\n"
+        "    '3. Run the same flat-line vs trend-projection MAE comparison at 5bd, 10bd, '\n"
+        "    'and 21bd within each regime.\\n'\n"
+        "    '4. Compare the 2023-2024 results to your 2025 findings.\\n\\n'\n"
+        "    'Based on what you find, call record_hypothesis_outcome for hyp-001 with '\n"
+        "    'outcome=\"confirmed\" if the pattern holds, or outcome=\"refuted\" if it does not. '\n"
+        "    'Be specific about which regimes and horizons confirm or contradict the hypothesis.'\n"
+        ")\n"
+        "\n"
+        "if RUN_FOLLOWUP:\n"
+        "    config = build_wti_adaptive_config(\n"
+        "        model=AGENT_MODEL, strategy_dir=TRAINED_STRATEGY_DIR\n"
+        "    )\n"
+        "    agent = build_adk_agent(config)\n"
+        "    runner = AdkTextRunner(\n"
+        "        agent,\n"
+        "        config=AdkTextRunnerConfig(\n"
+        "            app_name='wti_robustness_followup',\n"
+        "            enable_langfuse_tracing=True,\n"
+        "            langfuse_tags=['energy-oil', 'adaptive-agent', 'robustness-followup'],\n"
+        "            langfuse_trace_name='wti-adaptive-robustness-a',\n"
+        "            fresh_session_per_message=False,\n"
+        "        ),\n"
+        "    )\n"
+        "    print('Running Task A: cross-period robustness test (2023-2024)...')\n"
+        "    reply_a = await runner.run_text_async(_FOLLOWUP_A_PROMPT)\n"
+        "    print(reply_a)\n"
+        "else:\n"
+        "    _f = _CURRICULUM_DIR / 'followup_a_response.txt'\n"
+        "    if _f.exists():\n"
+        "        print(_f.read_text())\n"
+        "    else:\n"
+        "        print('[Task A not yet run. Set RUN_FOLLOWUP = True and re-run.]')"
+    )
+)
+
+cells.append(
+    md(
+        "### Task B — Horizon Scope Check\n"
+        "\n"
+        "Ask the agent to check whether the flat-line advantage holds at 5bd  \n"
+        "(short horizon), or only at medium and long horizons. This defines the  \n"
+        "precise condition for the calibration correction — and if the evidence  \n"
+        "threshold is now met, graduates the hypothesis."
+    )
+)
+
+cells.append(
+    code(
+        "_FOLLOWUP_B_PROMPT = (\n"
+        "    'Your hypothesis (hyp-001) currently covers 10bd and 21bd horizons. '\n"
+        "    'Before graduating it to a calibration correction, check whether the '\n"
+        "    'flat-line advantage also holds at the 5bd (short) horizon, or whether '\n"
+        "    'trend-projection remains competitive there.\\n\\n'\n"
+        "    'Using the 2024-2025 dataset (ticker: CL=F, end=\"2026-01-01\"), compute '\n"
+        "    'flat-line vs trend-projection MAE specifically within elevated and extreme '\n"
+        "    'vol regimes at the 5bd horizon. Compare to your 10bd and 21bd results.\\n\\n'\n"
+        "    'Based on your findings:\\n'\n"
+        "    '1. Call record_hypothesis_outcome for hyp-001 with outcome=\"confirmed\" '\n"
+        "    'or outcome=\"refuted\".\\n'\n"
+        "    '2. If the confirmation threshold is now met (check the tool response), '\n"
+        "    'call graduate_hypothesis with a precise condition (e.g. which regimes), '\n"
+        "    'a concrete adjustment (e.g. use flat-line instead of trend-projection), '\n"
+        "    'and the appropriate horizon_scope.\\n'\n"
+        "    '3. If the threshold is not yet met, explain what additional evidence '\n"
+        "    'would be needed.'\n"
+        ")\n"
+        "\n"
+        "if RUN_FOLLOWUP:\n"
+        "    print('\\nRunning Task B: horizon scope check...')\n"
+        "    reply_b = await runner.run_text_async(_FOLLOWUP_B_PROMPT)\n"
+        "    (_CURRICULUM_DIR / 'followup_a_response.txt').write_text(reply_a, encoding='utf-8')\n"
+        "    (_CURRICULUM_DIR / 'followup_b_response.txt').write_text(reply_b, encoding='utf-8')\n"
+        "    print(reply_b)\n"
+        "else:\n"
+        "    _f = _CURRICULUM_DIR / 'followup_b_response.txt'\n"
+        "    if _f.exists():\n"
+        "        print(_f.read_text())\n"
+        "    else:\n"
+        "        print('[Task B not yet run. Set RUN_FOLLOWUP = True and re-run.]')"
+    )
+)
+
+cells.append(
+    md(
+        "### Strategy state after robustness testing"
+    )
+)
+
+cells.append(
+    code(
+        "import yaml  # noqa: PLC0415 (may already be imported above)\n"
+        "\n"
+        "trained_state_after = yaml.safe_load((TRAINED_STRATEGY_DIR / 'skill_state.yaml').read_text())\n"
+        "hyps = trained_state_after.get('hypotheses', [])\n"
+        "corrections = trained_state_after.get('calibration_corrections', [])\n"
+        "\n"
+        "print('wti-strategy-trained/ after robustness testing:')\n"
+        "print('─' * 60)\n"
+        "for hyp in hyps:\n"
+        "    print(f'  hyp {hyp[\"id\"]}: {hyp[\"status\"]}  '\n"
+        "          f'confirmations={hyp[\"confirmations\"]}  refutations={hyp[\"refutations\"]}')\n"
+        "print(f'  Calibration corrections: {len(corrections)}')\n"
+        "if corrections:\n"
+        "    for c in corrections:\n"
+        "        print(f'    [{c[\"condition\"]}] → {c[\"adjustment\"]}')\n"
+        "print()\n"
+        "print((TRAINED_STRATEGY_DIR / 'SKILL.md').read_text())"
+    )
+)
+
+# ── Section 5: Interactive exploration ────────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 5. Continue Interactively\n"
+        "\n"
+        "The notebook has walked the agent through a structured study session. But the  \n"
+        "best way to understand what the agent has learned — and to push it further —  \n"
+        "is to have a direct conversation.\n"
+        "\n"
+        "Launch the ADK web interface from the repo root:\n"
+        "\n"
+        "```bash\n"
+        "cd implementations/energy_oil_forecasting\n"
+        "uv run adk web adaptive_agent/\n"
+        "```\n"
+        "\n"
+        "Open `http://localhost:8000` in your browser. The agent loads `wti-strategy-trained/`  \n"
+        "and has its full skill set available: code execution, web search, and mutation tools.\n"
+        "\n"
+        "**Suggested conversation starters:**\n"
+        "\n"
+        "- *\"What's your current forecasting strategy? Summarize it in plain language and tell me what calibration corrections are active.\"*\n"
+        "- *\"Look at the 2022 Russia-Ukraine oil shock (Feb–Mar 2022). Does your flat-line finding hold during a sharp upward move driven by geopolitical shock?\"*\n"
+        "- *\"Explore early 2020 (COVID demand collapse). Does the flat-line advantage hold during a sharp downward move as well as the recovery?\"*\n"
+        "- *\"Given your current strategy, what would your 21-day WTI forecast be as of today?\"*\n"
+        "- *\"What would it take for you to open a second hypothesis? What's the next most interesting pattern to investigate?\"*\n"
+        "\n"
         "---\n"
         "## Next: Protected Evaluation\n"
         "\n"

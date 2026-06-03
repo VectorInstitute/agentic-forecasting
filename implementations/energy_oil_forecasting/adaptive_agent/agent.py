@@ -331,7 +331,7 @@ def build_wti_adaptive_config(
             resolved_strategy_dir,
             _SKILLS_ROOT / "meta-learning",
         ],
-        extra_tools=build_skill_tools(resolved_strategy_dir),
+        extra_tools=build_skill_tools(resolved_strategy_dir, confirmation_threshold=2),
     )
 
 

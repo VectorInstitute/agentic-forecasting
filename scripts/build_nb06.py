@@ -481,7 +481,15 @@ cells.append(
         "\n"
         "4. Re-run and compare the final strategy state to the frozen baseline.\n"
         "\n"
-        "Notebook 7 shows how to do this interactively via `adk web`."
+        "To continue interactively, launch the ADK web interface:\n"
+        "\n"
+        "```bash\n"
+        "cd implementations/energy_oil_forecasting\n"
+        "uv run adk web adaptive_agent/\n"
+        "```\n"
+        "\n"
+        "Open `http://localhost:8000` and load `wti-strategy-trained/` to pick up where the  \n"
+        "trained agent left off. See Notebook 5 for suggested conversation starters."
     )
 )
 
