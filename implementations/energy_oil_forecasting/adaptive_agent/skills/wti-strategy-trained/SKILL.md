@@ -37,14 +37,15 @@ directly inform interval calibration.
 
 | ID | Claim | Confirmations | Refutations |
 |----|-------|---------------|-------------|
-| hyp-001 | Replacing linear trend projection with a flat-trend (random-walk) forecast at medium (10 bd) and long (21 bd) horizons, particularly in elevated and extreme volatility regimes, will reduce forecast MAE by over 30% and eliminate systematic extrapolation bias. | 0 | 0 |
+| hyp-001 | A flat-line forecast or a heavily dampened trend projection will outperform the default linear trend-projection in terms of MAE and RMSE, particularly in elevated or extreme vol regimes at the 10bd and 21bd horizons. | 0 | 0 |
 
 ## Observations
 
 | Date | Finding | Linked hypothesis |
 |------|---------|-------------------|
-| 2026-06-02 | Across 251 daily backtest origins in 2025, linear trend projection (W=30) was consistently outperformed by a flat-trend model. The underperformance is most severe at the 21-day horizon in the extreme vol regime, where trend-projection has an MAE of $9.12 and a bias of -$5.75, compared to flat-trend's MAE of $2.52 and bias of $0.02. Shortening the window to W=15 worsens errors. | — |
-| 2026-06-02 | In 2025 WTI backtesting across 251 daily origins, trend-projection (W=30) at the 21-day horizon had an MAE of $7.33 (elevated) and $9.12 (extreme) with severe bias, whereas a flat-trend model had an MAE of $4.21 (elevated) and $2.52 (extreme) with near-zero bias. | hyp-001 |
+| 2026-06-02 | In 2025 backtest, trend-projection over-extrapolates trends 70-73% of the time, with signed error strongly negatively correlated with slope (-0.87 at 21bd). | — |
+| 2026-06-02 | In the elevated vol regime, trend-projection yields massive errors at 21bd (MAE 11.67, RMSE 13.74), whereas flat-line forecasts have far lower errors (MAE 3.59, RMSE 4.64). | — |
+| 2026-06-02 | Backtest of the full year 2025 (252 business days) showed trend-projection MAE of 11.67 and RMSE of 13.74 at 21bd in elevated vol, compared to a flat-line forecast MAE of 3.59 and RMSE of 4.64. Trend-projection overshot the actual move 72.7% of the time, with error-to-slope correlation of -0.87. | hyp-001 |
 
 ## Version history
 

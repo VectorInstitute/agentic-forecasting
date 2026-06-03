@@ -1,4 +1,4 @@
-I have completed a thorough, systematic review of the 2025 WTI backtest results for the `darts_autoarima` predictor across 51 historical origins. 
+I have completed a thorough, systematic review of the 2025 WTI backtest results for the `darts_autoarima` predictor across 51 historical origins.
 
 Consistent with the **temporal and meta-learning disciplines** outlined in our strategy, I have analyzed the per-horizon coverage and error statistics, identified four major systematic patterns in our forecasting behavior, and recorded these findings in persistent memory.
 
@@ -21,17 +21,17 @@ Below is the detailed analytical breakdown of the backtest performance, followed
 ## 2. Systematic Patterns Identified
 
 ### Pattern A: Systematic Interval Over-Conservatism (Too Wide)
-* **Finding:** The 80% prediction intervals are systematically too wide across all horizons, leading to actual coverages of **91.5% (7d)**, **93.6% (14d)**, and **98.0% (29d)**, significantly exceeding the 80% target. 
+* **Finding:** The 80% prediction intervals are systematically too wide across all horizons, leading to actual coverages of **91.5% (7d)**, **93.6% (14d)**, and **98.0% (29d)**, significantly exceeding the 80% target.
 * **Horizon Scaling:** The over-conservatism scales progressively with the forecast horizon. At **7d**, the intervals are **50% wider** than needed (10.94 actual vs. 7.30 needed). At **14d**, they are **90% wider** (15.55 actual vs. 8.20 needed). At **29d**, they are **108% wider** (22.31 actual vs. 10.72 needed), more than double the required width.
 * **Regime Impact:** This over-conservatism is most severe in the **"medium" volatility regime**, where coverage reaches **94.1% at 7d**, **97.1% at 14d**, and a perfect but highly inefficient **100.0% at 29d**. Under standard market conditions, our model's statistical intervals are excessively wide.
 
 ### Pattern B: Systematic Upward Point-Forecast Bias (Over-Forecasting)
-* **Finding:** There is a consistent positive bias (forecast − actual) across all horizons, meaning the model systematically over-forecasts prices. 
+* **Finding:** There is a consistent positive bias (forecast − actual) across all horizons, meaning the model systematically over-forecasts prices.
 * **Horizon Scaling:** The bias worsens significantly at longer horizons, moving from **+0.44 at 7d** to **+0.86 at 14d** and peaking at **+1.49 at 29d**.
 * **Regime Impact:** This upward bias is heavily concentrated in the **"elevated" volatility regime** at short-to-medium horizons (**+1.68 at 7d** and **+1.58 at 14d**) and the **"medium" volatility regime** at the longest horizon (**+1.96 at 29d**).
 
 ### Pattern C: Negative Relative Skill vs. Naive Baseline
-* **Finding:** The AutoARIMA model exhibits negative relative skill against a simple `last_value_naive` (random walk) baseline at **7d** (MAE 2.40 vs. 2.34) and **29d** (MAE 3.71 vs. 3.59), and virtually identical skill at **14d** (MAE 2.80 vs. 2.81). 
+* **Finding:** The AutoARIMA model exhibits negative relative skill against a simple `last_value_naive` (random walk) baseline at **7d** (MAE 2.40 vs. 2.34) and **29d** (MAE 3.71 vs. 3.59), and virtually identical skill at **14d** (MAE 2.80 vs. 2.81).
 * **Implication:** The model's complex trend projections and mean-reversion calculations are actively degrading point forecast accuracy. This indicates that a simpler momentum-smoothed trend or naive baseline would yield lower errors, primarily because the model is chasing upward trends that do not materialize.
 
 ### Pattern D: Opposite Directional Bias in Extreme Volatility (N=2)
@@ -68,6 +68,6 @@ Based on these observations, I opened **2 formal hypotheses** under active testi
 
 ## 4. Adherence to Meta-Learning Discipline
 
-We did **not** graduate these hypotheses to active calibration corrections or alter the core Approach Narrative at this stage. 
+We did **not** graduate these hypotheses to active calibration corrections or alter the core Approach Narrative at this stage.
 
 According to our `meta-learning` framework, graduation requires a hypothesis to accumulate at least **3 confirming outcomes** from subsequent individual resolutions. This prevents us from chasing historical noise and forces us to verify that the historical 2025 backtest patterns are truly durable and predictive under live conditions going forward. We will track future resolutions closely against `hyp-001` and `hyp-002` and graduate them once the evidence threshold is strictly met.

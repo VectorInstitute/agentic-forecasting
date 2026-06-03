@@ -22,7 +22,7 @@ Based on a rigorous rolling backtest spanning the entire year of 2025 (251 daily
 
 ### **2. Volatility Regime Distribution in 2025**
 
-Crude oil was highly active in 2025. WTI prices ranged from a high of **$80.04/bbl** (January 15) to a low of **$55.27/bbl** (December 16), with an annual average of **$64.77/bbl**. 
+Crude oil was highly active in 2025. WTI prices ranged from a high of **$80.04/bbl** (January 15) to a low of **$55.27/bbl** (December 16), with an annual average of **$64.77/bbl**.
 
 The distribution of volatility regimes across the 251 business days of 2025 was:
 *   **Low Vol (<15%):** **0 days** (0.0%). The minimum rolling volatility observed was $17.3\%$.
@@ -77,7 +77,7 @@ Linear trend extrapolation suffers from severe **lagging bias** that switches si
 While shortening the trend window is a common heuristic in high volatility, doing so actually **increased forecast errors** across almost all horizons in 2025. For example, at the 21-day horizon in the elevated regime, the MAE rose from **\$7.33 ($W=30$)** to **\$10.25 ($W=15$)**. In high-volatility regimes, a shorter lookback is incredibly noisy and "chases" transient daily fluctuations, leading to highly volatile and erratic projections.
 
 #### **D. Flat-Trend (Random Walk) Consistently Outperforms Trend Projection**
-Astonishingly, **a simple flat-trend model (forecasting $P_{t+h} = P_t$) outperformed trend projection in every single regime and horizon**. 
+Astonishingly, **a simple flat-trend model (forecasting $P_{t+h} = P_t$) outperformed trend projection in every single regime and horizon**.
 *   This outperformance is most dramatic at the 21-day horizon in the **extreme regime**, where flat-trend achieved an MAE of **\$2.52/bbl** (a **72% reduction** in error compared to trend-projection's \$9.12/bbl) with virtually zero bias (Mean Error of **+\$0.02**).
 *   Furthermore, the flat-trend's empirical error standard deviation was significantly *lower* than the theoretical random-walk standard error ($\sigma_{\text{daily}} \times \sqrt{h}$). For example, at 21 bd in the extreme regime, the theoretical standard error is **\$6.82**, but the empirical flat-trend standard deviation was only **\$3.14**. This strongly indicates that WTI price fluctuations are heavily **mean-reverting** over multi-week horizons.
 
@@ -89,7 +89,7 @@ This systematic backtesting exercise spans **251 historical origins** and clearl
 
 This easily meets the evidence threshold for a strategic update. The following actions have been executed in accordance with `meta-learning` governance:
 
-1.  **Recorded Observation:** 
+1.  **Recorded Observation:**
     Logged the finding of systematic trend-extrapolation underperformance, overprediction bias during price spikes (extreme regime), underprediction bias during selloffs (elevated regime), and the counter-productivity of a 15-day shortened window.
     *   *Tool called:* `record_observation`
 2.  **Opened Hypothesis (`hyp-001`):**
