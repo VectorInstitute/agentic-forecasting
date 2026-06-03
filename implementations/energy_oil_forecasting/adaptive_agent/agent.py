@@ -388,7 +388,20 @@ def build_wti_adaptive_predictor(
 
 
 def __getattr__(name: str) -> Any:
-    """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``."""
+    """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``.
+
+    By default the agent loads the seed strategy (``wti-strategy``).  To load
+    a different strategy — e.g. after a training session — set the
+    ``WTI_STRATEGY_DIR`` environment variable to an absolute or repo-relative
+    path before launching::
+
+        WTI_STRATEGY_DIR=adaptive_agent/skills/wti-strategy-trained \\
+            uv run adk web adaptive_agent/
+    """
     if name == "root_agent":
-        return build_adk_agent(build_wti_adaptive_config())
+        import os  # noqa: PLC0415
+
+        strategy_env = os.environ.get("WTI_STRATEGY_DIR")
+        strategy_dir = Path(strategy_env) if strategy_env else None
+        return build_adk_agent(build_wti_adaptive_config(strategy_dir=strategy_dir))
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

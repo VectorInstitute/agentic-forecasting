@@ -481,15 +481,15 @@ cells.append(
         "\n"
         "4. Re-run and compare the final strategy state to the frozen baseline.\n"
         "\n"
-        "To continue interactively, launch the ADK web interface:\n"
+        "To continue interactively with the trained agent, launch the ADK web interface:\n"
         "\n"
         "```bash\n"
         "cd implementations/energy_oil_forecasting\n"
-        "uv run adk web adaptive_agent/\n"
+        "WTI_STRATEGY_DIR=adaptive_agent/skills/wti-strategy-trained \\\\\n"
+        "    uv run adk web adaptive_agent/\n"
         "```\n"
         "\n"
-        "Open `http://localhost:8000` and load `wti-strategy-trained/` to pick up where the  \n"
-        "trained agent left off. See Notebook 5 for suggested conversation starters."
+        "Open `http://localhost:8000`. See Notebook 5 for suggested conversation starters."
     )
 )
 
