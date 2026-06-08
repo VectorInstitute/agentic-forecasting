@@ -76,14 +76,14 @@ requires-dist = [
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "lightgbm", specifier = ">=4.0.0" },
     { name = "news-search-playground", editable = "playground/news_search" },
-    { name = "plotly", specifier = ">=5.0" },
+    { name = "plotly", specifier = ">=6.8.0" },
     { name = "prophet", specifier = ">=1.1" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "codecov", specifier = ">=2.1.13" },
-    { name = "e2b", specifier = ">=2.25.0" },
+    { name = "e2b", specifier = ">=2.25.1" },
     { name = "mypy", specifier = ">=2.1.0" },
     { name = "nbqa", specifier = ">=1.9.1" },
     { name = "pip-audit", specifier = ">=2.10.0" },
@@ -176,11 +176,11 @@ requires-dist = [
     { name = "darts", marker = "extra == 'numerical'", specifier = ">=0.44.1" },
     { name = "fredapi", specifier = ">=0.5.2" },
     { name = "google-adk", marker = "extra == 'agentic'", specifier = ">=2.0.0" },
-    { name = "google-cloud-storage", marker = "extra == 'agentic'", specifier = ">=2.18,<4" },
+    { name = "google-cloud-storage", marker = "extra == 'agentic'", specifier = ">=3.11.0,<4" },
     { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.5.1" },
     { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
-    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.0" },
+    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.87.0" },
     { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
@@ -1186,7 +1186,7 @@ wheels = [
 
 [[package]]
 name = "e2b"
-version = "2.25.0"
+version = "2.25.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1201,9 +1201,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wcmatch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cf/d8/22497584cdf870be989c97cb2727acf4f1e66700150c5b86ddd8b01e1107/e2b-2.25.0.tar.gz", hash = "sha256:315ef1e45b4e60d66c7c271820f85ae5c5c2bad2ee66eaad2c98ca30a028f83b", size = 162662, upload-time = "2026-05-27T21:33:39.645Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a2/07/97604da2a7b7db68b970bab60d1bbffa436e73492c000d1889daf6283cf6/e2b-2.25.1.tar.gz", hash = "sha256:b87f8da3bbcce613e1bef9a90c46ef042a053f3f311b5ab45fcff5bdf1b1b425", size = 163032, upload-time = "2026-05-29T23:45:55.756Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/cf/6488ebf694548702f28d409e865f3bc8d2a450d95f13038baa4fbdd65a60/e2b-2.25.0-py3-none-any.whl", hash = "sha256:1021eebb74ab06166f6f8a551d9667af141711bdedfbb682197d670409e38fd5", size = 308999, upload-time = "2026-05-27T21:33:38.202Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/d5/d04b038ffb56ff6ba76cf6c2438908336aa58a5eb405b2fa191d398106c5/e2b-2.25.1-py3-none-any.whl", hash = "sha256:5ea5d1766082c1db504f86ebe17abe8b6a07f33d8addfb1a7778fae4a9549891", size = 309607, upload-time = "2026-05-29T23:45:54.327Z" },
 ]
 
 [[package]]
@@ -1564,7 +1564,7 @@ wheels = [
 
 [[package]]
 name = "google-cloud-storage"
-version = "3.10.1"
+version = "3.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-api-core" },
@@ -1574,9 +1574,9 @@ dependencies = [
     { name = "google-resumable-media" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4c/47/205eb8e9a1739b5345843e5a425775cbdc472cc38e7eda082ba5b8d02450/google_cloud_storage-3.10.1.tar.gz", hash = "sha256:97db9aa4460727982040edd2bd13ff3d5e2260b5331ad22895802da1fc2a5286", size = 17309950, upload-time = "2026-03-23T09:35:23.409Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/09/8953e2993e604c8882fd441b5b2de624a2dfe7e6144c6166d7b477509596/google_cloud_storage-3.11.0.tar.gz", hash = "sha256:498bf37c999028f69a245f586b5e50d89f59df1fafc0e3a93783ac56be2a456b", size = 17335639, upload-time = "2026-06-03T16:14:04.649Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ad/ff/ca9ab2417fa913d75aae38bf40bf856bb2749a604b2e0f701b37cfcd23cc/google_cloud_storage-3.10.1-py3-none-any.whl", hash = "sha256:a72f656759b7b99bda700f901adcb3425a828d4a29f911bc26b3ea79c5b1217f", size = 324453, upload-time = "2026-03-23T09:35:21.368Z" },
+    { url = "https://files.pythonhosted.org/packages/09/7e/ee0dd1a67ac75d29d0c438969d85d4fadbc4bcab47b0a8ccfa7eb22f643c/google_cloud_storage-3.11.0-py3-none-any.whl", hash = "sha256:cfcc33aa6b899ec9dd1771286f8e79fbed5c35c1c174718071b079aa827f37c2", size = 339654, upload-time = "2026-06-03T16:12:46.052Z" },
 ]
 
 [[package]]
@@ -2402,7 +2402,7 @@ wheels = [
 
 [[package]]
 name = "langfuse"
-version = "4.7.0"
+version = "4.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -2414,9 +2414,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ab/80/0bd2ed8f781905d8e4c8f69e72fd06d914c907f31a3074449d20f8964c78/langfuse-4.7.0.tar.gz", hash = "sha256:7b592a251777dae44f76db7971871ff16c4c200d490cb5cd4e2f3822a1d593ec", size = 282543, upload-time = "2026-05-27T18:51:01.521Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/74/a6f1a99893ee6d1a69439ae7eb92f8fe8806103492dc26531d5942dbd3bf/langfuse-4.7.1.tar.gz", hash = "sha256:f9e262eceedb353b191c1da1f8452d1e8ebf52297ca20e160cda0206608e3a40", size = 320620, upload-time = "2026-05-29T18:06:22.435Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cf/13/9a2304f546c74bc2bfc4765adb1e6f6a0984ead671fa65c3edcf9d473b58/langfuse-4.7.0-py3-none-any.whl", hash = "sha256:72ca668ce0999d05c787ccbfa313b679b99b3492e268d351549488822dd40c34", size = 482420, upload-time = "2026-05-27T18:50:59.773Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/9a/bd3368f46b6c72ee2068b80536826b02ae86df53eff1c79941344503098f/langfuse-4.7.1-py3-none-any.whl", hash = "sha256:a4e59c81ad5e5b16a65d3849f4923ebc3ad6e67ec803ada83d50c0cb66149490", size = 562571, upload-time = "2026-05-29T18:06:20.517Z" },
 ]
 
 [[package]]
@@ -2519,7 +2519,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.86.2"
+version = "1.87.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -2535,9 +2535,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/01/ee/1f6f3f5d01e0910629b6af3757e82c47b8b87dca497a661a9c63280b4bd8/litellm-1.86.2.tar.gz", hash = "sha256:7d559ad48b97d796ff325af88fd7eebbdc66e58773fb5312130ab1cac968f8f3", size = 15380548, upload-time = "2026-05-27T16:19:58.45Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/77/0d/ccdf682ccfd7f18bf0e179c39d85616b8f8ef05a798588285310412db13d/litellm-1.87.0.tar.gz", hash = "sha256:cafc1882cb0cbab8374c41180af86e4a067796e4524e15f59e99f6e689cd1bd8", size = 15453755, upload-time = "2026-06-02T03:53:29.076Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/37/4da1dd67157aaa11477d6c63e4725216bfc46b4661e581b490d17e5b2831/litellm-1.86.2-py3-none-any.whl", hash = "sha256:27096463be7add661513ada3d9039e8f1a6195859e604d30fde96c939efe0a03", size = 17013061, upload-time = "2026-05-27T16:19:53.219Z" },
+    { url = "https://files.pythonhosted.org/packages/98/20/88a372fa7e50fc2c33458c6eef94a79afcf7bdfa43610079531b82b484a3/litellm-1.87.0-py3-none-any.whl", hash = "sha256:fbbba7e47ae29b55f878fe1acc80effb92761bc168f6236bd81a0cb6e147d855", size = 17103948, upload-time = "2026-06-02T03:53:25.677Z" },
 ]
 
 [[package]]
@@ -3057,7 +3057,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "google-adk", specifier = ">=2.0.0" },
-    { name = "langfuse", specifier = ">=4.5.1" },
+    { name = "langfuse", specifier = ">=4.7.1" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pydantic-settings", specifier = ">=2.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
@@ -3646,15 +3646,15 @@ wheels = [
 
 [[package]]
 name = "plotly"
-version = "6.7.0"
+version = "6.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "narwhals" },
     { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3a/7f/0f100df1172aadf88a929a9dbb902656b0880ba4b960fe5224867159d8f4/plotly-6.7.0.tar.gz", hash = "sha256:45eea0ff27e2a23ccd62776f77eb43aa1ca03df4192b76036e380bb479b892c6", size = 6911286, upload-time = "2026-04-09T20:36:45.738Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/fd/d72c292d78aadb93d1a9bcd76bf3c678271040c7cf10abe5788b33040a39/plotly-6.8.0.tar.gz", hash = "sha256:e088e7ddc68d4f70e3d66659224727a45296d71d2b8284181862d3d8f1f0d88f", size = 6915161, upload-time = "2026-06-03T18:33:40.226Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/ad/cba91b3bcf04073e4d1655a5c1710ef3f457f56f7d1b79dcc3d72f4dd912/plotly-6.7.0-py3-none-any.whl", hash = "sha256:ac8aca1c25c663a59b5b9140a549264a5badde2e057d79b8c772ae2920e32ff0", size = 9898444, upload-time = "2026-04-09T20:36:39.812Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/14/abe5ce876ab5b66ee3c691bf537fcd43d037aea55d447aacf74630a8f31e/plotly-6.8.0-py3-none-any.whl", hash = "sha256:13c5c4a0f70b74cab1913eda0de49b826df5931708eb6f9c3010040614700ec8", size = 9902055, upload-time = "2026-06-03T18:33:34.26Z" },
 ]
 
 [[package]]
