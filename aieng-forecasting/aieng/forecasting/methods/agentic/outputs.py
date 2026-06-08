@@ -16,6 +16,7 @@ grid, non-crossing quantiles, and ``point_forecast`` consistency with the
 median.
 """
 
+import json
 from abc import ABC, abstractmethod
 from datetime import datetime
 from math import isclose, isfinite
@@ -253,6 +254,34 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
             raise ValueError(f"Duplicate forecast horizons are not allowed: {duplicates}")
         return self
 
+    @classmethod
+    def prompt_schema_json(cls) -> str:
+        """Return a JSON template for use in agent instruction strings.
+
+        The quantile list is derived from :data:`STANDARD_QUANTILES` so the
+        template stays in sync automatically when the standard grid changes.
+        Use this in agent instructions instead of a hardcoded JSON block.
+
+        Returns
+        -------
+        str
+            Indented JSON string showing the exact structure the agent must
+            pass to ``set_model_response``.
+        """
+        quantile_entries = [{"quantile": float(q), "value": "<float>"} for q in STANDARD_QUANTILES]
+        template: dict[str, object] = {
+            "forecasts": [
+                {
+                    "horizon": "<integer — one entry per horizon from the task>",
+                    "point_forecast": "<float — must equal the 0.50 quantile value>",
+                    "quantiles": quantile_entries,
+                    "rationale": "<string>",
+                }
+            ],
+            "rationale": "<string, optional overall explanation>",
+        }
+        return json.dumps(template, indent=2)
+
     def to_predictions(
         self,
         *,
@@ -357,6 +386,25 @@ class DiscreteAgentForecastOutput(AgentForecastOutput):
     direction_bias: str = Field(default="", description="Optional directional label: up, down, or neutral.")
     key_signals: list[str] = Field(default_factory=list, description="Key signals supporting the estimate.")
     confidence: str = Field(default="", description="Optional self-reported confidence: high, medium, or low.")
+
+    @classmethod
+    def prompt_schema_json(cls) -> str:
+        """Return a JSON template for use in agent instruction strings.
+
+        Returns
+        -------
+        str
+            Indented JSON string showing the exact structure the agent must
+            pass to ``set_model_response``.
+        """
+        template: dict[str, object] = {
+            "probability": "<float in [0, 1]>",
+            "direction_bias": "<'up' | 'down' | 'neutral'>",
+            "reasoning": "<string>",
+            "key_signals": ["<signal 1>", "<signal 2>"],
+            "confidence": "<'high' | 'medium' | 'low'>",
+        }
+        return json.dumps(template, indent=2)
 
     def to_predictions(
         self,

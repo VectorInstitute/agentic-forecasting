@@ -62,63 +62,71 @@ You will receive a JSON payload containing:
 - `origin_price_usd_bbl`: WTI close on the origin date
 - `target_history_csv`: compressed WTI daily close history
 
-When context retrieval is enabled, call the context sub-agent BEFORE answering.
+When context retrieval is enabled, call ``search_web`` BEFORE answering.
 
 ## Output contract
 
 Read the data (and briefing, if retrieved) carefully, then execute the task \
-in `task_spec` precisely. Return ONLY valid JSON matching the schema described \
-there — no preamble outside the JSON object.\
+in `task_spec` precisely.
+
+If a `set_model_response` tool is available, call it with your complete JSON \
+as `json_response` — the exact schema is described in `task_spec`. Otherwise \
+return the JSON directly as plain text with no preamble.\
 """
 
-_WTI_ANALYST_INSTRUCTION = """\
-## Role
 
-You are an expert WTI crude oil market analyst. You produce calibrated \
-probabilistic price forecasts for WTI crude oil futures, grounded in \
-supply/demand fundamentals, geopolitical risk, and historical price dynamics.
+def _build_wti_analyst_instruction() -> str:
+    """Build the WTI analyst instruction, embedding the output schema from the class.
 
-## Forecasting contract
+    Using a function instead of a static string ensures the ``## Output schema``
+    block is always in sync with ``ContinuousAgentForecastOutput`` —
+    no manual JSON to maintain.
+    """
+    schema = ContinuousAgentForecastOutput.prompt_schema_json()
+    return (
+        "## Role\n\n"
+        "You are an expert WTI crude oil market analyst. You produce calibrated "
+        "probabilistic price forecasts for WTI crude oil futures, grounded in "
+        "supply/demand fundamentals, geopolitical risk, and historical price dynamics.\n\n"
+        "## Forecasting contract\n\n"
+        "You will receive a JSON payload containing:\n"
+        "- `task`: the task identifier\n"
+        "- `as_of`: the forecast origin date in YYYY-MM-DD format\n"
+        "- `horizons`: a list of integer horizon steps (business days ahead)\n"
+        "- `standard_quantiles`: the exact quantile levels you must produce\n"
+        "- `target_summary`: last close price, 52-week range, and observation count\n"
+        "- `target_history_csv`: WTI daily close history (recent 6 months daily, "
+        "older history as weekly averages)\n\n"
+        "Rules:\n"
+        "1. Produce one forecast for each horizon listed in `horizons`.\n"
+        "2. Use exactly the quantile levels from `standard_quantiles` — no additions, no omissions.\n"
+        "3. `point_forecast` must exactly equal the 0.50 quantile value.\n"
+        "4. Quantile values must be strictly non-decreasing as quantile levels increase.\n"
+        "5. Document your reasoning in the `rationale` fields.\n"
+        "6. When tools are enabled, conclude with `set_model_response` to return the structured forecast.\n\n"
+        "## Output schema\n\n"
+        "Call `set_model_response` with a `json_response` string matching **exactly**:\n\n"
+        "```json\n" + schema + "\n```\n\n"
+        'Critical: use `"horizon"` (integer, not `"horizon_days"`). '
+        '`"quantiles"` is a **list** of `{"quantile": <level>, "value": <price>}` '
+        "objects — not a dict. Omit any field not shown above.\n\n"
+        "## Analysis discipline\n\n"
+        "When context retrieval is available, call ``search_web`` to gather market "
+        "intelligence BEFORE producing forecasts.\n\n"
+        "Call ``search_web`` with ``query`` and ``cutoff_date`` (set to the ``as_of`` "
+        "date from the payload). The ``cutoff_date`` MUST always equal ``as_of`` — "
+        "this is the temporal fence that prevents post-origin information from "
+        "contaminating historical backtests.\n\n"
+        "Recommended queries (call ``search_web`` once per topic):\n"
+        '- ``search_web(query="WTI crude oil price trend and OPEC+ supply decisions", cutoff_date=<as_of>)``\n'
+        '- ``search_web(query="Persian Gulf geopolitical risk shipping lane disruptions", cutoff_date=<as_of>)``\n'
+        '- ``search_web(query="US Strategic Petroleum Reserve policy and global demand outlook", cutoff_date=<as_of>)``\n\n'
+        "Document your key assumptions (OPEC+ policy, shipping lane risk, inventory "
+        "levels, macro demand) in the `rationale` fields of your forecast output."
+    )
 
-You will receive a JSON payload containing:
-- `task`: the task identifier
-- `as_of`: the forecast origin date in YYYY-MM-DD format
-- `horizons`: a list of integer horizon steps (business days ahead)
-- `standard_quantiles`: the exact quantile levels you must produce
-- `target_summary`: last close price, 52-week range, and observation count
-- `target_history_csv`: WTI daily close history (recent 6 months daily, \
-older history as weekly averages)
 
-Rules:
-1. Produce one forecast for each horizon listed in `horizons`.
-2. Use exactly the quantile levels from `standard_quantiles` — no additions, \
-no omissions.
-3. `point_forecast` must exactly equal the 0.50 quantile value.
-4. Quantile values must be strictly non-decreasing as quantile levels increase.
-5. Document your reasoning in the `rationale` fields.
-6. When tools are enabled, conclude with `set_model_response` to return the \
-structured forecast.
-
-## Analysis discipline
-
-When context retrieval is available, call the context sub-agent to gather \
-market intelligence BEFORE producing forecasts.
-
-Call the context sub-agent with a `request` string in the format:
-  "cutoff_date: <as_of from payload> | query: <specific WTI market topic>"
-
-The `cutoff_date` MUST always equal the `as_of` date from the payload. This \
-is the temporal fence that prevents any post-origin information from \
-contaminating historical backtests.
-
-Recommended queries (call the sub-agent once per topic):
-- "cutoff_date: <as_of> | query: WTI crude oil price trend and OPEC+ supply decisions"
-- "cutoff_date: <as_of> | query: Persian Gulf geopolitical risk shipping lane disruptions"
-- "cutoff_date: <as_of> | query: US Strategic Petroleum Reserve policy and global demand outlook"
-
-Document your key assumptions (OPEC+ policy, shipping lane risk, inventory \
-levels, macro demand) in the `rationale` fields of your forecast output.\
-"""
+_WTI_ANALYST_INSTRUCTION = _build_wti_analyst_instruction()
 
 # ---------------------------------------------------------------------------
 # Context retrieval instruction (sub-agent)
@@ -127,16 +135,8 @@ levels, macro demand) in the `rationale` fields of your forecast output.\
 _WTI_CONTEXT_RETRIEVAL_INSTRUCTION = """\
 You are an oil market intelligence specialist with access to web search.
 
-You will receive a request string in the format:
-  "cutoff_date: YYYY-MM-DD | query: <topic>"
-
-CRITICAL TEMPORAL CONSTRAINT:
-- Include ONLY information publicly available strictly BEFORE the cutoff_date.
-- EXCLUDE any events, market moves, or data from cutoff_date or later.
-- If a search result's publication date is on or after cutoff_date, skip it entirely.
-
-Use `google_search` to find information relevant to the query, then return a \
-concise structured markdown summary (3-5 paragraphs) covering relevant aspects of:
+Search for information relevant to the query and return a concise structured \
+markdown summary (3-5 paragraphs) covering relevant aspects of:
 - WTI/Brent crude price level and recent trend
 - OPEC+ production decisions and supply outlook
 - Geopolitical risks in the Persian Gulf, Middle East, key shipping lanes
@@ -144,8 +144,9 @@ concise structured markdown summary (3-5 paragraphs) covering relevant aspects o
 - Notable tanker/shipping incidents or supply disruption signals
 - Published analyst forecasts or unusual price-target revisions
 
-Ground your summary in the search results you actually retrieve. Do not \
-speculate about events that fall after "cutoff_date".\
+Ground your summary in the search results you actually retrieve. \
+When a cutoff date is specified, do not report or speculate about events \
+that occurred after that date.\
 """
 
 # ---------------------------------------------------------------------------
@@ -297,7 +298,7 @@ class WtiPriceForecastPromptBuilder(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def build_wti_basic_config(model: str = "gemini-3.5-flash") -> AgentConfig:
+def build_wti_basic_config(model: str = "gemini-3-flash-preview") -> AgentConfig:
     """Build an :class:`AgentConfig` with no tools.
 
     The agent reasons purely from the price history in the prompt payload.
@@ -320,11 +321,23 @@ def build_wti_basic_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     )
 
 
-def build_wti_multitask_news_config(model: str = "gemini-3.5-flash") -> AgentConfig:
+def build_wti_multitask_news_config(
+    model: str = "gemini-3-flash-preview",
+    search_model: str = "gemini-3-flash-preview",
+) -> AgentConfig:
     """News-grounded config for the one-agent-three-tasks demo (NB3).
 
     Uses a task-agnostic analyst instruction; the task schema is supplied in
     the user prompt payload via :class:`~energy_oil_forecasting.tasks.WtiMultitaskPromptBuilder`.
+
+    Parameters
+    ----------
+    model : str
+        Model for the top-level analyst agent.
+    search_model : str
+        Model for the context-retrieval (web-search) sub-tool. Defaults to
+        ``gemini-3-flash-preview`` independently of ``model`` so that Gemini
+        handles Google Search even when the analyst uses a different provider.
     """
     return AgentConfig(
         name="wti_analyst_multitask",
@@ -333,11 +346,15 @@ def build_wti_multitask_news_config(model: str = "gemini-3.5-flash") -> AgentCon
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
+            search_model=search_model,
         ),
     )
 
 
-def build_wti_news_config(model: str = "gemini-3.5-flash") -> AgentConfig:
+def build_wti_news_config(
+    model: str = "gemini-3-flash-preview",
+    search_model: str = "gemini-3-flash-preview",
+) -> AgentConfig:
     """Build an :class:`AgentConfig` with bounded Google Search.
 
     Wires a :class:`~aieng.forecasting.methods.agentic.agent_factory.ContextRetrievalConfig`
@@ -347,7 +364,11 @@ def build_wti_news_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     Parameters
     ----------
     model : str
-        Gemini model identifier.
+        Model for the top-level analyst agent.
+    search_model : str
+        Model for the context-retrieval (web-search) sub-tool. Defaults to
+        ``gemini-3-flash-preview`` independently of ``model`` so that Gemini
+        handles Google Search even when the analyst uses a different provider.
 
     Returns
     -------
@@ -360,15 +381,20 @@ def build_wti_news_config(model: str = "gemini-3.5-flash") -> AgentConfig:
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
+            search_model=search_model,
         ),
     )
 
 
-def build_wti_code_exec_config(model: str = "gemini-3.5-flash") -> AgentConfig:
-    """Build an :class:`AgentConfig` with Gemini native code execution and forecasting skills.
+def build_wti_code_exec_config(
+    model: str = "gemini-3-flash-preview",
+    search_model: str = "gemini-3-flash-preview",
+    max_output_tokens: int = 16_384,
+) -> AgentConfig:
+    """Build an :class:`AgentConfig` with E2B code execution and forecasting skills.
 
-    Combines bounded Google Search (temporal cutoff enforced) with Gemini's
-    native code execution environment and two forecasting skills:
+    Combines bounded Google Search (temporal cutoff enforced) with E2B sandbox
+    code execution and two forecasting skills:
 
     - ``statistical-analysis``: diagnostic patterns for the payload data
       (vol regime, anomaly detection, adaptive trend window).
@@ -378,7 +404,16 @@ def build_wti_code_exec_config(model: str = "gemini-3.5-flash") -> AgentConfig:
     Parameters
     ----------
     model : str
-        Gemini model identifier.
+        Model for the top-level analyst agent.
+    search_model : str
+        Model for the context-retrieval (web-search) sub-tool. Defaults to
+        ``gemini-3-flash-preview`` independently of ``model`` so that Gemini
+        handles Google Search even when the analyst uses a different provider.
+    max_output_tokens : int, default=16_384
+        Maximum tokens per model response.  The default is set well above
+        LiteLLM's OpenAI-compatible endpoint default of 4096, which is not
+        enough for Claude to write a complete ``run_code`` Python script in a
+        single function call — causing repeated retries with empty arguments.
 
     Returns
     -------
@@ -388,14 +423,13 @@ def build_wti_code_exec_config(model: str = "gemini-3.5-flash") -> AgentConfig:
         name="wti_analyst_code",
         model=model,
         instruction=_WTI_ANALYST_INSTRUCTION + _CODE_EXEC_SKILLS_SUPPLEMENT,
+        max_output_tokens=max_output_tokens,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
+            search_model=search_model,
         ),
-        code_execution=CodeExecutionConfig(
-            enabled=True,
-            provider="gemini_native",
-        ),
+        code_execution=CodeExecutionConfig(enabled=True),
         skills_dirs=[
             _SKILLS_ROOT / "statistical-analysis",
             _SKILLS_ROOT / "trend-projection",

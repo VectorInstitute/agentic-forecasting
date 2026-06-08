@@ -9,6 +9,7 @@ subclasses re-exported from :mod:`aieng.forecasting.methods`.
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Mapping
 
 import pandas as pd
@@ -33,11 +34,39 @@ class LLMPredictorConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     model: str = Field(
-        default="anthropic/claude-sonnet-4-5",
-        description=("LiteLLM model string, e.g. 'anthropic/claude-sonnet-4-5', 'gemini/gemini-2.5-flash'."),
+        default="gemini-3-flash-preview",
+        description=(
+            "Model name as expected by the proxy (bare, no provider prefix), "
+            "e.g. 'gemini-3-flash-preview', 'gpt-4o-mini'. "
+            "When proxy_base_url is set, LiteLLM routes this to the proxy via "
+            "custom_llm_provider='openai'."
+        ),
+    )
+    proxy_base_url: str | None = Field(
+        default_factory=lambda: os.getenv("PROXY_BASE_URL"),
+        description=(
+            "Base URL for an OpenAI-compatible LLM proxy. Defaults to the "
+            "``PROXY_BASE_URL`` environment variable. When set, all completions "
+            "are routed through the proxy using ``api_base`` + "
+            "``custom_llm_provider='openai'``."
+        ),
+    )
+    proxy_api_key: str | None = Field(
+        default_factory=lambda: os.getenv("PROXY_API_KEY"),
+        description=("API key for the proxy. Defaults to the ``PROXY_API_KEY`` environment variable."),
     )
     temperature: float = Field(default=1.0, ge=0.0, le=2.0, description="Sampling temperature.")
-    max_tokens: int = Field(default=4096, ge=1, description="Per-call output token budget.")
+    max_tokens: int = Field(
+        default=16384,
+        ge=1,
+        description=(
+            "Per-call output token budget. "
+            "Thinking models (e.g. gemini-3.1-pro-preview) consume thinking tokens "
+            "from this same budget via the OpenAI-compatible proxy — the 16 k default "
+            "is intentionally generous to prevent truncation; the model only generates "
+            "tokens it needs, so non-thinking models are not affected in cost."
+        ),
+    )
     timeout_s: float = Field(default=120.0, gt=0.0, description="Per-call timeout in seconds.")
     reasoning_effort: Literal["disable", "low", "medium", "high"] | None = Field(
         default="disable",

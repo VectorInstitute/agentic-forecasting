@@ -33,65 +33,17 @@ from pydantic import BaseModel, Field
 
 
 # ── Task specification strings (embedded in user prompts for NB3) ───────────
+# Each spec uses the corresponding output class's prompt_schema_json() so the
+# required JSON format in the prompt is always in sync with the Pydantic schema.
 
 TASK_TRAJECTORY_SPEC = (
-    "Forecast the WTI crude oil price at three forward horizons from today:\n"
-    "  - 5  business days (~1 trading week)\n"
-    "  - 10 business days (~2 trading weeks)\n"
-    "  - 21 business days (~1 calendar month)\n\n"
-    "For each horizon provide a point estimate and an 80% confidence interval.\n\n"
-    "Return JSON with exactly these fields:\n"
-    "{\n"
-    '  "forecasts": [\n'
-    '    {"horizon": 5,  "point_forecast": <float>, "quantiles": [{"quantile": 0.10, "value": <float>}, '
-    '{"quantile": 0.50, "value": <float>}, {"quantile": 0.90, "value": <float>}]},\n'
-    '    {"horizon": 10, "point_forecast": <float>, "quantiles": [...]},\n'
-    '    {"horizon": 21, "point_forecast": <float>, "quantiles": [...]}\n'
-    "  ],\n"
-    '  "rationale": "<2-4 sentences>"\n'
-    "}"
-)
-
-TASK_SHOCK_SPEC = (
-    f"Estimate P(up) — the probability that WTI will close MORE THAN\n"
-    f"${int(SHOCK_THRESHOLD)}/bbl HIGHER than today's price at the end of\n"
-    f"{SHOCK_HORIZON} trading days.\n\n"
-    "Return JSON with exactly these fields:\n"
-    "{\n"
-    '  "probability": <float 0-1>,\n'
-    '  "direction_bias": "<up|down|neutral>",\n'
-    '  "reasoning": "<2-4 sentences>",\n'
-    '  "key_signals": ["<signal 1>", "<signal 2>"],\n'
-    '  "confidence": "<high|medium|low>"\n'
-    "}"
-)
-
-TASK_SCENARIOS_SPEC = (
-    "Identify the three scenarios oil market analysts are debating for WTI over the next 60 days.\n\n"
-    "Return JSON with exactly these fields:\n"
-    "{\n"
-    '  "scenarios": [\n'
-    "    {\n"
-    '      "name": "<string>",\n'
-    '      "description": "<string>",\n'
-    '      "probability": <float>,\n'
-    '      "wti_range_60d": [<float_low>, <float_high>],\n'
-    '      "point_estimate_60d": <float>,\n'
-    '      "key_drivers": ["<driver 1>"]\n'
-    "    }\n"
-    "  ],\n"
-    '  "base_case": "<scenario name>",\n'
-    '  "reasoning": "<paragraph>"\n'
-    "}"
+    "Forecast the WTI crude oil price at the horizons listed in the payload.\n\n"
+    "If a `set_model_response` tool is available, call it with your complete "
+    "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
+    "Required JSON format:\n" + ContinuousAgentForecastOutput.prompt_schema_json()
 )
 
 TaskKind = Literal["trajectory", "shock", "scenario"]
-
-TASK_SPECS: dict[TaskKind, str] = {
-    "trajectory": TASK_TRAJECTORY_SPEC,
-    "shock": TASK_SHOCK_SPEC,
-    "scenario": TASK_SCENARIOS_SPEC,
-}
 
 
 class WtiMultitaskPromptBuilder(BaseModel):
@@ -138,6 +90,32 @@ class ScenarioAgentForecastOutput(AgentForecastOutput):
     base_case: str
     reasoning: str = ""
 
+    @classmethod
+    def prompt_schema_json(cls) -> str:
+        """Return a JSON template for use in agent instruction strings.
+
+        Returns
+        -------
+        str
+            Indented JSON string showing the exact structure the agent must
+            pass to ``set_model_response``.
+        """
+        template: dict[str, object] = {
+            "scenarios": [
+                {
+                    "name": "<string>",
+                    "description": "<string>",
+                    "probability": "<float in [0, 1]>",
+                    "wti_range_60d": ["<float_low>", "<float_high>"],
+                    "point_estimate_60d": "<float>",
+                    "key_drivers": ["<driver 1>", "<driver 2>"],
+                }
+            ],
+            "base_case": "<scenario name>",
+            "reasoning": "<paragraph>",
+        }
+        return json.dumps(template, indent=2)
+
     def to_predictions(
         self,
         *,
@@ -173,6 +151,34 @@ class ScenarioAgentForecastOutput(AgentForecastOutput):
         ]
 
 
+# Task specification strings embedded in user prompts for NB3.
+# Defined after the output classes so each spec can reference the
+# corresponding prompt_schema_json() classmethod — single source of truth.
+
+TASK_SHOCK_SPEC = (
+    f"Estimate P(up) — the probability that WTI will close MORE THAN\n"
+    f"${int(SHOCK_THRESHOLD)}/bbl HIGHER than today's price at the end of\n"
+    f"{SHOCK_HORIZON} trading days.\n\n"
+    "If a `set_model_response` tool is available, call it with your complete "
+    "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
+    "Required JSON format:\n" + DiscreteAgentForecastOutput.prompt_schema_json()
+)
+
+TASK_SCENARIOS_SPEC = (
+    "Identify the three scenarios oil market analysts are debating for WTI "
+    "over the next 60 days.\n\n"
+    "If a `set_model_response` tool is available, call it with your complete "
+    "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
+    "Required JSON format:\n" + ScenarioAgentForecastOutput.prompt_schema_json()
+)
+
+TASK_SPECS: dict[TaskKind, str] = {
+    "trajectory": TASK_TRAJECTORY_SPEC,
+    "shock": TASK_SHOCK_SPEC,
+    "scenario": TASK_SCENARIOS_SPEC,
+}
+
+
 TASK_OUTPUT_SCHEMAS: dict[TaskKind, type[AgentForecastOutput]] = {
     "trajectory": ContinuousAgentForecastOutput,
     "shock": DiscreteAgentForecastOutput,
@@ -182,7 +188,7 @@ TASK_OUTPUT_SCHEMAS: dict[TaskKind, type[AgentForecastOutput]] = {
 
 def build_wti_news_predictor(
     task: TaskKind,
-    model: str = "gemini-3.5-flash",
+    model: str = "gemini-3-flash-preview",
 ) -> AgentPredictor:
     """Build a news-grounded agent predictor for the given task kind.
 
@@ -191,10 +197,10 @@ def build_wti_news_predictor(
     task : TaskKind
         One of ``"trajectory"``, ``"shock"``, or ``"scenario"``.
     model : str
-        Gemini model identifier passed through to the underlying
+        Model identifier passed through to the underlying
         :class:`~aieng.forecasting.methods.agentic.agent_factory.AgentConfig`.
-        Defaults to ``"gemini-3.5-flash"``; pass a cheaper model (e.g.
-        ``"gemini-2.0-flash-lite"``) for development runs.
+        Defaults to ``"gemini-3-flash-preview"``; pass a cheaper model (e.g.
+        ``"gemini-3.1-flash-lite-preview"``) for development runs.
     """
     if task == "trajectory":
         return AgentPredictor(
