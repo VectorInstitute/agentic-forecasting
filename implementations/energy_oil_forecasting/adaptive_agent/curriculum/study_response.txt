@@ -1,0 +1,177 @@
+I have successfully conducted a comprehensive backtesting and simulation study using the WTI Crude Oil front-month futures contract (`CL=F`) for the entire year of 2025.
+
+Below is the step-by-step breakdown of the analysis, including the code utilized, the resulting error statistics, economic interpretation, and the strategy mutations recorded in my meta-learning database.
+
+---
+
+### 1. Methodology and Code Execution
+
+To simulate the performance of the trend-projection forecaster versus a simple flat-trend (no-change) benchmark, we fetched WTI prices from **September 2024 through February 2026**. This ensures a full 21-day prior window to calculate the rolling volatility for the first trading day of 2025, and a full 21-business-day future window to evaluate the actual outcomes of the last trading day of 2025.
+
+#### Code Implemented:
+```python
+import yfinance as yf
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+# 1. Fetch WTI history with padding around 2025
+ticker = yf.Ticker("CL=F")
+raw = ticker.history(start="2024-09-01", end="2026-02-15", auto_adjust=False)
+raw = raw.reset_index()
+
+df = pd.DataFrame({
+    "date": pd.to_datetime(raw["Date"]).dt.tz_localize(None).dt.normalize(),
+    "close": raw["Close"].values,
+}).dropna().sort_values("date").reset_index(drop=True)
+
+# Filter for standard daily frequency (gaps <= 3 days)
+day_gaps = df["date"].diff().dt.days
+daily = df[day_gaps <= 3].copy().reset_index(drop=True)
+
+# 2. Compute log returns & 21-day rolling annualized volatility
+daily["log_return"] = np.log(daily["close"] / daily["close"].shift(1))
+daily["vol_21"] = daily["log_return"].rolling(21).std() * np.sqrt(252) * 100
+
+def get_regime(vol):
+    if pd.isna(vol): return None
+    if vol < 20: return "low"
+    elif vol < 35: return "normal"
+    elif vol < 55: return "elevated"
+    else: return "extreme"
+
+daily["regime"] = daily["vol_21"].apply(get_regime)
+
+# Add z-scores to detect anomalies (used to shorten trend windows)
+daily["change"] = daily["close"].diff()
+daily["change_std"] = daily["change"].rolling(30).std()
+daily["z_score"] = daily["change"] / daily["change_std"]
+
+# 3. Simulate daily forecasts in 2025 at 5, 10, and 21 business days ahead
+results = []
+
+for i in range(len(daily)):
+    row = daily.iloc[i]
+    if row["date"].year != 2025:
+        continue
+
+    regime = row["regime"]
+    if pd.isna(regime):
+        continue
+
+    # Determine the trend window per our standard pipeline:
+    # 15 days in elevated/extreme vol or if an anomaly occurs; 30 days otherwise.
+    z = row["z_score"]
+    if regime in ("elevated", "extreme") or (not pd.isna(z) and abs(z) > 2.5):
+        trend_window = 15
+    else:
+        trend_window = 30
+
+    if i - trend_window + 1 < 0:
+        continue
+
+    # Fit the linear trend
+    window_df = daily.iloc[i - trend_window + 1 : i + 1]
+    x = np.arange(len(window_df)).reshape(-1, 1)
+    y = window_df["close"].values
+    model = LinearRegression().fit(x, y)
+
+    last_idx = trend_window - 1
+
+    for h in [5, 10, 21]:
+        proj_idx = last_idx + h
+        forecast = float(model.predict([[proj_idx]])[0])
+
+        if i + h < len(daily):
+            actual = daily.iloc[i + h]["close"]
+            error = forecast - actual  # positive error = over-prediction (forecast > actual)
+            results.append({
+                "date": row["date"],
+                "regime": regime,
+                "vol": row["vol_21"],
+                "horizon": h,
+                "forecast": forecast,
+                "actual": actual,
+                "error": error,
+                "abs_error": abs(error),
+                "flat_error": daily.iloc[i]["close"] - actual,
+                "flat_abs_error": abs(daily.iloc[i]["close"] - actual)
+            })
+
+results_df = pd.DataFrame(results)
+
+# 4. Aggregate error statistics by regime and horizon
+agg_stats = results_df.groupby(["regime", "horizon"]).agg(
+    count=("error", "count"),
+    mean_error=("error", "mean"),
+    mae=("abs_error", "mean"),
+    rmse=("error", lambda x: np.sqrt(np.mean(x**2))),
+    flat_mae=("flat_abs_error", "mean"),
+    flat_rmse=("flat_error", lambda x: np.sqrt(np.mean(x**2)))
+).reset_index()
+
+print(agg_stats.to_string(index=False))
+```
+
+---
+
+### 2. Volatility Regime & Forecast Error Statistics (2025)
+
+The table below summarizes the simulation results for WTI Crude Oil across 247 active trading days in 2025:
+
+| Regime | Horizon ($h$) | Trading Days | Trend MAE (USD) | Flat MAE (USD) | Trend RMSE (USD) | Flat RMSE (USD) | Mean Error (Bias, USD) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Low** (<20%) | 5 bd | 5 | 5.31 | 4.52 | 5.39 | 4.75 | -5.31 |
+| **Low** (<20%) | 10 bd | 5 | 2.17 | 1.65 | 2.85 | 2.07 | -1.40 |
+| **Low** (<20%) | 21 bd | 5 | 3.73 | 2.15 | 3.79 | 2.42 | +3.73 |
+| **Normal** (20–35%) | 5 bd | 188 | 2.60 | 2.09 | 3.41 | 2.93 | +0.06 |
+| **Normal** (20–35%) | 10 bd | 188 | 3.45 | 2.83 | 4.40 | 3.85 | +0.26 |
+| **Normal** (20–35%) | 21 bd | 188 | 4.56 | 3.44 | 5.95 | 4.26 | +0.63 |
+| **Elevated** (35–55%) | 5 bd | 54 | 4.89 | 2.33 | 6.04 | 3.26 | +0.10 |
+| **Elevated** (35–55%) | 10 bd | 54 | 5.28 | 2.58 | 6.92 | 3.30 | -0.74 |
+| **Elevated** (35–55%) | 21 bd | 54 | **11.95** | **3.91** | **13.99** | **5.06** | **-3.03** |
+
+*Note: Extreme volatility (>55%) was not reached during 2025. Low volatility (<20%) only occurred on 5 days, so statistical inference for the low regime is limited due to the small sample size.*
+
+---
+
+### 3. Summary of Findings
+
+#### A. Where are the largest errors?
+* **Regime:** The **Elevated volatility regime** (volatility between 35% and 55%) produces the largest errors by a massive margin.
+* **Horizon:** Errors grow progressively larger at longer horizons, peaking at the **21 business-day horizon** under the Elevated regime. Here, the trend-projection model's Mean Absolute Error (MAE) reaches **11.95 USD** (compared to 4.56 USD in the Normal regime).
+* **The Flat-Trend Dominance:** Crucially, **the simple trend-projection forecaster underperformed the simple flat-trend (no-change) forecaster across every single volatility regime and horizon.** In the Elevated volatility regime, this performance gap was disastrous:
+  * At **5 bd**, Trend MAE is **2.1x** larger than Flat MAE ($4.89 vs. $2.33).
+  * At **10 bd**, Trend MAE is **2.0x** larger than Flat MAE ($5.28 vs. $2.58).
+  * At **21 bd**, Trend MAE is **3.1x** larger than Flat MAE ($11.95 vs. $3.91).
+
+#### B. Directional Bias
+* **Elevated Regime Directional Bias:** In the Elevated regime at the 21-day horizon, the trend-projection model exhibits a strong **negative directional bias (-3.03 USD)**, which indicates severe under-prediction.
+* **Why this occurs (Market Dynamics):** This phenomenon represents the classic failure mode of linear trend extrapolation in commodity markets. Elevated volatility periods in WTI are typically triggered by sharp, aggressive price selloffs or geopolitically-driven rallies.
+  * Under our pipeline rules, when volatility becomes elevated, the trend-projection window is shortened to 15 days to "capture recent dynamics."
+  * However, this short window often captures a very steep downward slope. The linear model then extrapolates this steep slope 21 business days into the future, projecting unrealistically low prices (e.g., forecasting WTI to drop to $40–$45 during April 2025).
+  * In reality, crude oil is a highly mean-reverting asset with strong physical supply/demand floors. Once the panic subsides, prices stabilize or rebound, leaving the linear model's long-horizon projections severely under-predicting the actual price.
+
+---
+
+### 4. Meta-Learning & Strategy Mutation
+
+The meta-learning guidelines state that updates should be triggered when a backtesting exercise reveals a systematic, pattern-level bias rather than reacting to a single surprise. A full-year backtest covering 247 trading days with hundreds of distinct forecast origins is a highly robust evidence base.
+
+Therefore, I have initiated the following strategy mutations:
+
+#### Step 1: Record Observations
+I used `record_observation` to log two highly consistent patterns discovered during this backtest:
+1. **Observation 1 (Elevated Vol):** In the 2025 WTI backtest, the trend-projection model underperformed a simple flat forecast across all regimes and horizons, with the most extreme errors occurring in the elevated volatility regime at the 21-day horizon (Trend MAE of 11.95 USD vs Flat MAE of 3.91 USD, and a negative bias of -3.03 USD).
+2. **Observation 2 (Normal Vol):** In the 2025 WTI backtest, the trend-projection model underperformed the flat-trend forecast even in the normal volatility regime across all horizons (5bd: 2.60 vs 2.09, 10bd: 3.45 vs 2.83, 21bd: 4.56 vs 3.44).
+
+#### Step 2: Open Hypothesis
+I called `open_hypothesis` to establish a formal candidate calibration correction:
+* **Hypothesis ID:** `hyp-001`
+* **Claim:** Point forecasts generated by extrapolating a linear trend are consistently less accurate than a flat-trend (no-change) forecast in the elevated or extreme volatility regimes (annualised vol > 35%), particularly at the 10bd and 21bd horizons.
+* **Initial Evidence:** A full-year 2025 backtest of WTI crude oil prices shows that in the elevated volatility regime, the trend projection's MAE was more than double the flat forecast's MAE at 5bd (4.89 vs 2.33) and 10bd (5.28 vs 2.58), and more than triple at 21bd (11.95 vs 3.91), with a strong negative bias (-3.03) at 21bd.
+
+#### Next Steps for Graduation:
+Per the strict confirmation threshold of the `meta-learning` skill, `hyp-001` requires **2 confirming live-forecast resolutions** before it can be graduated into an active calibration correction.
+
+During future live prediction tasks, I will actively track this hypothesis. Once those live resolutions confirm that the trend-projection model continues to produce excessive errors relative to a flat model under elevated volatility, I will graduate `hyp-001` using `graduate_hypothesis`. This will officially alter my forecasting pipeline to substitute or heavily damp linear trend projections when volatility is elevated.

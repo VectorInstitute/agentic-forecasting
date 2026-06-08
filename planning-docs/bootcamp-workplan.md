@@ -41,7 +41,7 @@ These are the experiments we plan to make runnable, documented, and suitable for
 | Getting Started             | Smallest continuous forecasting walkthrough using CPI gasoline.                                  | StatCan                            | —         | **Complete.** h=1 (1-month ahead); backtest 2000–2025; eval Jan 2025–Mar 2026.                                                        |
 | Food Price Forecasting      | CFPR-style multivariate CPI task and clean model selection case study comparing baselines & LLMPs.| StatCan; optional FRED extensions  | Ethan     | **Complete.** Baselines and LLMPs integrated. Mini specs for fast iteration. No protected historical eval (leakage). |
 | Financial Markets - S&P 500 | Deep numerical-methods comparison; first formal financial-markets Track 1 template.              | yfinance; optional FRED covariates | Behnoosh  | **In progress.** Net-new reference implementation.                                                                                     |
-| Energy/Oil                  | Daily WTI forecasting with proper eval; sponsor-facing context-driven case.                      | yfinance                           | Ethan     | **Complete.** Four-notebook curriculum under `implementations/energy_oil_forecasting/`: case-study narrative, agentic staircase, one-agent-three-tasks, systematic backtest/eval. |
+| Energy/Oil                  | Daily WTI forecasting with proper eval; sponsor-facing context-driven case.                      | yfinance                           | Ethan     | **Extended — adaptive agent notebooks in progress.** Four-notebook curriculum complete; expanding to six notebooks to add adaptive agent training (NB05) and protected eval (NB06). See [adaptive-agent-notebook-design.md](adaptive-agent-notebook-design.md). |
 | BoC Rate Decisions          | Sole binary/discrete-event reference experiment and validation surface for `BinaryForecast`.     | StatCan, FRED, public BoC material | Ethan     | **Planned.** Net-new reference after energy promotion.                                                                                 |
 
 ### Energy/Oil 2026 Case Study
@@ -176,9 +176,9 @@ Deliverables:
 
 Reusable yfinance ingestion already exists in `aieng.forecasting.data`.
 
-### D. Energy/oil reference promotion (Ethan) — Done
+### D. Energy/oil reference promotion (Ethan) — Done (core); extended
 
-Status: **Done.**
+Status: **Core done. Extended — adaptive agent notebook expansion in progress (see H).**
 
 Deliverables completed:
 
@@ -187,6 +187,7 @@ Deliverables completed:
 - Wired yfinance and Prophet into standard `Predictor` contracts and evaluation pipelines.
 - Implemented a 4-step progressive agentic walkthrough showing blind statistical models, basic direct-prompted LLMs, news-grounded agents (with bounded search cutoffs), and advanced agents with Gemini's native code execution and custom forecasting skills.
 - Deleted playground folder to consolidate references under `implementations/`.
+- (Iteration 1 — Infra) Built `AdaptiveSkillStore`-backed skill state; `build_skill_tools()` factory; strategy variant dirs; curriculum utilities; news pre-caching script.
 
 ### E. BoC rate prediction reference (Ethan) — after energy
 
@@ -227,7 +228,26 @@ Deliverables:
 
 Daily energy data makes this especially valuable: start making predictions now to maximize resolved horizons by Build Days.
 
-### H. Memory-augmented agent (Ali + Ethan) — late bootcamp / stretch
+### H. Adaptive agent notebook expansion (Ethan) — in progress
+
+Target: Iteration 1 infra complete; Iteration 2 (notebooks 05–06) before Build Days
+
+Design and rationale: [`planning-docs/adaptive-agent-notebook-design.md`](adaptive-agent-notebook-design.md)
+
+Expands the energy/oil reference from 4 to 6 notebooks to showcase the adaptive agent as a learnable forecasting system:
+
+- **Notebook 05** — Adaptive agent training: one self-directed study session on 2025 data, plus optional robustness testing and an `adk web` interactive bridge
+- **Notebook 06** — Protected eval: before/after comparison (untrained vs trained) on 2026 data
+
+**Simplified to a clean before/after narrative:** a single self-directed study activity (NB05) produces `wti-strategy-trained/`. NB06 compares untrained vs trained on the 2026 eval spec alongside AutoARIMA and Naive baselines. The multi-variant experiment (Act 1 / Act 2a stats / Act 2b news) has been dropped. NB07 (interactive use) was removed — its content is now integrated into the closing sections of NB05 and NB06 via `adk web` suggested prompts.
+
+Iteration 1 (infra) complete: `build_skill_tools()` factory; `strategy_dir` parameterization; `AdaptiveSkillStore`-backed skill state; `curriculum.py` utilities; notebook 02–04 forward-reference updates.
+
+Training/eval split: **2025 training / 2026 eval.** Agent uses code execution + yfinance (no pre-packaged curriculum report) to explore 2025 data and update its strategy. Eval runs on `energy_oil_eval.yaml` (Feb–Mar 2026).
+
+Iteration 2 (notebooks) is a prerequisite for cohort 1 readiness if the adaptive agent is included as a reference.
+
+### I. Memory-augmented agent (Ali + Ethan) — late bootcamp / stretch
 
 Target: if time permits before or during Build Days
 
@@ -235,7 +255,7 @@ Hypothesis: an agent with the capacity to learn from prediction errors over time
 
 Exploratory; not blocking cohort readiness.
 
-### I. Lecture and Learn Days content (Ethan)
+### J. Lecture and Learn Days content (Ethan)
 
 Target: July 8-9
 
@@ -246,7 +266,7 @@ Track lightly; do not plan in detail here:
 - LLM Processes.
 - ForecastBench overview and optional extension framing.
 
-### J. Environment readiness
+### K. Environment readiness
 
 Target: June 18
 

@@ -1,0 +1,469 @@
+"""Script to generate 05_adaptive_agent_training.ipynb."""
+
+import json
+from pathlib import Path
+
+
+def md(source: str) -> dict:
+    return {"cell_type": "markdown", "metadata": {}, "source": source}
+
+
+def code(source: str) -> dict:
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": source,
+    }
+
+
+cells = []
+
+# ── Title ─────────────────────────────────────────────────────────────────────
+cells.append(
+    md(
+        "# WTI Crude Oil — Adaptive Agent: Self-Directed Study (Notebook 5 of 7)\n"
+        "\n"
+        "> **Part 5 of 7.** Builds on the stateless backtest in "
+        "[`04_systematic_backtest_eval.ipynb`](04_systematic_backtest_eval.ipynb).\n"
+        "\n"
+        "Every method in Notebook 4 was **stateless** — configured once, run the same way each time.  \n"
+        "This notebook introduces an agent that is different: it can **learn from experience**.\n"
+        "\n"
+        "The paradigm shift: instead of configuring a model, we onboard an analyst.  \n"
+        "We give the analyst a task, historical data, and a set of tools.  \n"
+        "The analyst explores the data, draws conclusions, and decides whether to update  \n"
+        "its own forecasting strategy — governed by evidence rules in its `meta-learning` skill.\n"
+        "\n"
+        "**What this notebook produces:**\n"
+        "\n"
+        "| Strategy dir | Contents |\n"
+        "|---|---|\n"
+        "| `wti-strategy/` | Clean initial state — never modified |\n"
+        "| `wti-strategy-trained/` | Strategy after one self-directed study session |"
+    )
+)
+
+# ── Setup ─────────────────────────────────────────────────────────────────────
+cells.append(md("---\n## 0. Setup"))
+
+cells.append(
+    code(
+        "import warnings\n"
+        "from pathlib import Path\n"
+        "\n"
+        "from aieng.forecasting.methods.agentic import build_adk_agent\n"
+        "from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig\n"
+        "from energy_oil_forecasting.adaptive_agent import build_wti_adaptive_config\n"
+        "\n"
+        "warnings.filterwarnings('ignore')\n"
+        "\n"
+        "# ── Paths ─────────────────────────────────────────────────────────────────────\n"
+        "_NB_DIR = Path('.')\n"
+        "_SKILLS_ROOT = _NB_DIR / 'adaptive_agent' / 'skills'\n"
+        "_CURRICULUM_DIR = _NB_DIR / 'adaptive_agent' / 'curriculum'\n"
+        "\n"
+        "# Clean seed — read-only baseline, never written to by training.\n"
+        "SEED_STRATEGY_DIR    = _SKILLS_ROOT / 'wti-strategy'\n"
+        "# Strategy state after the self-directed study session.\n"
+        "TRAINED_STRATEGY_DIR = _SKILLS_ROOT / 'wti-strategy-trained'\n"
+        "\n"
+        "# ── Model ─────────────────────────────────────────────────────────────────────\n"
+        "AGENT_MODEL = 'gemini-3.5-flash'\n"
+        "\n"
+        "# ── Run guards ────────────────────────────────────────────────────────────────\n"
+        "# Expensive by default; outputs are committed after first run.\n"
+        "# Set RUN_STUDY = True only to regenerate from scratch.\n"
+        "# Set RESEED = True to reset the trained strategy to the clean seed before running.\n"
+        "RUN_STUDY = False   # Self-directed study session (live API calls)\n"
+        "RESEED    = False   # Reset wti-strategy-trained/ to clean seed first\n"
+        "\n"
+        "print('Setup complete.')\n"
+        "print(f'  Seed:    {SEED_STRATEGY_DIR}')\n"
+        "print(f'  Trained: {TRAINED_STRATEGY_DIR}')"
+    )
+)
+
+# ── Section 1: Before — clean seed state ─────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 1. Before — The Agent's Starting State\n"
+        "\n"
+        "The seed strategy (`wti-strategy/`) contains domain priors: a sensible initial  \n"
+        "approach, but no evidence-backed calibration corrections.  \n"
+        "It is the same strategy the **untrained agent** uses in Notebook 6.\n"
+        "\n"
+        "The trained variant starts from an identical copy of this seed.  \n"
+        "Set `RESEED = True` in Setup if you want to reset it before a fresh study run."
+    )
+)
+
+cells.append(
+    code(
+        "if RESEED:\n"
+        "    import shutil  # noqa: PLC0415\n"
+        "    from aieng.forecasting.methods.agentic.adaptive_skill import AdaptiveSkillStore  # noqa: PLC0415\n"
+        "    from energy_oil_forecasting.adaptive_agent.skill_state import WtiStrategyState  # noqa: PLC0415\n"
+        "    TRAINED_STRATEGY_DIR.mkdir(exist_ok=True)\n"
+        "    shutil.copy2(SEED_STRATEGY_DIR / 'skill_state.yaml',\n"
+        "                 TRAINED_STRATEGY_DIR / 'skill_state.yaml')\n"
+        "    store = AdaptiveSkillStore(skill_dir=TRAINED_STRATEGY_DIR, state_type=WtiStrategyState)\n"
+        "    store.save(store.load())\n"
+        "    print('wti-strategy-trained/ reset to clean seed.')\n"
+        "else:\n"
+        "    print('RESEED = False — keeping existing wti-strategy-trained/ state.')\n"
+        "\n"
+        "print()\n"
+        "print('Initial strategy (wti-strategy/SKILL.md):')\n"
+        "print('─' * 60)\n"
+        "print((SEED_STRATEGY_DIR / 'SKILL.md').read_text())"
+    )
+)
+
+# ── Section 2: Self-Directed Study ────────────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 2. Self-Directed Study\n"
+        "\n"
+        "We give the agent one open-ended analytical task: explore 2025 WTI price data  \n"
+        "and assess whether its current forecasting approach is well-calibrated.\n"
+        "\n"
+        "The agent has access to:\n"
+        "- `fetch-yfinance` — live price data from Yahoo Finance (with temporal cutoffs)\n"
+        "- `vol-regime` — volatility regime classification\n"
+        "- `trend-projection` — trend fitting and interval calibration\n"
+        "- `meta-learning` — evidence governance rules for updating strategy\n"
+        "- Strategy mutation tools — to record observations, open hypotheses, and apply corrections\n"
+        "\n"
+        "The agent decides what to compute, what conclusions to draw, and whether any  \n"
+        "finding clears the evidence bar for updating its `wti-strategy-trained/` skill.\n"
+        "\n"
+        "> **Run guard:** `RUN_STUDY = False` by default — the trained strategy state  \n"
+        "> is committed so this notebook runs reproducibly without live API calls."
+    )
+)
+
+cells.append(
+    code(
+        "_STUDY_PROMPT = (\n"
+        "    'You have access to historical WTI crude oil price data via run_code. '\n"
+        "    'Please do the following:\\n\\n'\n"
+        "    '1. Fetch the daily WTI close price series for the full year 2025 using '\n"
+        "    'yfinance (ticker: CL=F, end=\"2026-01-01\").\\n'\n"
+        "    '2. Compute 21-day rolling realized volatility. Classify each day into a '\n"
+        "    'vol regime using the thresholds in your vol-regime skill.\\n'\n"
+        "    '3. Simulate the errors a simple trend-projection forecaster would make '\n"
+        "    'at 5, 10, and 21 business-day horizons during each regime. Approximate '\n"
+        "    'this using the historical return distribution within each regime window.\\n'\n"
+        "    '4. Summarize: in which regimes and at which horizons does trend-projection '\n"
+        "    'tend to produce the largest errors? Is there a directional bias?\\n\\n'\n"
+        "    'Based on your analysis, decide whether any findings meet the evidence '\n"
+        "    'threshold in your meta-learning skill. If they do, record them using '\n"
+        "    'the appropriate mutation tools. If not, explain what additional evidence '\n"
+        "    'you would need before updating your strategy.'\n"
+        ")\n"
+        "\n"
+        "if RUN_STUDY:\n"
+        "    config = build_wti_adaptive_config(\n"
+        "        model=AGENT_MODEL, strategy_dir=TRAINED_STRATEGY_DIR\n"
+        "    )\n"
+        "    agent = build_adk_agent(config)\n"
+        "    runner = AdkTextRunner(\n"
+        "        agent,\n"
+        "        config=AdkTextRunnerConfig(\n"
+        "            app_name='wti_self_directed_study',\n"
+        "            enable_langfuse_tracing=True,\n"
+        "            langfuse_tags=['energy-oil', 'adaptive-agent', 'self-directed-study'],\n"
+        "            langfuse_trace_name='wti-adaptive-self-directed-study',\n"
+        "        ),\n"
+        "    )\n"
+        "    print('Running self-directed study session...')\n"
+        "    print('(Live API calls + E2B sandbox — may take several minutes.)\\n')\n"
+        "    reply = await runner.run_text_async(_STUDY_PROMPT)  # noqa: F704, PLE1142\n"
+        "    (_CURRICULUM_DIR / 'study_response.txt').write_text(reply, encoding='utf-8')\n"
+        "    print(reply)\n"
+        "else:\n"
+        "    _f = _CURRICULUM_DIR / 'study_response.txt'\n"
+        "    if _f.exists():\n"
+        "        print(_f.read_text())\n"
+        "    else:\n"
+        "        print('[Study session not yet run. Set RUN_STUDY = True and re-run.]')"
+    )
+)
+
+# ── Section 3: After — what the agent learned ─────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 3. After — What the Agent Learned\n"
+        "\n"
+        "The cell below shows the trained strategy state.  \n"
+        "Look at what changed relative to the clean seed:\n"
+        "\n"
+        "- **Observations**: patterns the agent noticed during analysis\n"
+        "- **Hypotheses**: candidate corrections it opened for future confirmation\n"
+        "- **Calibration corrections**: confirmed adjustments now applied at inference\n"
+        "- **Approach narrative**: how the agent describes its own strategy in its own words\n"
+        "\n"
+        "These are the changes that will be active when the agent makes predictions  \n"
+        "in Notebook 6."
+    )
+)
+
+cells.append(
+    code(
+        "import yaml  # noqa: PLC0415\n"
+        "\n"
+        "def _load_state(d: Path) -> dict:\n"
+        "    return yaml.safe_load((d / 'skill_state.yaml').read_text())\n"
+        "\n"
+        "seed_state    = _load_state(SEED_STRATEGY_DIR)\n"
+        "trained_state = _load_state(TRAINED_STRATEGY_DIR)\n"
+        "\n"
+        "print('What changed after self-directed study:')\n"
+        "print('─' * 60)\n"
+        "for key, label in [\n"
+        "    ('observations',            'Observations'),\n"
+        "    ('hypotheses',              'Hypotheses'),\n"
+        "    ('calibration_corrections', 'Calibration corrections'),\n"
+        "]:\n"
+        "    before = len(seed_state.get(key, []))\n"
+        "    after  = len(trained_state.get(key, []))\n"
+        "    delta  = f'+{after - before}' if after >= before else str(after - before)\n"
+        "    print(f'  {label:28s}: {before} → {after}  ({delta})')\n"
+        "\n"
+        "approach_changed = (\n"
+        "    trained_state.get('approach_narrative', '')\n"
+        "    != seed_state.get('approach_narrative', '')\n"
+        ")\n"
+        'print(f\'  {"Approach narrative":28s}: {"UPDATED" if approach_changed else "unchanged\'"}\')'
+    )
+)
+
+cells.append(
+    code(
+        "print('Trained strategy (wti-strategy-trained/SKILL.md):')\n"
+        "print('─' * 60)\n"
+        "print((TRAINED_STRATEGY_DIR / 'SKILL.md').read_text())"
+    )
+)
+
+# ── Section 4: Optional robustness testing ────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 4. Optional: Robustness Testing\n"
+        "\n"
+        "In the self-directed study, the agent examined 2025 WTI data and recorded at  \n"
+        "least one open hypothesis. The two cells below run follow-up tasks to test  \n"
+        "whether those findings are robust — the standard scientific check before  \n"
+        "promoting any pattern to an active calibration correction.\n"
+        "\n"
+        "| Task | Structure | Goal |\n"
+        "|---|---|---|\n"
+        "| A — Cross-period | Re-run the same analysis on 2023-2024 data | `record_hypothesis_outcome` for each open hypothesis |\n"
+        "| B — Scope check | Identify untested boundary conditions and fill the gap | Second confirmation → attempt `graduate_hypothesis` |\n"
+        "\n"
+        "> **Run guard:** `RUN_FOLLOWUP = False` by default. Both tasks use the same  \n"
+        "> agent session and must run together — outputs are committed after first run."
+    )
+)
+
+cells.append(
+    code(
+        "# ── Run guard ─────────────────────────────────────────────────────────────────\n"
+        "# Set True to run the robustness tasks. Both run sequentially in one session.\n"
+        "# Outputs are saved and committed — leave False for reproducibility.\n"
+        "RUN_FOLLOWUP = False"
+    )
+)
+
+cells.append(
+    md(
+        "### Task A — Cross-Period Robustness (2023–2024)\n"
+        "\n"
+        "Ask the agent to review its open hypotheses and replicate the relevant  \n"
+        "analysis on 2023-2024 WTI data, recording whether the earlier data confirms  \n"
+        "or contradicts each finding."
+    )
+)
+
+cells.append(
+    code(
+        "_FOLLOWUP_A_PROMPT = (\n"
+        "    'Review the open hypotheses recorded in your strategy file. '\n"
+        "    'For each one:\\n'\n"
+        "    '1. Summarize what the hypothesis claims and which time period or '\n"
+        "    'conditions it was originally based on.\\n'\n"
+        "    '2. Fetch WTI daily close prices for 2023 and 2024 '\n"
+        "    '(ticker: CL=F, end=\"2025-01-01\").\\n'\n"
+        "    '3. Run the same type of analysis the hypothesis was based on, '\n"
+        "    'using the 2023-2024 data.\\n'\n"
+        "    '4. Call record_hypothesis_outcome for the hypothesis with '\n"
+        "    'outcome=\"confirmed\" if the pattern holds in the earlier data, or '\n"
+        "    'outcome=\"refuted\" if it does not. Be specific about what matched '\n"
+        "    'or contradicted the original finding.'\n"
+        ")\n"
+        "\n"
+        "if RUN_FOLLOWUP:\n"
+        "    config = build_wti_adaptive_config(\n"
+        "        model=AGENT_MODEL, strategy_dir=TRAINED_STRATEGY_DIR\n"
+        "    )\n"
+        "    agent = build_adk_agent(config)\n"
+        "    runner = AdkTextRunner(\n"
+        "        agent,\n"
+        "        config=AdkTextRunnerConfig(\n"
+        "            app_name='wti_robustness_followup',\n"
+        "            enable_langfuse_tracing=True,\n"
+        "            langfuse_tags=['energy-oil', 'adaptive-agent', 'robustness-followup'],\n"
+        "            langfuse_trace_name='wti-adaptive-robustness-a',\n"
+        "            fresh_session_per_message=False,\n"
+        "        ),\n"
+        "    )\n"
+        "    print('Running Task A: cross-period robustness test (2023-2024)...')\n"
+        "    reply_a = await runner.run_text_async(_FOLLOWUP_A_PROMPT)  # noqa: F704, PLE1142\n"
+        "    print(reply_a)\n"
+        "else:\n"
+        "    _f = _CURRICULUM_DIR / 'followup_a_response.txt'\n"
+        "    if _f.exists():\n"
+        "        print(_f.read_text())\n"
+        "    else:\n"
+        "        print('[Task A not yet run. Set RUN_FOLLOWUP = True and re-run.]')"
+    )
+)
+
+cells.append(
+    md(
+        "### Task B — Scope Check and Graduation Attempt\n"
+        "\n"
+        "Ask the agent to identify the untested boundary conditions of its open  \n"
+        "hypotheses — horizons, regimes, or market conditions not yet examined —  \n"
+        "run a targeted analysis to fill the most important gap, and then attempt  \n"
+        "graduation if the confirmation threshold is met."
+    )
+)
+
+cells.append(
+    code(
+        "_FOLLOWUP_B_PROMPT = (\n"
+        "    'Look at your open hypotheses and any confirmations or refutations '\n"
+        "    'recorded so far. For each open hypothesis:\\n'\n"
+        "    '1. Identify the boundary conditions — which horizons, regimes, or '\n"
+        "    'market conditions does the finding cover, and which have not yet been tested?\\n'\n"
+        "    '2. Run a targeted analysis to fill in the most important untested gap '\n"
+        "    '(e.g. a horizon or market condition you have not yet checked). '\n"
+        "    'Fetch whatever data you need via yfinance.\\n'\n"
+        "    '3. Call record_hypothesis_outcome based on what you find.\\n'\n"
+        "    '4. If the confirmation threshold is now met (the tool will tell you), '\n"
+        "    'call graduate_hypothesis with a precise condition, a concrete adjustment, '\n"
+        "    'and the appropriate horizon_scope. If the threshold is not yet met, '\n"
+        "    'explain what additional evidence would be needed to graduate the hypothesis.'\n"
+        ")\n"
+        "\n"
+        "if RUN_FOLLOWUP:\n"
+        "    print('\\nRunning Task B: horizon scope check...')\n"
+        "    reply_b = await runner.run_text_async(_FOLLOWUP_B_PROMPT)  # noqa: F704, PLE1142\n"
+        "    (_CURRICULUM_DIR / 'followup_a_response.txt').write_text(reply_a, encoding='utf-8')\n"
+        "    (_CURRICULUM_DIR / 'followup_b_response.txt').write_text(reply_b, encoding='utf-8')\n"
+        "    print(reply_b)\n"
+        "else:\n"
+        "    _f = _CURRICULUM_DIR / 'followup_b_response.txt'\n"
+        "    if _f.exists():\n"
+        "        print(_f.read_text())\n"
+        "    else:\n"
+        "        print('[Task B not yet run. Set RUN_FOLLOWUP = True and re-run.]')"
+    )
+)
+
+cells.append(md("### Strategy state after robustness testing"))
+
+cells.append(
+    code(
+        "import yaml  # noqa: PLC0415 (may already be imported above)\n"
+        "\n"
+        "trained_state_after = yaml.safe_load((TRAINED_STRATEGY_DIR / 'skill_state.yaml').read_text())\n"
+        "hyps = trained_state_after.get('hypotheses', [])\n"
+        "corrections = trained_state_after.get('calibration_corrections', [])\n"
+        "\n"
+        "print('wti-strategy-trained/ after robustness testing:')\n"
+        "print('─' * 60)\n"
+        "for hyp in hyps:\n"
+        '    print(f\'  hyp {hyp["id"]}: {hyp["status"]}  \'\n'
+        '          f\'confirmations={hyp["confirmations"]}  refutations={hyp["refutations"]}\')\n'
+        "print(f'  Calibration corrections: {len(corrections)}')\n"
+        "if corrections:\n"
+        "    for c in corrections:\n"
+        '        print(f\'    [{c["condition"]}] → {c["adjustment"]}\')\n'
+        "print()\n"
+        "print((TRAINED_STRATEGY_DIR / 'SKILL.md').read_text())"
+    )
+)
+
+# ── Section 5: Interactive exploration ────────────────────────────────────────
+cells.append(
+    md(
+        "---\n"
+        "## 5. Continue Interactively\n"
+        "\n"
+        "The notebook has walked the agent through a structured study session. But the  \n"
+        "best way to understand what the agent has learned — and to push it further —  \n"
+        "is to have a direct conversation.\n"
+        "\n"
+        "Launch the ADK web interface from the repo root:\n"
+        "\n"
+        "```bash\n"
+        "cd implementations/energy_oil_forecasting\n"
+        "\n"
+        "# Start fresh (seed strategy — no training applied yet):\n"
+        "uv run adk web adaptive_agent/\n"
+        "\n"
+        "# Continue from where the training notebook left off:\n"
+        "WTI_STRATEGY_DIR=adaptive_agent/skills/wti-strategy-trained \\\\\n"
+        "    uv run adk web adaptive_agent/\n"
+        "```\n"
+        "\n"
+        "Open `http://localhost:8000` in your browser. The agent has its full skill  \n"
+        "set available: code execution, web search, and mutation tools.\n"
+        "\n"
+        "**Suggested conversation starters:**\n"
+        "\n"
+        '- *"What\'s your current forecasting strategy? Summarize it in plain language and tell me what calibration corrections are active."*\n'
+        '- *"Look at the 2022 Russia-Ukraine oil shock (Feb–Mar 2022). Does your flat-line finding hold during a sharp upward move driven by geopolitical shock?"*\n'
+        '- *"Explore early 2020 (COVID demand collapse). Does the flat-line advantage hold during a sharp downward move as well as the recovery?"*\n'
+        '- *"Given your current strategy, what would your 21-day WTI forecast be as of today?"*\n'
+        '- *"What would it take for you to open a second hypothesis? What\'s the next most interesting pattern to investigate?"*\n'
+        "\n"
+        "---\n"
+        "## Next: Protected Evaluation\n"
+        "\n"
+        "Notebook 6 evaluates both the **untrained agent** (uses `wti-strategy/`)  \n"
+        "and the **trained agent** (uses `wti-strategy-trained/`) on the 2026 eval spec —  \n"
+        "a period of significant market volatility the agent has never seen.\n"
+        "\n"
+        "The eval is deliberately **frozen**: the agent cannot update its strategy  \n"
+        "during evaluation, so the comparison is a clean before/after of what  \n"
+        "the self-directed study session contributed."
+    )
+)
+
+# ── Write notebook ─────────────────────────────────────────────────────────────
+nb = {
+    "nbformat": 4,
+    "nbformat_minor": 5,
+    "metadata": {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3",
+        },
+        "language_info": {"name": "python", "version": "3.11.0"},
+    },
+    "cells": cells,
+}
+
+out = Path("implementations/energy_oil_forecasting/05_adaptive_agent_training.ipynb")
+out.write_text(json.dumps(nb, indent=1, ensure_ascii=False))
+print(f"Wrote {len(cells)} cells to {out}")

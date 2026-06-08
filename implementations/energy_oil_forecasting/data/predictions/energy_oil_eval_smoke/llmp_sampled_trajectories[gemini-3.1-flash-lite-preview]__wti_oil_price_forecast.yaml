@@ -1,0 +1,149 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2026-02-02T00:00:00'
+  end: '2026-02-09T00:00:00'
+  stride: 5
+  warmup: 250
+  description: Two-origin smoke evaluation for local and CI testing of the NB04 pipeline.
+    Uses the same tasks, horizons, warmup, and geopolitical period as energy_oil_eval
+    but with only 2 origins to keep cost negligible.
+predictor_id: llmp_sampled_trajectories[gemini-3.1-flash-lite-preview]
+predictions:
+- predictor_id: llmp_sampled_trajectories[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:27:48.321215'
+  as_of: '2026-02-02T00:00:00'
+  forecast_date: '2026-02-09T00:00:00'
+  payload:
+    point_forecast: 66.05
+    quantiles:
+      '0.05': 66.05
+      '0.1': 66.05
+      '0.2': 66.05
+      '0.3': 66.05
+      '0.4': 66.05
+      '0.5': 66.05
+      '0.6': 66.05
+      '0.7': 66.05
+      '0.8': 66.05
+      '0.9': 66.05
+      '0.95': 66.05
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    n_samples: 1
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 100726
+    output_tokens: 179
+    parse_failures: 0
+    langfuse_trace_id: b8432db86a591dc2ebfd510ab1bb3f0a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/b8432db86a591dc2ebfd510ab1bb3f0a
+- predictor_id: llmp_sampled_trajectories[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:27:48.321215'
+  as_of: '2026-02-02T00:00:00'
+  forecast_date: '2026-03-03T00:00:00'
+  payload:
+    point_forecast: 69.34
+    quantiles:
+      '0.05': 69.34
+      '0.1': 69.34
+      '0.2': 69.34
+      '0.3': 69.34
+      '0.4': 69.34
+      '0.5': 69.34
+      '0.6': 69.34
+      '0.7': 69.34
+      '0.8': 69.34
+      '0.9': 69.34
+      '0.95': 69.34
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    n_samples: 1
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 100726
+    output_tokens: 179
+    parse_failures: 0
+    langfuse_trace_id: b8432db86a591dc2ebfd510ab1bb3f0a
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/b8432db86a591dc2ebfd510ab1bb3f0a
+- predictor_id: llmp_sampled_trajectories[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:27:50.005472'
+  as_of: '2026-02-09T00:00:00'
+  forecast_date: '2026-02-23T00:00:00'
+  payload:
+    point_forecast: 61.27
+    quantiles:
+      '0.05': 61.27
+      '0.1': 61.27
+      '0.2': 61.27
+      '0.3': 61.27
+      '0.4': 61.27
+      '0.5': 61.27
+      '0.6': 61.27
+      '0.7': 61.27
+      '0.8': 61.27
+      '0.9': 61.27
+      '0.95': 61.27
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    n_samples: 1
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 100816
+    output_tokens: 179
+    parse_failures: 0
+    langfuse_trace_id: fd7504c07253873dedf2da5f588d24cd
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/fd7504c07253873dedf2da5f588d24cd
+- predictor_id: llmp_sampled_trajectories[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:27:50.005472'
+  as_of: '2026-02-09T00:00:00'
+  forecast_date: '2026-03-10T00:00:00'
+  payload:
+    point_forecast: 59.12
+    quantiles:
+      '0.05': 59.12
+      '0.1': 59.12
+      '0.2': 59.12
+      '0.3': 59.12
+      '0.4': 59.12
+      '0.5': 59.12
+      '0.6': 59.12
+      '0.7': 59.12
+      '0.8': 59.12
+      '0.9': 59.12
+      '0.95': 59.12
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    n_samples: 1
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 100816
+    output_tokens: 179
+    parse_failures: 0
+    langfuse_trace_id: fd7504c07253873dedf2da5f588d24cd
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/fd7504c07253873dedf2da5f588d24cd
+scores:
+- 1.6899993896484347
+- 5.219997558593747
+- 5.039997558593747
+- 24.32999694824219
+mean_crps: 9.06999786376953
+ran_at: '2026-05-28T19:27:50.268200'
+skipped_origins: 0

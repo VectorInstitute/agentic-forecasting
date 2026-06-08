@@ -1,0 +1,206 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2025-06-02T00:00:00'
+  end: '2025-06-09T00:00:00'
+  stride: 5
+  warmup: 250
+  description: "Two-origin smoke backtest for local and CI testing of the NB04 pipeline.\
+    \ Uses the same tasks, horizons, and warmup as energy_oil_backtest but with only\
+    \ 2 weekly origins so the full notebook can be exercised without burning tokens\
+    \ on 51 \xD7 5 predictor evaluations."
+predictor_id: llmp_quantile_grid[gemini-3.1-flash-lite-preview]
+predictions:
+- predictor_id: llmp_quantile_grid[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:25:48.330498'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-09T00:00:00'
+  payload:
+    point_forecast: 60.85
+    quantiles:
+      '0.05': 58.95
+      '0.1': 59.37
+      '0.2': 59.82
+      '0.3': 60.17
+      '0.4': 60.51
+      '0.5': 60.85
+      '0.6': 61.2
+      '0.7': 61.58
+      '0.8': 62.03
+      '0.9': 62.53
+      '0.95': 62.96
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 97718
+    output_tokens: 2827
+    parse_failures: 0
+    langfuse_trace_id: 7bceb337e0f1bd75515da026715de336
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7bceb337e0f1bd75515da026715de336
+- predictor_id: llmp_quantile_grid[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:25:48.330498'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 60.82
+    quantiles:
+      '0.05': 57.29
+      '0.1': 58.04
+      '0.2': 58.87
+      '0.3': 59.53
+      '0.4': 60.18
+      '0.5': 60.82
+      '0.6': 61.46
+      '0.7': 62.15
+      '0.8': 62.97
+      '0.9': 63.83
+      '0.95': 64.57
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 97718
+    output_tokens: 2827
+    parse_failures: 0
+    langfuse_trace_id: 7bceb337e0f1bd75515da026715de336
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7bceb337e0f1bd75515da026715de336
+- predictor_id: llmp_quantile_grid[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:25:48.330498'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-07-01T00:00:00'
+  payload:
+    point_forecast: 60.97
+    quantiles:
+      '0.05': 52.81
+      '0.1': 54.48
+      '0.2': 56.37
+      '0.3': 57.93
+      '0.4': 59.45
+      '0.5': 60.97
+      '0.6': 62.49
+      '0.7': 64.04
+      '0.8': 65.73
+      '0.9': 67.59
+      '0.95': 69.13
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 97718
+    output_tokens: 2827
+    parse_failures: 0
+    langfuse_trace_id: 7bceb337e0f1bd75515da026715de336
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7bceb337e0f1bd75515da026715de336
+- predictor_id: llmp_quantile_grid[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:25:56.287561'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 65.25
+    quantiles:
+      '0.05': 62.9
+      '0.1': 63.2
+      '0.2': 63.75
+      '0.3': 64.25
+      '0.4': 64.75
+      '0.5': 65.25
+      '0.6': 65.8
+      '0.7': 66.45
+      '0.8': 67.2
+      '0.9': 68.15
+      '0.95': 68.9
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 97808
+    output_tokens: 2827
+    parse_failures: 0
+    langfuse_trace_id: 6a41598b9b077654d8e1b89f817b2951
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/6a41598b9b077654d8e1b89f817b2951
+- predictor_id: llmp_quantile_grid[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:25:56.287561'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-23T00:00:00'
+  payload:
+    point_forecast: 65.9
+    quantiles:
+      '0.05': 61.9
+      '0.1': 62.45
+      '0.2': 63.25
+      '0.3': 64.0
+      '0.4': 64.9
+      '0.5': 65.9
+      '0.6': 66.95
+      '0.7': 68.1
+      '0.8': 69.45
+      '0.9': 70.95
+      '0.95': 72.15
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 97808
+    output_tokens: 2827
+    parse_failures: 0
+    langfuse_trace_id: 6a41598b9b077654d8e1b89f817b2951
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/6a41598b9b077654d8e1b89f817b2951
+- predictor_id: llmp_quantile_grid[gemini-3.1-flash-lite-preview]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-05-28T19:25:56.287561'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-07-08T00:00:00'
+  payload:
+    point_forecast: 67.0
+    quantiles:
+      '0.05': 59.7
+      '0.1': 60.8
+      '0.2': 62.15
+      '0.3': 63.45
+      '0.4': 64.9
+      '0.5': 67.0
+      '0.6': 69.15
+      '0.7': 71.4
+      '0.8': 74.4
+      '0.9': 77.0
+      '0.95': 79.3
+  metadata:
+    model: gemini-3.1-flash-lite-preview
+    temperature: 1.0
+    reasoning_effort: disable
+    cost_usd: 0.0
+    input_tokens: 97808
+    output_tokens: 2827
+    parse_failures: 0
+    langfuse_trace_id: 6a41598b9b077654d8e1b89f817b2951
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/6a41598b9b077654d8e1b89f817b2951
+scores:
+- 3.6757033948661864
+- 9.591732180256491
+- 2.6280977863910766
+- 5.1766082133143385
+- 1.5367778305179811
+- 1.9667770259636495
+mean_crps: 4.095949405218287
+ran_at: '2026-05-28T19:25:56.701512'
+skipped_origins: 0
