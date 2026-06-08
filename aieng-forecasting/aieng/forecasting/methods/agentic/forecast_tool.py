@@ -138,7 +138,8 @@ class ForecastTool:
             frequency: Pandas offset alias matching the series sampling, e.g.
                 "B" (business day), "D" (daily), "MS" (month start).
 
-        Returns:
+        Returns
+        -------
             A JSON string with the point forecast, 80% and 90% prediction
             interval bounds, and the full quantile grid for each horizon, plus
             the series description, units, and cutoff date used.
