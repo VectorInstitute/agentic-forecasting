@@ -112,7 +112,7 @@ class TestRunForecast:
         assert stub.seen_task.frequency == "B"
 
     def test_no_95_percent_interval_reported(self) -> None:
-        """Only 80% and 90% intervals are reported (standard grid tops out at p05/p95)."""
+        """Only 80% and 90% intervals are reported (grid tops out at p05/p95)."""
         tool = ForecastTool(_service_with_series(), predictor=_StubPredictor())
 
         result = json.loads(tool.run_forecast("test_series", "2023-06-01", [1], "B"))

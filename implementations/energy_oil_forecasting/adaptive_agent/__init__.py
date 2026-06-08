@@ -8,8 +8,8 @@ from energy_oil_forecasting.adaptive_agent.agent import (
     WtiAdaptiveForecastPromptBuilder,
     build_wti_adaptive_config,
     build_wti_adaptive_predictor,
-    compress_history,
 )
+from energy_oil_forecasting.analyst_agent import compress_history
 
 
 __all__ = [

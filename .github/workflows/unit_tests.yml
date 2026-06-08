@@ -56,5 +56,5 @@ jobs:
           cd aieng-forecasting
           uv venv .venv
           source .venv/bin/activate
-          uv sync --all-extras --dev
-          uv run pytest -m "not integration_test" tests
+          uv sync --all-extras --dev --all-packages
+          uv run pytest -m "not integration_test" tests ../implementations/tests

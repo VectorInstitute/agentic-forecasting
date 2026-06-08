@@ -24,6 +24,7 @@ import contextvars
 import json
 import logging
 import os
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, TypeVar
 
@@ -53,6 +54,20 @@ def bootstrap_litellm() -> None:
         existing = list(getattr(litellm, "callbacks", []) or [])
         if "langfuse_otel" not in existing:
             litellm.callbacks = [*existing, "langfuse_otel"]
+
+    # Suppress LiteLLM startup and OTEL noise (mirrors agent_factory.py filter).
+    # Bedrock/SageMaker "no botocore" and OTEL proxy-server notices are harmless.
+    # OTEL span-lifecycle warnings fire when callbacks run after spans close.
+    class _NoiseFilter(logging.Filter):
+        _NOISE = ("botocore", "Proxy Server is not installed")
+
+        def filter(self, record: logging.LogRecord) -> bool:
+            return not any(n in record.getMessage() for n in self._NOISE)
+
+    logging.getLogger("LiteLLM").addFilter(_NoiseFilter())
+    warnings.filterwarnings("ignore", message="Tried calling set_status on an ended span")
+    warnings.filterwarnings("ignore", message="Setting attribute on ended span")
+    logging.getLogger("opentelemetry").setLevel(logging.ERROR)
 
     _BOOTSTRAP_DONE = True
 
@@ -102,6 +117,74 @@ def make_json_schema_response_format(name: str, schema: dict[str, Any]) -> dict[
     }
 
 
+def strip_markdown_fence(content: str) -> str:
+    r"""Normalise an LLM response down to its JSON payload.
+
+    Defends the parse layer against two model/proxy quirks so participants can
+    swap models freely without hitting parse failures:
+
+    1. **Markdown fences.** Some models wrap JSON in a ```json ... ``` fence
+       even when ``response_format`` is set.
+    2. **Surrounding prose.** Some models (notably Claude through the proxy)
+       append an explanation *after* the JSON — e.g. ``{...}\n\n**Method:**
+       ...`` — or leak a stray closing fence when prose follows it. This is a
+       Predictor-interface concern, not LLMP-specific: every methodology that
+       parses a structured JSON response needs the payload isolated.
+
+    The prose-trimming step is best-effort: it isolates the first complete
+    JSON object via :meth:`json.JSONDecoder.raw_decode` and discards anything
+    after it. When no JSON object is present the fence-stripped string is
+    returned unchanged, so non-JSON content passes through untouched.
+
+    Parameters
+    ----------
+    content : str
+        Raw LLM response content, possibly fenced and/or surrounded by prose.
+
+    Returns
+    -------
+    str
+        The isolated JSON payload, or the fence-stripped, whitespace-trimmed
+        input when no JSON object can be located.
+    """
+    stripped = content.strip()
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        # Drop opening fence line (```json or ```)
+        inner_lines = lines[1:]
+        # Drop closing fence line if present
+        if inner_lines and inner_lines[-1].strip() == "```":
+            inner_lines = inner_lines[:-1]
+        stripped = "\n".join(inner_lines).strip()
+    payload = _extract_json_payload(stripped)
+    return payload if payload is not None else stripped
+
+
+def _extract_json_payload(text: str) -> str | None:
+    """Return the first complete JSON object in ``text``, or ``None``.
+
+    Scans for the first ``{`` and uses ``raw_decode`` to consume a single
+    balanced JSON object, ignoring any trailing (or leading) prose. Candidate
+    start positions that do not begin a valid object are skipped, so a stray
+    brace inside prose cannot derail extraction.
+
+    Only objects are matched (not arrays): every structured forecast payload in
+    the Predictor interface is a top-level JSON object, so anchoring on ``{``
+    avoids accidentally capturing an echoed numeric array (e.g. the input
+    series) that some models repeat in their prose.
+    """
+    decoder = json.JSONDecoder()
+    for start, char in enumerate(text):
+        if char != "{":
+            continue
+        try:
+            _, end = decoder.raw_decode(text, start)
+        except json.JSONDecodeError:
+            continue
+        return text[start:end]
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Async sampling seam
 # ---------------------------------------------------------------------------
@@ -116,6 +199,8 @@ async def _one_completion_async(
     max_tokens: int,
     timeout_s: float,
     reasoning_effort: str | None,
+    api_base: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[str | None, float, int, int]:
     """Issue a single ``litellm.acompletion`` and return content + usage."""
     import litellm  # noqa: PLC0415
@@ -128,16 +213,36 @@ async def _one_completion_async(
         "max_tokens": max_tokens,
         "timeout": timeout_s,
     }
+    if api_base is not None:
+        kwargs["api_base"] = api_base
+        # Prefix the model with "openai/" so LiteLLM routes via the
+        # OpenAI-compatible path.  LiteLLM strips the prefix before sending
+        # the request, so the proxy receives the bare model name as expected.
+        if not model.startswith("openai/"):
+            kwargs["model"] = f"openai/{model}"
+    if api_key is not None:
+        kwargs["api_key"] = api_key
     if reasoning_effort is not None:
         # LiteLLM unifies the per-provider reasoning-budget kwargs behind
         # ``reasoning_effort`` ∈ {"disable", "low", "medium", "high"}. We
         # default to ``"disable"`` in the config because CoT-induced
         # overconfidence is well-documented for continuous probabilistic
         # forecasting (Welch 2026, Marzoev 2026).
-        kwargs["reasoning_effort"] = reasoning_effort
-        # Some models (e.g. gemini-3.5-flash) don't accept reasoning_effort.
-        # drop_params=True tells LiteLLM to silently omit unsupported params
-        # rather than raising UnsupportedParamsError.
+        #
+        # IMPORTANT: when routing through an OpenAI-compatible proxy (api_base
+        # set), LiteLLM treats the model as a generic OpenAI model and does not
+        # list ``reasoning_effort`` as a supported param for non-o1/o3 model
+        # names (confirmed via litellm.get_supported_openai_params). With
+        # ``drop_params=True`` it is silently stripped before the request
+        # reaches the proxy, so the thinking model runs unconstrained.
+        # Workaround: inject via ``extra_body``, which bypasses LiteLLM's
+        # param-filtering step and is merged directly into the request JSON.
+        if api_base is not None:
+            kwargs.setdefault("extra_body", {})["reasoning_effort"] = reasoning_effort
+        else:
+            kwargs["reasoning_effort"] = reasoning_effort
+        # drop_params=True is still needed for other non-standard params on
+        # models that don't support them (e.g. temperature on some o-series).
         kwargs["drop_params"] = True
 
     resp = await litellm.acompletion(**kwargs)
@@ -145,7 +250,13 @@ async def _one_completion_async(
     usage = getattr(resp, "usage", None)
     in_tok = int(getattr(usage, "prompt_tokens", 0) or 0) if usage is not None else 0
     out_tok = int(getattr(usage, "completion_tokens", 0) or 0) if usage is not None else 0
-    return resp.choices[0].message.content, cost, in_tok, out_tok
+    # Log full usage so we can see thinking-token breakdown when available.
+    # The proxy may populate completion_tokens_details.reasoning_tokens.
+    if usage is not None:
+        logger.debug("LLM usage: %s", vars(usage) if hasattr(usage, "__dict__") else usage)
+    raw = resp.choices[0].message.content
+    content = strip_markdown_fence(raw) if raw else raw
+    return content, cost, in_tok, out_tok
 
 
 async def _one_completion_with_transient_retry(
@@ -157,6 +268,8 @@ async def _one_completion_with_transient_retry(
     max_tokens: int,
     timeout_s: float,
     reasoning_effort: str | None,
+    api_base: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[str | None, float, int, int]:
     """Call ``_one_completion_async`` with retries for transient API errors.
 
@@ -176,6 +289,8 @@ async def _one_completion_with_transient_retry(
                 max_tokens=max_tokens,
                 timeout_s=timeout_s,
                 reasoning_effort=reasoning_effort,
+                api_base=api_base,
+                api_key=api_key,
             )
         except _transient as exc:
             if attempt == 2:
@@ -202,6 +317,8 @@ async def _sample_one_with_retry(
     timeout_s: float,
     reasoning_effort: str | None,
     sample_index: int,
+    api_base: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[T | None, float, int, int, int]:
     """Single sample with one retry on parse failure and transient-error backoff."""
     cost = 0.0
@@ -218,6 +335,8 @@ async def _sample_one_with_retry(
             max_tokens=max_tokens,
             timeout_s=timeout_s,
             reasoning_effort=reasoning_effort,
+            api_base=api_base,
+            api_key=api_key,
         )
         cost += c
         in_tok += i
@@ -248,6 +367,8 @@ async def sample_n_async(
     max_tokens: int,
     timeout_s: float,
     reasoning_effort: str | None,
+    api_base: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[list[T], float, int, int, int]:
     """Fan ``n_samples`` calls out via ``asyncio.gather`` and aggregate usage.
 
@@ -266,6 +387,8 @@ async def sample_n_async(
             timeout_s=timeout_s,
             reasoning_effort=reasoning_effort,
             sample_index=i,
+            api_base=api_base,
+            api_key=api_key,
         )
         for i in range(n_samples)
     ]

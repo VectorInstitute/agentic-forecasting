@@ -124,6 +124,8 @@ The likely decomposition is:
 - Context Retrieval Agent: Gemini-backed specialist for Google Search grounding, news retrieval, and source-aware context gathering.
 - Analyst Agent: provider-flexible reasoning and code-execution agent that can use repository skills, call conventional forecasting routines, delegate retrieval tasks, and synthesize forecasts or analyses.
 
+**LLM routing (open):** Vector offers a shared proxy (`proxy.vectorinstitute.ai`) that does not support the Gemini-native search and code-exec features our agents use. Plan: keep those on direct Gemini sub-agents; use the proxy for LLMP if we adopt it. See [`planning-docs/vector-llm-proxy.md`](vector-llm-proxy.md).
+
 ## Work Items
 
 ### Completed
@@ -268,6 +270,7 @@ Live testing of Track 1 predictors (work item G) **is in scope** and distinct fr
 
 ## Risk Watchlist
 
+- **Vector LLM proxy vs Gemini-native agent features** — proxy cannot replace Google Search or Gemini in-model code exec; keep those on direct Gemini sub-agents. LLMP-on-proxy is viable (OpenAI models preferred). See [`planning-docs/vector-llm-proxy.md`](vector-llm-proxy.md).
 - **google-adk 2.0.0** — merged May 20, 2026; CI green but agent smoke tests are mostly mocked. Run live `adk web` / one predict call before next agent feature work.
 - **Spec path migration** — coordinate with Behnoosh and Ali so new experiments use co-located specs from the start.
 - **LLM leakage** — historical backtest scores for LLMP and agentic predictors are upper bounds, not clean benchmarks. Live testing (G) is the honest evaluation path.

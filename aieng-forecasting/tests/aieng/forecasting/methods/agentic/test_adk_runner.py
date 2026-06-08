@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig
+from aieng.forecasting.methods.agentic.agent_factory import SMR_STATE_KEY
 
 
 # ---------------------------------------------------------------------------
@@ -59,6 +60,9 @@ def inner_runner():
     """Stubbed InMemoryRunner: session service + run_async pre-configured."""
     r = MagicMock()
     r.session_service.create_session = AsyncMock(return_value=_session())
+    # AdkTextRunner now always resolves the final output via get_session().
+    # Default to no SMR payload unless a test explicitly overrides it.
+    r.session_service.get_session = AsyncMock(return_value=None)
     r.run_async = MagicMock(return_value=_stream())
     r.close = AsyncMock()
     return r
@@ -130,18 +134,6 @@ class TestFreshSessionMode:
         session_ids = [call.kwargs["session_id"] for call in patch_runner_cls.run_async.call_args_list]
         assert session_ids == ["s1", "s2"]
 
-    async def test_sticky_dict_is_never_written(self, patch_runner_cls, mock_agent) -> None:
-        """Per-user sticky map stays empty in fresh-session mode."""
-        patch_runner_cls.run_async.return_value = _stream(_final_event("ok"))
-        runner = AdkTextRunner(
-            mock_agent,
-            config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=True),
-        )
-
-        await runner.run_text_async("hello", user_id="alice")
-
-        assert runner._conversation_session_by_user == {}
-
     async def test_caller_supplied_session_id_is_ignored(self, patch_runner_cls, mock_agent) -> None:
         """Caller-provided session id is ignored; a new session is always created."""
         patch_runner_cls.session_service.create_session.return_value = _session("fresh-sid")
@@ -165,8 +157,8 @@ class TestFreshSessionMode:
 class TestStickySessionMode:
     """Session handling when ``fresh_session_per_message`` is false (sticky)."""
 
-    async def test_first_call_creates_and_caches_session(self, patch_runner_cls, mock_agent) -> None:
-        """First resolve creates a session and stores it under the user id."""
+    async def test_first_call_uses_newly_created_session(self, patch_runner_cls, mock_agent) -> None:
+        """First message creates a session and passes its id to run_async."""
         patch_runner_cls.session_service.create_session.return_value = _session("s1")
         patch_runner_cls.run_async.return_value = _stream(_final_event("ok"))
         runner = AdkTextRunner(
@@ -177,7 +169,6 @@ class TestStickySessionMode:
         await runner.run_text_async("hello", user_id="alice")
 
         assert patch_runner_cls.run_async.call_args.kwargs["session_id"] == "s1"
-        assert runner._conversation_session_by_user["alice"] == "s1"
 
     async def test_second_call_reuses_session_without_creating_a_new_one(self, patch_runner_cls, mock_agent) -> None:
         """Second resolve returns the cached id without another create_session call."""
@@ -208,7 +199,6 @@ class TestStickySessionMode:
         await runner.run_text_async("hello", user_id="alice", session_id="override-sid")
 
         assert patch_runner_cls.run_async.call_args.kwargs["session_id"] == "override-sid"
-        assert runner._conversation_session_by_user["alice"] == "override-sid"
         patch_runner_cls.session_service.create_session.assert_not_called()
 
     async def test_different_users_get_independent_sessions(self, patch_runner_cls, mock_agent) -> None:
@@ -228,10 +218,8 @@ class TestStickySessionMode:
         await runner.run_text_async("first", user_id="alice")
         await runner.run_text_async("second", user_id="bob")
 
-        assert runner._conversation_session_by_user == {
-            "alice": "alice-sess",
-            "bob": "bob-sess",
-        }
+        session_ids = [call.kwargs["session_id"] for call in patch_runner_cls.run_async.call_args_list]
+        assert session_ids == ["alice-sess", "bob-sess"]
 
     async def test_none_user_id_falls_back_to_default_user_id(self, patch_runner_cls, mock_agent) -> None:
         """None user id resolves stickiness under ``default_user_id``."""
@@ -248,7 +236,6 @@ class TestStickySessionMode:
         await runner.run_text_async("hello")
 
         assert patch_runner_cls.run_async.call_args.kwargs["user_id"] == "default-user"
-        assert "default-user" in runner._conversation_session_by_user
 
 
 # ---------------------------------------------------------------------------
@@ -256,34 +243,85 @@ class TestStickySessionMode:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.asyncio
 class TestClearConversation:
-    """``clear_conversation`` removes entries from the sticky-session map."""
+    """``clear_conversation`` resets the sticky-session cache.
 
-    @pytest.fixture
-    def runner_with_sessions(self, patch_runner_cls, mock_agent) -> AdkTextRunner:
-        """Runner with two cached users in the sticky session map."""
+    Observable contract: after clearing, the next ``run_text_async`` call
+    creates a fresh session instead of reusing the previous one.
+    """
+
+    async def test_clear_specific_user_triggers_new_session_on_next_call(self, patch_runner_cls, mock_agent) -> None:
+        """After clearing alice, her next message creates a new session.
+
+        Bob's sticky session should remain unchanged.
+        """
+        patch_runner_cls.session_service.create_session.side_effect = [
+            _session("alice-s1"),
+            _session("bob-s1"),
+            _session("alice-s2"),
+        ]
+        patch_runner_cls.run_async.side_effect = [
+            _stream(_final_event("a1")),
+            _stream(_final_event("b1")),
+            _stream(_final_event("a2")),
+        ]
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=False),
         )
-        runner._conversation_session_by_user = {"alice": "s1", "bob": "s2"}
-        return runner
+        await runner.run_text_async("first", user_id="alice")
+        await runner.run_text_async("first", user_id="bob")
+        runner.clear_conversation(user_id="alice")
+        await runner.run_text_async("second", user_id="alice")
 
-    def test_clear_specific_user_leaves_others_intact(self, runner_with_sessions) -> None:
-        """Clearing one user removes only that user's cached session."""
-        runner_with_sessions.clear_conversation(user_id="alice")
-        assert "alice" not in runner_with_sessions._conversation_session_by_user
-        assert "bob" in runner_with_sessions._conversation_session_by_user
+        session_ids = [call.kwargs["session_id"] for call in patch_runner_cls.run_async.call_args_list]
+        assert session_ids == ["alice-s1", "bob-s1", "alice-s2"]
+        assert patch_runner_cls.session_service.create_session.call_count == 3
 
-    def test_clear_all_empties_the_dict(self, runner_with_sessions) -> None:
-        """Calling clear without a user id drops every cached session."""
-        runner_with_sessions.clear_conversation()
-        assert runner_with_sessions._conversation_session_by_user == {}
+    async def test_clear_all_triggers_new_sessions_on_next_calls(self, patch_runner_cls, mock_agent) -> None:
+        """After clearing all, the next call for any user creates a new session."""
+        patch_runner_cls.session_service.create_session.side_effect = [
+            _session("s1"),
+            _session("s2"),
+        ]
+        patch_runner_cls.run_async.side_effect = [
+            _stream(_final_event("before")),
+            _stream(_final_event("after")),
+        ]
+        runner = AdkTextRunner(
+            mock_agent,
+            config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=False),
+        )
+        await runner.run_text_async("first", user_id="alice")
+        runner.clear_conversation()
+        await runner.run_text_async("second", user_id="alice")
 
-    def test_clear_unknown_user_does_not_raise(self, runner_with_sessions) -> None:
-        """Clearing a user not in the map is a no-op and does not error."""
-        runner_with_sessions.clear_conversation(user_id="carol")
-        assert len(runner_with_sessions._conversation_session_by_user) == 2
+        session_ids = [call.kwargs["session_id"] for call in patch_runner_cls.run_async.call_args_list]
+        assert session_ids == ["s1", "s2"]
+        assert patch_runner_cls.session_service.create_session.call_count == 2
+
+    async def test_clear_unknown_user_does_not_raise(self, patch_runner_cls, mock_agent) -> None:
+        """Clearing a user not in the cache is a no-op.
+
+        Alice's existing sticky session must remain reusable.
+        """
+        patch_runner_cls.session_service.create_session.return_value = _session("alice-s1")
+        patch_runner_cls.run_async.side_effect = [
+            _stream(_final_event("first")),
+            _stream(_final_event("second")),
+        ]
+        runner = AdkTextRunner(
+            mock_agent,
+            config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=False),
+        )
+        await runner.run_text_async("first", user_id="alice")
+        runner.clear_conversation(user_id="carol")
+        await runner.run_text_async("second", user_id="alice")
+
+        session_ids = [call.kwargs["session_id"] for call in patch_runner_cls.run_async.call_args_list]
+        assert session_ids == ["alice-s1", "alice-s1"]
+        assert patch_runner_cls.session_service.create_session.call_count == 1
 
 
 # ---------------------------------------------------------------------------
@@ -394,6 +432,48 @@ class TestLangfusePropagateAttributesKwargs:
 
 
 # ---------------------------------------------------------------------------
+# SMR session-state precedence
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+class TestSmrStatePrecedence:
+    """AdkTextRunner prefers session-state JSON over stream text on the SMR path.
+
+    When a LiteLlm agent uses the set_model_response shim, it stores structured
+    JSON in session state under SMR_STATE_KEY and emits a plain "Task complete."
+    text response.  AdkTextRunner must return the state JSON, not the text.
+    """
+
+    async def test_session_state_json_overrides_stream_text(self, patch_runner_cls, mock_agent) -> None:
+        """SMR_STATE_KEY in session state is returned instead of the stream text."""
+        smr_payload = '{"forecasts": [{"horizon": 1, "point_forecast": 99.0}]}'
+        smr_session = MagicMock()
+        smr_session.state = {SMR_STATE_KEY: smr_payload}
+
+        patch_runner_cls.run_async.return_value = _stream(_final_event("Task complete."))
+        patch_runner_cls.session_service.get_session = AsyncMock(return_value=smr_session)
+
+        runner = AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app"))
+        result = await runner.run_text_async("forecast wti", user_id="alice")
+
+        assert result == smr_payload
+
+    async def test_stream_text_returned_when_no_smr_state(self, patch_runner_cls, mock_agent) -> None:
+        """When session state has no SMR key, the normal stream text is returned."""
+        plain_session = MagicMock()
+        plain_session.state = {}
+
+        patch_runner_cls.run_async.return_value = _stream(_final_event("direct text reply"))
+        patch_runner_cls.session_service.get_session = AsyncMock(return_value=plain_session)
+
+        runner = AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app"))
+        result = await runner.run_text_async("hello", user_id="alice")
+
+        assert result == "direct text reply"
+
+
+# ---------------------------------------------------------------------------
 # aclose and async context manager
 # ---------------------------------------------------------------------------
 
@@ -402,15 +482,30 @@ class TestLangfusePropagateAttributesKwargs:
 class TestLifecycle:
     """``aclose`` and ``async with`` lifecycle on ``AdkTextRunner``."""
 
-    async def test_aclose_clears_sticky_sessions(self, patch_runner_cls, mock_agent) -> None:
-        """``aclose`` empties the sticky session map."""
+    async def test_aclose_resets_session_cache(self, patch_runner_cls, mock_agent) -> None:
+        """After ``aclose``, sticky sessions are forgotten.
+
+        The next ``run_text_async`` call must create a fresh session.
+        """
+        patch_runner_cls.session_service.create_session.side_effect = [
+            _session("old-sess"),
+            _session("new-sess"),
+        ]
+        patch_runner_cls.run_async.side_effect = [
+            _stream(_final_event("before")),
+            _stream(_final_event("after")),
+        ]
         runner = AdkTextRunner(
             mock_agent,
             config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=False),
         )
-        runner._conversation_session_by_user = {"alice": "s1"}
+        await runner.run_text_async("first", user_id="alice")
         await runner.aclose()
-        assert runner._conversation_session_by_user == {}
+        await runner.run_text_async("second", user_id="alice")
+
+        session_ids = [call.kwargs["session_id"] for call in patch_runner_cls.run_async.call_args_list]
+        assert session_ids == ["old-sess", "new-sess"]
+        assert patch_runner_cls.session_service.create_session.call_count == 2
 
     async def test_aclose_closes_the_underlying_runner(self, patch_runner_cls, mock_agent) -> None:
         """``aclose`` forwards to the wrapped runner's ``close``."""
@@ -419,10 +514,9 @@ class TestLifecycle:
         patch_runner_cls.close.assert_called_once()
 
     async def test_context_manager_calls_aclose_on_clean_exit(self, patch_runner_cls, mock_agent) -> None:
-        """Normal exit from ``async with`` runs ``aclose`` and clears sessions."""
-        async with AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app")) as runner:
-            runner._conversation_session_by_user = {"alice": "s1"}
-        assert runner._conversation_session_by_user == {}
+        """Normal exit from ``async with`` calls ``aclose`` on the underlying runner."""
+        async with AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app")):
+            pass
         patch_runner_cls.close.assert_called_once()
 
     async def test_context_manager_calls_aclose_on_exception(self, patch_runner_cls, mock_agent) -> None:
