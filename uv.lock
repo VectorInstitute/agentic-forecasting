@@ -25,7 +25,6 @@ members = [
     "agentic-forecasting-bootcamp",
     "agentic-forecasting-implementations",
     "aieng-forecasting",
-    "news-search-playground",
 ]
 
 [[package]]
@@ -49,7 +48,6 @@ dependencies = [
     { name = "ipykernel" },
     { name = "jupyter" },
     { name = "lightgbm" },
-    { name = "news-search-playground" },
     { name = "plotly" },
     { name = "prophet" },
 ]
@@ -75,7 +73,6 @@ requires-dist = [
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "lightgbm", specifier = ">=4.0.0" },
-    { name = "news-search-playground", editable = "playground/news_search" },
     { name = "plotly", specifier = ">=6.8.0" },
     { name = "prophet", specifier = ">=1.1" },
 ]
@@ -3039,29 +3036,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/83/f8/51569ac65d696c8ecbee95938f89d4abf00f47d58d48f6fbabfe8f0baefe/nest_asyncio-1.6.0.tar.gz", hash = "sha256:6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe", size = 7418, upload-time = "2024-01-21T14:25:19.227Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/c4/c2971a3ba4c6103a3d10c4b0f24f461ddc027f0f09763220cf35ca1401b3/nest_asyncio-1.6.0-py3-none-any.whl", hash = "sha256:87af6efd6b5e897c81050477ef65c62e2b2f35d51703cae01aff2905b1852e1c", size = 5195, upload-time = "2024-01-21T14:25:17.223Z" },
-]
-
-[[package]]
-name = "news-search-playground"
-version = "0.1.0"
-source = { editable = "playground/news_search" }
-dependencies = [
-    { name = "google-adk" },
-    { name = "langfuse" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "python-dotenv" },
-    { name = "pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "google-adk", specifier = ">=2.0.0" },
-    { name = "langfuse", specifier = ">=4.5.1" },
-    { name = "pydantic", specifier = ">=2.0" },
-    { name = "pydantic-settings", specifier = ">=2.0" },
-    { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [[package]]
