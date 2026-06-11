@@ -100,6 +100,8 @@ smoke-testing during development.
 ```
 implementations/food_price_forecasting/
 ├── specs/         # backtest YAML (full, mini_recent, mini_single)
+├── reports_manifest.yaml  # committed CFPR PDF URLs + publication dates (2021-2026)
+├── reports.py     # load_manifest(); CFPRReportEntry (manifest URLs + cutoff dates)
 ├── data.py        # build_food_cpi_service(); FOOD_CPI_SERIES; CATEGORY_LABELS
 ├── analysis.py    # predictions_to_dataframe, compute_avgyoy, summarize_crps,
 │                  # compute_mape, rationales_table
@@ -145,6 +147,45 @@ uv run python scripts/fetch_cpi.py
 ```
 
 No FRED API key is required for the canonical experiment.
+
+---
+
+## Report context (CFPR PDFs)
+
+The Canada's Food Price Report is published each December as a PDF. We extract
+the full text of each report so it can later be co-located with the numeric CPI
+history in LLM-P prompts.
+
+```bash
+# 1. download the report PDFs into data/reports/cfpr/ (gitignored)
+uv run python scripts/fetch_cfpr.py
+# 2. extract each PDF -> <year>_en.md (full text) + <year>_en.json (metadata)
+uv run python scripts/extract_reports.py
+```
+
+- **Manifest:** `reports_manifest.yaml` pins the Dalhousie CDN URLs, editions,
+  and `publication_date` for 2021-2026 (English). It is the committed source of
+  truth; the PDFs and extracted text are cached under `data/` and never
+  committed. `fetch_cfpr.py` fails loudly if a URL has moved (non-PDF response).
+- **Extraction:** a single source-agnostic
+  [`extract_document`](../../aieng-forecasting/aieng/forecasting/documents/extract.py)
+  function (lightweight, deterministic, CPU-only `pymupdf4llm`; the `documents`
+  optional dependency, installed by `uv sync`). It returns an
+  `ExtractedDocument` = full `text` + `publication_date` + `page_count` +
+  `n_chars` + `est_tokens`. No section/segment structure is reconstructed — the
+  planned LLM-P formats consume the whole document, and report families share no
+  common structure, so per-source heading heuristics would be brittle.
+- **`publication_date` is the cutoff key.** A future cutoff-aware
+  `DocumentStore` will filter reports with `publication_date <= as_of`, so a
+  report is never visible at a forecast origin before its real release. For the
+  canonical July-origin CFPR backtest only the month/year matters.
+- **Context-cost estimate:** `extract_reports.py` prints per-document and total
+  char/token counts (token estimate ≈ chars/4, model-agnostic) so you can gauge
+  the cost of putting one — or several — reports into a prompt.
+- **Out of scope (deferred):** wiring these reports into the LLM-P prompt and
+  the cutoff-aware `DocumentStore` is a separate follow-up; this pipeline only
+  produces the extracted artifacts. Generalizes directly to Bank of Canada
+  Monetary Policy Reports via the same `--source`-keyed fetcher and `extract_document`.
 
 ---
 
