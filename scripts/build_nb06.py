@@ -85,6 +85,8 @@ cells.append(
         "}\n"
         "\n"
         "# ── Model ─────────────────────────────────────────────────────────────────────\n"
+        "# Two project models: 'gemini-3.1-flash-lite-preview' (lite/default) and\n"
+        "# 'gemini-3.5-flash' (advanced). The adaptive agent uses the advanced model.\n"
         "AGENT_MODEL = 'gemini-3.5-flash'\n"
         "\n"
         "# ── Run guard ─────────────────────────────────────────────────────────────────\n"
@@ -165,7 +167,7 @@ cells.append(
         "print(f'Loaded {len(all_eval_results)} stateless eval result(s):')\n"
         "for name, r in all_eval_results.items():\n"
         "    print(f'  {name}: {len(r.predictions)} predictions, '\n"
-        "          f'mean CRPS = {r.mean_crps:.4f}')"
+        "          f'mean CRPS = {r.mean_score:.4f}')"
     )
 )
 
@@ -207,7 +209,7 @@ cells.append(
         "        (_CURRICULUM_DIR / f'eval_{safe}.json').write_text(\n"
         "            result.model_dump_json(), encoding='utf-8'\n"
         "        )\n"
-        "        print(f'  {variant_name}: mean CRPS = {result.mean_crps:.4f} ✓')\n"
+        "        print(f'  {variant_name}: mean CRPS = {result.mean_score:.4f} ✓')\n"
         "\n"
         "    print('\\nEval complete.')\n"
         "else:\n"
@@ -413,7 +415,7 @@ cells.append(
         "    ]\n"
         "    if not preds:\n"
         "        continue\n"
-        "    rationale = preds[0].metadata.get('agent_rationale', '*(no rationale stored)*')\n"
+        "    rationale = preds[0].metadata.get('rationale', '*(no rationale stored)*')\n"
         "    ipy_display(Markdown(\n"
         "        f'### {name}\\n'\n"
         "        f'*Origin: {_first_origin}*\\n\\n'\n"

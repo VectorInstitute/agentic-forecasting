@@ -19,7 +19,7 @@ Usage::
     )
 
     predictor = SampledTrajectoryLLMPredictor(
-        SampledTrajectoryLLMPredictorConfig(model="gemini/gemini-2.5-flash"),
+        SampledTrajectoryLLMPredictorConfig(model="gemini-3.1-flash-lite-preview"),
     )
 """
 
@@ -41,6 +41,7 @@ from aieng.forecasting.methods.llm_processes._client import (
     make_json_schema_response_format,
     run_async,
     sample_n_async,
+    set_current_trace_name,
 )
 from aieng.forecasting.methods.llm_processes.base import (
     LLMPredictor,
@@ -323,6 +324,7 @@ class SampledTrajectoryLLMPredictor(LLMPredictor):
             One :class:`Prediction` per horizon step in ``task.horizons``,
             with ``point_forecast`` equal to the sample median at that step.
         """
+        set_current_trace_name(self.predictor_id)
         series_df, series_meta = get_history_and_meta(task, context)
         if self.cfg.history_window is not None:
             series_df = series_df.tail(self.cfg.history_window).reset_index(drop=True)

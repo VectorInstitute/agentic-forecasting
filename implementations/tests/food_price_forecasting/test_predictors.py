@@ -23,11 +23,11 @@ def test_recipe_defaults_remain_economical() -> None:
     sampled = build_llmp_sampled_trajectory()
     quantile_grid = build_llmp_quantile_grid()
 
-    assert sampled.cfg.model == "gemini-3-flash-preview"
+    assert sampled.cfg.model == "gemini-3.1-flash-lite-preview"
     assert "/" not in sampled.cfg.model
     assert sampled.cfg.history_window == 120
     assert sampled.cfg.n_samples == 20
-    assert quantile_grid.cfg.model == "gemini-3-flash-preview"
+    assert quantile_grid.cfg.model == "gemini-3.1-flash-lite-preview"
     assert "/" not in quantile_grid.cfg.model
     assert quantile_grid.cfg.history_window == 120
     assert quantile_grid.cfg.reasoning_effort == "low"

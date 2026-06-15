@@ -12,9 +12,10 @@ from aieng.forecasting.methods.llm_processes import (
     SampledTrajectoryLLMPredictor,
     SampledTrajectoryLLMPredictorConfig,
 )
+from aieng.forecasting.models import LITE_MODEL
 
 
-_DEFAULT_MODEL = "gemini-3-flash-preview"
+_DEFAULT_MODEL = LITE_MODEL
 _DEFAULT_N_SAMPLES = 20
 _DEFAULT_HISTORY_WINDOW = 120
 _RECIPE_FAMILY = "food_cpi_v1"
@@ -54,7 +55,7 @@ def build_llmp_sampled_trajectory(
     Parameters
     ----------
     model : str
-        Model identifier. Defaults to ``gemini-3-flash-preview``.
+        Model identifier. Defaults to the lite model (``gemini-3.1-flash-lite-preview``).
     n_samples : int
         Number of trajectory samples to draw per prediction call.
     history_window : int or None

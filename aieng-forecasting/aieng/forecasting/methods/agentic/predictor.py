@@ -217,6 +217,7 @@ class AgentPredictor(Predictor):
                     fresh_session_per_message=True,
                     enable_langfuse_tracing=self.enable_langfuse_tracing,
                     langfuse_tags=["agent_predictor", "track1"],
+                    langfuse_trace_name=self.predictor_id,
                     langfuse_propagate_metadata={
                         "predictor_id": self.predictor_id,
                         "agent_name": built_agent.name,

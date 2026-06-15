@@ -104,6 +104,26 @@ def current_trace_info() -> tuple[str | None, str | None]:
         return None, None
 
 
+def set_current_trace_name(name: str) -> None:
+    """Name the active Langfuse trace, if any, so it is identifiable in the UI.
+
+    LLMP predictors call this with their ``predictor_id`` at the top of
+    ``predict``. Because ``predict`` is the ``@observe``-wrapped root span, its
+    name is what Langfuse shows as the trace name; renaming the current span
+    therefore renames the trace to the same identifier used by leaderboards and
+    artifact storage — matching how agent predictors name their traces. No-op
+    when Langfuse is not installed or no span is active.
+    """
+    try:
+        from langfuse import get_client  # noqa: PLC0415
+    except Exception:
+        return
+    try:
+        get_client().update_current_span(name=name)
+    except Exception:  # pragma: no cover
+        logger.debug("update_current_span(name=%r) failed; trace name unchanged.", name)
+
+
 def make_json_schema_response_format(name: str, schema: dict[str, Any]) -> dict[str, Any]:
     """Build the explicit ``json_schema`` ``response_format`` dict.
 

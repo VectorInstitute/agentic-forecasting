@@ -1,0 +1,46 @@
+# BoC Rate Direction EVE Smoke Spec — T-1 diagnostic, 3 origins
+#
+# Eve-of-decision companion to boc_rate_direction_smoke.yaml: same three
+# meetings, origins the day before each announcement. Used in notebook 02
+# for the cheap lead-time comparison (T-28 vs T-1).
+#
+# Three-origin subset of boc_rate_direction_eve_backtest.yaml for running the
+# notebook lead-time comparison cheaply during development and testing.
+#
+# The three origins span holds and cuts but no hikes: a hold (2024-04-10), the
+# first cut of the 2024 easing cycle (2024-06-05), and a mid-cycle cut
+# (2024-09-04) — enough to exercise categorical scoring and plotting paths
+# without burning tokens on 120 LLM calls.
+
+description: >-
+  Three-origin eve-of-decision (T-1) smoke backtest for the lead-time
+  comparison in notebook 02. Same meetings as boc_rate_direction_smoke,
+  origins the day before each announcement.
+
+task:
+  task_id: boc_rate_direction_next_meeting_eve
+  target_series_id: boc_rate_decision_direction
+  horizons: [1]
+  frequency: D
+  payload_type: categorical
+  categories:
+    - {label: cut, value: -1}
+    - {label: hold, value: 0}
+    - {label: hike, value: 1}
+  description: >-
+    At the Bank of Canada fixed announcement date occurring one day after the
+    forecast origin, will the Bank CUT, HOLD, or HIKE its target for the
+    overnight rate? Outcome is the direction of the target-rate change at
+    that announcement (any size). Announcements are at 09:45 ET; the
+    forecast must be issued with information available the day before.
+
+start: "2024-04-01"
+end: "2024-09-30"
+stride: 1
+warmup: 8
+
+# One origin per meeting: announcement_date - 1 day.
+origin_dates:
+  - "2024-04-09"  # meeting 2024-04-10 (hold)
+  - "2024-06-04"  # meeting 2024-06-05 (cut)
+  - "2024-09-03"  # meeting 2024-09-04 (cut)

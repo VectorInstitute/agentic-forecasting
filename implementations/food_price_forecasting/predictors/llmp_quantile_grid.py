@@ -14,11 +14,12 @@ from aieng.forecasting.methods.llm_processes import (
     QuantileGridLLMPredictor,
     QuantileGridLLMPredictorConfig,
 )
+from aieng.forecasting.models import LITE_MODEL
 
 
 _ReasoningEffort = Literal["disable", "low", "medium", "high"]
 
-_DEFAULT_MODEL = "gemini-3-flash-preview"
+_DEFAULT_MODEL = LITE_MODEL
 _DEFAULT_HISTORY_WINDOW = 120
 _DEFAULT_REASONING_EFFORT: _ReasoningEffort | None = "low"
 _RECIPE_FAMILY = "food_cpi_v1"
@@ -57,7 +58,7 @@ def build_llmp_quantile_grid(
     Parameters
     ----------
     model : str
-        Model identifier. Defaults to ``gemini-3-flash-preview``.
+        Model identifier. Defaults to the lite model (``gemini-3.1-flash-lite-preview``).
     history_window : int or None
         Number of most-recent periods to include in context.
     reasoning_effort : str or None

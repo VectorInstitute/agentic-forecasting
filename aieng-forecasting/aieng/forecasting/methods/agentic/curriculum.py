@@ -191,7 +191,7 @@ def format_backtest_report(  # noqa: PLR0912, PLR0913, PLR0915
         "",
         f"**Predictor:** {result.predictor_id}  ",
         f"**Origins included:** {len({str(p.as_of.date()) for p in preds})}  ",
-        f"**Mean CRPS (all horizons):** {result.mean_crps:.4f}",
+        f"**Mean CRPS (all horizons):** {result.mean_score:.4f}",
         "",
     ]
 
@@ -212,8 +212,8 @@ def format_backtest_report(  # noqa: PLR0912, PLR0913, PLR0915
             "## Relative skill vs. naive baseline",
             "",
             f"Baseline predictor: **{baseline_result.predictor_id}**  ",
-            f"Baseline mean CRPS: {baseline_result.mean_crps:.4f}  ",
-            f"This predictor mean CRPS: {result.mean_crps:.4f}",
+            f"Baseline mean CRPS: {baseline_result.mean_score:.4f}  ",
+            f"This predictor mean CRPS: {result.mean_score:.4f}",
             "",
             "| Horizon | This MAE | Baseline MAE | Skill (lower is better) |",
             "|---------|----------|--------------|-------------------------|",

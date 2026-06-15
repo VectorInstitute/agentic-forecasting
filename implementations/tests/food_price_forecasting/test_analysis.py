@@ -106,7 +106,7 @@ def _make_backtest_result(
         predictor_id=predictor_id,
         predictions=predictions,
         scores=scores,
-        mean_crps=float(np.mean(scores)),
+        mean_score=float(np.mean(scores)),
         ran_at=datetime(2025, 1, 1),
         skipped_origins=0,
     )
@@ -353,8 +353,8 @@ class TestSummarizeCRPS:
         assert (
             board.loc["MEAN", "naive"]
             == (
-                results_by_predictor["naive"]["cpi_food_overall"].mean_crps
-                + results_by_predictor["naive"]["cpi_meat"].mean_crps
+                results_by_predictor["naive"]["cpi_food_overall"].mean_score
+                + results_by_predictor["naive"]["cpi_meat"].mean_score
             )
             / 2
         )

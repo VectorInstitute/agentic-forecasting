@@ -22,6 +22,7 @@ from aieng.forecasting.methods.agentic import (
 )
 from aieng.forecasting.methods.agentic.agent_factory import AgentConfig
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
+from aieng.forecasting.models import LITE_MODEL
 from energy_oil_forecasting.analyst_agent import (
     WtiPriceForecastPromptBuilder,
     build_wti_multitask_news_config,
@@ -136,7 +137,7 @@ class ScenarioAgentForecastOutput(AgentForecastOutput):
         prediction_metadata["scenarios"] = [s.model_dump() for s in self.scenarios]
         prediction_metadata["base_case"] = self.base_case
         if self.reasoning.strip():
-            prediction_metadata["agent_rationale"] = self.reasoning
+            prediction_metadata["rationale"] = self.reasoning
 
         return [
             Prediction(
@@ -188,7 +189,7 @@ TASK_OUTPUT_SCHEMAS: dict[TaskKind, type[AgentForecastOutput]] = {
 
 def build_wti_news_predictor(
     task: TaskKind,
-    model: str = "gemini-3-flash-preview",
+    model: str = LITE_MODEL,
 ) -> AgentPredictor:
     """Build a news-grounded agent predictor for the given task kind.
 
@@ -199,8 +200,8 @@ def build_wti_news_predictor(
     model : str
         Model identifier passed through to the underlying
         :class:`~aieng.forecasting.methods.agentic.agent_factory.AgentConfig`.
-        Defaults to ``"gemini-3-flash-preview"``; pass a cheaper model (e.g.
-        ``"gemini-3.1-flash-lite-preview"``) for development runs.
+        Defaults to the lite model (``"gemini-3.1-flash-lite-preview"``); pass the
+        advanced model (``"gemini-3.5-flash"``) when more capability is needed.
     """
     if task == "trajectory":
         return AgentPredictor(

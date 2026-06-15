@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
+from aieng.forecasting.models import LITE_MODEL
 from google.adk.models.base_llm import BaseLlm
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -123,7 +124,7 @@ class ContextRetrievalConfig(BaseModel):
     ----------
     enabled : bool, default=False
         Whether to enable context retrieval. Disabled by default.
-    search_model : str, default="gemini-3-flash-preview"
+    search_model : str, default=LITE_MODEL (``"gemini-3.1-flash-lite-preview"``)
         Proxy model used inside the ``search_web`` tool call.  Must be a
         model that supports the ``googleSearch`` server-side tool extension.
     instruction : str
@@ -144,7 +145,7 @@ class ContextRetrievalConfig(BaseModel):
     model_config = {"extra": "forbid"}
 
     enabled: bool = False
-    search_model: str = "gemini-3-flash-preview"
+    search_model: str = LITE_MODEL
     instruction: str = (
         "You are a specialized web search assistant.\n\n"
         "Search for information relevant to the query and return a concise, "
@@ -273,7 +274,7 @@ class AgentConfig(BaseModel):
     ----------
     name : str, default="adk_forecasting_agent"
         Name of the agent.
-    model : str | BaseLlm, default="gemini-3-flash-preview"
+    model : str | BaseLlm, default=LITE_MODEL (``"gemini-3.1-flash-lite-preview"``)
         Model name (bare, no provider prefix) or a custom
         :class:`~google.adk.models.base_llm.BaseLlm` instance.  When
         ``proxy_base_url`` is set and ``model`` is a plain string,
@@ -340,7 +341,7 @@ class AgentConfig(BaseModel):
     model_config = {"extra": "forbid", "arbitrary_types_allowed": True}
 
     name: str = "adk_forecasting_agent"
-    model: str | BaseLlm = "gemini-3-flash-preview"
+    model: str | BaseLlm = LITE_MODEL
     proxy_base_url: str | None = Field(
         default_factory=lambda: os.getenv("PROXY_BASE_URL"),
         description=(
@@ -502,7 +503,7 @@ def build_adk_agent(
     # For LiteLlm agents with both output_schema and tools, ADK's
     # can_use_output_schema_with_tools() returns True and skips set_model_response
     # injection, using response_format instead.  However, Gemini thinking models
-    # (e.g. gemini-3-flash-preview) are trained to call set_model_response when
+    # (e.g. gemini-3.5-flash) are trained to call set_model_response when
     # producing structured output alongside other tools — and they do so even when
     # output_schema=None on the Python side.
     #

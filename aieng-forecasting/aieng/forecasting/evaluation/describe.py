@@ -59,9 +59,17 @@ def describe_task(task: ForecastingTask, data_service: DataService | None = None
         f"  description: {task.description}",
         f"  horizons:    {horizons_display}",
         f"  frequency:   {task.frequency}",
-        f"  resolution:  {task.resolution_fn}",
-        _series_line(task.target_series_id, data_service),
+        f"  payload:     {task.payload_type}",
     ]
+    if task.payload_type == "categorical" and task.categories is not None:
+        categories = " < ".join(f"{category.label}({category.value:g})" for category in task.categories)
+        lines.append(f"  categories:  {categories}")
+    lines.extend(
+        [
+            f"  resolution:  {task.resolution_fn}",
+            _series_line(task.target_series_id, data_service),
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -81,6 +89,8 @@ def _describe_backtest_spec(spec: BacktestSpec, data_service: DataService | None
     if spec.description:
         lines.append(f"  description: {spec.description}")
     lines.extend(_window_lines(spec.start, spec.end, spec.stride, spec.warmup))
+    if spec.origin_dates is not None:
+        lines.append(f"  origins:     {len(spec.origin_dates)} explicit dates (irregular calendar)")
     lines.append("")
     lines.append(describe_task(spec.task, data_service))
     return "\n".join(lines)
@@ -93,6 +103,8 @@ def _describe_eval_spec(spec: EvalSpec, data_service: DataService | None) -> str
     if spec.description:
         lines.append(f"  description: {spec.description}")
     lines.extend(_window_lines(spec.start, spec.end, spec.stride, spec.warmup))
+    if spec.origin_dates is not None:
+        lines.append(f"  origins:     {len(spec.origin_dates)} explicit dates (irregular calendar)")
     lines.append(f"  max_runs:    {spec.max_runs}")
     lines.append("")
     lines.append(describe_task(spec.task, data_service))

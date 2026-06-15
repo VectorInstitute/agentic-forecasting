@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, Mapping
 import pandas as pd
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.methods.llm_processes._client import bootstrap_litellm, current_trace_info
+from aieng.forecasting.models import LITE_MODEL
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -34,10 +35,10 @@ class LLMPredictorConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     model: str = Field(
-        default="gemini-3-flash-preview",
+        default=LITE_MODEL,
         description=(
             "Model name as expected by the proxy (bare, no provider prefix), "
-            "e.g. 'gemini-3-flash-preview', 'gpt-4o-mini'. "
+            "e.g. 'gemini-3.1-flash-lite-preview', 'gpt-4o-mini'. "
             "When proxy_base_url is set, LiteLLM routes this to the proxy via "
             "custom_llm_provider='openai'."
         ),

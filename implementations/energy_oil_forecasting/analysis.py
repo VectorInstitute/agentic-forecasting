@@ -11,30 +11,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from aieng.forecasting.data.service import DataService
-from aieng.forecasting.evaluation.backtest import BacktestResult
+from aieng.forecasting.evaluation.backtest import BacktestResult, compute_brier_score
 from aieng.forecasting.evaluation.prediction import ContinuousForecast
-
-
-def compute_brier_score(probabilities: list[float], outcomes: list[int]) -> float:
-    """Mean Brier score for binary forecasts.
-
-    Parameters
-    ----------
-    probabilities : list[float]
-        Predicted P(event).
-    outcomes : list[int]
-        Realised outcomes (0 or 1).
-
-    Returns
-    -------
-    float
-        Mean squared error; lower is better.
-    """
-    if not probabilities:
-        return float("nan")
-    probs = np.asarray(probabilities, dtype=float)
-    ys = np.asarray(outcomes, dtype=float)
-    return float(np.mean((probs - ys) ** 2))
 
 
 def rolling_coverage_pct(forecasts_df: pd.DataFrame, *, year: int | None = None) -> float:
@@ -95,7 +73,7 @@ def backtest_results_to_frame(results: dict[str, BacktestResult]) -> pd.DataFram
         rows.append(
             {
                 "predictor_id": predictor_id,
-                "mean_crps": result.mean_crps,
+                "mean_crps": result.mean_score,
                 "n_predictions": len(result.predictions),
                 "n_skipped_origins": result.skipped_origins,
             }

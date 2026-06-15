@@ -2,7 +2,24 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, model_validator
+
+
+class TaskCategory(BaseModel):
+    """Ordered category declaration for a categorical forecasting task.
+
+    Parameters
+    ----------
+    label : str
+        Non-empty category label used by categorical forecast payloads.
+    value : float
+        Numeric value stored in the observed target series for this category.
+    """
+
+    label: str = Field(min_length=1, description="Category label used by categorical forecast payloads.")
+    value: float = Field(description="Numeric value stored in the observed target series for this category.")
 
 
 class ForecastingTask(BaseModel):
@@ -39,6 +56,24 @@ class ForecastingTask(BaseModel):
         ``horizons``, this determines the forecast window.
     description : str
         Human-readable description of the prediction problem.
+    payload_type : {"continuous", "binary", "categorical"}
+        The forecast payload modality this task expects. ``"continuous"``
+        (the default) means predictors must return
+        :class:`~aieng.forecasting.evaluation.prediction.ContinuousForecast`
+        payloads, scored with CRPS. ``"binary"`` means the target series is a
+        0/1 event series and predictors must return
+        :class:`~aieng.forecasting.evaluation.prediction.BinaryForecast`
+        payloads, scored with the Brier score. ``"categorical"`` means the
+        target series stores ordered category values declared in
+        ``categories`` and predictors must return
+        :class:`~aieng.forecasting.evaluation.prediction.CategoricalForecast`
+        payloads, scored with RPS. The evaluation harness validates payloads
+        against this declaration and fails loudly on a mismatch rather than
+        producing meaningless scores.
+    categories : list[TaskCategory] or None
+        Ordered category declarations for ``payload_type="categorical"``.
+        The list order is the ordinal order used by RPS, e.g.
+        ``cut < hold < hike``. Must be omitted for non-categorical tasks.
     resolution_fn : str
         How ground truth is determined. Defaults to
         ``"observed_value_at_resolution_timestamp"``, meaning the resolution
@@ -110,6 +145,18 @@ class ForecastingTask(BaseModel):
     )
     frequency: str = Field(description="Pandas offset alias for the forecast frequency, e.g. 'MS', 'h', 'D'.")
     description: str = Field(description="Human-readable description of the prediction problem.")
+    payload_type: Literal["continuous", "binary", "categorical"] = Field(
+        default="continuous",
+        description=(
+            "Forecast payload modality: 'continuous' (ContinuousForecast, CRPS-scored), "
+            "'binary' (BinaryForecast against a 0/1 event series, Brier-scored), or "
+            "'categorical' (CategoricalForecast against ordered categories, RPS-scored)."
+        ),
+    )
+    categories: list[TaskCategory] | None = Field(
+        default=None,
+        description="Ordered categories for categorical tasks; omitted for continuous and binary tasks.",
+    )
     resolution_fn: str = Field(
         default="observed_value_at_resolution_timestamp",
         description=(
@@ -127,6 +174,27 @@ class ForecastingTask(BaseModel):
             data = dict(data)
             data["horizons"] = [int(data.pop("horizon"))]
         return data
+
+    @model_validator(mode="after")
+    def _validate_categories(self) -> "ForecastingTask":
+        """Validate the categorical task contract."""
+        if self.payload_type == "categorical":
+            if self.categories is None:
+                raise ValueError("Categorical tasks must define categories with at least two entries.")
+            if len(self.categories) < 2:
+                raise ValueError("Categorical tasks must define at least two categories.")
+            labels = [category.label for category in self.categories]
+            duplicate_labels = sorted({label for label in labels if labels.count(label) > 1})
+            if duplicate_labels:
+                raise ValueError(f"Categorical task category labels must be unique. Duplicates: {duplicate_labels}")
+            values = [category.value for category in self.categories]
+            duplicate_values = sorted({value for value in values if values.count(value) > 1})
+            if duplicate_values:
+                raise ValueError(f"Categorical task category values must be unique. Duplicates: {duplicate_values}")
+            return self
+        if self.categories is not None:
+            raise ValueError("categories must be omitted unless payload_type='categorical'.")
+        return self
 
     @property
     def horizon(self) -> int:

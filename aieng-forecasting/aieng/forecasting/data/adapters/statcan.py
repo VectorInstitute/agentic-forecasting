@@ -68,15 +68,27 @@ class StatCanAdapter(BaseAdapter):
     cache_dir : str or Path
         Directory where the ``stats-can`` library stores its local table cache.
         Defaults to ``"data/statcan"`` relative to the current working directory.
+    release_lag_days : int
+        Days added to ``timestamp`` to populate ``released_at``. The default
+        of 21 is a deliberately loose approximation for monthly survey
+        tables; note the lag is measured from the *month-start* timestamp,
+        while StatCan publishes CPI roughly three weeks after the month
+        *ends* (~51 days after the timestamp), so the default is optimistic
+        by about one month. Consumers that use monthly series as covariates
+        should add their own conservative lag (see the BoC use case). Daily
+        financial-market tables (e.g. 10-10-0139-01 interest rates) are
+        published the next business day — pass ``release_lag_days=1`` for
+        those so backtests do not hide three weeks of perfectly public
+        market data from predictors.
 
     Notes
     -----
     **Information cutoff**: StatCan publishes CPI data roughly 3 weeks after
-    the reference month. For example, January CPI is released in mid-February.
-    This adapter populates ``released_at`` as ``timestamp + 21 days``, which
-    approximates this lag. A more precise implementation would query StatCan's
-    release calendar API, but the 21-day approximation removes the most
-    significant optimistic bias in backtests.
+    the reference month ends. For example, January CPI is released in
+    mid-to-late February. This adapter populates ``released_at`` as
+    ``timestamp + release_lag_days``, a fixed-lag approximation. A more
+    precise implementation would query StatCan's release calendar API, but
+    the fixed lag removes the most significant optimistic bias in backtests.
 
     Examples
     --------
@@ -97,10 +109,14 @@ class StatCanAdapter(BaseAdapter):
         table_id: str,
         member_filter: dict[str, str],
         cache_dir: str | Path = "data/statcan",
+        release_lag_days: int = 21,
     ) -> None:
+        if release_lag_days < 0:
+            raise ValueError(f"release_lag_days must be non-negative; got {release_lag_days}")
         self._table_id = table_id
         self._member_filter = member_filter
         self._cache_dir = Path(cache_dir)
+        self._release_lag_days = release_lag_days
 
     @property
     def table_id(self) -> str:
@@ -120,9 +136,9 @@ class StatCanAdapter(BaseAdapter):
         pd.DataFrame
             DataFrame with columns ``timestamp`` (datetime64[ns]), ``value``
             (float64), and ``released_at`` (datetime64[ns]), sorted ascending
-            by ``timestamp``. ``released_at`` is set to ``timestamp + 21 days``
-            to approximate StatCan's publication lag. Rows with missing values
-            are dropped.
+            by ``timestamp``. ``released_at`` is set to
+            ``timestamp + release_lag_days`` to approximate StatCan's
+            publication lag. Rows with missing values are dropped.
 
         Raises
         ------
@@ -186,9 +202,9 @@ class StatCanAdapter(BaseAdapter):
             {
                 "timestamp": timestamps,
                 "value": pd.to_numeric(filtered[_STATCAN_VALUE_COL], errors="coerce"),
-                # Approximate StatCan's ~3-week publication lag. January CPI is
-                # published around February 21, so released_at = timestamp + 21d.
-                "released_at": timestamps + pd.DateOffset(days=21),
+                # Approximate the table's publication lag (default 21 days for
+                # monthly survey tables like CPI; 1 day for daily market data).
+                "released_at": timestamps + pd.DateOffset(days=self._release_lag_days),
             }
         )
 

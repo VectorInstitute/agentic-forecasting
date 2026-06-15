@@ -266,7 +266,7 @@ class TestMultiBacktest:
         results = multi_backtest(ConstantPredictor(), spec, svc)
         assert results["a"].predictor_id == "constant"
 
-    def test_mean_crps_per_task(self) -> None:
+    def test_mean_score_per_task(self) -> None:
         """Per-task mean CRPS matches mean of that task's scores."""
         svc = _build_data_service("s_a", "s_b")
         spec = MultiTargetBacktestSpec(
@@ -278,7 +278,7 @@ class TestMultiBacktest:
         )
         results = multi_backtest(ConstantPredictor(), spec, svc)
         for result in results.values():
-            assert abs(result.mean_crps - float(np.mean(result.scores))) < 1e-10
+            assert abs(result.mean_score - float(np.mean(result.scores))) < 1e-10
 
 
 # ---------------------------------------------------------------------------

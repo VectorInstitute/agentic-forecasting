@@ -235,7 +235,7 @@ def _run_one_row(
         "n_covariates": len(cov_ids),
         "covariates": ", ".join(cov_ids) if cov_ids else "—",
         "predictor_id": result.predictor_id,
-        "mean_crps": float(result.mean_crps),
+        "mean_crps": float(result.mean_score),
         "mean_crps_open": float(mean_open),
         "n_scores": int(len(result.scores)),
         "n_predictions": int(len(result.predictions)),

@@ -25,6 +25,7 @@ from aieng.forecasting.methods.llm_processes._client import (
     make_json_schema_response_format,
     run_async,
     sample_n_async,
+    set_current_trace_name,
 )
 from aieng.forecasting.methods.llm_processes.base import (
     LLMPredictor,
@@ -266,6 +267,7 @@ class QuantileGridLLMPredictor(LLMPredictor):
         context: ForecastContext,
     ) -> list[Prediction]:
         """Produce forecasts from directly elicited quantiles."""
+        set_current_trace_name(self.predictor_id)
         series_df, series_meta = get_history_and_meta(task, context)
         if self.cfg.history_window is not None:
             series_df = series_df.tail(self.cfg.history_window).reset_index(drop=True)

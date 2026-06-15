@@ -73,6 +73,7 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     CodeExecutionConfig,
     ContextRetrievalConfig,
 )
+from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
 from energy_oil_forecasting.adaptive_agent.skill_tools import build_skill_tools
 from energy_oil_forecasting.analyst_agent import compress_history
 from pydantic import BaseModel
@@ -272,8 +273,8 @@ class WtiAdaptiveForecastPromptBuilder(BaseModel):
 
 
 def build_wti_adaptive_config(
-    model: str = "gemini-3.5-flash",
-    search_model: str = "gemini-3.5-flash",
+    model: str = ADVANCED_MODEL,
+    search_model: str = LITE_MODEL,
     max_output_tokens: int = 16_384,
     strategy_dir: Path | None = None,
 ) -> AgentConfig:
@@ -288,9 +289,10 @@ def build_wti_adaptive_config(
     model : str
         Model for the top-level analyst agent.
     search_model : str
-        Model for the context-retrieval (web-search) sub-tool. Defaults to
-        ``gemini-3-flash-preview`` independently of ``model`` so that Gemini
-        handles Google Search even when the analyst uses a different provider.
+        Model for the context-retrieval (web-search) sub-tool. Defaults to the
+        lite model (``gemini-3.1-flash-lite-preview``) independently of ``model`` (the
+        advanced model) so web search stays cheap while the analyst reasons
+        with more capability.
     max_output_tokens : int, default=16_384
         Maximum tokens per model response. Set above LiteLLM's OpenAI-compatible
         default of 4096 so the agent can write a complete ``run_code`` Python
@@ -343,7 +345,7 @@ def build_wti_adaptive_config(
 def build_wti_adaptive_predictor(
     config: AgentConfig | None = None,
     strategy_dir: Path | None = None,
-    model: str = "gemini-3.5-flash",
+    model: str = ADVANCED_MODEL,
 ) -> AgentPredictor:
     """Wrap the adaptive agent in an :class:`AgentPredictor` for eval harness use.
 

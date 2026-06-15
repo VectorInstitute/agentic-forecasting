@@ -6,15 +6,26 @@ Status: **implemented** — May 2026. The proxy is now the default routing layer
 
 ## What it is
 
-Vector runs a shared LLM gateway at `proxy.vectorinstitute.ai`. It is OpenAI-API-compatible and supports a fixed list of Claude, Gemini, and OpenAI models. Model names are bare (no provider prefix): e.g. `gemini-3-flash-preview`, `gpt-4o-mini`.
+Vector runs a shared LLM gateway at `proxy.vectorinstitute.ai`. It is OpenAI-API-compatible and supports a fixed list of Claude, Gemini, and OpenAI models. Model names are bare (no provider prefix): e.g. `gemini-3.1-flash-lite-preview`, `gpt-4o-mini`.
 
 ## How it is wired in
 
-- **All model strings are bare** (e.g. `gemini-2.5-flash`). No `gemini/` or `openai/` prefix in user-facing config. Internally, the library prepends `openai/` before passing to LiteLLM so it routes via the OpenAI-compatible path; LiteLLM strips the prefix before sending to the proxy.
+- **All model strings are bare** (e.g. `gemini-3.1-flash-lite-preview`). No `gemini/` or `openai/` prefix in user-facing config. Internally, the library prepends `openai/` before passing to LiteLLM so it routes via the OpenAI-compatible path; LiteLLM strips the prefix before sending to the proxy.
 - **LLMP predictors** (`SampledTrajectoryLLMPredictor`, `QuantileGridLLMPredictor`): `LLMPredictorConfig` reads `PROXY_BASE_URL` and `PROXY_API_KEY` from the environment and passes them as `api_base`/`api_key` to `litellm.acompletion`.
 - **ADK agents** (`build_adk_agent`): `AgentConfig` reads the same env vars. When `proxy_base_url` is set and `model` is a plain string, the factory automatically wraps it in `LiteLlm(model="openai/<model>", api_base=..., api_key=...)`.
 - **Web search / context retrieval**: replaced the Gemini-native `google_search` sub-agent with a `search_web` FunctionTool backed by the proxy's `{"googleSearch": {}}` server-side extension. Grounding metadata (source URLs) is extracted from `choices[0].provider_specific_fields["grounding_metadata"]`.
-- **Default model everywhere**: `gemini-3-flash-preview`.
+- **Default model everywhere**: the lite model (`gemini-3.1-flash-lite-preview`). See the project model convention below.
+
+## Project model convention
+
+To keep examples consistent for bootcamp participants, the project standardizes on **exactly two** proxy models:
+
+| Role | Model | Used by |
+| --- | --- | --- |
+| **Lite / default** | `gemini-3.1-flash-lite-preview` | All LLMP and agent defaults, library defaults, web-search sub-tool (`search_model`), and the forecasting/intro notebooks. |
+| **Advanced** | `gemini-3.5-flash` | The adaptive-agent path (`build_wti_adaptive_*`), the protected-eval and adaptive-training notebooks, and curriculum data-generation scripts. |
+
+Both are defined once in `aieng.forecasting.models` as `LITE_MODEL` and `ADVANCED_MODEL` (with `DEFAULT_MODEL = LITE_MODEL`). **Reference these constants in code instead of hardcoding model strings** — a model swap is then a one-line change in that module. Notebooks set their model variable to one literal of the two, with the other shown as a commented alternative.
 
 ## Required environment variables
 

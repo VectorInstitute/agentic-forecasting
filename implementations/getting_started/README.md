@@ -104,7 +104,9 @@ at `cpi_gasoline_1m.yaml` and see whether you beat AutoARIMA.
 ### 4. Compare predictors
 
 Re-run `backtest()` with two or more predictors against the same spec;
-the `BacktestResult.mean_crps` values are directly comparable.
+the `BacktestResult.mean_score` values are directly comparable.
+(For continuous tasks like this one the metric is CRPS; binary event
+tasks — see the BoC rate-decision reference — use the Brier score.)
 
 ### 5. Spend an eval run
 

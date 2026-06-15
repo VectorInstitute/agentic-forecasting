@@ -74,8 +74,10 @@ from aieng.forecasting.methods.agentic.curriculum import (
 )
 from aieng.forecasting.methods.agentic.forecast_tool import ForecastTool
 from aieng.forecasting.methods.agentic.outputs import (
+    AgentCategoryProbability,
     AgentForecastOutput,
     AgentQuantileForecast,
+    CategoricalAgentForecastOutput,
     ContinuousAgentForecastOutput,
     ContinuousAgentHorizonForecast,
     DiscreteAgentForecastOutput,
@@ -88,10 +90,12 @@ __all__: list[str] = [
     "AdaptiveSkillStore",
     "AdkTextRunner",
     "AdkTextRunnerConfig",
+    "AgentCategoryProbability",
     "AgentConfig",
     "AgentForecastOutput",
     "AgentPredictor",
     "AgentQuantileForecast",
+    "CategoricalAgentForecastOutput",
     "CodeExecutionConfig",
     "ContinuousAgentForecastOutput",
     "ContinuousAgentHorizonForecast",

@@ -13,7 +13,9 @@ agent JSON into evaluation
 :class:`ContinuousAgentForecastOutput` is the canonical schema for
 continuous forecasting tasks; it enforces the standard quantile
 grid, non-crossing quantiles, and ``point_forecast`` consistency with the
-median.
+median. :class:`DiscreteAgentForecastOutput` covers binary event tasks, and
+:class:`CategoricalAgentForecastOutput` covers ordered-categorical tasks
+whose category set is declared on the task.
 """
 
 import json
@@ -24,7 +26,13 @@ from typing import Any, ClassVar, Literal
 
 import pandas as pd
 from aieng.forecasting.data.context import ForecastContext
-from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, BinaryForecast, ContinuousForecast, Prediction
+from aieng.forecasting.evaluation.prediction import (
+    STANDARD_QUANTILES,
+    BinaryForecast,
+    CategoricalForecast,
+    ContinuousForecast,
+    Prediction,
+)
 from aieng.forecasting.evaluation.task import ForecastingTask
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -39,7 +47,7 @@ class AgentForecastOutput(BaseModel, ABC):
 
     Attributes
     ----------
-    modality : ClassVar[Literal["continuous", "discrete"]]
+    modality : ClassVar[Literal["continuous", "discrete", "categorical"]]
         Forecast modality this schema produces. Concrete subclasses must
         set this; :class:`~aieng.forecasting.methods.agentic.predictor.AgentPredictor`
         reads it to derive its ``predictor_id`` and tracing metadata.
@@ -53,7 +61,7 @@ class AgentForecastOutput(BaseModel, ABC):
     validations (types, constraints, required presence) still apply.
     """
 
-    modality: ClassVar[Literal["continuous", "discrete"]]
+    modality: ClassVar[Literal["continuous", "discrete", "categorical"]]
 
     @abstractmethod
     def to_predictions(
@@ -211,7 +219,7 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
         horizons to match ``task.horizons`` exactly.
     rationale : str
         Optional overall explanation propagated to
-        ``Prediction.metadata["agent_rationale"]`` when non-empty.
+        ``Prediction.metadata["rationale"]`` when non-empty.
 
     Examples
     --------
@@ -227,7 +235,7 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
     ... )
     """
 
-    modality: ClassVar[Literal["continuous", "discrete"]] = "continuous"
+    modality: ClassVar[Literal["continuous", "discrete", "categorical"]] = "continuous"
 
     model_config = {"extra": "ignore"}
 
@@ -332,7 +340,7 @@ class ContinuousAgentForecastOutput(AgentForecastOutput):
         offset = pd.tseries.frequencies.to_offset(task.frequency)
         base_metadata: dict[str, Any] = dict(metadata) if metadata is not None else {}
         if self.rationale.strip():
-            base_metadata["agent_rationale"] = self.rationale
+            base_metadata["rationale"] = self.rationale
 
         predictions: list[Prediction] = []
         for horizon in task.horizons:
@@ -377,7 +385,7 @@ class DiscreteAgentForecastOutput(AgentForecastOutput):
         Optional self-reported confidence label.
     """
 
-    modality: ClassVar[Literal["continuous", "discrete"]] = "discrete"
+    modality: ClassVar[Literal["continuous", "discrete", "categorical"]] = "discrete"
 
     model_config = {"extra": "ignore"}
 
@@ -423,7 +431,7 @@ class DiscreteAgentForecastOutput(AgentForecastOutput):
         offset = pd.tseries.frequencies.to_offset(task.frequency)
         prediction_metadata: dict[str, Any] = dict(metadata) if metadata is not None else {}
         if self.reasoning.strip():
-            prediction_metadata["agent_rationale"] = self.reasoning
+            prediction_metadata["rationale"] = self.reasoning
         if self.direction_bias.strip():
             prediction_metadata["direction_bias"] = self.direction_bias
         if self.key_signals:
@@ -439,6 +447,182 @@ class DiscreteAgentForecastOutput(AgentForecastOutput):
                 as_of=context.as_of,
                 forecast_date=(pd.Timestamp(context.as_of) + offset * horizon).to_pydatetime(),
                 payload=BinaryForecast(probability=self.probability),
+                metadata=prediction_metadata,
+            )
+        ]
+
+
+#: Maximum allowed |sum - 1| before a categorical agent distribution is
+#: rejected instead of renormalized in ``to_predictions``.
+CATEGORICAL_RENORMALIZATION_TOLERANCE: float = 0.05
+
+
+class AgentCategoryProbability(BaseModel):
+    """One (label, probability) row of a categorical agent forecast.
+
+    Attributes
+    ----------
+    label : str
+        Category label. Must match one of the task's declared category
+        labels; checked during :meth:`CategoricalAgentForecastOutput.to_predictions`.
+    probability : float
+        Predicted probability of this category, in ``[0, 1]``.
+    """
+
+    model_config = {"extra": "ignore"}
+
+    label: str = Field(min_length=1, description="Category label from the task's declared category set.")
+    probability: float = Field(ge=0.0, le=1.0, description="Predicted probability of this category.")
+
+
+class CategoricalAgentForecastOutput(AgentForecastOutput):
+    """Agent output for ordered-categorical forecasting tasks.
+
+    The agent supplies one probability per category label plus optional
+    explanatory metadata. The category order, label set, and series-value
+    mapping live on the task (``task.categories``); :meth:`to_predictions`
+    validates the agent's labels against that declaration, so the schema
+    itself stays task-agnostic.
+
+    Schema validation enforces per-row constraints only. Cross-row
+    constraints (exact label-set match, probabilities summing to 1) are
+    enforced in :meth:`to_predictions`, where the task is available. Sums
+    within :data:`CATEGORICAL_RENORMALIZATION_TOLERANCE` of 1 are
+    renormalized — LLMs routinely emit 0.99 totals — with the raw sum
+    recorded in ``Prediction.metadata["probability_sum_raw"]``; sums further
+    off raise.
+
+    Attributes
+    ----------
+    probabilities : list[AgentCategoryProbability]
+        One probability per category label, in any order.
+    reasoning : str
+        Optional explanation propagated to ``Prediction.metadata``.
+    key_signals : list[str]
+        Optional list of supporting signals for the forecast.
+    confidence : str
+        Optional self-reported confidence label.
+    """
+
+    modality: ClassVar[Literal["continuous", "discrete", "categorical"]] = "categorical"
+
+    model_config = {"extra": "ignore"}
+
+    probabilities: list[AgentCategoryProbability] = Field(
+        description="One {label, probability} entry per task category."
+    )
+    reasoning: str = Field(default="", description="Optional explanation for the distribution.")
+    key_signals: list[str] = Field(default_factory=list, description="Key signals supporting the estimate.")
+    confidence: str = Field(default="", description="Optional self-reported confidence: high, medium, or low.")
+
+    @model_validator(mode="after")
+    def _labels_are_unique(self) -> "CategoricalAgentForecastOutput":
+        """Reject empty distributions and duplicate labels before conversion."""
+        if not self.probabilities:
+            raise ValueError("probabilities must contain at least one category entry.")
+        labels = [row.label for row in self.probabilities]
+        duplicates = sorted({label for label in labels if labels.count(label) > 1})
+        if duplicates:
+            raise ValueError(f"Duplicate category labels are not allowed: {duplicates}")
+        return self
+
+    @classmethod
+    def prompt_schema_json(cls, labels: list[str] | None = None) -> str:
+        """Return a JSON template for use in agent instruction strings.
+
+        Parameters
+        ----------
+        labels : list[str], optional
+            Category labels to render in the template, in task order. When
+            given, the template shows one concrete entry per label; otherwise
+            it shows generic placeholders.
+
+        Returns
+        -------
+        str
+            Indented JSON string showing the exact structure the agent must
+            pass to ``set_model_response``.
+        """
+        if labels:
+            entries: list[dict[str, object]] = [
+                {"label": label, "probability": "<float in [0, 1]>"} for label in labels
+            ]
+        else:
+            entries = [{"label": "<category label from the task>", "probability": "<float in [0, 1]>"}]
+        template: dict[str, object] = {
+            "probabilities": entries,
+            "reasoning": "<string>",
+            "key_signals": ["<signal 1>", "<signal 2>"],
+            "confidence": "<'high' | 'medium' | 'low'>",
+        }
+        return json.dumps(template, indent=2)
+
+    def to_predictions(
+        self,
+        *,
+        task: ForecastingTask,
+        context: ForecastContext,
+        predictor_id: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> list[Prediction]:
+        """Convert agent output to a single categorical :class:`Prediction`.
+
+        Raises
+        ------
+        ValueError
+            If the task is not a single-horizon categorical task, if the
+            output labels do not exactly match ``task.categories``, or if the
+            probabilities sum outside
+            ``1 +/- CATEGORICAL_RENORMALIZATION_TOLERANCE``.
+        """
+        if task.payload_type != "categorical" or task.categories is None:
+            raise ValueError(
+                f"Categorical agent output requires a categorical task with declared categories; "
+                f"task '{task.task_id}' declares payload_type='{task.payload_type}'."
+            )
+        if len(task.horizons) != 1:
+            raise ValueError("Categorical agent output expects exactly one task horizon.")
+
+        by_label = {row.label: row.probability for row in self.probabilities}
+        expected = {category.label for category in task.categories}
+        actual = set(by_label)
+        if actual != expected:
+            missing = sorted(expected - actual)
+            extra = sorted(actual - expected)
+            raise ValueError(
+                f"Categorical agent output must contain exactly the task category labels. "
+                f"Missing: {missing}; extra: {extra}."
+            )
+
+        raw_sum = sum(by_label.values())
+        if abs(raw_sum - 1.0) > CATEGORICAL_RENORMALIZATION_TOLERANCE or raw_sum <= 0.0:
+            raise ValueError(
+                f"Categorical agent probabilities sum to {raw_sum}, outside the renormalization "
+                f"tolerance of 1 +/- {CATEGORICAL_RENORMALIZATION_TOLERANCE}."
+            )
+        probabilities = {category.label: by_label[category.label] / raw_sum for category in task.categories}
+
+        horizon = task.horizons[0]
+        issued_at = datetime.utcnow()  # naive UTC; Prediction.issued_at expects timezone-naive
+        offset = pd.tseries.frequencies.to_offset(task.frequency)
+        prediction_metadata: dict[str, Any] = dict(metadata) if metadata is not None else {}
+        if self.reasoning.strip():
+            prediction_metadata["rationale"] = self.reasoning
+        if self.key_signals:
+            prediction_metadata["key_signals"] = list(self.key_signals)
+        if self.confidence.strip():
+            prediction_metadata["confidence"] = self.confidence
+        if not isclose(raw_sum, 1.0, abs_tol=1e-9):
+            prediction_metadata["probability_sum_raw"] = raw_sum
+
+        return [
+            Prediction(
+                predictor_id=predictor_id,
+                task_id=task.task_id,
+                issued_at=issued_at,
+                as_of=context.as_of,
+                forecast_date=(pd.Timestamp(context.as_of) + offset * horizon).to_pydatetime(),
+                payload=CategoricalForecast(probabilities=probabilities),
                 metadata=prediction_metadata,
             )
         ]
