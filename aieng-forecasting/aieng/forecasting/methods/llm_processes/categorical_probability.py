@@ -27,6 +27,7 @@ from math import isclose
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import pandas as pd
+from aieng.forecasting.evaluation.langfuse_traces import stamp_forecast_on_trace
 from aieng.forecasting.evaluation.prediction import CategoricalForecast, Prediction
 from aieng.forecasting.methods.llm_processes._client import (
     langfuse_observe,
@@ -453,7 +454,7 @@ class CategoricalProbabilityLLMPredictor(LLMPredictor):
             metadata["probability_sum_raw"] = raw_sum
 
         issued_at = datetime.now(tz=timezone.utc).replace(tzinfo=None)
-        return [
+        predictions = [
             Prediction(
                 predictor_id=self.predictor_id,
                 task_id=task.task_id,
@@ -464,6 +465,11 @@ class CategoricalProbabilityLLMPredictor(LLMPredictor):
                 metadata=metadata,
             ),
         ]
+        # Make the trace the canonical record for rationale evaluation: stamp the
+        # structured forecast onto the active trace so a trace evaluator reads the
+        # rationale + distribution straight from Langfuse, not from a cached run.
+        stamp_forecast_on_trace(predictions)
+        return predictions
 
 
 __all__ = [

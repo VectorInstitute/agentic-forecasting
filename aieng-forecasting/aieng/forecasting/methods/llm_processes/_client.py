@@ -104,6 +104,21 @@ def current_trace_info() -> tuple[str | None, str | None]:
         return None, None
 
 
+def trace_url_for(trace_id: str) -> str | None:
+    """Return the Langfuse UI URL for a specific ``trace_id``, or ``None``.
+
+    Unlike :func:`current_trace_info`, this resolves a URL for a trace by id even
+    when no trace context is active (e.g. the agent path, whose trace id is
+    captured on a worker thread). No-op when Langfuse is unavailable.
+    """
+    try:
+        from langfuse import get_client  # noqa: PLC0415
+
+        return get_client().get_trace_url(trace_id=trace_id)
+    except Exception:
+        return None
+
+
 def set_current_trace_name(name: str) -> None:
     """Name the active Langfuse trace, if any, so it is identifiable in the UI.
 

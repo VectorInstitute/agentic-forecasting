@@ -260,4 +260,4 @@ The key utility functions to build:
 
 5. **Activity 2 variant sequencing:** should Variant A (statistics-only) and Variant B (news-grounded) be sequential cells in one notebook, or separate runs with a state-reset between them? Sequential makes the comparison cleaner but requires the reset machinery. ((Could they not result in two different configurations? Maybe this is worth dealing with now...))
 
-6. **Workplan update:** the bootcamp workplan (`planning-docs/bootcamp-workplan.md`) currently describes the energy reference as "Complete" with a four-notebook curriculum. It should be updated to reflect this expansion and its relation to cohort 1 readiness, since this is net-new work beyond what was initially scoped. ((Agreed.))
+6. **Roadmap update:** the energy reference is now documented with both the four-notebook stateless curriculum and this adaptive-agent expansion; see `planning-docs/roadmap.md` and `implementations/energy_oil_forecasting/README.md`. ((Done.))

@@ -34,8 +34,8 @@ Configuration lives in `configs/default.yaml`. Outputs are written to `outputs/<
 
 Free-tier Gemini keys can hit 429s quickly. Increase `delay_between_requests_sec` in the config or start with `--max-dates 1`.
 
-## Relationship To The Bootcamp
+## Relationship to the project
 
-The maintained planning source of truth is `planning-docs/bootcamp-workplan.md`.
+This is exploration code, not a reference implementation. For architecture principles and extension ideas, see `planning-docs/roadmap.md`.
 
 For cohort 1, the energy/oil demo is a storytelling and interactive analyst surface, not a scored reference experiment. Code in this playground can inform that demo, but production agent architecture should separate retrieval, analysis, code execution, and Track 1 `Prediction` emission as described in the workplan.

@@ -26,12 +26,10 @@ naturally binary problems — prediction-market-style questions — and the
 experiment notebook opens with it as a warm-up, including a numerical check
 of the RPS(K=2) ≡ Brier identity.
 
-If this is your first session with the repo, start at
-`implementations/getting_started/`; come here when you want to see the same
-harness applied to a problem that is not a time series.
-
-> See `planning-docs/bootcamp-workplan.md` for current cohort 1 scope. This
-> is workplan item E, the sole discrete-event reference experiment.
+This is the repository's only discrete-event reference implementation: come
+here to see the same evaluation harness applied to a problem that is not a time
+series. For the minimal continuous-forecasting loop, see
+[`getting_started/`](../getting_started/).
 
 ---
 
@@ -87,12 +85,14 @@ calendar file and used for validation, but no forecast origin targets it.
 | 2-year GoC benchmark yield | StatCan 10-10-0139-01 | Market-implied policy expectations — the strongest single covariate, and naturally directional |
 | CPI all-items | StatCan 18-10-0004-11 | The Bank targets 2% CPI inflation |
 | Unemployment rate | FRED `LRUNTTTTCAM156S` | Labour-market pressure |
+| BoC rate-announcement press releases | Bank of Canada announcement pages (`scripts/fetch_boc_press_releases.py`) | One release per scheduled meeting, cached to `data/reports/boc_press_releases/`; served cutoff-aware by `PressReleaseStore` (only releases published on or before the origin are visible). Currently the published-rationale source for the reasoning-alignment evaluator; available as a context seam for the LLMP/agent predictors |
 
 Populate the cache once (`FRED_API_KEY` in `.env` needed for the
 unemployment covariate; the script degrades gracefully without it):
 
 ```bash
-uv run python scripts/fetch_boc.py
+uv run python scripts/fetch_boc.py                 # series: rate, 2yr yield, CPI, unemployment
+uv run python scripts/fetch_boc_press_releases.py  # press releases (for the rationale-alignment eval)
 ```
 
 **Cutoff discipline.** Monthly adapters carry *approximate* `released_at`
@@ -122,7 +122,8 @@ re-run `scripts/fetch_boc.py --refresh` to pick up new announcements.
 The agent/logistic pairing is deliberate: identical indicators, so the
 comparison isolates *conventional fitting* vs *LLM reasoning*. The agent
 also emits `reasoning` and `key_signals` per meeting — the input for the
-planned reasoning-alignment evaluator (see roadmap below).
+reasoning-alignment evaluator in `rationale_eval.py`, demonstrated
+end-to-end in notebook 03.
 
 > **Leakage note:** frontier LLMs have seen news coverage of every
 > historical BoC decision, and for a discrete outcome a single recalled
@@ -155,13 +156,16 @@ Notebook 02 selects between smoke and full via `EXPERIMENT_CONFIG`.
 implementations/boc_rate_decisions/
 ├── meeting_schedule.yaml  # curated BoC announcement calendar (source-cited)
 ├── data.py                # build_boc_service(); direction/event derivation + validation
+├── press_releases.py      # PressReleaseStore: cutoff-aware press-release store + HTML extraction/caching helpers
 ├── predictors/            # (multinomial) logistic baseline; direction + binary LLMP recipes
 ├── analyst_agent/         # AgentConfig factories + prompt builder + predictor factory
 ├── analysis.py            # score leaderboard, one-vs-rest frames, calibration bins, rationales
+├── rationale_eval.py      # LLM-as-judge reasoning-alignment evaluator; reads Langfuse traces, pushes scores back
 ├── plots.py               # decision timeline, reliability curve, rate-path chart
 ├── specs/                 # direction + binary backtest / eval / smoke YAML
-├── 01_boc_data_exploration.ipynb        # framing, direction derivation, cutoff walkthrough
-└── 02_boc_rate_direction_experiment.ipynb # binary warm-up + the 3-way experiment
+├── 01_boc_data_exploration.ipynb           # framing, direction derivation, cutoff walkthrough
+├── 02_boc_rate_direction_experiment.ipynb  # binary warm-up + the 3-way experiment
+└── 03_rationale_alignment.ipynb            # reasoning-alignment evaluation (LLM-as-judge over traces)
 ```
 
 Tests live under `implementations/tests/boc_rate_decisions/` (direction and
@@ -175,22 +179,37 @@ event derivation semantics; feature leak-safety).
 |---|---|
 | `01_boc_data_exploration.ipynb` | Problem framing (ordered decision vs time series), policy-rate history with cut/hold/hike markers, direction derivation + schedule validation, class imbalance and the climatology RPS floor (with the cumulative-Brier decomposition), cutoff discipline at a real origin. |
 | `02_boc_rate_direction_experiment.ipynb` | **Main experiment.** Binary warm-up (the copy-paste reference + RPS(K=2) ≡ Brier check), smoke/full config switch, cached backtests for all four predictors at the canonical T−28 lead, RPS leaderboard with skill scores, the T−28 vs T−1 lead-time comparison ("anticipation gap"), decision timeline (P(cut) and P(hike)), one-vs-rest reliability curves, agent-reasoning inspection, budget-gated protected eval. |
+| `03_rationale_alignment.ipynb` | **Reasoning-alignment evaluation.** Runs traced LLMP/agent forecasts, then judges each trace's `reasoning`/`key_signals` against the Bank's published press release with an LLM-as-judge (`rationale_eval.py`), pushing `rationale_alignment` (0–1) and `right_for_right_reasons` scores back to Langfuse. A *process* metric that complements RPS — most valuable exactly where backtest scores are least trustworthy (see the leakage note above). |
 
 ---
 
-## Roadmap — deferred components
+## Roadmap
+
+### Implemented since the first draft
+
+1. **BoC communications ingestion.** `press_releases.py` fetches one rate
+   announcement per scheduled meeting (`scripts/fetch_boc_press_releases.py`),
+   caches them under `data/reports/boc_press_releases/`, and serves them
+   cutoff-aware through `PressReleaseStore` — releases published after the
+   forecast origin are never visible, exactly like series data.
+2. **Reasoning-alignment evaluation.** `rationale_eval.py` is an LLM-as-judge
+   that compares the forecaster's per-meeting `reasoning`/`key_signals`
+   against the Bank's published rationale and writes `rationale_alignment`
+   and `right_for_right_reasons` scores back to the Langfuse trace. Notebook
+   03 runs it end-to-end.
+
+### Remaining extensions — good participant projects
 
 Each has an explicit seam in the code:
 
-1. **BoC communications as context** (Track 2 dependency, Ali): press
-   releases and Monetary Policy Reports feed
-   `CategoricalProbabilityLLMPredictorConfig.user_prompt_suffix` and the
-   `build_boc_news_config` retrieval sub-agent. Documents must be filtered
-   by `released_at` exactly like series data.
-2. **Reasoning-alignment evaluation**: an LLM evaluator comparing the
-   agent's per-meeting `reasoning`/`key_signals` against the Bank's
-   published rationale — a process metric to complement RPS, most valuable
-   precisely where backtest scores are least trustworthy.
-3. **Live forecasting**: extend the calendar with the Bank's published
-   future dates and forecast each announcement the day before it happens —
-   eight genuinely out-of-sample observations per year.
+1. **Press releases as predictor context.** Today the predictors are
+   quantitative-only (so the agent/logistic comparison stays clean), and the
+   press releases feed the *evaluator*. Feeding them into the *forecast*
+   instead is a one-seam change: inject release excerpts through
+   `CategoricalProbabilityLLMPredictorConfig.user_prompt_suffix` or swap the
+   `build_boc_news_config` retrieval instruction for press-release/MPR
+   retrieval. Measure the lift against the quantitative-only baseline.
+2. **Live forecasting.** Extend `meeting_schedule.yaml` with the Bank's
+   published future dates and forecast each announcement the day before it
+   happens — eight genuinely out-of-sample observations per year, and the
+   honest test that backtest leakage makes impossible.

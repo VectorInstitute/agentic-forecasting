@@ -4,20 +4,14 @@ Replicates the **Canada's Food Price Report (CFPR)** forecasting methodology —
 an annual estimate of the year-over-year percentage change in Canadian food
 prices across nine CPI sub-categories.
 
-This is the bootcamp's flagship **no-futures multivariate** reference
-experiment — the graduation step from
-`implementations/getting_started/`, and the case where
-context genuinely matters because no market aggregator summarises the
-answer.  It is a fully working, literature-aligned forecasting task that
-runs in minutes on a laptop and provides a launching pad for LLM and
-agent-based predictors.  If this is your first session with the repo,
-start at `implementations/getting_started/` and come here once the single-series loop is
-familiar.
-
-> See `planning-docs/bootcamp-workplan.md` for the current cohort 1
-> scope. CFPR remains the flagship no-futures multivariate reference
-> experiment; S&P 500 is the first formal financial-markets Track 1
-> template, and energy/oil is the May 21 and interactive analyst demo.
+This is the **no-futures multivariate** reference implementation — the case
+where context genuinely matters because no market aggregator summarises the
+answer. It is a fully working, literature-aligned forecasting task that runs
+in minutes on a laptop and provides a launching pad for LLM and agent-based
+predictors. It extends the single-series evaluation loop from
+[`getting_started/`](../getting_started/) to multiple correlated targets and a
+multi-step trajectory, but stands on its own — you don't need to work through
+that one first.
 
 ---
 
@@ -120,9 +114,9 @@ Unit tests for the analysis helpers live under
 ## Covariates
 
 FRED macro covariates are **not** used in the canonical experiment. Framing
-multivariate exogenous inputs for agentic and LLM-based predictors remains
-extension work tracked in `planning-docs/bootcamp-workplan.md`. Experiments
-that need FRED covariates should register their own via `FREDAdapter`.
+multivariate exogenous inputs for agentic and LLM-based predictors is a natural
+extension. Experiments that need FRED covariates should register their own via
+`FREDAdapter`.
 
 ---
 
@@ -175,17 +169,23 @@ uv run python scripts/extract_reports.py
   `n_chars` + `est_tokens`. No section/segment structure is reconstructed — the
   planned LLM-P formats consume the whole document, and report families share no
   common structure, so per-source heading heuristics would be brittle.
-- **`publication_date` is the cutoff key.** A future cutoff-aware
-  `DocumentStore` will filter reports with `publication_date <= as_of`, so a
-  report is never visible at a forecast origin before its real release. For the
-  canonical July-origin CFPR backtest only the month/year matters.
+- **`publication_date` is the cutoff key.** A cutoff-aware document store
+  filters reports with `publication_date <= as_of`, so a report is never
+  visible at a forecast origin before its real release. The BoC use case ships
+  a worked example of exactly this pattern —
+  [`PressReleaseStore`](../boc_rate_decisions/press_releases.py) — if you want
+  a reference before building the food-CPI equivalent. For the canonical
+  July-origin CFPR backtest only the month/year matters.
 - **Context-cost estimate:** `extract_reports.py` prints per-document and total
   char/token counts (token estimate ≈ chars/4, model-agnostic) so you can gauge
   the cost of putting one — or several — reports into a prompt.
-- **Out of scope (deferred):** wiring these reports into the LLM-P prompt and
-  the cutoff-aware `DocumentStore` is a separate follow-up; this pipeline only
-  produces the extracted artifacts. Generalizes directly to Bank of Canada
-  Monetary Policy Reports via the same `--source`-keyed fetcher and `extract_document`.
+- **Deferred (a good participant extension):** wiring these extracted reports
+  into the food-CPI LLM-P prompt behind a cutoff-aware store is still a
+  follow-up — this pipeline only produces the extracted artifacts. The
+  ingredients now exist to do it: `extract_document` here, and BoC's
+  `PressReleaseStore` as the store pattern to mirror. Generalizes directly to
+  Bank of Canada Monetary Policy Reports via the same `--source`-keyed fetcher
+  and `extract_document`.
 
 ---
 
@@ -212,4 +212,4 @@ uv run python scripts/extract_reports.py
 - **CRPS is the primary metric.**  MAPE on the median is a secondary,
   point-estimate sanity check.
 - **No ensemble model selection.** The leaderboard compares individual
-  predictors; assembling them into a committee is left as a bootcamp exercise.
+  predictors; assembling them into a committee is left as an exercise.

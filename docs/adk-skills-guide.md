@@ -1,208 +1,192 @@
-# ADK Skills — Design Guide and Reintroduction Playbook
+# ADK Skills and Code Execution — How-To for This Repo
 
-This document captures what we learned from building, debugging, and ultimately
-removing the first ADK skill from the food CPI agent. It exists so the lessons
-are not lost and skill reintroduction can proceed quickly when we have the right
-material to put in a skill.
+How agentic forecasters in this repo extend their capabilities, and the rules
+for adding each correctly the first time. The patterns here are not
+hypothetical — they are the ones the energy implementation
+(`implementations/energy_oil_forecasting/`) uses today, and this guide points
+at those skills as the canonical examples.
+
+All of this is wired through `AgentConfig` /
+`build_adk_agent` in
+[`aieng-forecasting/aieng/forecasting/methods/agentic/agent_factory.py`](../aieng-forecasting/aieng/forecasting/methods/agentic/agent_factory.py).
 
 ---
 
-## 1. How ADK skills work
+## 1. The three ways to extend an agent
 
-An ADK skill is a directory with the following layout:
+Pick the lightest mechanism that does the job. They compose — the energy
+agents use all three.
+
+| Mechanism | `AgentConfig` field | Runs where | Use it for |
+|---|---|---|---|
+| **Read-only skill** (ADK `SkillToolset`) | `skills_dirs: Sequence[Path]` | Content injected into the model context; files loaded on demand | Reference data and instructions too large or specific for the system prompt — benchmark tables, calibration stats, code patterns, series metadata |
+| **Function tool** | `function_tools` (pre-built ADK tools) and `extra_tools` (plain callables wrapped as `FunctionTool`) | The **host process** | Deterministic, auditable operations: a pre-specified `ForecastTool`, or typed state-mutation tools (see §5) |
+| **Code execution** | `code_execution: CodeExecutionConfig` | An **E2B cloud sandbox** | Open-ended ad-hoc computation the LLM writes itself — rolling indicators, interval calibration, exploratory analysis |
+
+A read-only skill *describes* how to do something; a function tool *does* a
+fixed thing reproducibly; code execution *lets the model do anything* inside a
+sandbox. Reach for code execution only when the flexibility is the point —
+otherwise a function tool is more controllable.
+
+---
+
+## 2. Code execution is E2B-only
+
+This repo standardized on **E2B** for code execution. There is no
+Gemini-native / built-in code-execution path. When `code_execution.enabled` is
+true, `build_adk_agent` attaches the E2B `CodeInterpreter(...).run_code` tool;
+code runs in a sandbox built from the image named in
+`CodeExecutionConfig.template_name`.
+
+- Code execution is **disabled by default** (`CodeExecutionConfig`).
+- Build the sandbox image once before enabling it — see
+  [Getting Started → Build the E2B sandbox image](../README.md) and
+  `scripts/build_e2b_template.py`.
+- Function tools and skill-mutation tools (§5) run in the **host process, not
+  in the sandbox**; only the model's own `run_code` calls execute in E2B.
+
+> **Prompt hygiene.** Do not tell the model it "may execute code" unless
+> `code_execution.enabled` is true. With no `run_code` tool available, the
+> model will look for the nearest substitute (historically, a hallucinated
+> `run_skill_script` call). Match the prompt to the tools actually attached.
+
+---
+
+## 3. How ADK skills work
+
+An ADK skill is a directory:
 
 ```
 my-skill/
 ├── SKILL.md          # required — frontmatter (name, description) + body instructions
-├── references/       # optional — documentation or data files, loaded via load_skill_resource
+├── references/       # optional — docs or data files, loaded via load_skill_resource
 ├── assets/           # optional — templates or other resources, loaded via load_skill_resource
 └── scripts/          # optional — Python/bash scripts, executed via run_skill_script
 ```
 
-When a `SkillToolset` is attached to an `LlmAgent`, ADK registers **four tools**
-for every model call, regardless of whether the skill actually has any files in
-those directories:
+You attach skills by listing their directories in `AgentConfig.skills_dirs`;
+`build_adk_agent` calls `load_skill_from_dir` on each and wraps them in a
+single `SkillToolset`. When a `SkillToolset` is present, ADK registers **four
+tools** for every model call, regardless of which subdirectories actually
+exist:
 
 | Tool | What it does |
 |------|-------------|
-| `list_skills` | Returns `<available_skills>` XML containing each skill's `name` and `description` from its SKILL.md frontmatter (L1 metadata). |
-| `load_skill` | Returns the full SKILL.md body (after frontmatter) for a named skill (L2 instructions). |
-| `load_skill_resource` | Loads a file from `references/`, `assets/`, or `scripts/` within a named skill. |
-| `run_skill_script` | Executes a Python or bash script from the `scripts/` subdirectory of a named skill. |
+| `list_skills` | Returns each skill's `name` + `description` from its SKILL.md frontmatter (L1 metadata). |
+| `load_skill` | Returns the full SKILL.md body for a named skill (L2 instructions). |
+| `load_skill_resource` | Loads a file from `references/`, `assets/`, or `scripts/`. |
+| `run_skill_script` | Executes a Python or bash script from `scripts/`. |
 
-### The ADK system-prompt injection
-
-Whenever a `SkillToolset` is present, ADK injects the following text into the
-system prompt **automatically**, before any user-supplied instruction:
-
-> Skills are folders of instructions and resources that extend your capabilities
-> for specialized tasks. Each skill folder contains:
->
-> - `SKILL.md` (required): The main instruction file with skill metadata and
->   detailed markdown instructions.
-> - `references/` (Optional): Additional documentation or examples for skill usage.
-> - `assets/` (Optional): Templates, scripts or other resources used by the skill.
-> - `scripts/` (Optional): Executable scripts that can be run via bash.
-
-This injection is unconditional — there is no public API to suppress it. The
-model reads it and concludes that scripts are available.
+ADK also injects a fixed paragraph into the system prompt describing these
+folders **unconditionally** — there is no public API to suppress it. The model
+reads it and concludes that scripts exist, **even when the skill has none.**
+That single fact drives the rules below.
 
 ---
 
-## 2. What went wrong with the v1 `forecast-food-cpi` skill
+## 4. The design rules
 
-### Root cause: the ADK injection + no actual scripts
+### Rule 1 — Don't attach a skill that has no files in `references/`, `assets/`, or `scripts/`.
 
-The `forecast-food-cpi` skill had only a `SKILL.md` body — no `references/`,
-no `assets/`, no `scripts/`. But the ADK injection told the model scripts
-existed. The model invented plausible-sounding script names and tried to run
-them.
+A skill with only a `SKILL.md` body is a system-prompt fragment wearing four
+extra tool declarations. It adds the ADK injection (which advertises scripts
+that don't exist) for zero benefit. If all you have is body text, put it in the
+agent instruction and leave `skills_dirs` empty.
 
-### Compounding factor: the user prompt
+A skill earns its place when it provides reference **data** loaded on demand
+(`load_skill_resource`) or executable **scripts** (`run_skill_script`).
 
-The user prompt contained `"You may use code execution to parse the CSV"` even
-when code execution (`run_code`) was disabled. With no `run_code` tool
-available, the model substituted `run_skill_script` as the nearest equivalent.
+> **Why this rule exists (the food-CPI incident).** The first skill in the repo
+> — `forecast-food-cpi` — had only a `SKILL.md` body, no `references/` or
+> `scripts/`. The ADK injection told the model scripts existed, so it invented
+> plausible names (`scripts/setup.py`, `scripts/forecast.py`) and burned three
+> tool round-trips on `SCRIPT_NOT_FOUND` before giving up and reasoning from the
+> prompt directly — which is all it ever needed to do. The skill was removed and
+> its content folded back into the system prompt. The rules here are the lesson.
 
-### Observed failure sequence (from Langfuse trace `3c4bf9514653ab995709a4b896184686`)
+### Rule 2 — If a skill has references but no scripts, say so in the prompt.
 
-| Turn | Tool call | Result |
-|------|-----------|--------|
-| 1 | `list_skills` | ✓ `forecast-food-cpi` returned |
-| 2 | `load_skill("forecast-food-cpi")` | ✓ SKILL.md body returned |
-| 3 | `context_agent(...)` | ✓ News context retrieved |
-| 4 | `run_skill_script("scripts/setup.py")` | ✗ `SCRIPT_NOT_FOUND` |
-| 5 | `load_skill_resource("SKILL.md")` | ✗ `INVALID_RESOURCE_PATH` |
-| 6 | `run_skill_script("scripts/forecast.py")` | ✗ `SCRIPT_NOT_FOUND` |
-| 7 | `set_model_response(...)` | ✓ Forecast produced |
+ADK will advertise `run_skill_script` regardless. Pre-empt the hallucination
+with an explicit instruction. The energy analyst agent does exactly this —
+after telling the model to use `list_skills` → `load_skill` →
+`load_skill_resource`, it adds:
 
-Three wasted round-trips before the model gave up and reasoned from the prompt
-data directly — which is all it needed to do in the first place.
+> These skills have NO scripts. Do not call `run_skill_script`.
 
-### Additional problem: the skill body was just a system-prompt fragment
+### Rule 3 — Keep the SKILL.md body minimal.
 
-The `forecast-food-cpi` SKILL.md body duplicated content that belongs in the
-system prompt: use-case notes, context agent table, forecasting discipline. This
-is not a legitimate use of a skill. It adds four extra tool declarations and the
-ADK injection for zero benefit.
+Only instructions specific to the reference data or scripts. Anything that
+duplicates the system prompt belongs in the system prompt.
 
 ---
 
-## 3. The design rule
+## 5. Worked examples in the repo
 
-> **Do not attach a `SkillToolset` unless the skill contains at least one file
-> in `references/`, `assets/`, or `scripts/`.**
+### Read-only skills — `energy_oil_forecasting/analyst_agent/skills/`
 
-A skill with only a `SKILL.md` body is a system-prompt fragment that also
-breaks script-hallucination suppression. Move the content into the system
-prompt and drop the skill.
+The code-executing analyst variant attaches two skills via `skills_dirs` (see
+`analyst_agent/agent.py`):
 
-Skills earn their place when they provide one of:
+- **`statistical-analysis/`** — `SKILL.md` plus
+  `references/analysis-patterns.md` and `references/wti_benchmarks.json`
+  (seasonal/volatility benchmarks loaded via `load_skill_resource`).
+- **`trend-projection/`** — `SKILL.md` plus `references/projection-examples.md`
+  (code patterns for fitting a trend and calibrating intervals).
 
-1. **Reference data** too large or too specific for the system prompt — loaded
-   on demand via `load_skill_resource`. Examples: seasonal benchmark tables,
-   calibration statistics, StatCan series metadata.
-2. **Executable computations** the LLM cannot do in its head — run via
-   `run_skill_script`. Examples: numerical forecasting scripts, data parsing
-   utilities.
+Both follow Rule 1 (real `references/` content) and the agent prompt follows
+Rule 2 (explicit "no scripts"). This is the calibration-benchmarks idea that
+earlier versions of this guide only sketched — now realized in working code.
 
----
+### Adaptive skills — a learnable strategy
 
-## 4. Spec for a future skill: `calibration-benchmarks`
+The adaptive agent (`energy_oil_forecasting/adaptive_agent/`) introduces a
+fourth idea: a skill whose content the agent **mutates** over a study session,
+rather than reading read-only. The infrastructure is generic and lives in
+[`aieng/forecasting/methods/agentic/adaptive_skill.py`](../aieng-forecasting/aieng/forecasting/methods/agentic/adaptive_skill.py):
 
-**Not built yet.** The food CPI agent v1 deliberately runs without ADK skills
-(see §1–3). When we reintroduce skills, this is the concrete design to implement.
+- **`AdaptiveSkillState`** — an abstract Pydantic model that is the source of
+  truth for the skill's content; subclasses implement `build_markdown()` to
+  render the state into the `SKILL.md` the `SkillToolset` injects.
+- **`AdaptiveSkillStore`** — persists one skill directory: `skill_state.yaml`
+  (the source of truth), `SKILL.md` (re-rendered from state on every save), and
+  `.history/` (a timestamped backup before each save, so every mutation is
+  reversible without git). Its `confirmation_threshold` lives on the *store*,
+  not the *state*, so the agent cannot lower its own evidence bar by mutating
+  state.
 
-### Directory layout
+The mutations are exposed as **typed function tools**, not as `run_skill_script`
+scripts. The implementation writes one thin callable per operation
+(`record_observation`, `open_hypothesis`, `graduate_hypothesis`, …) in
+`adaptive_agent/skill_tools.py` and registers them with
+`AgentConfig(extra_tools=build_skill_tools(strategy_dir))`. They run in the host
+process and persist through the store. The agent reads its current strategy as a
+normal read-only skill (`skills_dirs` includes the strategy directory) and
+updates it through the tools — read and write are deliberately separate
+surfaces.
 
-```
-implementations/food_price_forecasting/analyst_agent/skills/calibration-benchmarks/
-├── SKILL.md
-└── references/
-    └── benchmarks.json
-```
-
-### `SKILL.md` frontmatter
-
-```yaml
----
-name: calibration-benchmarks
-description: >-
-  Historical seasonal indices and random-walk MAE benchmarks for the nine
-  Canadian food CPI categories. Load references/benchmarks.json before
-  calibrating quantile intervals.
----
-```
-
-### `SKILL.md` body (minimal)
-
-```markdown
-# Calibration benchmarks
-
-Load `references/benchmarks.json` via `load_skill_resource` to get:
-
-- `seasonal_indices`: 12 monthly multiplicative factors (mean-centered) per
-  category. Use these to adjust point forecasts for seasonal swings.
-- `rw_mae_6m` / `rw_mae_12m`: mean absolute error of a random-walk baseline
-  at 6-month and 12-month horizons per category. Your quantile intervals should
-  be at least this wide.
-
-**No scripts in this skill.** Do not call `run_skill_script`.
-```
-
-### `references/benchmarks.json` schema
-
-```json
-{
-  "cpi_meat_canada": {
-    "seasonal_indices": [1.01, 1.00, 0.99, ...],
-    "rw_mae_6m": 4.2,
-    "rw_mae_12m": 7.8,
-    "avg_annual_growth_rate_pct": 3.1
-  },
-  ...
-}
-```
-
-### Generation script
-
-`scripts/compute_skill_benchmarks.py` — reads `data/statcan/18100004.json`,
-computes seasonal indices (STL decomposition or ratio-to-moving-average) and
-rolling-window random-walk MAE for each category, writes
-`references/benchmarks.json`. Idempotent; commit the output JSON.
-
-### System prompt addition
-
-Add a `## Skills` section to `FOOD_PRICE_FORECASTER_INSTRUCTION`:
-
-```
-## Skills
-- Call `list_skills` before invoking any skill. Do not call `load_skill` for a
-  skill name that has not appeared in a `list_skills` response in this conversation.
-- The `calibration-benchmarks` skill provides reference data only (loaded via
-  `load_skill_resource("references/benchmarks.json")`). It has no scripts.
-  Do not call `run_skill_script`.
-- After loading the benchmarks, use `seasonal_indices` to season-adjust point
-  forecasts and use `rw_mae_*` as a floor for your quantile interval widths.
-```
+Use this pattern when an agent should *learn* a durable strategy; use a plain
+read-only skill when the reference material is fixed.
 
 ---
 
-## 5. Checklist for safe skill reintroduction
+## 6. Checklist for adding a skill
 
-- [ ] Skill has at least one file in `references/`, `assets/`, or `scripts/`.
-      If none: move the SKILL.md content into the system prompt, do not attach a
-      `SkillToolset`.
-- [ ] If the skill has `references/` or `assets/` **but no `scripts/`**: add an
-      explicit note to the system prompt — "this skill has no scripts; do not
-      call `run_skill_script`." ADK will still inject the script description
-      regardless.
-- [ ] If the skill has `scripts/`: ensure every script the model is likely to
-      call actually exists. List available scripts explicitly in the SKILL.md
-      body.
-- [ ] SKILL.md body is minimal — only instructions specific to the reference
-      data or scripts, nothing duplicating the system prompt.
-- [ ] A test verifies the skill directory loads correctly and the L1 XML
-      contains the expected name and description.
-- [ ] Run a trace after reintroduction and confirm no spurious
-      `run_skill_script` or `load_skill_resource` error observations appear.
+- [ ] The skill has at least one file in `references/`, `assets/`, or `scripts/`. If not, move the SKILL.md content into the agent instruction and leave it out of `skills_dirs` (Rule 1).
+
+- [ ] If it has `references/`/`assets/` **but no `scripts/`**, the agent instruction says so explicitly (Rule 2) — ADK advertises `run_skill_script` regardless.
+- [ ] If it has `scripts/`, every script the model is likely to call actually exists, and the SKILL.md body lists the available scripts.
+- [ ] The SKILL.md body is minimal — nothing that duplicates the system prompt (Rule 3).
+- [ ] For an adaptive skill: state lives in a `AdaptiveSkillState` subclass, mutations go through `extra_tools` (never `run_skill_script`), and the evidence threshold stays on the store.
+- [ ] A test confirms the skill directory loads and its L1 metadata (name, description) is what you expect.
+- [ ] After wiring it up, run one trace and confirm no spurious `run_skill_script` / `load_skill_resource` errors appear.
+
+---
+
+## 7. Current status
+
+- **Energy** uses read-only skills (analyst agent) and adaptive skills
+  (adaptive agent), all following the rules above.
+- **Food Price Forecasting** is a numerical-predictor path and runs **without
+  any ADK skills** — there is no agent or skill directory under it. If an
+  agentic food-CPI path is added later, the `statistical-analysis` skill in
+  energy is the closest template for a benchmarks-style read-only skill.

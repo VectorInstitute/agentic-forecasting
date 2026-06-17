@@ -159,10 +159,23 @@ class AdkTextRunner:
         self._runner = InMemoryRunner(agent=agent, app_name=config.app_name)
         # Sticky ADK session per user when ``fresh_session_per_message`` is False.
         self._conversation_session_by_user: dict[str, str] = {}
+        # Trace id captured during the most recent traced run (see ``last_trace_id``).
+        self._last_trace_id: str | None = None
         if config.enable_langfuse_tracing:
             from aieng.forecasting.langfuse_tracing import init_langfuse_tracing  # noqa: PLC0415
 
             init_langfuse_tracing()
+
+    @property
+    def last_trace_id(self) -> str | None:
+        """Langfuse trace id captured during the most recent traced run, if any.
+
+        The agent runs on a worker event loop whose trace context the caller's
+        thread cannot see; the runner captures the id here so a predictor can link
+        and score the trace after the run. ``None`` when tracing is off or the last
+        run produced no trace.
+        """
+        return self._last_trace_id
 
     @property
     def runner(self) -> InMemoryRunner:
@@ -291,7 +304,7 @@ class AdkTextRunner:
             return text
 
         if self.config.enable_langfuse_tracing:
-            from langfuse import propagate_attributes  # noqa: PLC0415
+            from langfuse import get_client, propagate_attributes  # noqa: PLC0415
 
             metadata: dict[str, str] = {"adk_app_name": self.config.app_name}
             if self.config.langfuse_propagate_metadata:
@@ -309,8 +322,17 @@ class AdkTextRunner:
                 }.items()
                 if v is not None
             }
-            with propagate_attributes(**pa_kw):
-                return await run_and_resolve()
+            # Wrap the run in an explicit Langfuse span so (a) the ADK spans nest
+            # under one root trace and (b) we can capture the trace id while its
+            # context is active — the caller's thread cannot see it otherwise.
+            self._last_trace_id = None
+            client = get_client()
+            root_name = self.config.langfuse_trace_name or self.config.app_name
+            with client.start_as_current_observation(name=root_name, as_type="agent"):
+                with propagate_attributes(**pa_kw):
+                    result = await run_and_resolve()
+                self._last_trace_id = client.get_current_trace_id()
+            return result
 
         return await run_and_resolve()
 

@@ -1,7 +1,8 @@
 # Getting Started
 
-The bootcamp's **"hello-world"** forecasting experiment.  Start here if
-this is your first session with the repo.
+The **"hello-world"** forecasting example — the smallest end-to-end use of
+the evaluation framework, and a good first stop if the `Predictor` /
+`backtest` / `evaluate` loop is new to you.
 
 The task deliberately keeps the framework surface minimal - a single
 series, a single 1-month horizon, one `BacktestSpec`, the `backtest()`
@@ -24,8 +25,9 @@ crude-oil collapse, the 2014–16 OPEC-led decline, the 2020 COVID
 demand shock, and the 2021–22 Russia/Ukraine surge.  Even at h=1
 the series makes large enough month-over-month jumps during these
 events that last-value and ARIMA both struggle.  The CRPS spikes are
-exactly the motivation for the downstream bootcamp work: exogenous
-covariates, LLM context, and agents that can retrieve that context.
+exactly the motivation for the richer techniques the other
+implementations explore: exogenous covariates, LLM context, and agents
+that can retrieve that context.
 
 **Why 1-month ahead?**  StatCan publishes CPI ~3 weeks after the
 reference month, so a forecast made today resolves at the next print.
@@ -54,16 +56,16 @@ This registers all 47 Canada-wide CPI series from StatCan table
 
 ---
 
-## Learning path
+## Walkthrough
 
-### 1. Warm up - `cpi_data_exploration.ipynb`
+### 1. Warm up - `01_cpi_data_exploration.ipynb`
 
 Nine cells.  Registers three focus series (all-items, gasoline,
 shelter), shows the cutoff-enforcement pattern, plots levels and
 year-over-year change, and constructs a `ForecastingTask` by hand so
 you can see what the YAML spec turns into.
 
-### 2. Run the backtest - `cpi_backtest_demo.ipynb`
+### 2. Run the backtest - `02_cpi_backtest_demo.ipynb`
 
 Ten cells.  Walks through the full cycle:
 
@@ -117,20 +119,22 @@ against [`cpi_gasoline_eval_2025.yaml`](specs/cpi_gasoline_eval_2025.yaml)
 
 ---
 
-## Graduation: CFPR
+## Where to go next
 
-When this experiment feels small, graduate to
-[`implementations/food_price_forecasting/`](../food_price_forecasting/).  That is the
-flagship of the no-futures multivariate case: nine correlated CPI
-sub-indices, a 12-step trajectory per origin, `MultiTargetBacktestSpec`,
-`cached_multi_backtest()`, helper modules (`data.py`, `analysis.py`,
-`plots.py`), and the avg/avg YoY metric that Canada's Food Price Report
-actually publishes.  Everything in `getting_started/` is the minimum
-viable subset of that story; CFPR is the full article.
+This implementation is the minimal subset of the evaluation framework. The
+other reference implementations are independent — pick whichever problem fits
+what you're building:
 
-See `planning-docs/bootcamp-workplan.md` for the current reference
-experiment map, including the planned S&P 500 Track 1 template and the
-separate energy/oil interactive analyst demo.
+- [`food_price_forecasting/`](../food_price_forecasting/) — the same evaluation
+  story scaled up: nine correlated CPI sub-indices, a 12-step trajectory per
+  origin, `MultiTargetBacktestSpec`, `cached_multi_backtest()`, helper modules
+  (`data.py`, `analysis.py`, `plots.py`), and the avg/avg YoY metric that
+  Canada's Food Price Report actually publishes.
+- [`boc_rate_decisions/`](../boc_rate_decisions/) — the same harness applied to
+  a discrete cut/hold/hike event instead of a continuous series (Brier / RPS).
+- [`energy_oil_forecasting/`](../energy_oil_forecasting/) — daily prices,
+  news-grounded and code-executing agents, and an agent that learns a strategy
+  from data.
 
 ---
 
@@ -140,8 +144,8 @@ separate energy/oil interactive analyst demo.
 getting_started/                 # this directory
 ├── README.md
 ├── specs/                       # backtest and eval YAML
-├── cpi_data_exploration.ipynb
-└── cpi_backtest_demo.ipynb
+├── 01_cpi_data_exploration.ipynb
+└── 02_cpi_backtest_demo.ipynb
 ```
 
 Reference predictors live in the `aieng-forecasting` package under

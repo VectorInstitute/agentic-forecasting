@@ -1,9 +1,8 @@
 # S&P 500 multivariate forecasting (leak-safe covariates)
 
-Bootcamp **financial-markets Track 1** reference: multivariate numerical comparison
-for next-session S&P 500 log returns, alongside
-[`food_price_forecasting/`](../food_price_forecasting/) and
-[`energy_oil_forecasting/`](../energy_oil_forecasting/).
+The **financial-markets** reference: a multivariate numerical-methods comparison
+for next-session S&P 500 log returns, and the template for evaluated prediction
+(Track 1) on market series with covariates. (In active development.)
 
 The target is **prior-session adjusted close to next-session open log return**
 on `^GSPC`, registered as `sp500_log_ret_1b`.

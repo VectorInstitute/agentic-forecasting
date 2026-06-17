@@ -1,6 +1,6 @@
 # implementations
 
-Reference experiments and use-case helpers for the Agentic Forecasting Bootcamp.
+Self-contained reference implementations and their helper code.
 
 This is a local uv workspace package. It is installed automatically when you run `uv sync` from the repository root, but it is not a separately published public API.
 
@@ -20,13 +20,13 @@ implementations/
 |   `-- specs/                # backtest and eval YAML
 |-- sp500_forecasting/        # S&P 500 multivariate numerical comparison (financial markets)
 |   `-- specs/                # backtest YAML (smoke + full)
+|-- boc_rate_decisions/       # Discrete-event reference: BoC cut/hold/hike direction
+|   `-- specs/                # direction + binary backtest / eval / smoke YAML
 |-- tests/                    # tests for implementation-specific helper modules
 `-- pyproject.toml            # local workspace packaging
 ```
 
-YAML backtest and eval specs live under each use case in `specs/`.
-
-The BoC rate-decision experiment (Ethan) is planned next on the reference-experiment track.
+YAML backtest and eval specs live under each use case in `specs/`. Each directory is independent; see its `README.md` for the walkthrough. The S&P 500 comparison is in active development.
 
 ---
 
@@ -42,11 +42,11 @@ If code becomes broadly reusable across use cases, promote it into `aieng-foreca
 ## Adding a new use case
 
 1. Create `implementations/<use-case>/`.
-2. Add a `README.md` with the learning path and task framing.
+2. Add a `README.md` describing the task, the data, and what the notebooks cover.
 3. Add YAML specs under `implementations/<use-case>/specs/`.
 4. Start with notebooks as the primary user surface.
 5. If notebook code becomes bulky or repeated, extract small helper modules into that use-case directory.
 6. Add tests under `implementations/tests/<use-case>/` for non-trivial helper logic.
 7. Promote code into `aieng-forecasting` once it is clearly reusable across more than one use case.
 
-For active scope, dates, and non-goals, use `planning-docs/bootcamp-workplan.md`.
+For architecture principles and cross-cutting extension ideas, see `planning-docs/roadmap.md`.

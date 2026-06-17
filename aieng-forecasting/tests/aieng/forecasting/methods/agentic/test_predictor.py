@@ -40,8 +40,8 @@ from pydantic import ValidationError
 class _StubRunner:
     """Minimal ``AdkTextRunner``-shaped object for predictor tests.
 
-    Exposes the two attributes the predictor reads (``agent`` and
-    ``run_text_async``) and nothing else.
+    Exposes the attributes the predictor reads (``agent``, ``run_text_async``,
+    ``last_trace_id``) and nothing else.
     """
 
     def __init__(
@@ -55,6 +55,8 @@ class _StubRunner:
         self._agent = MagicMock()
         self._agent.name = agent_name
         self._agent.model = model
+        # No tracing in unit tests, so no trace is captured.
+        self.last_trace_id: str | None = None
 
     @property
     def agent(self) -> Any:

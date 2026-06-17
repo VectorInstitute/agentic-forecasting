@@ -24,13 +24,14 @@ from collections.abc import Coroutine
 from typing import Any, Protocol, TypeVar, cast
 
 from aieng.forecasting.data.context import ForecastContext
+from aieng.forecasting.evaluation.langfuse_traces import stamp_forecast_on_trace
 from aieng.forecasting.evaluation.prediction import Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig
 from aieng.forecasting.methods.agentic.agent_factory import AgentConfig, build_adk_agent
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
-from aieng.forecasting.methods.llm_processes._client import strip_markdown_fence
+from aieng.forecasting.methods.llm_processes._client import strip_markdown_fence, trace_url_for
 from google.adk.agents.base_agent import BaseAgent
 from pydantic import ValidationError
 
@@ -295,5 +296,22 @@ class AgentPredictor(Predictor):
             # Log the error and return an empty list of predictions
             logger.error("Error converting output to list of predictions: %s", e)
             return []
+
+        # Link each prediction back to its Langfuse trace so side-channel
+        # evaluators can attach scores. The agent runs on a worker event loop whose
+        # trace context isn't active here, so use the id the runner captured during
+        # the run (not the current context, which is empty on this thread).
+        trace_id = self._runner.last_trace_id
+        if trace_id is not None:
+            trace_url = trace_url_for(trace_id)
+            for prediction in predictions:
+                prediction.metadata.setdefault("langfuse_trace_id", trace_id)
+                if trace_url is not None:
+                    prediction.metadata.setdefault("langfuse_trace_url", trace_url)
+
+            # Make the trace the canonical record for rationale evaluation: stamp the
+            # structured forecast onto that trace (post-hoc, by id) so the evaluator
+            # reads the rationale + distribution from Langfuse, not from a cached run.
+            stamp_forecast_on_trace(predictions, trace_id=trace_id)
 
         return predictions
