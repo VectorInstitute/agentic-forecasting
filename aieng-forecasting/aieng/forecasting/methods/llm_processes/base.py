@@ -10,9 +10,12 @@ subclasses re-exported from :mod:`aieng.forecasting.methods`.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Mapping
 
 import pandas as pd
+from aieng.forecasting.documents.models import ExtractedDocument
+from aieng.forecasting.documents.pdf_upload import pdf_to_content_part
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.methods.llm_processes._client import bootstrap_litellm, current_trace_info
 from aieng.forecasting.models import LITE_MODEL
@@ -90,6 +93,41 @@ class LLMPredictorConfig(BaseModel):
             "the bare ``<method_tag>[<model>]`` form used by ad-hoc construction."
         ),
     )
+    report_sources: list[str] | None = Field(
+        default=None,
+        description=(
+            "Optional list of document source keys (e.g. ``['cfpr']``) to include "
+            "as a report preamble in the prompt.  When set, the predictor calls "
+            "``context.get_documents(source)`` for each source and prepends the "
+            "extracted text to the user prompt in CiK-style Format A.  Requires a "
+            "``DocumentStore`` to be attached to the ``DataService``."
+        ),
+    )
+    report_max_chars: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Per-report character truncation limit.  Reports can be ~80,000 chars "
+            "each; set this to keep context windows manageable.  Truncation is "
+            "applied per-report before concatenation.  ``None`` means no truncation. "
+            "Only used by the ``'text'`` ingestion mode."
+        ),
+    )
+    report_ingestion: Literal["text", "native"] = Field(
+        default="text",
+        description=(
+            "How report documents are fed to the model when ``report_sources`` is "
+            "set.  ``'text'`` (default) injects pymupdf4llm-extracted markdown as a "
+            "CiK-style text preamble — works for every model through the proxy.  "
+            "``'native'`` uploads the source PDFs as backend-native document parts "
+            "so the model reads the original (tables/figures intact).  "
+            "TEMPORARY LIMITATION: native ingestion works only for Claude/GPT "
+            "models — the proxy drops document parts on the Gemini route.  Once the "
+            "proxy routes Gemini natively (see TODO(proxy-pdf) in "
+            "documents/pdf_upload.py), native ingestion will apply uniformly and "
+            "this becomes a free text-vs-native choice for any model."
+        ),
+    )
 
 
 def serialize_history(df: pd.DataFrame, precision: int) -> str:
@@ -127,6 +165,164 @@ def get_history_and_meta(
     except KeyError:
         series_meta = None
     return series_df, series_meta
+
+
+def fetch_report_docs(
+    *,
+    config: LLMPredictorConfig,
+    context: ForecastContext,
+) -> list[ExtractedDocument]:
+    """Fetch cutoff-filtered report documents per ``config.report_sources``.
+
+    Parameters
+    ----------
+    config : LLMPredictorConfig
+        Config with ``report_sources`` and ``report_max_chars`` fields.
+    context : ForecastContext
+        Cutoff-scoped context with optional ``DocumentStore``.
+
+    Returns
+    -------
+    list[ExtractedDocument]
+        Cutoff-filtered, chronologically sorted documents.  Empty when
+        ``report_sources`` is ``None`` or no ``DocumentStore`` is attached.
+    """
+    if not config.report_sources:
+        return []
+    docs: list[ExtractedDocument] = []
+    for source in config.report_sources:
+        docs.extend(context.get_documents(source))
+    docs.sort(key=lambda d: (d.meta.publication_date, d.meta.doc_id))
+    return docs
+
+
+def build_report_preamble(
+    docs: list[ExtractedDocument],
+    *,
+    max_chars: int | None = None,
+) -> str:
+    """Build a CiK-style Format A report preamble from a list of documents.
+
+    Each document is formatted as a titled, dated block::
+
+        === Canada's Food Price Report 2025 (15th edition) ===
+        Source: cfpr
+        Published: 2024-12-05
+        <extracted text>
+
+    When ``max_chars`` is set, each report's text is truncated to that limit
+    with a ``[...]`` marker appended.  Documents are rendered in the order
+    provided (typically chronological).
+
+    Parameters
+    ----------
+    docs : list[ExtractedDocument]
+        Documents to include in the preamble.
+    max_chars : int or None
+        Per-report character truncation limit.  ``None`` means no truncation.
+
+    Returns
+    -------
+    str
+        Formatted preamble string, or an empty string when ``docs`` is empty.
+    """
+    if not docs:
+        return ""
+    blocks: list[str] = []
+    for doc in docs:
+        title = doc.meta.title or f"{doc.meta.source}/{doc.meta.doc_id}"
+        text = doc.text
+        if max_chars is not None and len(text) > max_chars:
+            text = text[:max_chars] + "\n\n[...]"
+        block = (
+            f"=== {title} ===\nSource: {doc.meta.source}\nPublished: {doc.meta.publication_date.isoformat()}\n\n{text}"
+        )
+        blocks.append(block)
+    return "\n\n".join(blocks)
+
+
+#: Shared framing line that introduces report context in both ingestion modes.
+_REPORT_INTRO = (
+    "You are provided with the following economic report(s) "
+    "published before the forecast date. Use them as context "
+    "for your forecast."
+)
+
+
+def apply_report_context(
+    *,
+    config: LLMPredictorConfig,
+    docs: list[ExtractedDocument],
+    user_prompt: str,
+) -> str | list[dict[str, Any]]:
+    """Apply report context to the user prompt in the configured ingestion mode.
+
+    Centralizes the report-injection logic shared by every LLMP predictor so the
+    text-vs-native decision lives in one place.
+
+    Modes (``config.report_ingestion``):
+
+    - ``"text"`` (default): build a CiK-style text preamble via
+      :func:`build_report_preamble` and prepend it to ``user_prompt``.  Returns
+      a single string.  Works for every model through the proxy.
+    - ``"native"``: emit the source PDFs as backend-native document content
+      parts (:func:`~aieng.forecasting.documents.pdf_upload.pdf_to_content_part`)
+      so the model reads the originals directly.  Returns a content-part list
+      ``[intro_text, <pdf parts...>, prompt_text]``.  Requires each document to
+      carry a resolvable ``pdf_path`` and a Claude/GPT model — Gemini native
+      ingestion is not supported through the proxy yet (see ``pdf_upload.py``).
+
+    When ``docs`` is empty the bare ``user_prompt`` is returned unchanged, so
+    callers can pass the result straight through as message content regardless
+    of whether any reports were configured.
+
+    Returns
+    -------
+    str or list[dict]
+        A string (text mode / no docs) or a list of content-part dicts (native
+        mode), suitable as the ``content`` of a user message.
+    """
+    if not docs:
+        return user_prompt
+    if config.report_ingestion == "native":
+        return _build_native_report_content(config=config, docs=docs, user_prompt=user_prompt)
+    preamble = build_report_preamble(docs, max_chars=config.report_max_chars)
+    if not preamble:
+        return user_prompt
+    return f"{_REPORT_INTRO}\n\n{preamble}\n\n---\n\n{user_prompt}"
+
+
+def _build_native_report_content(
+    *,
+    config: LLMPredictorConfig,
+    docs: list[ExtractedDocument],
+    user_prompt: str,
+) -> list[dict[str, Any]]:
+    """Build a content-part list with native PDF document parts + the prompt.
+
+    Order: a brief intro text part, one backend-native document part per source
+    PDF (in the order given), then the user prompt as a trailing text part.
+
+    Raises
+    ------
+    ValueError
+        If any document lacks a resolved ``pdf_path``.
+    NotImplementedError
+        If ``config.model`` is a Gemini model (proxy limitation; raised by
+        :func:`~aieng.forecasting.documents.pdf_upload.pdf_to_content_part`).
+    """
+    parts: list[dict[str, Any]] = [{"type": "text", "text": _REPORT_INTRO}]
+    for doc in docs:
+        if not doc.pdf_path:
+            raise ValueError(
+                f"Native report ingestion requested but document "
+                f"'{doc.meta.source}/{doc.meta.doc_id}' has no resolved pdf_path. "
+                "Ensure the source PDF sits beside its .json artifact, or use "
+                "report_ingestion='text'."
+            )
+        parts.append(pdf_to_content_part(Path(doc.pdf_path), config.model))
+    parts.append({"type": "text", "text": f"---\n\n{user_prompt}"})
+    return parts
 
 
 class LLMPredictor(Predictor):

@@ -85,6 +85,12 @@ class ExtractedDocument(BaseModel):
         Approximate token count (``~n_chars / 4``); see :func:`estimate_tokens`.
     extracted_at : datetime
         UTC timestamp when extraction ran.
+    pdf_path : str or None
+        Local filesystem path to the source PDF, resolved at load time by
+        :class:`~aieng.forecasting.documents.store.DocumentStore` for native
+        document ingestion.  Runtime-only and machine-specific — it is *not*
+        part of the persisted artifact contract; serialized artifacts leave it
+        ``None``.
     """
 
     meta: DocumentMeta
@@ -93,3 +99,4 @@ class ExtractedDocument(BaseModel):
     n_chars: int = Field(ge=0)
     est_tokens: int = Field(ge=0)
     extracted_at: datetime
+    pdf_path: str | None = None

@@ -46,6 +46,8 @@ from aieng.forecasting.methods.llm_processes._client import (
 from aieng.forecasting.methods.llm_processes.base import (
     LLMPredictor,
     LLMPredictorConfig,
+    apply_report_context,
+    fetch_report_docs,
     get_history_and_meta,
     serialize_history,
 )
@@ -243,14 +245,14 @@ def _sample_trajectories(
     *,
     cfg: SampledTrajectoryLLMPredictorConfig,
     system_prompt: str,
-    user_prompt: str,
+    user_prompt: str | list[dict[str, Any]],
 ) -> tuple[list[_Trajectory], float, int, int, int]:
     """Issue ``cfg.n_samples`` parallel completions and return parsed trajectories.
 
     Returns ``(parsed, total_cost_usd, total_input_tokens, total_output_tokens,
     parse_failures)``.
     """
-    base_messages = [
+    base_messages: list[dict[str, Any]] = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
@@ -335,6 +337,11 @@ class SampledTrajectoryLLMPredictor(LLMPredictor):
         forecast_end = (pd.Timestamp(context.as_of) + offset * n_steps).normalize()
 
         history_str = serialize_history(series_df, precision=self.cfg.precision)
+
+        # Report context (before the task/history block): text preamble (CiK
+        # Format A) or native PDF parts, per cfg.report_ingestion.
+        report_docs = fetch_report_docs(config=self.cfg, context=context)
+
         system_prompt = _build_system_prompt(self.cfg.system_prompt_override)
         user_prompt = _build_user_prompt(
             task,
@@ -346,11 +353,12 @@ class SampledTrajectoryLLMPredictor(LLMPredictor):
             series_description_override=self.cfg.series_description,
             suffix=self.cfg.user_prompt_suffix,
         )
+        user_content = apply_report_context(config=self.cfg, docs=report_docs, user_prompt=user_prompt)
 
         parsed, cost_usd, in_tokens, out_tokens, parse_failures = _sample_trajectories(
             cfg=self.cfg,
             system_prompt=system_prompt,
-            user_prompt=user_prompt,
+            user_prompt=user_content,
         )
         samples = _stack_trajectories([t.values for t in parsed], n_steps=n_steps)
         q_grid = _quantiles_per_step(samples)
@@ -379,7 +387,11 @@ class SampledTrajectoryLLMPredictor(LLMPredictor):
                         out_tokens=out_tokens,
                         parse_failures=parse_failures,
                         history_window=self.cfg.history_window,
-                        extra={"n_samples": self.cfg.n_samples},
+                        extra={
+                            "n_samples": self.cfg.n_samples,
+                            "n_report_docs": len(report_docs),
+                            **({"report_sources": self.cfg.report_sources} if self.cfg.report_sources else {}),
+                        },
                     ),
                 ),
             )

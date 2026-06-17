@@ -1,1 +1,1 @@
-"""Tests for the report-document extraction sub-package."""
+"""Tests for aieng.forecasting.documents."""

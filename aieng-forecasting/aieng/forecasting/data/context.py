@@ -1,11 +1,19 @@
 """ForecastContext: the predictor-facing, cutoff-scoped data view."""
 
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from aieng.forecasting.data.cutoff import CutoffEnforcer
 from aieng.forecasting.data.models import SeriesMetadata
 from aieng.forecasting.data.store import SeriesStore
+
+
+if TYPE_CHECKING:
+    from aieng.forecasting.documents.models import ExtractedDocument
+    from aieng.forecasting.documents.store import DocumentStore
 
 
 class ForecastContext:
@@ -25,7 +33,9 @@ class ForecastContext:
     >>> def predict(task: ForecastingTask, context: ForecastContext) -> Prediction:
     ...     series = context.get_series(task.target_series_id)
     ...     # series contains only observations available as of context.as_of
-    ...     ...
+    ...
+    ...     # Optionally retrieve cutoff-filtered documents:
+    ...     docs = context.get_documents("cfpr")
 
     Parameters
     ----------
@@ -34,12 +44,21 @@ class ForecastContext:
     as_of : datetime
         The information cutoff. All ``get_series`` queries are filtered to
         data available on or before this date.
+    doc_store : DocumentStore or None
+        Optional document store for report integration. When ``None``,
+        ``get_documents()`` returns an empty list.
     """
 
-    def __init__(self, store: SeriesStore, as_of: datetime) -> None:
+    def __init__(
+        self,
+        store: SeriesStore,
+        as_of: datetime,
+        doc_store: DocumentStore | None = None,
+    ) -> None:
         self._store = store
         self._as_of = as_of
         self._cutoff = CutoffEnforcer()
+        self._doc_store = doc_store
 
     @property
     def as_of(self) -> datetime:
@@ -93,3 +112,38 @@ class ForecastContext:
     def series_ids(self) -> list[str]:
         """Return a sorted list of registered series identifiers."""
         return self._store.series_ids
+
+    # ------------------------------------------------------------------
+    # Document access
+    # ------------------------------------------------------------------
+
+    def get_documents(self, source: str) -> list[ExtractedDocument]:
+        """Return cutoff-filtered documents for ``source``.
+
+        Only documents whose ``publication_date`` is on or before
+        ``self.as_of`` are returned.  Returns an empty list when no
+        ``DocumentStore`` is attached.
+
+        Parameters
+        ----------
+        source : str
+            Source key (e.g. ``"cfpr"``).
+
+        Returns
+        -------
+        list[ExtractedDocument]
+            Cutoff-filtered documents in chronological order.
+        """
+        if self._doc_store is None:
+            return []
+        return self._doc_store.list_docs(source, as_of=self._as_of)
+
+    @property
+    def document_sources(self) -> list[str]:
+        """Return sorted list of known document source keys.
+
+        Returns an empty list when no ``DocumentStore`` is attached.
+        """
+        if self._doc_store is None:
+            return []
+        return self._doc_store.sources

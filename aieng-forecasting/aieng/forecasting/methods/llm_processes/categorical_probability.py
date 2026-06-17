@@ -38,6 +38,8 @@ from aieng.forecasting.methods.llm_processes._client import (
 from aieng.forecasting.methods.llm_processes.base import (
     LLMPredictor,
     LLMPredictorConfig,
+    apply_report_context,
+    fetch_report_docs,
     get_history_and_meta,
 )
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -278,10 +280,10 @@ def _sample_distribution(
     *,
     cfg: CategoricalProbabilityLLMPredictorConfig,
     system_prompt: str,
-    user_prompt: str,
+    user_prompt: str | list[dict[str, Any]],
 ) -> tuple[_CategoricalDistribution, float, int, int, int]:
     """Issue one structured completion and return the parsed distribution."""
-    base_messages = [
+    base_messages: list[dict[str, Any]] = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
@@ -409,6 +411,11 @@ class CategoricalProbabilityLLMPredictor(LLMPredictor):
         forecast_date = (pd.Timestamp(context.as_of) + offset * horizon).normalize()
 
         history_str = serialize_categorical_history(series_df, task.categories)
+
+        # Report context (before the task/history block): text preamble (CiK
+        # Format A) or native PDF parts, per cfg.report_ingestion.
+        report_docs = fetch_report_docs(config=self.cfg, context=context)
+
         system_prompt = _build_system_prompt(
             self.cfg.system_prompt_override, elicit_reasoning=self.cfg.elicit_reasoning
         )
@@ -420,11 +427,12 @@ class CategoricalProbabilityLLMPredictor(LLMPredictor):
             series_description_override=self.cfg.series_description,
             suffix=self.cfg.user_prompt_suffix,
         )
+        user_content = apply_report_context(config=self.cfg, docs=report_docs, user_prompt=user_prompt)
 
         parsed, cost_usd, in_tokens, out_tokens, parse_failures = _sample_distribution(
             cfg=self.cfg,
             system_prompt=system_prompt,
-            user_prompt=user_prompt,
+            user_prompt=user_content,
         )
         probabilities, raw_sum = _align_and_normalize(parsed, task.categories)
 
@@ -435,7 +443,11 @@ class CategoricalProbabilityLLMPredictor(LLMPredictor):
             out_tokens=out_tokens,
             parse_failures=parse_failures,
             history_window=self.cfg.history_window,
-            extra={"rationale": rationale} if rationale else None,
+            extra={
+                **({"rationale": rationale} if rationale else {}),
+                "n_report_docs": len(report_docs),
+                **({"report_sources": self.cfg.report_sources} if self.cfg.report_sources else {}),
+            },
         )
         if not isclose(raw_sum, 1.0, abs_tol=1e-9):
             metadata["probability_sum_raw"] = raw_sum

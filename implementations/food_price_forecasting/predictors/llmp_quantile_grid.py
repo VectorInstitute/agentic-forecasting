@@ -47,6 +47,8 @@ def build_llmp_quantile_grid(
     history_window: int | None = _DEFAULT_HISTORY_WINDOW,
     reasoning_effort: _ReasoningEffort | None = _DEFAULT_REASONING_EFFORT,
     max_tokens: int = 16384,
+    report_sources: list[str] | None = None,
+    report_max_chars: int | None = None,
     variant_tag: str | None = None,
 ) -> QuantileGridLLMPredictor:
     """Return the Food CPI quantile-grid LLMP recipe.
@@ -72,19 +74,37 @@ def build_llmp_quantile_grid(
         tokens consume the same budget via the OpenAI-compatible proxy. The
         model only generates tokens it needs, so non-thinking models are
         unaffected in cost.
+    report_sources : list[str] or None
+        Document-source keys (e.g. ``["cfpr"]``) whose cutoff-filtered editions
+        are prepended to the prompt as a text preamble. Requires the
+        ``DataService`` to carry a ``DocumentStore`` (pass ``reports_dir=`` to
+        ``build_food_cpi_service``). The quantile grid is the report-grounded
+        modality of choice here: it issues **one** elicitation call per origin,
+        so the (large) report context is paid for once — unlike sampled
+        trajectories, which would re-send the reports on every sample draw.
+        ``None`` leaves the recipe report-free.
+    report_max_chars : int or None
+        Per-report character truncation applied before concatenation. CFPR
+        editions run ~30-80k chars each; cap this if context windows get tight.
+        ``None`` means no truncation.
     variant_tag : str or None
         Override the cache tag suffix. Defaults to a tag encoding the
-        recipe family, history window, and reasoning effort.
+        recipe family, history window, reasoning effort, and (when reports are
+        configured) a ``rep-<sources>`` marker so report-grounded results stay
+        distinct from the numeric-only baseline in caches and leaderboards.
     """
     history_tag = "hfull" if history_window is None else f"h{history_window}"
     reasoning_tag = "rprovider" if reasoning_effort is None else f"r{reasoning_effort}"
-    resolved_variant_tag = variant_tag or f"{_RECIPE_FAMILY}_{history_tag}_{reasoning_tag}"
+    report_tag = f"_rep-{'-'.join(report_sources)}" if report_sources else ""
+    resolved_variant_tag = variant_tag or f"{_RECIPE_FAMILY}_{history_tag}_{reasoning_tag}{report_tag}"
 
     config = QuantileGridLLMPredictorConfig(
         model=model,
         history_window=history_window,
         reasoning_effort=reasoning_effort,
         max_tokens=max_tokens,
+        report_sources=report_sources,
+        report_max_chars=report_max_chars,
         series_description=_SERIES_DESCRIPTION,
         user_prompt_suffix=_USER_PROMPT_SUFFIX,
         variant_tag=resolved_variant_tag,
