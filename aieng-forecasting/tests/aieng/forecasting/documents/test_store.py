@@ -11,6 +11,7 @@ from aieng.forecasting.documents.store import DocumentStore
 
 @pytest.fixture
 def sample_doc() -> ExtractedDocument:
+    """Return a single CFPR document for store tests."""
     return ExtractedDocument(
         meta=DocumentMeta(
             source="cfpr",
@@ -27,7 +28,10 @@ def sample_doc() -> ExtractedDocument:
 
 
 class TestLoadDir:
+    """Tests for DocumentStore.load_dir."""
+
     def test_loads_json_artifacts(self, tmp_path: Path, sample_doc: ExtractedDocument) -> None:
+        """A .json artifact plus its .md companion loads into the store."""
         (tmp_path / "2021_en.json").write_text(
             json.dumps(sample_doc.model_dump(mode="json", exclude={"text"})),
         )
@@ -40,11 +44,13 @@ class TestLoadDir:
         assert result.page_count == 30
 
     def test_skips_invalid_json(self, tmp_path: Path) -> None:
+        """A malformed .json file is skipped rather than raising."""
         (tmp_path / "bad.json").write_text("not json")
         store = DocumentStore({"cfpr": tmp_path})
         assert len(store) == 0
 
     def test_loads_text_from_text_path(self, tmp_path: Path, sample_doc: ExtractedDocument) -> None:
+        """Text is resolved from the .md companion even when text_path is set."""
         data = sample_doc.model_dump(mode="json", exclude={"text"})
         md_path = tmp_path / "2021_en.md"
         md_path.write_text(sample_doc.text)
@@ -55,11 +61,13 @@ class TestLoadDir:
         assert store.get("cfpr", "2021_en").text == sample_doc.text
 
     def test_empty_dir(self, tmp_path: Path) -> None:
+        """An empty directory registers the source with zero documents."""
         store = DocumentStore({"cfpr": tmp_path})
         assert len(store) == 0
         assert "cfpr" in store.sources
 
     def test_resolves_companion_pdf_path(self, tmp_path: Path, sample_doc: ExtractedDocument) -> None:
+        """A co-located .pdf companion is resolved into pdf_path."""
         (tmp_path / "2021_en.json").write_text(
             json.dumps(sample_doc.model_dump(mode="json", exclude={"text"})),
         )
@@ -71,6 +79,7 @@ class TestLoadDir:
         assert store.get("cfpr", "2021_en").pdf_path == str(pdf)
 
     def test_pdf_path_none_when_no_companion(self, tmp_path: Path, sample_doc: ExtractedDocument) -> None:
+        """pdf_path is None when no .pdf companion sits beside the .json."""
         (tmp_path / "2021_en.json").write_text(
             json.dumps(sample_doc.model_dump(mode="json", exclude={"text"})),
         )
@@ -81,7 +90,10 @@ class TestLoadDir:
 
 
 class TestCutoffFiltering:
+    """Tests for cutoff-aware listing via DocumentStore.list_docs."""
+
     def test_filters_by_publication_date(self, tmp_path: Path) -> None:
+        """Only documents published on or before as_of are returned."""
         for year, pub_date in [(2021, date(2020, 12, 8)), (2022, date(2021, 12, 9)), (2023, date(2022, 12, 5))]:
             doc = ExtractedDocument(
                 meta=DocumentMeta(source="cfpr", doc_id=f"{year}_en", publication_date=pub_date, title=f"CFPR {year}"),
@@ -106,6 +118,7 @@ class TestCutoffFiltering:
         assert len(docs) == 3
 
     def test_datetime_as_of(self, tmp_path: Path) -> None:
+        """A datetime as_of is accepted and compared by date."""
         doc = ExtractedDocument(
             meta=DocumentMeta(source="cfpr", doc_id="2021_en", publication_date=date(2020, 12, 8)),
             text="text",
@@ -122,6 +135,7 @@ class TestCutoffFiltering:
         assert len(docs) == 1
 
     def test_none_as_of_returns_all(self, tmp_path: Path) -> None:
+        """A None as_of returns every document for the source."""
         for year in (2021, 2022):
             doc = ExtractedDocument(
                 meta=DocumentMeta(source="cfpr", doc_id=f"{year}_en", publication_date=date(year - 1, 12, 8)),
@@ -140,14 +154,20 @@ class TestCutoffFiltering:
 
 
 class TestGet:
+    """Tests for DocumentStore.get."""
+
     def test_get_raises_keyerror_for_unknown(self) -> None:
+        """Requesting an unknown (source, doc_id) raises KeyError."""
         store = DocumentStore()
         with pytest.raises(KeyError, match="cfpr/unknown"):
             store.get("cfpr", "unknown")
 
 
 class TestContains:
+    """Tests for DocumentStore.__contains__."""
+
     def test_contains(self, tmp_path: Path) -> None:
+        """Membership reflects loaded (source, doc_id) keys."""
         doc = ExtractedDocument(
             meta=DocumentMeta(source="cfpr", doc_id="2021_en", publication_date=date(2020, 12, 8)),
             text="text",
@@ -165,7 +185,10 @@ class TestContains:
 
 
 class TestSortOrder:
+    """Tests for chronological ordering of listed documents."""
+
     def test_list_sorts_by_publication_date(self, tmp_path: Path) -> None:
+        """Listed documents are sorted ascending by publication date."""
         docs_info = [
             ("2023_en", date(2022, 12, 5)),
             ("2021_en", date(2020, 12, 8)),

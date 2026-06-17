@@ -7,10 +7,10 @@ to the prompt building step, without hitting a live LLM API.  Requires that
 
 from __future__ import annotations
 
-import json
 from datetime import date, datetime
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.data.models import SeriesMetadata
@@ -24,6 +24,7 @@ from aieng.forecasting.methods.llm_processes.base import (
     get_history_and_meta,
     serialize_history,
 )
+
 
 _REPO_ROOT = Path(__file__).resolve().parents[5]
 REPORTS_ROOT = _REPO_ROOT / "data" / "reports"
@@ -44,6 +45,7 @@ class TestDocumentStoreRealArtifacts:
     """Smoke-test DocumentStore against real extracted CFPR reports."""
 
     def test_loads_all_cfpr_editions(self) -> None:
+        """All cached CFPR editions load in chronological order."""
         store = DocumentStore({"cfpr": REPORTS_ROOT / "cfpr"})
         docs = store.list_docs("cfpr")
         assert len(docs) >= 2  # we have at least a few years
@@ -67,6 +69,7 @@ class TestForecastContextWithDocs:
     """Verify ForecastContext.get_documents() end-to-end."""
 
     def test_get_documents_returns_cutoff_filtered(self) -> None:
+        """get_documents returns only editions published on or before as_of."""
         store = DocumentStore({"cfpr": REPORTS_ROOT / "cfpr"})
         series_store = SeriesStore()
         ctx = ForecastContext(series_store, as_of=datetime(2023, 6, 1), doc_store=store)
@@ -75,15 +78,17 @@ class TestForecastContextWithDocs:
         assert len(docs) > 0
 
     def test_get_documents_empty_when_no_store(self) -> None:
+        """Without a DocumentStore, document access returns empties."""
         ctx = ForecastContext(SeriesStore(), as_of=datetime(2023, 6, 1))
         assert ctx.get_documents("cfpr") == []
         assert ctx.document_sources == []
 
 
 class TestPromptPipelineSmoke:
-    """Exercise the full prompt-building pipeline (report_docs → preamble → user prompt)."""
+    """Exercise the full prompt-building pipeline (docs → preamble → prompt)."""
 
     def test_fetch_report_docs_with_real_data(self) -> None:
+        """Real CFPR docs flow through fetch into a truncated preamble."""
         store = DocumentStore({"cfpr": REPORTS_ROOT / "cfpr"})
         ctx = ForecastContext(SeriesStore(), as_of=datetime(2023, 6, 1), doc_store=store)
         config = LLMPredictorConfig(report_sources=["cfpr"], report_max_chars=5000)
@@ -99,8 +104,6 @@ class TestPromptPipelineSmoke:
 
     def test_full_prompt_construction_with_series(self) -> None:
         """Simulate what QuantileGridLLMPredictor does."""
-        import pandas as pd
-
         store = DocumentStore({"cfpr": REPORTS_ROOT / "cfpr"})
         df = pd.DataFrame(
             {
@@ -144,10 +147,7 @@ class TestPromptPipelineSmoke:
             user_prompt = (
                 "You are provided with the following economic report(s) "
                 "published before the forecast date. Use them as context "
-                "for your forecast.\n\n"
-                + preamble
-                + "\n\n---\n\n"
-                + user_prompt
+                "for your forecast.\n\n" + preamble + "\n\n---\n\n" + user_prompt
             )
 
         # Sanity checks on the assembled prompt
@@ -169,6 +169,7 @@ class TestPromptPipelineNoReportsFallback:
     """When report_sources is None, the prompt is unchanged."""
 
     def test_no_preamble_when_report_sources_is_none(self) -> None:
+        """report_sources=None yields no docs and an empty preamble."""
         store = DocumentStore({"cfpr": REPORTS_ROOT / "cfpr"})
         ctx = ForecastContext(SeriesStore(), as_of=datetime(2023, 6, 1), doc_store=store)
         config = LLMPredictorConfig(report_sources=None)

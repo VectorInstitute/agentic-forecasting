@@ -91,15 +91,21 @@ class DocumentStore:
         meta_raw = raw.get("meta", {})
         text = raw.get("text", "") or ""
 
-        # If text is empty, try loading from text_path or companion .md.
+        # If text is empty (extract_reports.py excludes it from the JSON), load
+        # it from the companion .md.  Prefer the co-located ``<doc_id>.md`` next
+        # to the JSON — it is CWD-independent.  The stored ``text_path`` is only
+        # a fallback and may be repo-root-relative, so resolve it against the
+        # JSON's own directory rather than the current working directory.
         if not text:
+            md_companion = json_path.with_suffix(".md")
             text_path_str = raw.get("text_path")
-            if text_path_str:
-                text = Path(text_path_str).read_text(encoding="utf-8")
-            else:
-                md_path = json_path.with_suffix(".md")
-                if md_path.exists():
-                    text = md_path.read_text(encoding="utf-8")
+            if md_companion.exists():
+                text = md_companion.read_text(encoding="utf-8")
+            elif text_path_str:
+                candidate = Path(text_path_str)
+                if not candidate.is_absolute():
+                    candidate = json_path.parent / candidate.name
+                text = candidate.read_text(encoding="utf-8")
 
         meta = DocumentMeta(
             source=source,

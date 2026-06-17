@@ -20,16 +20,14 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
 
 BASE = os.environ.get("PROXY_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
 KEY = os.environ.get("PROXY_API_KEY", "")
 PDF = REPO_ROOT / "data" / "reports" / "cfpr" / "2021_en.pdf"
-PROMPT = (
-    "What edition number is printed on the title page of this document? "
-    "Answer with just the number."
-)
+PROMPT = "What edition number is printed on the title page of this document? Answer with just the number."
 MODEL = os.environ.get("TEST_MODEL", "gemini-3.5-flash")
 
 
@@ -84,46 +82,83 @@ def main() -> None:
     print(f"Proxy: {BASE}\nModel: {MODEL}\nPDF: {PDF} ({PDF.stat().st_size:,} B)")
 
     # 1. OpenAI standard file part (file_data + filename).
-    post("1. type=file file_data+filename", {
-        "model": MODEL,
-        "messages": [{"role": "user", "content": [
-            {"type": "file", "file": {"filename": "cfpr2021.pdf", "file_data": data_uri}},
-            {"type": "text", "text": PROMPT},
-        ]}],
-        "max_tokens": 64,
-    })
+    post(
+        "1. type=file file_data+filename",
+        {
+            "model": MODEL,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "file", "file": {"filename": "cfpr2021.pdf", "file_data": data_uri}},
+                        {"type": "text", "text": PROMPT},
+                    ],
+                }
+            ],
+            "max_tokens": 64,
+        },
+    )
 
     # 2. image_url data URI (the original attempt, for the record).
-    post("2. type=image_url data:application/pdf", {
-        "model": MODEL,
-        "messages": [{"role": "user", "content": [
-            {"type": "image_url", "image_url": {"url": data_uri}},
-            {"type": "text", "text": PROMPT},
-        ]}],
-        "max_tokens": 64,
-    })
+    post(
+        "2. type=image_url data:application/pdf",
+        {
+            "model": MODEL,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": data_uri}},
+                        {"type": "text", "text": PROMPT},
+                    ],
+                }
+            ],
+            "max_tokens": 64,
+        },
+    )
 
     # 3. Anthropic-style document block (in case proxy keys off this).
-    post("3. type=document source base64", {
-        "model": MODEL,
-        "messages": [{"role": "user", "content": [
-            {"type": "document", "source": {
-                "type": "base64", "media_type": "application/pdf", "data": b64,
-            }},
-            {"type": "text", "text": PROMPT},
-        ]}],
-        "max_tokens": 64,
-    })
+    post(
+        "3. type=document source base64",
+        {
+            "model": MODEL,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "document",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "application/pdf",
+                                "data": b64,
+                            },
+                        },
+                        {"type": "text", "text": PROMPT},
+                    ],
+                }
+            ],
+            "max_tokens": 64,
+        },
+    )
 
     # 4. input_file (OpenAI Responses-API naming, some gateways accept it).
-    post("4. type=input_file file_data", {
-        "model": MODEL,
-        "messages": [{"role": "user", "content": [
-            {"type": "input_file", "filename": "cfpr2021.pdf", "file_data": data_uri},
-            {"type": "input_text", "text": PROMPT},
-        ]}],
-        "max_tokens": 64,
-    })
+    post(
+        "4. type=input_file file_data",
+        {
+            "model": MODEL,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_file", "filename": "cfpr2021.pdf", "file_data": data_uri},
+                        {"type": "input_text", "text": PROMPT},
+                    ],
+                }
+            ],
+            "max_tokens": 64,
+        },
+    )
 
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ def _make_doc(
     source: str = "cfpr",
     pdf_path: str | None = None,
 ) -> ExtractedDocument:
+    """Build an ExtractedDocument for preamble/context tests."""
     return ExtractedDocument(
         meta=DocumentMeta(source=source, doc_id=doc_id, publication_date=pub_date, title=f"Report {doc_id}"),
         text=text,
@@ -35,10 +36,14 @@ def _make_doc(
 
 
 class TestBuildReportPreamble:
+    """Tests for build_report_preamble."""
+
     def test_empty_list_returns_empty_string(self) -> None:
+        """No documents yields an empty preamble."""
         assert build_report_preamble([]) == ""
 
     def test_single_document_includes_title_and_date(self) -> None:
+        """A single document renders its title, source, date, and text."""
         doc = _make_doc("2021_en", date(2020, 12, 8), "Food prices up 3-5%.")
         result = build_report_preamble([doc])
         assert "=== Report 2021_en ===" in result
@@ -47,6 +52,7 @@ class TestBuildReportPreamble:
         assert "Food prices up 3-5%." in result
 
     def test_multiple_documents_concatenated_with_separator(self) -> None:
+        """Multiple documents are concatenated, each in its own block."""
         doc1 = _make_doc("2021_en", date(2020, 12, 8), "Report one text.")
         doc2 = _make_doc("2022_en", date(2021, 12, 9), "Report two text.")
         result = build_report_preamble([doc1, doc2])
@@ -56,6 +62,7 @@ class TestBuildReportPreamble:
         assert "Report two text." in result
 
     def test_truncation(self) -> None:
+        """max_chars truncates each report's text and appends a marker."""
         doc = _make_doc("2021_en", date(2020, 12, 8), "A" * 100)
         result = build_report_preamble([doc], max_chars=30)
         assert len(result) < 200  # should be tiny
@@ -63,12 +70,14 @@ class TestBuildReportPreamble:
         assert result.endswith("[...]")
 
     def test_no_truncation_when_max_chars_is_none(self) -> None:
+        """max_chars=None leaves the full text intact."""
         doc = _make_doc("2021_en", date(2020, 12, 8), "A" * 100)
         result = build_report_preamble([doc], max_chars=None)
         assert "A" * 100 in result
         assert "[...]" not in result
 
     def test_falls_back_to_source_doc_id_when_title_none(self) -> None:
+        """A missing title falls back to a 'source/doc_id' heading."""
         doc = ExtractedDocument(
             meta=DocumentMeta(source="cfpr", doc_id="2021_en", publication_date=date(2020, 12, 8)),
             text="text",
@@ -82,19 +91,24 @@ class TestBuildReportPreamble:
 
 
 class TestFetchReportDocs:
+    """Tests for fetch_report_docs."""
+
     def test_returns_empty_when_report_sources_is_none(self) -> None:
+        """No configured sources yields no documents."""
         config = LLMPredictorConfig(report_sources=None)
         ctx = ForecastContext(SeriesStore(), as_of=datetime(2023, 1, 1))
         docs = fetch_report_docs(config=config, context=ctx)
         assert docs == []
 
     def test_returns_empty_when_doc_store_not_attached(self) -> None:
+        """Configured sources with no DocumentStore yield no documents."""
         config = LLMPredictorConfig(report_sources=["cfpr"])
         ctx = ForecastContext(SeriesStore(), as_of=datetime(2023, 1, 1))
         docs = fetch_report_docs(config=config, context=ctx)
         assert docs == []
 
     def test_fetches_and_sorts(self) -> None:
+        """Fetched documents are returned in chronological order."""
         doc_store = DocumentStore()
         # Not loading from disk — we insert docs manually
         doc1 = _make_doc("2023_en", date(2022, 12, 5), "text3")
@@ -111,6 +125,7 @@ class TestFetchReportDocs:
         assert result[1].meta.doc_id == "2023_en"
 
     def test_cutoff_filtering(self) -> None:
+        """Only documents published on or before as_of are fetched."""
         doc_store = DocumentStore()
         doc1 = _make_doc("2021_en", date(2020, 12, 8), "text1")
         doc2 = _make_doc("2022_en", date(2021, 12, 9), "text2")
@@ -130,11 +145,13 @@ class TestApplyReportContext:
     """Text-vs-native dispatch shared by all LLMP predictors."""
 
     def test_no_docs_returns_prompt_unchanged(self) -> None:
+        """With no documents the user prompt passes through unchanged."""
         config = LLMPredictorConfig()
         result = apply_report_context(config=config, docs=[], user_prompt="Forecast CPI.")
         assert result == "Forecast CPI."
 
     def test_text_mode_returns_string_with_preamble(self) -> None:
+        """Text mode returns a single string with the preamble prepended."""
         config = LLMPredictorConfig(report_ingestion="text")
         doc = _make_doc("2021_en", date(2020, 12, 8), "Food prices up 3-5%.")
         result = apply_report_context(config=config, docs=[doc], user_prompt="Forecast CPI.")
@@ -144,12 +161,14 @@ class TestApplyReportContext:
         assert result.endswith("Forecast CPI.")
 
     def test_text_is_default_mode(self) -> None:
+        """Text is the default ingestion mode."""
         config = LLMPredictorConfig()
         assert config.report_ingestion == "text"
         doc = _make_doc("2021_en", date(2020, 12, 8), "text")
         assert isinstance(apply_report_context(config=config, docs=[doc], user_prompt="P"), str)
 
     def test_native_mode_anthropic_returns_content_parts(self, tmp_path: Path) -> None:
+        """Native mode for Claude emits an intro, a document part, then the prompt."""
         pdf = tmp_path / "2021_en.pdf"
         pdf.write_bytes(b"%PDF-1.4 fake")
         config = LLMPredictorConfig(report_ingestion="native", model="claude-sonnet-4-6")
@@ -162,6 +181,7 @@ class TestApplyReportContext:
         assert result[-1] == {"type": "text", "text": "---\n\nForecast CPI."}
 
     def test_native_mode_openai_returns_file_parts(self, tmp_path: Path) -> None:
+        """Native mode for GPT emits an OpenAI 'file' content part."""
         pdf = tmp_path / "2021_en.pdf"
         pdf.write_bytes(b"%PDF-1.4 fake")
         config = LLMPredictorConfig(report_ingestion="native", model="gpt-5.4-mini")
@@ -171,12 +191,14 @@ class TestApplyReportContext:
         assert result[1]["type"] == "file"
 
     def test_native_mode_missing_pdf_path_raises(self) -> None:
+        """Native mode without a resolved pdf_path raises ValueError."""
         config = LLMPredictorConfig(report_ingestion="native", model="claude-sonnet-4-6")
         doc = _make_doc("2021_en", date(2020, 12, 8), "text", pdf_path=None)
         with pytest.raises(ValueError, match="no resolved pdf_path"):
             apply_report_context(config=config, docs=[doc], user_prompt="P")
 
     def test_native_mode_gemini_raises_not_implemented(self, tmp_path: Path) -> None:
+        """Native mode for Gemini raises NotImplementedError (proxy limitation)."""
         pdf = tmp_path / "2021_en.pdf"
         pdf.write_bytes(b"%PDF-1.4 fake")
         config = LLMPredictorConfig(report_ingestion="native", model="gemini-3.5-flash")
@@ -189,16 +211,14 @@ class TestBuildReportPreambleLLMPromptIntegration:
     """Verify the prompt format matches what the LLMP predictors send."""
 
     def test_preamble_prepended_format(self) -> None:
+        """The combined prompt places the report block ahead of the history."""
         doc = _make_doc("2021_en", date(2020, 12, 8), "Report text.")
         preamble = build_report_preamble([doc])
         user_prompt = "Task: Forecast CPI\n\nHistory:\n2021-01: 125.0"
         combined = (
             "You are provided with the following economic report(s) "
             "published before the forecast date. Use them as context "
-            "for your forecast.\n\n"
-            + preamble
-            + "\n\n---\n\n"
-            + user_prompt
+            "for your forecast.\n\n" + preamble + "\n\n---\n\n" + user_prompt
         )
         assert combined.startswith("You are provided with")
         assert "=== Report 2021_en ===" in combined

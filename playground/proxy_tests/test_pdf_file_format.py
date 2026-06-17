@@ -24,14 +24,17 @@ import sys
 import traceback
 from pathlib import Path
 
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "aieng-forecasting"))
 
 from dotenv import load_dotenv
 
+
 load_dotenv(REPO_ROOT / ".env")
 
 from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
+
 
 PROXY_BASE_URL = os.environ.get("PROXY_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
 PROXY_API_KEY = os.environ.get("PROXY_API_KEY", "")
@@ -49,10 +52,20 @@ EXPECTED = {"11", "11th", "eleven"}
 def _did_read(content: str) -> bool:
     low = content.strip().lower()
     no_read = [
-        "i need you", "please provide", "cannot see", "i don't see",
-        "no document", "no pdf", "unable to", "not provided",
-        "since no document", "to find the edition", "you haven't",
-        "i do not have", "i don't have", "no file",
+        "i need you",
+        "please provide",
+        "cannot see",
+        "i don't see",
+        "no document",
+        "no pdf",
+        "unable to",
+        "not provided",
+        "since no document",
+        "to find the edition",
+        "you haven't",
+        "i do not have",
+        "i don't have",
+        "no file",
     ]
     if any(s in low for s in no_read):
         return False
@@ -74,15 +87,15 @@ async def _call(label: str, model: str, content_parts: list, *, extra_body=None)
     try:
         import litellm
 
-        kwargs = dict(
-            model=f"openai/{model}",
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
-            messages=[{"role": "user", "content": content_parts}],
-            max_tokens=128,
-            timeout=90,
-            max_retries=0,
-        )
+        kwargs = {
+            "model": f"openai/{model}",
+            "api_base": PROXY_BASE_URL,
+            "api_key": PROXY_API_KEY,
+            "messages": [{"role": "user", "content": content_parts}],
+            "max_tokens": 128,
+            "timeout": 90,
+            "max_retries": 0,
+        }
         if extra_body:
             kwargs["extra_body"] = extra_body
         resp = await litellm.acompletion(**kwargs)

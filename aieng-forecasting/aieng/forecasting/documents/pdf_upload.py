@@ -32,8 +32,8 @@ from pathlib import Path
 from typing import Any
 
 
+#: MIME type used for PDF document parts.
 MIME_PDF = "application/pdf"
-"""MIME type used for PDF document parts."""
 
 
 def _backend_family(model: str) -> str:

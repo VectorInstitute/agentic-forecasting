@@ -22,19 +22,20 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import json
 import os
 import sys
 import traceback
 from pathlib import Path
 
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "aieng-forecasting"))
 
-from dotenv import load_dotenv
 from aieng.forecasting.langfuse_tracing import init_langfuse_tracing, print_langfuse_trace_url
 from aieng.forecasting.methods.llm_processes._client import bootstrap_litellm, langfuse_observe
-from aieng.forecasting.models import LITE_MODEL, ADVANCED_MODEL
+from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
+from dotenv import load_dotenv
+
 
 load_dotenv(REPO_ROOT / ".env")
 
@@ -58,9 +59,9 @@ DEFAULT_PDF = REPO_ROOT / "data" / "reports" / "cfpr" / "2021_en.pdf"
 FACT_PROMPT = (
     "Read this document carefully. It is Canada's Food Price Report. "
     "Answer with EXACTLY the following format, nothing else:\n"
-    'EDITION:<edition number from title page>\n'
-    'PAGES:<total page count>\n'
-    'FIRST_CATEGORY:<first food category listed in the forecast section>'
+    "EDITION:<edition number from title page>\n"
+    "PAGES:<total page count>\n"
+    "FIRST_CATEGORY:<first food category listed in the forecast section>"
 )
 
 # Minimal prompt — if the model can't see the PDF, it will say so or guess.
@@ -122,10 +123,7 @@ def _check_response(label: str, content: str) -> bool:
             return False
     # Check for the exact correct answer.
     lowered = stripped.lower()
-    for expected in EXPECTED_EDITION:
-        if expected.lower() in lowered:
-            return True
-    return False
+    return any(expected.lower() in lowered for expected in EXPECTED_EDITION)
 
 
 # ---------------------------------------------------------------------------

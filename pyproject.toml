@@ -116,6 +116,9 @@ ignore = [
 # (commented-out code detection is too aggressive for exploratory/one-off code).
 "scripts/**" = ["D1", "E402", "W505", "ERA001"]
 "implementations/**" = ["D1", "E402", "W505", "ERA001"]
+# Playground: throwaway exploration/diagnostics. Same relaxations as scripts,
+# plus PLC0415 (optional deps are imported inside try/except by design).
+"playground/**" = ["D1", "E402", "W505", "ERA001", "PLC0415"]
 
 [tool.ruff.lint.pep8-naming]
 ignore-names = ["X*", "setUp"]
