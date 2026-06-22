@@ -58,6 +58,10 @@ resource "coder_agent" "main" {
     curl -LsSf https://astral.sh/uv/install.sh | sh
     export PATH="/home/${local.username}/.local/bin:$PATH"
 
+    # Add GitHub to known_hosts to avoid host key verification failure
+    mkdir -p "/home/${local.username}/.ssh"
+    ssh-keyscan github.com >> "/home/${local.username}/.ssh/known_hosts" 2>/dev/null
+
     # Clone the GitHub repository with proper error handling
     cd "/home/${local.username}"
 
