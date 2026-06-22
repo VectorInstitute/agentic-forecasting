@@ -73,14 +73,18 @@ class LLMPredictorConfig(BaseModel):
     )
     timeout_s: float = Field(default=120.0, gt=0.0, description="Per-call timeout in seconds.")
     reasoning_effort: Literal["disable", "low", "medium", "high"] | None = Field(
-        default="disable",
+        default=None,
         description=(
-            "Reasoning budget passed through to LiteLLM. ``'disable'`` is the "
-            "default for calibration-sensitive forecasting (CoT-induced "
-            "overconfidence is well-documented for continuous probabilistic "
-            "forecasting). ``'low'`` requests minimum reasoning where the "
-            "provider supports it. ``None`` lets the provider use its "
-            "default — unsafe for calibration-critical work."
+            "Reasoning budget passed through to LiteLLM. ``None`` (default) sends "
+            "no ``reasoning_effort`` and lets the provider use its own default — "
+            "for the project's Gemini-via-proxy setup the lite model does not "
+            "force chain-of-thought, which suits calibration-sensitive "
+            "forecasting (CoT-induced overconfidence is well-documented for "
+            "continuous probabilistic forecasting). ``'medium'`` / ``'high'`` "
+            "request more reasoning. NOTE: the Vector proxy currently rejects "
+            "``'disable'`` and ``'low'`` for Gemini models (valid: "
+            "minimal/medium/high) — those literals are retained for other "
+            "providers but will 400 through the proxy."
         ),
     )
     variant_tag: str | None = Field(
@@ -146,6 +150,55 @@ def serialize_history(df: pd.DataFrame, precision: int) -> str:
     fmt = "%Y-%m-%d" if is_sub_monthly else "%Y-%m"
     lines = [f"{ts.strftime(fmt)}: {v:.{precision}f}" for ts, v in zip(timestamps, df["value"])]
     return "\n".join(lines)
+
+
+def build_covariate_block(
+    context: ForecastContext,
+    covariate_series_ids: list[str],
+    *,
+    precision: int,
+    history_window: int | None = None,
+) -> str:
+    """Serialize covariate histories into labeled blocks for the LLM prompt.
+
+    Each registered covariate series is rendered cutoff-safe (via
+    ``context.get_series``) as a labeled block: a description / units header
+    (from :meth:`get_metadata` when available) followed by its
+    :func:`serialize_history` rendering. Series with no observations at the
+    cutoff are skipped. When ``history_window`` is set, each covariate is
+    truncated to its last ``history_window`` observations, matching the target.
+
+    This is the Context-is-Key §5.4 "labeled covariate blocks" pattern: the
+    model sees the target history plus the recent trajectory of each exogenous
+    series and may condition on cross-series structure.
+
+    Returns an empty string when ``covariate_series_ids`` is empty or no
+    covariate has usable history, so callers can unconditionally interpolate the
+    result into a prompt.
+    """
+    blocks: list[str] = []
+    for cov_id in covariate_series_ids:
+        cov_df = context.get_series(cov_id)
+        if cov_df.empty:
+            continue
+        if history_window is not None:
+            cov_df = cov_df.tail(history_window).reset_index(drop=True)
+        try:
+            cov_meta: SeriesMetadata | None = context.get_metadata(cov_id)
+        except KeyError:
+            cov_meta = None
+        if cov_meta is not None:
+            header = f"Covariate: {cov_meta.description} (source: {cov_meta.source})\nUnits: {cov_meta.units}"
+        else:
+            header = f"Covariate: {cov_id}"
+        blocks.append(f"{header}\n{serialize_history(cov_df, precision=precision)}")
+    if not blocks:
+        return ""
+    intro = (
+        "Covariates (exogenous series observed through the forecast origin; "
+        "use as additional context for your forecast):"
+    )
+    return intro + "\n\n" + "\n\n".join(blocks)
 
 
 def get_history_and_meta(

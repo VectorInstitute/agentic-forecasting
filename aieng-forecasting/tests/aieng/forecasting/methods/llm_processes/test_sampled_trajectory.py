@@ -15,9 +15,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from aieng.forecasting.data import DataService, SeriesMetadata
+from aieng.forecasting.data.adapters.base import BaseAdapter
 from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES
 from aieng.forecasting.evaluation.task import ForecastingTask
-from aieng.forecasting.methods.llm_processes.base import serialize_history
+from aieng.forecasting.methods.llm_processes.base import build_covariate_block, serialize_history
 from aieng.forecasting.methods.llm_processes.sampled_trajectory import (
     SampledTrajectoryLLMPredictor,
     SampledTrajectoryLLMPredictorConfig,
@@ -182,7 +183,7 @@ def test_predict_end_to_end_with_mocked_sampler(svc: DataService, task: Forecast
     assert meta["model"] == "anthropic/claude-sonnet-4-5"
     assert meta["n_samples"] == n_samples
     assert meta["temperature"] == 1.0
-    assert meta["reasoning_effort"] == "disable"
+    assert meta["reasoning_effort"] is None
     assert meta["cost_usd"] == 0.008
     assert meta["input_tokens"] == 800
     assert meta["output_tokens"] == 400
@@ -334,3 +335,84 @@ def test_history_window_surfaced_in_prediction_metadata(svc: DataService, task: 
 
     assert preds[0].metadata["variant_tag"] == "flash"
     assert preds[0].metadata["history_window"] == 24
+
+
+# ---------------------------------------------------------------------------
+# Covariate support (Context-is-Key §5.4 labeled blocks)
+# ---------------------------------------------------------------------------
+
+
+class _InMemoryAdapter(BaseAdapter):
+    """Adapter that returns a supplied DataFrame unchanged."""
+
+    def __init__(self, df: pd.DataFrame) -> None:
+        self._df = df.copy()
+
+    def fetch(self) -> pd.DataFrame:
+        """Return the supplied DataFrame."""
+        return self._df.copy()
+
+
+def _svc_with_covariate(svc: DataService) -> DataService:
+    """Register a second series ``cov_a`` on the shared target-only fixture."""
+    dates = pd.date_range("2000-01-01", periods=300, freq="MS")
+    svc.register(
+        "cov_a",
+        _InMemoryAdapter(pd.DataFrame({"timestamp": dates, "value": np.linspace(1.0, 5.0, 300)})),
+        SeriesMetadata(
+            series_id="cov_a",
+            description="VIX-like covariate",
+            source="test",
+            units="points",
+            frequency="MS",
+        ),
+    )
+    return svc
+
+
+def test_build_covariate_block_labels_and_serializes(svc: DataService) -> None:
+    """Block carries the metadata header, units, and cutoff-safe serialized history."""
+    ctx = _svc_with_covariate(svc).context(AS_OF)
+    block = build_covariate_block(ctx, ["cov_a"], precision=2, history_window=12)
+
+    assert "Covariate: VIX-like covariate (source: test)" in block
+    assert "Units: points" in block
+    # Cutoff discipline: nothing past as_of leaks into the covariate block.
+    assert "2021-" not in block
+    assert "2020-12:" in block
+    # history_window truncates the covariate too.
+    value_lines = [ln for ln in block.splitlines() if ln and ln[0].isdigit()]
+    assert len(value_lines) == 12
+
+
+def test_build_covariate_block_empty_when_no_ids(svc: DataService) -> None:
+    """No covariate ids → empty string (callers interpolate unconditionally)."""
+    assert build_covariate_block(svc.context(AS_OF), [], precision=2) == ""
+
+
+def test_covariates_reach_prompt_and_metadata(svc: DataService, task: ForecastingTask) -> None:
+    """End-to-end: covariate blocks reach the prompt and are recorded in metadata."""
+    cfg = SampledTrajectoryLLMPredictorConfig(
+        n_samples=2,
+        history_window=12,
+        covariate_series_ids=["cov_a"],
+        variant_tag="cov",
+    )
+    captured: dict[str, str] = {}
+
+    def _capture(*, cfg: Any, system_prompt: str, user_prompt: str) -> tuple[list[_Trajectory], float, int, int, int]:
+        captured["user_prompt"] = user_prompt
+        return _mock_sampler_return([[100.0] * HORIZON, [101.0] * HORIZON])
+
+    with (
+        patch(_PATCH_BOOTSTRAP),
+        patch(_PATCH_SAMPLER, side_effect=_capture),
+    ):
+        preds = SampledTrajectoryLLMPredictor(cfg).predict(task, _svc_with_covariate(svc).context(AS_OF))
+
+    prompt = captured["user_prompt"]
+    assert "Covariate: VIX-like covariate" in prompt
+    # Covariate block sits between the target history and the forecast instruction.
+    assert prompt.index("Covariate:") < prompt.index("Forecast the next")
+    assert preds[0].metadata["covariate_series_ids"] == ["cov_a"]
+    assert preds[0].predictor_id == "llmp_sampled_trajectories_cov[gemini-3.1-flash-lite-preview]"

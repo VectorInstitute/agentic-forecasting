@@ -30,4 +30,6 @@ def test_recipe_defaults_remain_economical() -> None:
     assert quantile_grid.cfg.model == "gemini-3.1-flash-lite-preview"
     assert "/" not in quantile_grid.cfg.model
     assert quantile_grid.cfg.history_window == 120
-    assert quantile_grid.cfg.reasoning_effort == "low"
+    # Default is None (provider default — no forced chain-of-thought). The Vector
+    # proxy rejects 'disable'/'low' for Gemini models, so None is the economical default.
+    assert quantile_grid.cfg.reasoning_effort is None

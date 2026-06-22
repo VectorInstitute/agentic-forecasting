@@ -1,0 +1,58 @@
+# Smoke config — fast laptop run with the LLMP enabled, post-cutoff (2025).
+#
+# A short late-2025 window with weekly origins and a fast covariate subset, with
+# the LLM-Process rows on (small sample count). 2025 is AFTER the Gemini training
+# cutoff (Jan 2025), so the LLMP rows are genuinely out-of-sample — see the
+# "cutoff-aware evaluation" note in the notebook.
+#
+# Each entry in `horizons` becomes a single-horizon backtest against the
+# matching cumulative-return target `sp500_logret_{h}b`.
+
+backtest:
+  start: "2025-10-06"
+  end: "2025-11-14"
+  stride: 5            # weekly origins (~6)
+  warmup: 250
+  horizons: [1, 5, 21]
+  description: >-
+    Smoke multivariate demo: weekly origins in late 2025 (post-cutoff),
+    forecasting close-to-close cumulative returns at 1/5/21 business days.
+
+experiment:
+  data_history_start: "2016-01-01"
+  refresh_cache: false
+
+  # Fast covariate subset.
+  covariate_series_ids:
+    - vix_level_l1b
+    - vix_log_ret_1b_l1b
+    - ust10y_level_l1b
+    - ust2y10y_spread_l1b
+    - nasdaq_log_ret_1b_l1b
+    - oil_log_ret_1b_l1b
+
+  run_models:
+    naive_last_value: true
+    ets_target_only: true
+    kalman_target_only: true
+    autoarima_target_only: false      # slower; enable for a classical sweep
+    linreg_target_only: true
+    linreg_with_covariates: true
+    lightgbm_target_only: true
+    lightgbm_with_covariates: true
+    llmp_target_only: true
+    llmp_with_covariates: true
+
+  lags: 5
+  lags_past_covariates: 5
+  num_samples: 50
+
+  llmp_n_samples: 8
+  llmp_history_window: 48
+  # null = provider default (no forced chain-of-thought); proxy rejects 'disable'/'low'.
+  llmp_reasoning_effort: null
+
+  lightgbm_kwargs:
+    num_threads: 1
+    n_jobs: 1
+    verbosity: -1

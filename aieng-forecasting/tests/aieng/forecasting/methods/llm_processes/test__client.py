@@ -12,8 +12,48 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aieng.forecasting.methods.llm_processes._client import (
     _one_completion_async,
+    make_json_schema_response_format,
     strip_markdown_fence,
 )
+
+
+# ---------------------------------------------------------------------------
+# make_json_schema_response_format — proxy/Gemini compatibility
+# ---------------------------------------------------------------------------
+
+
+def test_response_format_strips_additional_properties_recursively() -> None:
+    """``additionalProperties`` is dropped at every level (proxy Gemini rejects it)."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "forecasts": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {"q": {"type": "number"}},
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "required": ["forecasts"],
+        "additionalProperties": False,
+    }
+    rf = make_json_schema_response_format("T", schema)
+    assert rf["type"] == "json_schema"
+    assert rf["json_schema"]["strict"] is True
+
+    def _no_additional(node: object) -> bool:
+        if isinstance(node, dict):
+            return "additionalProperties" not in node and all(_no_additional(v) for v in node.values())
+        if isinstance(node, list):
+            return all(_no_additional(v) for v in node)
+        return True
+
+    assert _no_additional(rf["json_schema"]["schema"])
+    # Declared structure is otherwise preserved.
+    assert rf["json_schema"]["schema"]["required"] == ["forecasts"]
+    assert "properties" in rf["json_schema"]["schema"]["properties"]["forecasts"]["items"]
 
 
 # ---------------------------------------------------------------------------

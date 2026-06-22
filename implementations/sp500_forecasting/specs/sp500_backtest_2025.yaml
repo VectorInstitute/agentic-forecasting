@@ -1,0 +1,64 @@
+# Main backtest config — weekly origins across 2025 (post-cutoff), full panel.
+#
+# 2025 is after the Gemini training cutoff (Jan 2025), so this is the window
+# where the conventional methods AND the LLM-Process can be compared *fairly* —
+# the LLM has not memorised these outcomes. Mirrors the energy reference's 2025
+# backtest window. Use it for open iteration; spend the protected 2026 eval
+# (`sp500_eval_2026.yaml`) sparingly on your finalists.
+#
+# The `llmp_*` rows are OFF by default: an LLMP backtest issues `llmp_n_samples`
+# proxy calls per origin, so over ~50 weekly origins it is slow and token-heavy.
+# Turn them on deliberately (and consider a wider `stride`).
+
+backtest:
+  start: "2025-01-06"
+  end: "2025-12-22"
+  stride: 5            # weekly origins (~50)
+  warmup: 250
+  horizons: [1, 5, 21]
+  description: >-
+    Main multivariate comparison: weekly origins across 2025 (post-cutoff),
+    forecasting close-to-close cumulative returns at 1/5/21 business days.
+
+experiment:
+  data_history_start: "2016-01-01"
+  refresh_cache: false
+
+  # Full covariate panel.
+  covariate_series_ids:
+    - vix_level_l1b
+    - vix_log_ret_1b_l1b
+    - ust10y_level_l1b
+    - ust2y10y_spread_l1b
+    - fed_funds_level_l1b
+    - cpi_mom_logdiff_l1b
+    - unemployment_rate_l1b
+    - oil_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - nasdaq_log_ret_1b_l1b
+
+  run_models:
+    naive_last_value: true
+    ets_target_only: true
+    kalman_target_only: true
+    autoarima_target_only: true
+    linreg_target_only: true
+    linreg_with_covariates: true
+    lightgbm_target_only: true
+    lightgbm_with_covariates: true
+    llmp_target_only: false           # slow over the full window — enable deliberately
+    llmp_with_covariates: false
+
+  lags: 5
+  lags_past_covariates: 5
+  num_samples: 200
+
+  llmp_n_samples: 10
+  llmp_history_window: 64
+  llmp_reasoning_effort: null
+
+  lightgbm_kwargs:
+    num_threads: 1
+    n_jobs: 1
+    verbosity: -1

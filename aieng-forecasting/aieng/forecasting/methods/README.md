@@ -83,6 +83,8 @@ from aieng.forecasting.methods.agentic import (
 | Module | Class | Description |
 |---|---|---|
 | `numerical/darts_arima.py` | `DartsAutoARIMAPredictor` | Univariate Darts AutoARIMA with probabilistic multi-horizon output via Monte Carlo sampling. |
+| `numerical/darts_classical.py` | `DartsExponentialSmoothingPredictor` | Univariate state-space exponential smoothing (ETS); fast probabilistic baseline (non-seasonal by default, optional `seasonal_periods`). |
+| `numerical/darts_classical.py` | `DartsKalmanForecasterPredictor` | Univariate linear Gaussian state-space (Kalman) forecaster; fast probabilistic baseline with configurable latent dimension `dim_x`. |
 | `numerical/darts_regression.py` | `DartsLinearRegressionPredictor` | Darts linear regression predictor with optional past covariates and probabilistic output. |
 | `numerical/darts_regression.py` | `DartsLightGBMPredictor` | Darts LightGBM quantile-regression predictor with optional past covariates. |
 
@@ -90,7 +92,7 @@ from aieng.forecasting.methods.agentic import (
 
 | Module | Class | Description |
 |---|---|---|
-| `llm_processes/sampled_trajectory.py` | `SampledTrajectoryLLMPredictor` | Samples full trajectories from an LLM, then computes empirical quantiles per horizon. |
+| `llm_processes/sampled_trajectory.py` | `SampledTrajectoryLLMPredictor` | Samples full trajectories from an LLM, then computes empirical quantiles per horizon. Supports optional covariates: set `covariate_series_ids` to serialize labeled exogenous-series history into the prompt (Context-is-Key §5.4). |
 | `llm_processes/quantile_grid.py` | `QuantileGridLLMPredictor` | Asks an LLM for the standard quantile grid in one structured completion. |
 | `llm_processes/binary_probability.py` | `BinaryProbabilityLLMPredictor` | Direct elicitation of one calibrated event probability for binary tasks (Brier-scored), in one structured completion. |
 | `llm_processes/categorical_probability.py` | `CategoricalProbabilityLLMPredictor` | Direct elicitation of a calibrated distribution over the task-declared ordered categories (RPS-scored); history serialized as category labels. |

@@ -27,7 +27,9 @@ from aieng.forecasting.models import LITE_MODEL
 _ReasoningEffort = Literal["disable", "low", "medium", "high"]
 
 _DEFAULT_MODEL = LITE_MODEL
-_DEFAULT_REASONING_EFFORT: _ReasoningEffort | None = "low"
+# ``None`` = provider default. The Vector proxy now rejects 'disable'/'low' for
+# Gemini models (valid: minimal/medium/high); None sends no reasoning_effort.
+_DEFAULT_REASONING_EFFORT: _ReasoningEffort | None = None
 _RECIPE_FAMILY = "boc_direction_v1"
 
 _SERIES_DESCRIPTION = (

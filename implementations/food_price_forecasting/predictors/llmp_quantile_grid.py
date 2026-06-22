@@ -21,7 +21,9 @@ _ReasoningEffort = Literal["disable", "low", "medium", "high"]
 
 _DEFAULT_MODEL = LITE_MODEL
 _DEFAULT_HISTORY_WINDOW = 120
-_DEFAULT_REASONING_EFFORT: _ReasoningEffort | None = "low"
+# ``None`` = provider default. The Vector proxy now rejects 'disable'/'low' for
+# Gemini models (valid: minimal/medium/high); None sends no reasoning_effort.
+_DEFAULT_REASONING_EFFORT: _ReasoningEffort | None = None
 _RECIPE_FAMILY = "food_cpi_v1"
 
 _SERIES_DESCRIPTION = (

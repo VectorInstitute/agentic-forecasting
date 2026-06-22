@@ -50,8 +50,8 @@ ADK skills reintroduction (see [`../docs/adk-skills-guide.md`](../docs/adk-skill
 
 ### Broaden coverage
 
-- Transpose the S&P 500 template to additional energy commodities, or to other liquid assets, equities, or indices.
-- Add richer FRED covariates for food, energy, or financial markets.
+- Transpose the S&P 500 template to additional energy commodities, or to other liquid assets, equities, or indices. The S&P 500 reference now compares conventional numerical methods (incl. ETS and Kalman) against a **covariate-aware LLM-Process** across cumulative-return horizons — `SampledTrajectoryLLMPredictor` supports `covariate_series_ids` (exogenous-series prompt blocks), so the "can an LLM use the covariate panel as well as gradient boosting?" comparison is shipped, not deferred.
+- Add richer FRED covariates for food, energy, or financial markets. Extending covariate-aware prompting to the other LLM-Process predictors (`QuantileGridLLMPredictor`, …) is a natural next step.
 - Reframe a continuous target as a binary or categorical question (the BoC harness shows the pattern).
 - Add time-series foundation models or additional numerical methods once an implementation has one strong baseline.
 - Explore ForecastBench as a comparison or discussion point.
@@ -59,6 +59,8 @@ ADK skills reintroduction (see [`../docs/adk-skills-guide.md`](../docs/adk-skill
 ### Live testing
 
 Record predictions from the reference methods (energy first, given its daily data), persist predictions and reasoning traces, and resolve them as horizons mature — a true prospective Track 1 test, distinct from Track 2 scoring.
+
+**Cutoff-aware evaluation (principle).** LLM/agent forecasters can only be scored honestly on origins *after* the model's training cutoff (~Jan 2025 for Gemini) — earlier origins measure memorised recall, not forecasting, and silently flatter the LLM against the cutoff-safe numerical methods. Energy and S&P 500 both put the LLM-inclusive comparison in a 2025 backtest plus a protected 2026 eval; pre-cutoff windows (e.g. S&P 500's 2020 COVID stress) are kept **numerical-only**. food and BoC still backtest their LLM rows on pre-cutoff windows and should migrate to the same discipline.
 
 ### Core-library follow-up
 

@@ -1,0 +1,67 @@
+# Protected eval — held-out 2026 window, run through evaluate() with a budget.
+#
+# This is the honest scoreboard. 2026 is unambiguously after the Gemini training
+# cutoff, so neither the numerical methods nor the LLM-Process can have seen the
+# outcomes. Treat it as scarce: `max_runs` caps how many times the spec may be
+# scored (via EvalTracker), so iterate on `sp500_backtest_2025.yaml` and spend
+# this only on a curated set of finalists (set just those `run_models` to true).
+#
+# The `eval` block mirrors `backtest` but adds `spec_id` (keys the run budget)
+# and `max_runs`. Each horizon becomes a single-horizon EvalSpec
+# (`{spec_id}_h{N}`) against `sp500_logret_{N}b`.
+
+eval:
+  spec_id: sp500_eval_2026
+  max_runs: 5
+  start: "2026-02-02"
+  end: "2026-03-23"     # 8 weekly origins (mirrors the energy eval); all resolve at h=21
+  stride: 5             # weekly origins
+  warmup: 250
+  horizons: [1, 5, 21]
+  description: >-
+    Protected eval: weekly origins across early/mid 2026 (post-cutoff),
+    forecasting close-to-close cumulative returns at 1/5/21 business days.
+
+experiment:
+  data_history_start: "2016-01-01"
+  refresh_cache: false
+
+  covariate_series_ids:
+    - vix_level_l1b
+    - vix_log_ret_1b_l1b
+    - ust10y_level_l1b
+    - ust2y10y_spread_l1b
+    - fed_funds_level_l1b
+    - cpi_mom_logdiff_l1b
+    - unemployment_rate_l1b
+    - oil_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - nasdaq_log_ret_1b_l1b
+
+  # Finalists only — the held-out window is scarce. Enable the handful you chose
+  # from the 2025 backtest (here: floor, one classical, one ML±cov, LLMP±cov).
+  run_models:
+    naive_last_value: true
+    ets_target_only: false
+    kalman_target_only: false
+    autoarima_target_only: false
+    linreg_target_only: false
+    linreg_with_covariates: false
+    lightgbm_target_only: false
+    lightgbm_with_covariates: true
+    llmp_target_only: true
+    llmp_with_covariates: true
+
+  lags: 5
+  lags_past_covariates: 5
+  num_samples: 200
+
+  llmp_n_samples: 10
+  llmp_history_window: 64
+  llmp_reasoning_effort: null
+
+  lightgbm_kwargs:
+    num_threads: 1
+    n_jobs: 1
+    verbosity: -1

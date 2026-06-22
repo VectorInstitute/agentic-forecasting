@@ -3,10 +3,10 @@
 The demo notebooks are narrative shells over the modules in this directory:
 
 - :mod:`data` — ``build_sp500_multivariate_service()`` and canonical covariate ids.
-- :mod:`backtest_grid` — ``run_multivariate_backtest_grid()`` for leaderboard rows.
+- :mod:`backtest_grid` — ``run_horizon_grid()`` for per-horizon leaderboard rows.
 - :mod:`analysis` — styled leaderboards and direction metrics.
-- :mod:`plots` — matplotlib context figures (target history, CRPS, open vs forecast).
-- YAML specs — ``specs/sp500_backtest_smoke.yaml`` and ``specs/sp500_backtest_full.yaml``.
+- :mod:`plots` — matplotlib figures (target history, per-horizon CRPS, forecast vs realised return).
+- YAML specs — ``sp500_smoke`` / ``sp500_backtest_2025`` / ``sp500_eval_2026`` / ``sp500_stress_2020``.
 
 See ``README.md`` for the full experiment description.
 """

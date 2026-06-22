@@ -24,7 +24,6 @@ def style_results_dataframe(df: pd.DataFrame) -> Styler:
     """
     fmt: dict[str, str] = {
         "mean_crps": "{:.5f}",
-        "mean_crps_open": "{:.3f}",
         "dir_precision_up": "{:.3f}",
         "dir_recall_up": "{:.3f}",
         "dir_f1_up": "{:.3f}",

@@ -1,0 +1,60 @@
+# Regime-stress config — the 2020 COVID crash, NUMERICAL METHODS ONLY.
+#
+# ⚠️  The LLM-Process rows are intentionally OFF here and must stay off. 2020 is
+# BEFORE the Gemini training cutoff (Jan 2025), so an LLM has effectively
+# memorised these outcomes — scoring an LLMP on this window measures recall, not
+# forecasting, and would silently flatter it in the comparison. The numerical
+# methods are cutoff-safe by construction (they only see the series up to the
+# origin), so this volatile window is a perfectly valid stress test *for them* —
+# it's where a covariate edge is most visible.
+#
+# Use this to study "when do covariates help?" among the conventional methods;
+# use the 2025 backtest / 2026 eval for anything involving the LLMP.
+
+backtest:
+  start: "2020-02-03"
+  end: "2020-04-30"
+  stride: 1            # daily origins across the crash
+  warmup: 250
+  horizons: [1, 5, 21]
+  description: >-
+    COVID-crash regime stress (numerical methods only): daily origins Feb–Apr
+    2020, forecasting close-to-close cumulative returns at 1/5/21 business days.
+
+experiment:
+  data_history_start: "2016-01-01"
+  refresh_cache: false
+
+  covariate_series_ids:
+    - vix_level_l1b
+    - vix_log_ret_1b_l1b
+    - ust10y_level_l1b
+    - ust2y10y_spread_l1b
+    - nasdaq_log_ret_1b_l1b
+    - oil_log_ret_1b_l1b
+
+  run_models:
+    naive_last_value: true
+    ets_target_only: true
+    kalman_target_only: true
+    autoarima_target_only: false
+    linreg_target_only: true
+    linreg_with_covariates: true
+    lightgbm_target_only: true
+    lightgbm_with_covariates: true
+    # LLMP rows OFF — pre-cutoff window is leaked for LLMs (see header).
+    llmp_target_only: false
+    llmp_with_covariates: false
+
+  lags: 5
+  lags_past_covariates: 5
+  num_samples: 100
+
+  llmp_n_samples: 10
+  llmp_history_window: 64
+  llmp_reasoning_effort: null
+
+  lightgbm_kwargs:
+    num_threads: 1
+    n_jobs: 1
+    verbosity: -1

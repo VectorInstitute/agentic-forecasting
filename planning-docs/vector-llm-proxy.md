@@ -180,3 +180,39 @@ else:
 ### Takeaway
 
 When using `drop_params=True` with LiteLLM via an OpenAI-compatible proxy, **any parameter not in the provider's known-supported list for that model name will be silently dropped**. This is especially subtle for thinking-model parameters (`reasoning_effort`, future analogues) because the model name does not reveal that it is a thinking model. Prefer `extra_body` for pass-through parameters when the proxy is the actual target.
+
+---
+
+## History: proxy tightened `reasoning_effort` vocabulary and `response_schema` (June 2026)
+
+### What happened
+
+LLM-Process calls that had been working began returning `400 BadRequest` from the proxy, in two independent ways:
+
+1. **`reasoning_effort`** — the Gemini route started rejecting `'disable'` and `'low'`:
+   > `'reasoning_effort' does not support 'disable'; valid values: ['minimal', 'medium', 'high']`
+
+   Empirically, for `gemini-3.1-flash-lite-preview` the proxy now accepts `None` (omit the field), `'minimal'`, `'medium'`, `'high'`, and **rejects** `'disable'` / `'low'`.
+
+2. **`additionalProperties`** — strict structured output started failing:
+   > `Invalid JSON payload received. Unknown name "additionalProperties" at 'generation_config.response_schema': Cannot find field.`
+
+   Every LLM-Process schema set `additionalProperties: false` (required by OpenAI strict mode); the proxy's Gemini `response_schema` path does not recognise the key.
+
+Both affected **all** LLM-Process predictors (continuous, binary, categorical) across every use case, since they share the completion seam — the S&P 500 work just surfaced them first.
+
+### Fix
+
+- **`additionalProperties`:** strip it centrally and recursively in
+  `make_json_schema_response_format` (`_client.py`), keeping `strict: true`. One
+  seam fixes every predictor. (If a direct OpenAI-strict route is ever added, it
+  would need `additionalProperties: false` restored for that path.)
+- **`reasoning_effort`:** the library default and the food / BoC recipe defaults
+  moved from `'disable'` / `'low'` to **`None`** (provider default — sends no
+  `reasoning_effort`; the lite model does not force chain-of-thought, preserving
+  the calibration intent). The `'disable'`/`'low'` literals are retained on the
+  type for non-proxy providers but will 400 through the proxy.
+
+### Takeaway
+
+The proxy's accepted parameter vocabulary and JSON-schema dialect can change under you; prefer the **provider default (`None`)** for `reasoning_effort` unless a model is known to need a specific budget, and keep response schemas to the lowest-common-denominator JSON-Schema the Gemini `response_schema` path accepts (no `additionalProperties`).

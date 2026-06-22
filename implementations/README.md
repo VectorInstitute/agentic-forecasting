@@ -26,7 +26,7 @@ implementations/
 `-- pyproject.toml            # local workspace packaging
 ```
 
-YAML backtest and eval specs live under each use case in `specs/`. Each directory is independent; see its `README.md` for the walkthrough. The S&P 500 comparison is in active development.
+YAML backtest and eval specs live under each use case in `specs/`. Each directory is independent; see its `README.md` for the walkthrough.
 
 ---
 

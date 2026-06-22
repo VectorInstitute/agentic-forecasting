@@ -141,7 +141,7 @@ def judge_rationale_alignment(
     realized_label: str | None,
     press_release_text: str,
     model: str = ADVANCED_MODEL,
-    reasoning_effort: str | None = "low",
+    reasoning_effort: str | None = None,  # provider default; proxy rejects 'disable'/'low' for Gemini
     temperature: float = 0.3,
     max_tokens: int = 4096,
     timeout_s: float = 120.0,

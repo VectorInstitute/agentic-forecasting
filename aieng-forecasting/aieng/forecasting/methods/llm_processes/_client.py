@@ -139,16 +139,35 @@ def set_current_trace_name(name: str) -> None:
         logger.debug("update_current_span(name=%r) failed; trace name unchanged.", name)
 
 
+def _strip_additional_properties(node: Any) -> Any:
+    """Recursively drop ``additionalProperties`` keys from a JSON schema.
+
+    The Vector proxy's Gemini ``response_schema`` route rejects
+    ``additionalProperties`` (``Unknown name "additionalProperties" at
+    'generation_config.response_schema'``), even though OpenAI strict mode
+    expects ``additionalProperties: false``. We strip it centrally so the same
+    predictor schemas route through the proxy unchanged; ``strict: True`` still
+    pins the model to the declared fields. (If a direct OpenAI-strict route is
+    ever added, that path would need ``additionalProperties: false`` restored.)
+    """
+    if isinstance(node, dict):
+        return {k: _strip_additional_properties(v) for k, v in node.items() if k != "additionalProperties"}
+    if isinstance(node, list):
+        return [_strip_additional_properties(v) for v in node]
+    return node
+
+
 def make_json_schema_response_format(name: str, schema: dict[str, Any]) -> dict[str, Any]:
     """Build the explicit ``json_schema`` ``response_format`` dict.
 
     Always pass this dict form to ``litellm.completion`` rather than a Pydantic
     class — the class-to-schema conversion path has known regressions on
-    Anthropic providers.
+    Anthropic providers. ``additionalProperties`` is stripped from the schema
+    for proxy/Gemini compatibility (see :func:`_strip_additional_properties`).
     """
     return {
         "type": "json_schema",
-        "json_schema": {"name": name, "schema": schema, "strict": True},
+        "json_schema": {"name": name, "schema": _strip_additional_properties(schema), "strict": True},
     }
 
 

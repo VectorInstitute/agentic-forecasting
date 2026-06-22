@@ -30,7 +30,7 @@ Each is independent and self-contained — pick the one that matches the problem
 | `[food_price_forecasting/](implementations/food_price_forecasting/)` | A multivariate food-CPI trajectory, in the style of Canada's Food Price Report. | Nine correlated sub-indices, a 12-step trajectory, a domain metric (avg/avg YoY), baselines vs LLM-Process predictors, leakage-aware backtests, and cached artifacts for fast iteration.                                                                                                           |
 | `[energy_oil_forecasting/](implementations/energy_oil_forecasting/)` | Daily WTI crude-oil price under regime-breaking news.                           | A capability progression — Prophet → LLM-Process → news-grounded agent → code-executing agent — plus an adaptive agent that learns a strategy from data and is scored before vs after. Continuous trajectories, a binary up-shock task, and interactive scenario analysis.                         |
 | `[boc_rate_decisions/](implementations/boc_rate_decisions/)`         | Will the Bank of Canada cut, hold, or hike at its next meeting?                 | Discrete-event forecasting: ordered-categorical outcomes on an irregular calendar, RPS scoring and one-vs-rest calibration (instead of CRPS), a binary (Brier) special case, cutoff-aware document ingestion, and an LLM-as-judge that scores an agent's reasoning against the official rationale. |
-| `[sp500_forecasting/](implementations/sp500_forecasting/)`           | S&P 500 multivariate numerical comparison.                                      | A template for deep numerical-methods comparison on financial-market series with covariates. (In active development.)                                                                                                                                                                              |
+| `[sp500_forecasting/](implementations/sp500_forecasting/)`           | S&P 500 returns under a macro/market covariate panel.                           | A head-to-head of conventional numerical methods (naive, ETS, Kalman, AutoARIMA, linear regression, LightGBM) plus a covariate-aware LLM-Process, all reading the same leak-safe covariate panel. Cumulative-return targets at 1/5/21-business-day horizons, CRPS + direction metrics, config-driven specs. |
 
 
 ## Time Series Data sources
@@ -71,7 +71,7 @@ On Apple Silicon the dylib is typically under `/opt/homebrew/opt/libomp/lib/`; o
 
 ### Populate the data cache
 
-Data is fetched once and cached locally (gitignored). Each implementation names the fetch script(s) it needs in its own `README.md` — for example `scripts/fetch_cpi.py` (getting started), `scripts/fetch_wti.py` (energy), `scripts/fetch_boc.py` and `scripts/fetch_boc_press_releases.py` (BoC), and `scripts/fetch_fred.py` (S&P 500). Run the relevant one before opening that implementation's notebooks:
+Data is fetched once and cached locally (gitignored). Each implementation names the fetch script(s) it needs in its own `README.md` — for example `scripts/fetch_cpi.py` (getting started), `scripts/fetch_wti.py` (energy), `scripts/fetch_boc.py` and `scripts/fetch_boc_press_releases.py` (BoC), and `scripts/fetch_sp500_market.py` + `scripts/fetch_fred.py` (S&P 500). Run the relevant one before opening that implementation's notebooks:
 
 ```bash
 uv run python scripts/fetch_cpi.py

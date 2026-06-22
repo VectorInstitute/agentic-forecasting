@@ -1,6 +1,20 @@
 """Leak-safe data-service setup for multivariate S&P 500 log-return forecasting.
 
-Target: ``log(open[t] / adj_close[t-1])`` for ``^GSPC``.
+Targets: **close-to-close cumulative log returns** of ``^GSPC`` over a few
+horizons, registered as one series per window ``N``::
+
+    r^(N)_t = log(adj_close[t] / adj_close[t - N])
+
+Forecasting ``r^(N)`` ``N`` business days ahead resolves to the *forward*
+cumulative return over the next ``N`` sessions — a clean single-marginal
+forecast at each horizon (no joint-path aggregation):
+
+- ``sp500_logret_1b``  (forecast 1 step ahead)  → next-session return.
+- ``sp500_logret_5b``  (forecast 5 steps ahead) → forward 1-week return.
+- ``sp500_logret_21b`` (forecast 21 steps ahead)→ forward 1-month return.
+
+Using returns (rather than the index level) keeps the target stationary, which
+is the appropriate setup for a conventional-methods comparison.
 
 Covariates supported (daily business-day frame):
 - VIX level / VIX change
@@ -85,8 +99,31 @@ def _yahoo_cache_file_default() -> Path:
 
 SP500_TICKER = "^GSPC"
 SP500_SERIES_ID = "sp500_close_adj_usd"
-SP500_LOG_RETURN_SERIES_ID = "sp500_log_ret_1b"
 DEFAULT_CACHE_FILE = _yahoo_cache_file_default()
+
+#: Cumulative-return horizons (in business days) registered as targets.  Each
+#: window ``N`` becomes a ``sp500_logret_{N}b`` target forecast ``N`` steps ahead.
+SP500_RETURN_WINDOWS: tuple[int, ...] = (1, 5, 21)
+
+#: Human-readable framing per horizon, surfaced in metadata and the notebook.
+SP500_WINDOW_LABELS: dict[int, str] = {
+    1: "next-session",
+    5: "forward 1-week (5 business days)",
+    21: "forward 1-month (21 business days)",
+}
+
+
+def sp500_logret_series_id(window: int) -> str:
+    """Return the canonical target series id for an ``N``-business-day return."""
+    return f"sp500_logret_{window}b"
+
+
+#: Mapping from horizon (business days) to target series id.
+SP500_RETURN_TARGETS: dict[int, str] = {w: sp500_logret_series_id(w) for w in SP500_RETURN_WINDOWS}
+
+#: The next-session (1-business-day) return — the canonical daily target used by
+#: default in the recent-history plot and direction baselines.
+SP500_LOG_RETURN_SERIES_ID = sp500_logret_series_id(1)
 
 
 class YahooFinanceDailyAdapter(BaseAdapter):
@@ -188,22 +225,21 @@ class StaticFrameAdapter(BaseAdapter):
         return self._frame.copy()
 
 
-def _build_close_to_next_open_log_return_frame(price_df: pd.DataFrame) -> pd.DataFrame:
-    """One row per open session: value = log(open[t] / adj_close[t-1])."""
-    required = {"timestamp", "value", "open"}
-    missing = required - set(price_df.columns)
-    if missing:
-        raise RuntimeError(
-            "Price data must include same-day 'open' alongside adjusted close ('value'). "
-            f"Missing columns: {sorted(missing)}."
-        )
-    frame = price_df[list(required)].copy().sort_values("timestamp").reset_index(drop=True)
-    for col in ("value", "open"):
-        frame[col] = pd.to_numeric(frame[col], errors="coerce")
-    frame = frame.dropna(subset=["value", "open"]).reset_index(drop=True)
-    adj_close_prev = frame["value"].shift(1)
-    open_t = frame["open"]
-    frame["value"] = np.log(open_t / adj_close_prev)
+def _build_cumulative_log_return_frame(price_df: pd.DataFrame, window: int) -> pd.DataFrame:
+    """One row per session: value = log(adj_close[t] / adj_close[t-window]).
+
+    ``window=1`` is the ordinary daily close-to-close return; larger windows are
+    trailing cumulative returns.  ``released_at`` is the session timestamp (the
+    return is known at that session's close).
+    """
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}.")
+    if "value" not in price_df.columns:
+        raise RuntimeError("Price data must include adjusted close as 'value'.")
+    frame = price_df[["timestamp", "value"]].copy().sort_values("timestamp").reset_index(drop=True)
+    frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
+    frame = frame[frame["value"] > 0].dropna(subset=["value"]).reset_index(drop=True)
+    frame["value"] = np.log(frame["value"] / frame["value"].shift(window))
     frame = frame.dropna(subset=["value"]).reset_index(drop=True)
     frame["released_at"] = pd.to_datetime(frame["timestamp"])
     return frame[["timestamp", "value", "released_at"]]
@@ -211,11 +247,13 @@ def _build_close_to_next_open_log_return_frame(price_df: pd.DataFrame) -> pd.Dat
 
 def build_sp500_log_return_service(
     *,
+    windows: tuple[int, ...] = SP500_RETURN_WINDOWS,
     refresh: bool = False,
     start: str = "1990-01-01",
     end: str | None = None,
     cache_path: Path | None = DEFAULT_CACHE_FILE,
 ) -> DataService:
+    """Register one close-to-close cumulative log-return target per window in ``windows``."""
     price_adapter = YahooFinanceDailyAdapter(
         SP500_TICKER,
         start=start,
@@ -224,23 +262,26 @@ def build_sp500_log_return_service(
         refresh=refresh,
     )
     price_df = price_adapter.fetch()
-    log_return_df = _build_close_to_next_open_log_return_frame(price_df)
 
     svc = DataService()
-    svc.register(
-        SP500_LOG_RETURN_SERIES_ID,
-        StaticFrameAdapter(log_return_df),
-        SeriesMetadata(
-            series_id=SP500_LOG_RETURN_SERIES_ID,
-            description=(
-                "S&P 500 log return from prior session adjusted close to current session open (Yahoo Finance ^GSPC)"
+    for window in windows:
+        series_id = sp500_logret_series_id(window)
+        label = SP500_WINDOW_LABELS.get(window, f"{window} business days")
+        svc.register(
+            series_id,
+            StaticFrameAdapter(_build_cumulative_log_return_frame(price_df, window)),
+            SeriesMetadata(
+                series_id=series_id,
+                description=(
+                    f"S&P 500 close-to-close cumulative log return over {window} business day(s) "
+                    f"({label}) (Yahoo Finance ^GSPC, derived)"
+                ),
+                source=f"Yahoo Finance ({SP500_TICKER}), derived",
+                units="log-return",
+                frequency="B",
+                table_id=f"yahoo:^GSPC:logret-{window}b",
             ),
-            source=f"Yahoo Finance ({SP500_TICKER}), derived",
-            units="log-return",
-            frequency="B",
-            table_id="yahoo:^GSPC:log-return-close-to-open",
-        ),
-    )
+        )
     return svc
 
 
@@ -419,6 +460,32 @@ def _apply_one_business_day_feature_lag(df: pd.DataFrame) -> pd.DataFrame:
     return _canonical_three_col(x)
 
 
+def _business_daily_ffill(df: pd.DataFrame) -> pd.DataFrame:
+    """Reindex a daily feature onto a complete business-day calendar, forward-filling.
+
+    FRED bond / commodity series follow a different holiday calendar than the
+    NYSE-traded target — e.g. Columbus Day and Veterans Day, when the bond market
+    is closed but equities trade. Without this, such a covariate ends a few days
+    short of a target origin and Darts raises ``past_covariates are not long
+    enough``, silently skipping those origins for the covariate-using models.
+
+    Forward-filling carries the last observed value across those gaps (and onto
+    every Mon–Fri business day), so the covariate is defined wherever the target
+    is. It is leak-safe: it only repeats already-known past information, and the
+    one-business-day feature lag is still applied afterwards.
+    """
+    if df.empty:
+        return df
+    x = df.copy().sort_values("timestamp").reset_index(drop=True)
+    idx = pd.bdate_range(x["timestamp"].min(), x["timestamp"].max())
+    filled = x.set_index("timestamp")["value"].reindex(idx).ffill()
+    out = filled.reset_index()
+    out.columns = ["timestamp", "value"]
+    out = out.dropna(subset=["value"]).reset_index(drop=True)
+    out["released_at"] = out["timestamp"]
+    return _canonical_three_col(out)
+
+
 def _build_monthly_cpi_mom_feature(
     *,
     cache_dir: Path,
@@ -457,7 +524,9 @@ def _build_daily_fred_level_feature(
 ) -> pd.DataFrame:
     x = _fred_frame(fred_id, cache_dir=cache_dir, refresh=refresh)
     x = _drop_weekend_timestamp_rows(x)
-    x["released_at"] = pd.to_datetime(x["timestamp"]) + pd.offsets.BDay(1)
+    # Forward-fill onto the full business-day calendar so bond-market holidays
+    # (when equities still trade) don't leave the covariate short of the origin.
+    x = _business_daily_ffill(x)
     return _apply_one_business_day_feature_lag(x)
 
 
@@ -470,9 +539,12 @@ def _build_daily_fred_return_feature(
     x = _fred_frame(fred_id, cache_dir=cache_dir, refresh=refresh)
     x = _drop_weekend_timestamp_rows(x)
     x = x[x["value"] > 0].reset_index(drop=True)
+    # Forward-fill the *level* onto the full business-day calendar first, so a
+    # bond-market holiday becomes a 0-return business day rather than a gap that
+    # ends the covariate before the target origin.
+    x = _business_daily_ffill(x)
     x["value"] = np.log(x["value"] / x["value"].shift(1))
     x = x.dropna(subset=["value"]).reset_index(drop=True)
-    x["released_at"] = pd.to_datetime(x["timestamp"]) + pd.offsets.BDay(1)
     return _apply_one_business_day_feature_lag(x)
 
 
@@ -500,6 +572,7 @@ def _build_first_available_daily_fred_return_feature(
 
 def build_sp500_multivariate_service(  # noqa: PLR0912, PLR0915
     *,
+    windows: tuple[int, ...] = SP500_RETURN_WINDOWS,
     include_covariates: bool = True,
     covariate_series_ids: list[str] | None = None,
     strict_covariates: bool = False,
@@ -522,7 +595,7 @@ def build_sp500_multivariate_service(  # noqa: PLR0912, PLR0915
     # Only forward ``cache_path`` when the caller supplies one. Passing ``None``
     # would shadow the single-variable default (repo ``data/yahoo/sp500_gspc.parquet``)
     # and force every notebook run to hit Yahoo Finance live.
-    sp500_kwargs: dict[str, Any] = {"refresh": refresh, "start": start, "end": end}
+    sp500_kwargs: dict[str, Any] = {"windows": windows, "refresh": refresh, "start": start, "end": end}
     if sp500_cache_path is not None:
         sp500_kwargs["cache_path"] = sp500_cache_path
     svc = build_sp500_log_return_service(**sp500_kwargs)
@@ -646,7 +719,9 @@ def build_sp500_multivariate_service(  # noqa: PLR0912, PLR0915
             )
             spread["value"] = spread["value_10y"] - spread["value_2y"]
             spread["released_at"] = pd.to_datetime(spread["timestamp"]) + pd.offsets.BDay(1)
-            spread = _apply_one_business_day_feature_lag(spread[["timestamp", "value", "released_at"]])
+            # Forward-fill onto the full business-day calendar (bond-holiday safe).
+            spread = _business_daily_ffill(spread[["timestamp", "value", "released_at"]])
+            spread = _apply_one_business_day_feature_lag(spread)
             svc.register(
                 SERIES_ID_2Y10Y_SPREAD,
                 StaticFrameAdapter(spread),
@@ -803,9 +878,13 @@ __all__ = [
     "SERIES_ID_VIX_CHANGE",
     "SERIES_ID_VIX_LEVEL",
     "SP500_LOG_RETURN_SERIES_ID",
+    "SP500_RETURN_TARGETS",
+    "SP500_RETURN_WINDOWS",
     "SP500_SERIES_ID",
     "SP500_TICKER",
+    "SP500_WINDOW_LABELS",
     "StaticFrameAdapter",
     "build_sp500_log_return_service",
     "build_sp500_multivariate_service",
+    "sp500_logret_series_id",
 ]

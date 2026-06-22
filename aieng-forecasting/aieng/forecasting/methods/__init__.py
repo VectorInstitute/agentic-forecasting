@@ -57,6 +57,8 @@ from .llm_processes import (
 )
 from .numerical import (
     DartsAutoARIMAPredictor,
+    DartsExponentialSmoothingPredictor,
+    DartsKalmanForecasterPredictor,
     DartsLightGBMPredictor,
     DartsLinearRegressionPredictor,
 )
@@ -69,6 +71,8 @@ __all__ = [
     "CategoricalProbabilityLLMPredictor",
     "CategoricalProbabilityLLMPredictorConfig",
     "DartsAutoARIMAPredictor",
+    "DartsExponentialSmoothingPredictor",
+    "DartsKalmanForecasterPredictor",
     "DartsLightGBMPredictor",
     "DartsLinearRegressionPredictor",
     "HistoricalFrequencyPredictor",

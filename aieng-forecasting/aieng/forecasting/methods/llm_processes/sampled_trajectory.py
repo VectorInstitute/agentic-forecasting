@@ -5,8 +5,10 @@ steps, stacks them, and computes per-step empirical quantiles at
 :data:`STANDARD_QUANTILES`.  One :class:`Prediction` is returned per horizon
 step in ``task.horizons``.
 
-This is the Gruver / Context-is-Key "Direct Prompt" path: no chain-of-thought,
-no covariates, no logprob density.  Method variants from the literature
+This is the Gruver / Context-is-Key "Direct Prompt" path: no chain-of-thought
+and no logprob density.  Optional **covariates** are supported — set
+``covariate_series_ids`` to serialize labeled exogenous-series history into the
+prompt (Context-is-Key §5.4).  Method variants from the literature
 (``LLMProcessPredictor`` for Requeima A-LLMP, logprob-density variants,
 conformal wrappers) belong as sibling classes in this package, not as
 configurations of this class.
@@ -47,6 +49,7 @@ from aieng.forecasting.methods.llm_processes.base import (
     LLMPredictor,
     LLMPredictorConfig,
     apply_report_context,
+    build_covariate_block,
     fetch_report_docs,
     get_history_and_meta,
     serialize_history,
@@ -115,6 +118,18 @@ class SampledTrajectoryLLMPredictorConfig(LLMPredictorConfig):
             "without rewriting the system prompt."
         ),
     )
+    covariate_series_ids: list[str] | None = Field(
+        default=None,
+        description=(
+            "Optional list of registered covariate series ids to serialize into "
+            "the prompt as labeled, cutoff-safe history blocks (Context-is-Key "
+            "§5.4 style), letting the model condition on exogenous series. Each "
+            "is fetched via ``context.get_series`` and truncated to "
+            "``history_window``. ``None`` (default) is target-only. Set a "
+            "distinct ``variant_tag`` to keep covariate vs target-only runs "
+            "separate on leaderboards and in artifact storage."
+        ),
+    )
 
 
 class _Trajectory(BaseModel):
@@ -168,12 +183,15 @@ def _build_user_prompt(
     n_steps: int,
     series_description_override: str | None = None,
     suffix: str | None = None,
+    covariate_block: str = "",
 ) -> str:
     """Task description + series metadata + history + explicit forecast window.
 
     ``series_description_override`` replaces the metadata-derived series block;
-    ``suffix`` is appended verbatim at the end of the prompt. Both are
-    surfaced to recipes via :class:`SampledTrajectoryLLMPredictorConfig`.
+    ``covariate_block`` (when non-empty) is inserted as labeled exogenous-series
+    context between the target history and the forecast instruction; ``suffix``
+    is appended verbatim at the end of the prompt. All are surfaced to recipes
+    via :class:`SampledTrajectoryLLMPredictorConfig`.
     """
     if series_description_override is not None:
         meta_block = series_description_override
@@ -187,18 +205,18 @@ def _build_user_prompt(
         meta_lines.append(f"Frequency: {task.frequency}")
         meta_block = "\n".join(meta_lines)
 
+    covariate_section = f"\n{covariate_block}\n" if covariate_block else ""
     base = (
         f"Task: {task.description}\n"
         "\n" + meta_block + "\n"
         "\n"
         "History:\n"
         f"{history_str}\n"
+        f"{covariate_section}"
         "\n"
         f"Forecast the next {n_steps} {task.frequency} values "
         f"({forecast_start.strftime('%Y-%m-%d')} through {forecast_end.strftime('%Y-%m-%d')}).\n"
         f"Return a JSON object with a single 'values' array of length {n_steps}."
-        # TODO(covariates): when multivariate inputs land, append labeled
-        # covariate blocks here per Context-is-Key §5.4. v1 is target-only.
     )
     if suffix:
         base = f"{base}\n\n{suffix.lstrip(chr(10))}"
@@ -289,8 +307,9 @@ class SampledTrajectoryLLMPredictor(LLMPredictor):
     -----
     - Each sampled call appends a per-draw disambiguator to the user message
       so LiteLLM's disk cache yields distinct entries per sample.
-    - No covariates and no chain-of-thought in v1.  ``reasoning_effort``
-      defaults to ``"disable"`` per the calibration evidence.
+    - Covariates are optional (``covariate_series_ids``) and off by default;
+      no chain-of-thought (``reasoning_effort`` defaults to ``"disable"`` per
+      the calibration evidence).
     """
 
     _method_tag: ClassVar[str] = "llmp_sampled_trajectories"
@@ -338,6 +357,17 @@ class SampledTrajectoryLLMPredictor(LLMPredictor):
 
         history_str = serialize_history(series_df, precision=self.cfg.precision)
 
+        # Labeled covariate blocks (Context-is-Key §5.4): cutoff-safe history of
+        # each exogenous series, truncated to the same window as the target.
+        covariate_block = ""
+        if self.cfg.covariate_series_ids:
+            covariate_block = build_covariate_block(
+                context,
+                self.cfg.covariate_series_ids,
+                precision=self.cfg.precision,
+                history_window=self.cfg.history_window,
+            )
+
         # Report context (before the task/history block): text preamble (CiK
         # Format A) or native PDF parts, per cfg.report_ingestion.
         report_docs = fetch_report_docs(config=self.cfg, context=context)
@@ -352,6 +382,7 @@ class SampledTrajectoryLLMPredictor(LLMPredictor):
             n_steps,
             series_description_override=self.cfg.series_description,
             suffix=self.cfg.user_prompt_suffix,
+            covariate_block=covariate_block,
         )
         user_content = apply_report_context(config=self.cfg, docs=report_docs, user_prompt=user_prompt)
 
@@ -391,6 +422,11 @@ class SampledTrajectoryLLMPredictor(LLMPredictor):
                             "n_samples": self.cfg.n_samples,
                             "n_report_docs": len(report_docs),
                             **({"report_sources": self.cfg.report_sources} if self.cfg.report_sources else {}),
+                            **(
+                                {"covariate_series_ids": list(self.cfg.covariate_series_ids)}
+                                if self.cfg.covariate_series_ids
+                                else {}
+                            ),
                         },
                     ),
                 ),
