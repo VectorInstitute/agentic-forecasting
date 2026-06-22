@@ -69,6 +69,10 @@ brew install libomp
 
 On Apple Silicon the dylib is typically under `/opt/homebrew/opt/libomp/lib/`; on Intel Homebrew, `/usr/local/opt/libomp/lib/`.
 
+### Verify your environment first
+
+New to the project? Open [`implementations/getting_started/00_environment_check.ipynb`](implementations/getting_started/00_environment_check.ipynb) and run it top to bottom. It's a self-guided preflight that checks every major capability — proxy LLM inference, Langfuse, E2B code execution, StatCan/FRED data access, and a full end-to-end mini backtest — one cell at a time, and tells you exactly what to fix when something isn't set up (most often a missing or placeholder key in your `.env`). It's the fastest way to confirm setup before working through the reference implementations.
+
 ### Populate the data cache
 
 Data is fetched once and cached locally (gitignored). Each implementation names the fetch script(s) it needs in its own `README.md` — for example `scripts/fetch_cpi.py` (getting started), `scripts/fetch_wti.py` (energy), `scripts/fetch_boc.py` and `scripts/fetch_boc_press_releases.py` (BoC), and `scripts/fetch_fred.py` (S&P 500). Run the relevant one before opening that implementation's notebooks:

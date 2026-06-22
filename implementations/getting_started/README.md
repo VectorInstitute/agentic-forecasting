@@ -45,6 +45,19 @@ CRPS rewards both calibration (is the probability band the right width?) and sha
 
 ## Before you start
 
+### 0. Check your environment - `00_environment_check.ipynb`
+
+**New to the project? Start here.** This self-guided preflight notebook checks
+every major capability you'll need — LLM inference through the Vector proxy,
+Langfuse tracing, E2B code execution, StatCan and (optional) FRED data access,
+and a full end-to-end mini backtest — one cell at a time. Run it top to bottom
+(`Run All` is safe); each check reports ✅ / ⚠️ / ❌ and, on failure, tells you
+exactly what to fix. Most ❌ results are a missing or placeholder API key in the
+repo-root `.env`, so it's the fastest way to confirm your setup is complete
+before opening the notebooks below.
+
+### Populate the local data cache
+
 Populate the local data cache (the stats-can download is gitignored):
 
 ```bash
@@ -144,6 +157,7 @@ what you're building:
 getting_started/                 # this directory
 ├── README.md
 ├── specs/                       # backtest and eval YAML
+├── 00_environment_check.ipynb   # self-guided setup preflight — run this first
 ├── 01_cpi_data_exploration.ipynb
 └── 02_cpi_backtest_demo.ipynb
 ```
