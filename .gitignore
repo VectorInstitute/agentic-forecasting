@@ -54,3 +54,5 @@ implementations/**/data/
 
 **/presentations
 data/yfinance/
+
+.claude/
