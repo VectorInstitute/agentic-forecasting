@@ -80,7 +80,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "codecov", specifier = ">=2.1.13" },
-    { name = "e2b", specifier = ">=2.29.2" },
+    { name = "e2b", specifier = ">=2.29.5" },
     { name = "mypy", specifier = ">=2.1.0" },
     { name = "nbqa", specifier = ">=1.9.1" },
     { name = "pip-audit", specifier = ">=2.10.1" },
@@ -180,12 +180,12 @@ requires-dist = [
     { name = "aieng-agents", extras = ["code-interpreter"], marker = "extra == 'agentic'", specifier = ">=0.3.0" },
     { name = "darts", marker = "extra == 'numerical'", specifier = ">=0.44.1" },
     { name = "fredapi", specifier = ">=0.5.2" },
-    { name = "google-adk", marker = "extra == 'agentic'", specifier = ">=2.2.0" },
+    { name = "google-adk", marker = "extra == 'agentic'", specifier = ">=2.3.0" },
     { name = "google-cloud-storage", marker = "extra == 'agentic'", specifier = ">=2.18,<4" },
-    { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.5.1" },
-    { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
+    { name = "langfuse", marker = "extra == 'agentic'", specifier = ">=4.9.1" },
+    { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.9.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
-    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.0" },
+    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.89.3" },
     { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
@@ -1205,7 +1205,7 @@ wheels = [
 
 [[package]]
 name = "e2b"
-version = "2.29.2"
+version = "2.29.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1220,9 +1220,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wcmatch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0d/cd/bdac1d3be552109b7dabb248ea7d3369ec9504b17c2f0bfede76c8d20ddd/e2b-2.29.2.tar.gz", hash = "sha256:73d6a5cfb06418106c6e498d174360b15f79cfe503c07dede3dde399195ae609", size = 172159, upload-time = "2026-06-17T22:31:48.858Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/a3/de12cc91f988535736f65515e72fa5977a2a1abe2aad8c7576c3a2cf1605/e2b-2.29.5.tar.gz", hash = "sha256:3d58afece47570145e682c1d2d987d0ad13a2e89584b201da5a5d91d42b2ac77", size = 176231, upload-time = "2026-06-22T19:39:34.272Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/59/9f/443da6b23319f968b9a508e456d77c8f9d79a9f22f39e6c52df531b1e95d/e2b-2.29.2-py3-none-any.whl", hash = "sha256:a690ccb5665defe8aeae20d45d3ab60025cadfb0fc9b160c287ef885c493fae7", size = 320964, upload-time = "2026-06-17T22:31:47.176Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/2c/fcf0994ff15740afaa3502a9e937724c69c0a0a7b2e8724163f068f35d9d/e2b-2.29.5-py3-none-any.whl", hash = "sha256:69516db21dee0c2e89a80eba98c2f92cf0372e4580d9af0debfb68f6668e6dc3", size = 325754, upload-time = "2026-06-22T19:39:32.581Z" },
 ]
 
 [[package]]
@@ -1506,7 +1506,7 @@ wheels = [
 
 [[package]]
 name = "google-adk"
-version = "2.2.0"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1534,9 +1534,9 @@ dependencies = [
     { name = "watchdog" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4a/65/3ff3f50b10dac3323ddecd694515e9f9ed345886e0eaf666d0e42c90748b/google_adk-2.2.0.tar.gz", hash = "sha256:04cb6318aba8829fe7c941ee1b456ccb4745253898c13595708c9eb07b4582ff", size = 3391545, upload-time = "2026-06-04T22:15:12.9Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/cd/b17f7a7574870642be5af42bad831b3800e51529ed2dcdc10493a0a0db23/google_adk-2.3.0.tar.gz", hash = "sha256:4b95c99865a9a6b56e8abd3d3b816935f0db1cebbef328736a269b6537bd1df7", size = 3426370, upload-time = "2026-06-18T18:47:08.4Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/f5/44a3b20b17bac130497f2d1dde8b93c90cfc026983cd94f24488d540ea70/google_adk-2.2.0-py3-none-any.whl", hash = "sha256:ebdf3d931dc2b9c5b30d995358fc2ae99d59594c48a4aaf7496869ccd2c5f245", size = 3912613, upload-time = "2026-06-04T22:15:15.411Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/fe/58024a25902d4c6401388515205990d2706901d23634c97f1c8710934fb4/google_adk-2.3.0-py3-none-any.whl", hash = "sha256:961a08ce50bdc99aaf57e487bae4cc48ed9ee361f15e93562342d4bc3b75739b", size = 3967294, upload-time = "2026-06-18T18:47:06.323Z" },
 ]
 
 [[package]]
@@ -2443,7 +2443,7 @@ wheels = [
 
 [[package]]
 name = "langfuse"
-version = "4.9.0"
+version = "4.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -2455,9 +2455,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/77/69/4c339bb7cfb4909db340c9b40852bd268fd2bfd93c526e7ac95b7dd725bb/langfuse-4.9.0.tar.gz", hash = "sha256:244d8309cd75d663f29c399f5691e3f04c4a2838e0cc947704e123bdc7233040", size = 339189, upload-time = "2026-06-16T08:44:38.744Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0e/9a/c2e4b5c33a225a0158de0e774396823612a6c5beea21cde42e95b196c398/langfuse-4.9.1.tar.gz", hash = "sha256:e3d7162a8004f71abd6ad90fba2f3a7d0088cbdce1c77deea521837d49580ab4", size = 339957, upload-time = "2026-06-19T09:30:49.841Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ca/f0/65735b14e792007381e1e9cf17b4dbd1355be056507c06517e75040102aa/langfuse-4.9.0-py3-none-any.whl", hash = "sha256:ac03eaf7ee6f5fb18036284445833cae92248ae240f3c6068b83d408afb57fe1", size = 599170, upload-time = "2026-06-16T08:44:37.387Z" },
+    { url = "https://files.pythonhosted.org/packages/15/9e/2b21989730ebb613118a667e59f652aebb5a1ca07de10984bf28a02a888f/langfuse-4.9.1-py3-none-any.whl", hash = "sha256:3feb00679aff2ff45b0e786574c748d7c40d23768452e17e3a02e8706b7cbce3", size = 599839, upload-time = "2026-06-19T09:30:48.4Z" },
 ]
 
 [[package]]
@@ -2560,7 +2560,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.89.2"
+version = "1.89.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -2576,9 +2576,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c1/29/865d38325f9c424daf0bcc7ab61908cf51a87862b3a0dfebd059b60dac97/litellm-1.89.2.tar.gz", hash = "sha256:b2534d69568eed026310f4e006407db2d46494eb629bd1e71eb9603ec146540d", size = 14079449, upload-time = "2026-06-18T02:26:03.64Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/56/f1/f7cfead063f2ab1877c8fb465d0d7fe300b75f081bcb73525f6d550aeb1c/litellm-1.89.3.tar.gz", hash = "sha256:8fcdb2b7a0ef3381d41adf164443842e31ef9f0cd5bcda6fc3c0bd8bc2959510", size = 14080611, upload-time = "2026-06-20T22:42:26.997Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/32/c8/51c93e8d017e7af02600171b5b6cc3805b07507acb2b94de7235ce764015/litellm-1.89.2-py3-none-any.whl", hash = "sha256:07e8e43b1a70fe919021376742897d18ffe7577ccfbb84632c949670f9abdc03", size = 15492797, upload-time = "2026-06-18T02:25:59.863Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/f1/34d174ff1d84e459b30f971606ac9cb7078ad24cd7661e9786b25adf7def/litellm-1.89.3-py3-none-any.whl", hash = "sha256:414ef5aee504b2b3eb1b219d39f1c11902db399cbdbc06e5fb550c15d731abeb", size = 15495226, upload-time = "2026-06-20T22:42:23.156Z" },
 ]
 
 [[package]]
