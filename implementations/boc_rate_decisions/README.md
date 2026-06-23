@@ -57,7 +57,7 @@ the overnight rate? Outcome is the direction of the change (any size).
 - **Horizon:** 28 days — the forecast date lands exactly on the
   announcement, and cutoff enforcement excludes everything after the
   origin.
-- **Eve diagnostic:** `boc_rate_direction_eve_{smoke,backtest}.yaml` keep
+- **Eve diagnostic:** `boc_rate_direction_eve_smoke.yaml` keeps
   the T−1 framing (task id `boc_rate_direction_next_meeting_eve`) for the
   lead-time comparison in notebook 02 — the RPS gap between T−28 and T−1
   separates anticipation from eve-of-decision market reading.
@@ -70,9 +70,10 @@ the overnight rate? Outcome is the direction of the change (any size).
 - **Binary view:** `boc_rate_cut_event` (0/1, 1 = cut) remains registered
   and the binary smoke/backtest specs are kept as the compact reference.
 
-**Excluded by design:** unscheduled (emergency) announcements — there has
-been exactly one since 2009 (March 27, 2020). It is recorded in the
-calendar file and used for validation, but no forecast origin targets it.
+**Excluded by design:** unscheduled (emergency) announcements — there have
+been exactly two since 2009 (March 13 and March 27, 2020, the COVID-19
+intermeeting cuts). They are recorded in the calendar file and used for
+validation, but no forecast origin targets them.
 
 ---
 

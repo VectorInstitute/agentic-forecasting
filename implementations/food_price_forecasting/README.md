@@ -104,9 +104,11 @@ implementations/food_price_forecasting/
 ├── plots.py       # plot_trajectory_fan, plot_avgyoy_grid,
 │                  # plot_crps_disaggregated, plot_mape_distribution,
 │                  # plot_food_cpi_small_multiples
+├── predictors/    # QuantileGridLLMPredictor, SampledTrajectoryLLMPredictor (report-grounded LLMP)
+├── smoke_report.py # summarize_agent_predictions() — plain-text agent smoke-test summary
 ├── starter_agent/  # fresh, hackable agent template (toggleable search/code-exec + skills)
-├── 01_food_data_exploration.ipynb # 9-cell warm-up tour of the 9 series
-├── 02_food_cpi_experiment.ipynb   # 26-cell narrative over the helpers above
+├── 01_food_data_exploration.ipynb # warm-up tour of the 9 series
+├── 02_food_cpi_experiment.ipynb   # narrative over the helpers above
 └── 99_starter_agent.ipynb         # ← start here to build your own agent
 ```
 
@@ -183,13 +185,14 @@ uv run python scripts/extract_reports.py
 - **Context-cost estimate:** `extract_reports.py` prints per-document and total
   char/token counts (token estimate ≈ chars/4, model-agnostic) so you can gauge
   the cost of putting one — or several — reports into a prompt.
-- **Deferred (a good participant extension):** wiring these extracted reports
-  into the food-CPI LLM-P prompt behind a cutoff-aware store is still a
-  follow-up — this pipeline only produces the extracted artifacts. The
-  ingredients now exist to do it: `extract_document` here, and BoC's
-  `PressReleaseStore` as the store pattern to mirror. Generalizes directly to
-  Bank of Canada Monetary Policy Reports via the same `--source`-keyed fetcher
-  and `extract_document`.
+- **Report-grounded LLMP (now wired):** `build_food_cpi_service(reports_dir=...)`
+  builds a cutoff-aware `DocumentStore`, and `02_food_cpi_experiment.ipynb`
+  passes `report_sources=["cfpr"]` to the LLM-P predictors so the extracted
+  reports enter the prompt filtered by `publication_date <= as_of`. Measure the
+  lift over the quantitative-only baseline. **Still a good extension:**
+  generalize the same `--source`-keyed fetcher + `extract_document` to Bank of
+  Canada Monetary Policy Reports, mirroring BoC's `PressReleaseStore` pattern
+  for additional document families.
 
 ---
 

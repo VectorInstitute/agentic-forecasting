@@ -73,14 +73,14 @@ This registers all 47 Canada-wide CPI series from StatCan table
 
 ### 1. Warm up - `01_cpi_data_exploration.ipynb`
 
-Nine cells.  Registers three focus series (all-items, gasoline,
+Registers three focus series (all-items, gasoline,
 shelter), shows the cutoff-enforcement pattern, plots levels and
 year-over-year change, and constructs a `ForecastingTask` by hand so
 you can see what the YAML spec turns into.
 
 ### 2. Run the backtest - `02_cpi_backtest_demo.ipynb`
 
-Ten cells.  Walks through the full cycle:
+Walks through the full cycle:
 
 1. Load `specs/cpi_gasoline_1m.yaml` into a `BacktestSpec`.
 2. Construct a `LastValuePredictor` (the floor) and a
