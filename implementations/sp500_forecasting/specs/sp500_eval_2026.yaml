@@ -40,7 +40,10 @@ experiment:
     - nasdaq_log_ret_1b_l1b
 
   # Finalists only — the held-out window is scarce. Enable the handful you chose
-  # from the 2025 backtest (here: floor, one classical, one ML±cov, LLMP±cov).
+  # from the 2025 backtest. The LLMP rows are OFF by default so a first "Run All"
+  # stays fast (each LLMP eval row is ~8 origins × 3 horizons × n_samples proxy
+  # calls); flip them to true once you're ready to spend the tokens on the
+  # protected scoreboard.
   run_models:
     naive_last_value: true
     ets_target_only: false
@@ -50,8 +53,8 @@ experiment:
     linreg_with_covariates: false
     lightgbm_target_only: false
     lightgbm_with_covariates: true
-    llmp_target_only: true
-    llmp_with_covariates: true
+    llmp_target_only: false
+    llmp_with_covariates: false
 
   lags: 5
   lags_past_covariates: 5

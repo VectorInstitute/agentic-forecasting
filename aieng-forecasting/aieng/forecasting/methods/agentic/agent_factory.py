@@ -516,11 +516,19 @@ def build_adk_agent(
     # output_schema so ADK does not also try to enforce it via response_format.
     # AdkTextRunner reads the state key after the run and returns the captured
     # JSON as the final output.
+    #
+    # This applies to *every* proxy-routed (LiteLlm) agent with an output_schema,
+    # not only tool-bearing ones: a schema-only agent with no other tools (e.g. a
+    # bare AgentPredictor) would otherwise send the Pydantic schema as Gemini's
+    # response_schema and 400 on $defs/$ref/additionalProperties through the proxy.
+    # When the shim is the only tool, the model emits the JSON via set_model_response
+    # (or as plain text, which AdkTextRunner returns as a fallback) — both paths are
+    # handled downstream. Direct-Gemini (non-LiteLlm) agents keep the native schema.
     effective_output_schema = output_schema
     try:
         from google.adk.models.lite_llm import LiteLlm as _LiteLlm  # noqa: PLC0415
 
-        if output_schema is not None and tools and isinstance(model, _LiteLlm):
+        if output_schema is not None and isinstance(model, _LiteLlm):
             tools.append(_build_set_model_response_tool())
             effective_output_schema = None
     except ImportError:

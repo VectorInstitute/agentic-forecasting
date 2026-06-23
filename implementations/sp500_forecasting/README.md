@@ -204,4 +204,9 @@ by default; `sp500_backtest_2025.yaml` for the full run, `sp500_stress_2020.yaml
 for the numerical-only COVID study); the protected 2026 eval (`sp500_eval_2026.yaml`)
 runs in Section 7.
 
+The default smoke run keeps the LLM-Process rows on in the 2025 backtest (the
+headline comparison) but **off in the 2026 eval**, so a first Run All isn't a
+long/expensive surprise. Enable the eval's `llmp_*` rows in `sp500_eval_2026.yaml`
+when you're ready to spend the proxy tokens on the protected scoreboard.
+
 ---

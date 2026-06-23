@@ -183,10 +183,12 @@ class TestBuildAdkAgent:
 class TestSmrShimRegistration:
     """build_adk_agent registers the set_model_response shim on the proxy path.
 
-    When the agent has both a non-empty tools list and an output_schema, the
-    real ADK SetModelResponseTool uses $defs/$ref schemas that Gemini rejects
-    via the OpenAI-compatible proxy.  Our flat-string shim bypasses that, so
-    build_adk_agent must swap it in and clear output_schema at the ADK level.
+    Any LiteLlm (proxy-routed) agent with an output_schema gets the flat-string
+    shim, because ADK's native response_schema uses $defs/$ref/additionalProperties
+    that Gemini rejects via the OpenAI-compatible proxy — regardless of whether the
+    agent has other tools. So build_adk_agent swaps the shim in and clears
+    output_schema at the ADK level. Direct-Gemini (non-LiteLlm) agents keep the
+    native schema, which the Gemini API accepts.
     """
 
     def test_smr_shim_registered_and_output_schema_cleared_on_litellm_path(self) -> None:
@@ -209,8 +211,13 @@ class TestSmrShimRegistration:
             "AgentPredictor validates the JSON directly."
         )
 
-    def test_output_schema_retained_without_tools(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """No tools: ADK native output_schema enforcement is preserved."""
+    def test_smr_shim_registered_without_tools_on_litellm_path(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Proxy + schema + NO other tools: shim still fires, output_schema cleared.
+
+        Regression guard for the bare-AgentPredictor case (e.g. BoC's basic agent):
+        without the shim, ADK would send the Pydantic schema as Gemini's
+        response_schema and 400 on $defs/$ref/additionalProperties through the proxy.
+        """
         monkeypatch.delenv("PROXY_BASE_URL", raising=False)
         config = AgentConfig(
             instruction="Forecast.",
@@ -219,7 +226,19 @@ class TestSmrShimRegistration:
         )
         agent = build_adk_agent(config, output_schema=ContinuousAgentForecastOutput)
 
+        tool_names = [getattr(t, "name", None) or getattr(t, "__name__", None) for t in agent.tools]
+        assert "set_model_response" in tool_names, f"shim not registered without tools. Got: {tool_names}"
+        assert agent.output_schema is None
+
+    def test_output_schema_retained_on_direct_gemini(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """No proxy (direct Gemini): native output_schema enforcement is preserved."""
+        monkeypatch.delenv("PROXY_BASE_URL", raising=False)
+        config = AgentConfig(instruction="Forecast.")  # no proxy_base_url → model stays a plain string
+        agent = build_adk_agent(config, output_schema=ContinuousAgentForecastOutput)
+
         assert agent.output_schema is ContinuousAgentForecastOutput
+        tool_names = [getattr(t, "name", None) or getattr(t, "__name__", None) for t in agent.tools]
+        assert "set_model_response" not in tool_names
 
 
 class TestBuildSearchTool:
