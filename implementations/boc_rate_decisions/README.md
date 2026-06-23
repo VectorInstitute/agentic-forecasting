@@ -1,5 +1,7 @@
 # BoC Rate Decisions
 
+> **Reference implementation 4 of 4.** Recommended order: [getting_started](../getting_started/) → [S&P 500](../sp500_forecasting/) → [food CPI](../food_price_forecasting/) → [energy / WTI](../energy_oil_forecasting/) → **BoC rate decisions**. Each stands on its own.
+
 Predicts the **direction of the Bank of Canada's decision at the next fixed
 announcement date** — cut, hold, or hike — as a calibrated probability
 distribution issued **four weeks (28 days) before the announcement**. This
@@ -167,13 +169,15 @@ implementations/boc_rate_decisions/
 ├── press_releases.py      # PressReleaseStore: cutoff-aware press-release store + HTML extraction/caching helpers
 ├── predictors/            # (multinomial) logistic baseline; direction + binary LLMP recipes
 ├── analyst_agent/         # AgentConfig factories + prompt builder + predictor factory
+├── starter_agent/         # fresh, hackable agent template (toggleable search/code-exec + skills)
 ├── analysis.py            # score leaderboard, one-vs-rest frames, calibration bins, rationales
 ├── rationale_eval.py      # LLM-as-judge reasoning-alignment evaluator; reads Langfuse traces, pushes scores back
 ├── plots.py               # decision timeline, reliability curve, rate-path chart
 ├── specs/                 # direction + binary backtest / eval / smoke YAML
 ├── 01_boc_data_exploration.ipynb           # framing, direction derivation, cutoff walkthrough
 ├── 02_boc_rate_direction_experiment.ipynb  # binary warm-up + the 3-way experiment
-└── 03_rationale_alignment.ipynb            # reasoning-alignment evaluation (LLM-as-judge over traces)
+├── 03_rationale_alignment.ipynb            # reasoning-alignment evaluation (LLM-as-judge over traces)
+└── 99_starter_agent.ipynb                  # ← start here to build your own agent
 ```
 
 Tests live under `implementations/tests/boc_rate_decisions/` (direction and
@@ -188,6 +192,7 @@ event derivation semantics; feature leak-safety).
 | `01_boc_data_exploration.ipynb` | Problem framing (ordered decision vs time series), policy-rate history with cut/hold/hike markers, direction derivation + schedule validation, class imbalance and the climatology RPS floor (with the cumulative-Brier decomposition), cutoff discipline at a real origin. |
 | `02_boc_rate_direction_experiment.ipynb` | **Main experiment.** Binary warm-up (the copy-paste reference + RPS(K=2) ≡ Brier check), smoke/full config switch, cached backtests for all four predictors at the canonical T−28 lead, RPS leaderboard with skill scores, the T−28 vs T−1 lead-time comparison ("anticipation gap"), decision timeline (P(cut) and P(hike)), one-vs-rest reliability curves, agent-reasoning inspection, budget-gated protected eval. |
 | `03_rationale_alignment.ipynb` | **Reasoning-alignment evaluation.** Runs traced LLMP/agent forecasts, then judges each trace's `reasoning`/`key_signals` against the Bank's published press release with an LLM-as-judge (`rationale_eval.py`), pushing `rationale_alignment` (0–1) and `right_for_right_reasons` scores back to Langfuse. A *process* metric that complements RPS — most valuable exactly where backtest scores are least trustworthy (see the leakage note above). |
+| `99_starter_agent.ipynb` | **Your starter agent.** A fresh, hackable cut/hold/hike agent — *not* part of the experiment above. Toggleable news search + code execution and two lightweight tool-usage skills, with an interactive (Track 2) cell, one scored prediction (Track 1), and a "make it yours" guide. The place to start building your own. |
 
 ---
 
@@ -208,16 +213,15 @@ event derivation semantics; feature leak-safety).
 
 ### Remaining extensions — good participant projects
 
-Each has an explicit seam in the code:
+**Start in [`99_starter_agent.ipynb`](99_starter_agent.ipynb)** — it ships a
+fresh, hackable agent and a hands-on "make it yours" guide for going further.
+Two substantive projects, each with an explicit seam in the code, are
+catalogued in [`planning-docs/roadmap.md`](../../planning-docs/roadmap.md):
 
-1. **Press releases as predictor context.** Today the predictors are
-   quantitative-only (so the agent/logistic comparison stays clean), and the
-   press releases feed the *evaluator*. Feeding them into the *forecast*
-   instead is a one-seam change: inject release excerpts through
-   `CategoricalProbabilityLLMPredictorConfig.user_prompt_suffix` or swap the
-   `build_boc_news_config` retrieval instruction for press-release/MPR
-   retrieval. Measure the lift against the quantitative-only baseline.
-2. **Live forecasting.** Extend `meeting_schedule.yaml` with the Bank's
-   published future dates and forecast each announcement the day before it
-   happens — eight genuinely out-of-sample observations per year, and the
-   honest test that backtest leakage makes impossible.
+1. **Press releases as predictor context** — feed cutoff-filtered release
+   excerpts into the *forecast* (not just the evaluator) via
+   `CategoricalProbabilityLLMPredictorConfig.user_prompt_suffix` or the
+   `build_boc_news_config` retrieval seam, and measure the lift.
+2. **Live forecasting** — forecast each upcoming announcement the day before it
+   happens: genuinely out-of-sample, and the honest test backtest leakage
+   precludes.

@@ -32,7 +32,7 @@ The agent backbone supports two modes:
 
 A common decomposition is a Gemini-backed **Context Retrieval Agent** for search grounding and source-aware context, and a provider-flexible **Analyst Agent** for reasoning, code execution, and synthesis.
 
-**LLM routing.** The Vector proxy (`proxy.vectorinstitute.ai`) does not support the Gemini-native search and code-execution features the agents use; keep those on direct Gemini sub-agents, and use the proxy for LLM Processes if adopted. See [`vector-llm-proxy.md`](vector-llm-proxy.md).
+**LLM routing.** Everything routes through the Vector proxy (`proxy.vectorinstitute.ai`) — there are no direct-Gemini sub-agents. Web search is a `search_web` tool backed by the proxy's `{"googleSearch": {}}` extension; code execution runs in an E2B sandbox (provider-independent); the analyst/reasoning model is auto-wrapped in `LiteLlm` pointing at the proxy. LLM Processes use the same proxy seam. See [`vector-llm-proxy.md`](vector-llm-proxy.md) for the full convention and the history of the proxy fixes that made this possible.
 
 ## Extension ideas
 
@@ -46,7 +46,7 @@ The repository is a foundation. Each reference implementation's README ends with
 
 ### Agent and analyst depth
 
-ADK skills reintroduction (see [`../docs/adk-skills-guide.md`](../docs/adk-skills-guide.md) for the design rules), richer E2B code-execution configs, prompt and context-formatting optimization, and Track 2 interactive analyst configurations per use case.
+Every domain implementation (S&P 500, food, energy, BoC) now ships a **`starter_agent/` module + `99_starter_agent.ipynb`** — a fresh, participant-owned agent template with toggleable proxy news search and E2B code execution, two lightweight tool-usage skills, an interactive (Track 2) cell, and one scored (Track 1) prediction. It is the canonical "build your own" entry point and doubles as a quick end-to-end smoke test of each use case's agent stack. Natural next steps from here: richer E2B code-execution configs, prompt and context-formatting optimization, and deeper Track 2 interactive analyst configurations per use case (see [`../docs/adk-skills-guide.md`](../docs/adk-skills-guide.md) for the skill design rules).
 
 ### Broaden coverage
 

@@ -10,23 +10,27 @@ Some use cases are notebook-only. Others expose a small importable helper packag
 
 ## Directory layout
 
+Numbered in the recommended order (mirrors the bootcamp progression: conventional numerical methods → LLM Processes → agents → agentic evaluation). The directories are not renamed — the numbers are an ordering convention used across the docs, and each directory stays an importable package (`from sp500_forecasting.data import ...`).
+
 ```text
 implementations/
-|-- getting_started/          # CPI gasoline hello-world
-|   `-- specs/                # backtest and eval YAML
-|-- food_price_forecasting/   # CFPR-style food CPI experiment
-|   `-- specs/                # backtest YAML
-|-- energy_oil_forecasting/   # Daily WTI oil price forecasting experiment
-|   `-- specs/                # backtest and eval YAML
-|-- sp500_forecasting/        # S&P 500 multivariate numerical comparison (financial markets)
-|   `-- specs/                # backtest YAML (smoke + full)
-|-- boc_rate_decisions/       # Discrete-event reference: BoC cut/hold/hike direction
-|   `-- specs/                # direction + binary backtest / eval / smoke YAML
+|-- getting_started/          # 0 · CPI gasoline hello-world (start here)
+|   `-- specs/                #     backtest and eval YAML
+|-- sp500_forecasting/        # 1 · S&P 500 multivariate numerical comparison (financial markets)
+|   `-- specs/                #     backtest YAML (smoke + full)
+|-- food_price_forecasting/   # 2 · CFPR-style food CPI experiment
+|   `-- specs/                #     backtest YAML
+|-- energy_oil_forecasting/   # 3 · Daily WTI oil price forecasting experiment
+|   `-- specs/                #     backtest and eval YAML
+|-- boc_rate_decisions/       # 4 · Discrete-event reference: BoC cut/hold/hike direction
+|   `-- specs/                #     direction + binary backtest / eval / smoke YAML
 |-- tests/                    # tests for implementation-specific helper modules
 `-- pyproject.toml            # local workspace packaging
 ```
 
 YAML backtest and eval specs live under each use case in `specs/`. Each directory is independent; see its `README.md` for the walkthrough.
+
+Every domain use case (all except `getting_started`) also ships a `starter_agent/` module and a `99_starter_agent.ipynb` — a fresh, hackable **starter agent** that is the consistent "build your own" entry point for that use case (toggleable news search + code execution, two lightweight tool-usage skills, an interactive cell, and one scored forecast).
 
 ---
 

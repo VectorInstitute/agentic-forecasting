@@ -1,5 +1,7 @@
 # WTI Crude Oil Price Forecasting
 
+> **Reference implementation 3 of 4.** Recommended order: [getting_started](../getting_started/) → [S&P 500](../sp500_forecasting/) → [food CPI](../food_price_forecasting/) → **energy / WTI** → [BoC rate decisions](../boc_rate_decisions/). Each stands on its own.
+
 The **high-frequency, context-driven** reference implementation. Unlike long-horizon annual CPI forecasting, the daily resolution of oil markets makes genuinely prospective, real-time evaluation practical: you can lock an agent configuration today and measure its accuracy on unresolved horizons within weeks.
 
 WTI Crude Oil is highly liquid and sensitive to geopolitical risk, macroeconomic policy, and supply disruptions. This implementation works through a progression of forecasting approaches:
@@ -40,6 +42,12 @@ introduced in notebook 2.
 | Notebook | Focus | Agents? |
 |----------|-------|---------|
 | **[`05_forecast_tool_demo.ipynb`](05_forecast_tool_demo.ipynb)** | **The Forecast Tool** — a standalone demo (not part of the main sequence) of a conventional AutoARIMA function tool (`build_wti_tool_config`) as a controlled, auditable alternative to open-ended code execution | Yes |
+
+### Build your own
+
+| Notebook | Focus | Agents? |
+|----------|-------|---------|
+| **[`99_starter_agent.ipynb`](99_starter_agent.ipynb)** | **Your starter agent** — a fresh, hackable WTI agent (*not* part of the curriculum) with toggleable news search + code execution and two lightweight tool-usage skills. Interactive (Track 2) cell, one scored prediction (Track 1), and a "make it yours" guide. **If you're not sure what to do next, start here.** | Yes |
 
 An earlier set of information-session notebooks is archived in [`playground/energy_case_study/`](../../playground/energy_case_study/); the notebooks here are the maintained reference.
 
@@ -82,8 +90,9 @@ implementations/energy_oil_forecasting/
 ├── tasks.py                # task specs, multitask prompt builders
 ├── analyst_agent/          # stateless AgentConfig factories (agent identity only)
 ├── adaptive_agent/         # the learning agent: strategy state, mutation tools, curriculum, seed/trained skills
+├── starter_agent/          # fresh, hackable agent template (toggleable search/code-exec + skills)
 ├── specs/                  # YAML backtest + eval specs
-└── 01–06 notebooks (+ 05_forecast_tool_demo side demo)
+└── 01–06 notebooks (+ 05_forecast_tool_demo side demo, 99_starter_agent build-your-own)
 ```
 
 `adaptive_agent/` holds `agent.py` (the adaptive `AgentConfig` + predictor factory),

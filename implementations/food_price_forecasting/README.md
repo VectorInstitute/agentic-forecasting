@@ -1,5 +1,7 @@
 # Food Price CPI Forecasting
 
+> **Reference implementation 2 of 4.** Recommended order: [getting_started](../getting_started/) → [S&P 500](../sp500_forecasting/) → **food CPI** → [energy / WTI](../energy_oil_forecasting/) → [BoC rate decisions](../boc_rate_decisions/). Each stands on its own.
+
 Replicates the **Canada's Food Price Report (CFPR)** forecasting methodology —
 an annual estimate of the year-over-year percentage change in Canadian food
 prices across nine CPI sub-categories.
@@ -102,8 +104,10 @@ implementations/food_price_forecasting/
 ├── plots.py       # plot_trajectory_fan, plot_avgyoy_grid,
 │                  # plot_crps_disaggregated, plot_mape_distribution,
 │                  # plot_food_cpi_small_multiples
+├── starter_agent/  # fresh, hackable agent template (toggleable search/code-exec + skills)
 ├── 01_food_data_exploration.ipynb # 9-cell warm-up tour of the 9 series
-└── 02_food_cpi_experiment.ipynb   # 26-cell narrative over the helpers above
+├── 02_food_cpi_experiment.ipynb   # 26-cell narrative over the helpers above
+└── 99_starter_agent.ipynb         # ← start here to build your own agent
 ```
 
 Unit tests for the analysis helpers live under
@@ -195,6 +199,7 @@ uv run python scripts/extract_reports.py
 |----------|---------|
 | `01_food_data_exploration.ipynb` | Short warm-up tour: register the 9 series, small-multiples history, YoY overlay, coverage table. |
 | `02_food_cpi_experiment.ipynb`   | **Main experiment.** Selectable via `EXPERIMENT_CONFIG` (`"full"` / `"mini_recent"` / `"mini_single"`). Runs cached backtests for two baselines (`LastValuePredictor`, `DartsAutoARIMAPredictor`) and two LLMPs. Plots trajectory fans, avg/avg YoY grid, and CRPS/MAPE leaderboards. |
+| `99_starter_agent.ipynb`         | **Your starter agent.** This use case's first agent — a fresh, hackable food-CPI forecaster (toggleable news search + code execution, two lightweight tool-usage skills). Interactive (Track 2) cell, one scored trajectory (Track 1), and a "make it yours" guide pointing at the bigger projects (all 9 series, report-grounded context). |
 
 ---
 

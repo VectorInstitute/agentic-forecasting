@@ -4,6 +4,8 @@ A foundation for building, evaluating, and comparing forecasting systems — con
 
 The repository pairs a small, stable core library with a set of self-contained reference implementations. The library gives you cutoff-safe data handling, a single `Predictor` interface, and a backtest/evaluation harness. Each reference implementation is a worked example of a different forecasting problem and the techniques that suit it. Start from whichever one is closest to what you want to build.
 
+> **👉 First time here? Run the environment check.** After `uv sync` (see [Setup](#setup)), open [`implementations/getting_started/00_environment_check.ipynb`](implementations/getting_started/00_environment_check.ipynb) and run it top to bottom. It's a self-guided preflight that verifies every capability — proxy LLM inference, Langfuse, E2B code execution, StatCan/FRED data access, and an end-to-end mini backtest — and tells you exactly what to fix when something isn't set up. **Do this before anything else.**
+
 ## What's here
 
 - **Core library** — `aieng-forecasting` (`aieng.forecasting`): data services, cutoff enforcement, forecasting tasks, prediction payloads, backtesting, evaluation, and artifacts.
@@ -21,17 +23,20 @@ Every method can be used in one of two modes, and the distinction runs through t
 
 ## Reference implementations
 
-Each is independent and self-contained — pick the one that matches the problem you care about, and read that directory's `README.md` for the full walkthrough. They are not meant to be worked in order.
+Each is independent and self-contained — pick the one that matches the problem you care about, and read that directory's `README.md` for the full walkthrough. They are numbered in a recommended order that mirrors the bootcamp progression — conventional numerical methods → LLM Processes → agents → agentic evaluation — but any one stands on its own, so jump straight to the problem you care about.
+
+**Start here → #0 [`getting_started/`](implementations/getting_started/)** — one CPI series, one month ahead. The smallest end-to-end loop: a `Predictor`, a `BacktestSpec` and `EvalSpec`, naive + AutoARIMA baselines, CRPS scoring. The place to learn the evaluation framework before picking a domain below.
 
 
-| Implementation                                                       | The problem                                                                     | Concepts & techniques it demonstrates                                                                                                                                                                                                                                                              |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[getting_started/](implementations/getting_started/)`               | One CPI series, one month ahead.                                                | The smallest end-to-end loop: a `Predictor`, a `BacktestSpec` and `EvalSpec`, naive + AutoARIMA baselines, CRPS scoring. The place to learn the evaluation framework.                                                                                                                              |
-| `[food_price_forecasting/](implementations/food_price_forecasting/)` | A multivariate food-CPI trajectory, in the style of Canada's Food Price Report. | Nine correlated sub-indices, a 12-step trajectory, a domain metric (avg/avg YoY), baselines vs LLM-Process predictors, leakage-aware backtests, and cached artifacts for fast iteration.                                                                                                           |
-| `[energy_oil_forecasting/](implementations/energy_oil_forecasting/)` | Daily WTI crude-oil price under regime-breaking news.                           | A capability progression — Prophet → LLM-Process → news-grounded agent → code-executing agent — plus an adaptive agent that learns a strategy from data and is scored before vs after. Continuous trajectories, a binary up-shock task, and interactive scenario analysis.                         |
-| `[boc_rate_decisions/](implementations/boc_rate_decisions/)`         | Will the Bank of Canada cut, hold, or hike at its next meeting?                 | Discrete-event forecasting: ordered-categorical outcomes on an irregular calendar, RPS scoring and one-vs-rest calibration (instead of CRPS), a binary (Brier) special case, cutoff-aware document ingestion, and an LLM-as-judge that scores an agent's reasoning against the official rationale. |
-| `[sp500_forecasting/](implementations/sp500_forecasting/)`           | S&P 500 returns under a macro/market covariate panel.                           | A head-to-head of conventional numerical methods (naive, ETS, Kalman, AutoARIMA, linear regression, LightGBM) plus a covariate-aware LLM-Process, all reading the same leak-safe covariate panel. Cumulative-return targets at 1/5/21-business-day horizons, CRPS + direction metrics, config-driven specs. |
+| #   | Implementation                                                       | The problem                                                                     | Concepts & techniques it demonstrates                                                                                                                                                                                                                                                                       |
+| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `[sp500_forecasting/](implementations/sp500_forecasting/)`           | S&P 500 returns under a macro/market covariate panel.                           | A head-to-head of conventional numerical methods (naive, ETS, Kalman, AutoARIMA, linear regression, LightGBM) plus a covariate-aware LLM-Process, all reading the same leak-safe covariate panel. Cumulative-return targets at 1/5/21-business-day horizons, CRPS + direction metrics, config-driven specs. |
+| 2   | `[food_price_forecasting/](implementations/food_price_forecasting/)` | A multivariate food-CPI trajectory, in the style of Canada's Food Price Report. | Nine correlated sub-indices, a 12-step trajectory, a domain metric (avg/avg YoY), baselines vs LLM-Process predictors, leakage-aware backtests, and cached artifacts for fast iteration.                                                                                                                    |
+| 3   | `[energy_oil_forecasting/](implementations/energy_oil_forecasting/)` | Daily WTI crude-oil price under regime-breaking news.                           | A capability progression — Prophet → LLM-Process → news-grounded agent → code-executing agent — plus an adaptive agent that learns a strategy from data and is scored before vs after. Continuous trajectories, a binary up-shock task, and interactive scenario analysis.                                  |
+| 4   | `[boc_rate_decisions/](implementations/boc_rate_decisions/)`         | Will the Bank of Canada cut, hold, or hike at its next meeting?                 | Discrete-event forecasting: ordered-categorical outcomes on an irregular calendar, RPS scoring and one-vs-rest calibration (instead of CRPS), a binary (Brier) special case, cutoff-aware document ingestion, and an LLM-as-judge that scores an agent's reasoning against the official rationale.          |
 
+
+**Not sure where to start building?** Each of the four domain implementations above ends with a `99_starter_agent.ipynb` — a fresh, hackable **starter agent** (a `starter_agent/` module) with toggleable news search and code execution, two lightweight tool-usage skills, an interactive cell, and one scored forecast. It's the consistent "continue from here" entry point for taking any reference use case in an agentic direction, and a quick end-to-end test of that use case's agent stack.
 
 ## Time Series Data sources
 
@@ -75,7 +80,7 @@ New to the project? Open [`implementations/getting_started/00_environment_check.
 
 ### Populate the data cache
 
-Data is fetched once and cached locally (gitignored). Each implementation names the fetch script(s) it needs in its own `README.md` — for example `scripts/fetch_cpi.py` (getting started), `scripts/fetch_wti.py` (energy), `scripts/fetch_boc.py` and `scripts/fetch_boc_press_releases.py` (BoC), and `scripts/fetch_sp500_market.py` + `scripts/fetch_fred.py` (S&P 500). Run the relevant one before opening that implementation's notebooks:
+Data is fetched once and cached locally (gitignored). Each implementation names the fetch script(s) it needs in its own `README.md` — for example `scripts/fetch_cpi.py` (getting started), `scripts/fetch_sp500_market.py` + `scripts/fetch_fred.py` (S&P 500), `scripts/fetch_wti.py` (energy), and `scripts/fetch_boc.py` and `scripts/fetch_boc_press_releases.py` (BoC). Run the relevant one before opening that implementation's notebooks:
 
 ```bash
 uv run python scripts/fetch_cpi.py
@@ -83,7 +88,9 @@ uv run python scripts/fetch_cpi.py
 
 ### Build the E2B sandbox image (agentic implementations only)
 
-Agentic forecasters can run code in an E2B cloud sandbox. Do this once before enabling code execution in `build_adk_agent`:
+Agentic forecasters can run code in an E2B cloud sandbox. Credentials for e2b should be automatically injected into the environment for bootcamp participants, and you can confirm successful setup by running [`00_environment_check.ipynb`](implementations/getting_started/00_environment_check.ipynb).
+
+If this was unsuccessful, or if you prefer to run with E2B in an alternative environment, do this once before enabling code execution in `build_adk_agent`:
 
 1. Create a free account at [e2b.dev](https://e2b.dev) and copy your API key.
 2. Add it to your `.env` file alongside the other keys (see `.env.example`):
@@ -136,8 +143,8 @@ uv run pre-commit run --all-files
 
 ## Documentation
 
-- Per-implementation READMEs under `implementations/<use-case>/` — the primary user surface.
-- `aieng-forecasting/README.md` and `aieng-forecasting/aieng/forecasting/methods/README.md` — the library and the method catalog.
-- `planning-docs/roadmap.md` — architecture principles and extension ideas.
+- Per-implementation READMEs under `[implementations/](implementations/)` — the primary user surface.
+- `[aieng-forecasting/README.md](aieng-forecasting/README.md)` and `[aieng-forecasting/aieng/forecasting/methods/README.md](aieng-forecasting/aieng/forecasting/methods/README.md)` — the library and the method catalog.
+- `[planning-docs/roadmap.md](planning-docs/roadmap.md)` — architecture principles and extension ideas.
 
 Keep code, notebooks, specs, and these docs in sync when you change behavior, setup, layout, or datasets.

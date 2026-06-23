@@ -1,5 +1,7 @@
 # S&P 500 multivariate forecasting (leak-safe covariates)
 
+> **Reference implementation 1 of 4.** Recommended order: [getting_started](../getting_started/) → **S&P 500** → [food CPI](../food_price_forecasting/) → [energy / WTI](../energy_oil_forecasting/) → [BoC rate decisions](../boc_rate_decisions/). Each stands on its own.
+
 The **financial-markets** reference: a head-to-head comparison of conventional
 time-series methods on a daily equity index, all reading the **same leak-safe
 covariate panel**, plus an LLM-Process forecaster that can read those covariates
@@ -153,8 +155,10 @@ implementations/sp500_forecasting/
 ├── analysis.py                # style_results_dataframe(); direction metrics
 ├── plots.py                   # target history; per-horizon CRPS; forecast vs realised return
 ├── backtest_grid.py           # run_horizon_grid() + run_horizon_eval(); per-model rows; live progress
+├── starter_agent/             # fresh, hackable agent template (toggleable search/code-exec + skills)
 ├── specs/                     # sp500_smoke / sp500_backtest_2025 / sp500_eval_2026 / sp500_stress_2020
 ├── 01_sp500_multivariate_backtest.ipynb
+├── 99_starter_agent.ipynb     # ← start here to build your own agent
 └── README.md
 ```
 
@@ -208,5 +212,17 @@ The default smoke run keeps the LLM-Process rows on in the 2025 backtest (the
 headline comparison) but **off in the 2026 eval**, so a first Run All isn't a
 long/expensive surprise. Enable the eval's `llmp_*` rows in `sp500_eval_2026.yaml`
 when you're ready to spend the proxy tokens on the protected scoreboard.
+
+---
+
+## Build your own — `99_starter_agent.ipynb`
+
+Not sure what to do next? [`99_starter_agent.ipynb`](99_starter_agent.ipynb) is
+this use case's first **agent** and a fresh, hackable starting point — *not*
+part of the backtest above. It wires our common building blocks behind simple
+toggles (cutoff-aware news search, an E2B code sandbox) plus two lightweight
+tool-usage skills, and walks through talking to the agent (Track 2), scoring one
+real return forecast (Track 1), and a "make it yours" guide. Live cells are
+gated by `RUN_AGENT` (default `False`), so a first Run All is safe.
 
 ---
