@@ -113,6 +113,43 @@ def press_release_entries(schedule_path: Path | None = None) -> list[PressReleas
     return entries
 
 
+# Line-anchored markers for the start of page furniture that follows the rate
+# decision on a modern BoC announcement page. The decision rationale is the
+# page's primary content and always ends at "The next scheduled date for
+# announcing the overnight rate target is ..."; everything at or after the
+# earliest of these markers is taxonomy, footnotes, bundled same-day operational
+# notices, or related-content link teasers — none of it the published rationale.
+#
+#   - "Content Type(s)" : the taxonomy footer, present on all ~139 cached pages
+#     (older 2009-2020 pages have only this); related-content teasers follow it.
+#   - "Footnotes"        : precedes the marker only when a release bundles extra
+#     same-day content (e.g. 2025-01-29, which appends operational notices after
+#     its footnotes). Rare (1/139) but cuts the bundled residual cleanly.
+#
+# Matching at line start keeps these from ever firing inside rationale prose.
+# (No trailing \b: "Content Type(s)" is followed by ")" then a newline, neither a
+# word character, so \b would never match it — the marker sits alone on its line.)
+_FOOTER_MARKERS = re.compile(r"(?m)^(?:Footnotes|Content Type\(s\))")
+
+
+def _trim_page_furniture(text: str) -> str:
+    """Drop trailing page furniture after the rate-decision rationale.
+
+    Modern BoC announcement pages render the decision inside ``<main>`` together
+    with footer content (a content-type taxonomy line, footnotes, occasionally
+    bundled same-day operational notices, and related-content link teasers).
+    The naive ``<main>`` text grab captures all of it; this truncates at the
+    earliest known footer boundary so the cached artifact is just the rationale.
+
+    Older pages (2009-2020) only carry the taxonomy line, so this trims a few
+    trailing characters; it is a no-op when no marker is present.
+    """
+    match = _FOOTER_MARKERS.search(text)
+    if match is None:
+        return text
+    return text[: match.start()].rstrip()
+
+
 def extract_press_release_html(html: str, meta: DocumentMeta) -> ExtractedDocument:
     """Extract readable body text from a BoC press-release HTML page.
 
@@ -144,6 +181,7 @@ def extract_press_release_html(html: str, meta: DocumentMeta) -> ExtractedDocume
     lines = [line.strip() for line in raw_text.splitlines()]
     kept = [line for line in lines if line and not line.lower().startswith("share this page")]
     text = re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
+    text = _trim_page_furniture(text)
 
     n_chars = len(text)
     return ExtractedDocument(
