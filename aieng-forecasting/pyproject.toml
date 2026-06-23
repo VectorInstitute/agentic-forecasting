@@ -17,9 +17,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+documents = [
+    # Pinned: extract.py imports the internal helpers.pymupdf_rag.to_markdown to
+    # stay on the deterministic (non-OCR) engine; the public API and module
+    # layout shift across minor releases, so keep the range narrow.
+    "pymupdf4llm>=1.27,<2",
+    "pyyaml>=6.0",
+]
 agentic = [
     "aieng-agents[code-interpreter]>=0.3.0",
-    "google-adk>=2.0.0",
+    "google-adk>=2.2.0",
     "google-cloud-storage>=2.18,<4",
     "langfuse>=4.5.1",
     "openinference-instrumentation-google-adk>=0.1.11",

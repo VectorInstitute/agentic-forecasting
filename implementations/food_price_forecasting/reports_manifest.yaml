@@ -1,0 +1,78 @@
+# Canada's Food Price Report (CFPR) acquisition manifest.
+#
+# This file is the COMMITTED source of truth for which report PDFs the
+# pipeline downloads. The PDFs themselves and any extracted text are cached
+# under data/ (gitignored) by `scripts/fetch_cfpr.py` -- never committed.
+#
+# Why hard-coded URLs (and not a templated pattern):
+#   The Dalhousie CDN filenames are inconsistent year to year (spaces,
+#   apostrophes, edition prefixes, "low.res" tags), so they cannot be derived
+#   from a template. Each URL is pinned explicitly. `fetch_cfpr.py` FAILS LOUDLY
+#   on a 404 / non-PDF response so a moved filename surfaces immediately instead
+#   of silently caching an HTML error page.
+#
+# publication_date:
+#   CFPR for forecast-year Y is released in early December of year Y-1. This is
+#   the cutoff key a future DocumentStore will filter on (publication_date <=
+#   as_of). For the canonical CFPR backtest (annual JULY origins) only the
+#   month/year matters -- a report released any time in December Y-1 is
+#   available by the July-Y origin and unavailable at the July-(Y-1) origin --
+#   so day-level precision is not critical here. Verify exact days before any
+#   sub-annual / monthly-origin use.
+#
+# sha256:
+#   Pins the exact bytes used by the bootcamp. `fetch_cfpr.py` verifies the
+#   downloaded PDF against this digest and fails loudly on a mismatch, so a
+#   silently re-uploaded / "corrected" CDN file cannot change results unnoticed.
+#
+# Scope: English-only for the reference implementation. French editions exist
+# on the same CDN folder and can be added as additional `lang: fr` entries.
+
+source: cfpr
+description: >-
+  Canada's Food Price Report, published annually each December by the
+  Agri-Food Analytics Lab at Dalhousie University with a rotating university
+  collective. Covers the past several editions (11th-16th).
+
+reports:
+  - year: 2021
+    edition: "11th edition"
+    lang: en
+    publication_date: 2020-12-08
+    url: "https://cdn.dal.ca/content/dam/dalhousie/pdf/sites/agri-food/Food%20Price%20Report%202021%20-%20EN%20(December%208).pdf"
+    sha256: "49f7eb4705f199ca817ddb7b017846802714bf14bab778cc8c1e79386811f7a5"
+
+  - year: 2022
+    edition: "12th edition"
+    lang: en
+    publication_date: 2021-12-09
+    url: "https://cdn.dal.ca/content/dam/dalhousie/pdf/sites/agri-food/Food%20Price%20Report%20-%20EN%202022.pdf"
+    sha256: "f8d306e4c876160631efcc719fc9f3f4e1e10fc87fdc6e1bdeda940244046239"
+
+  - year: 2023
+    edition: "13th edition"
+    lang: en
+    publication_date: 2022-12-05
+    url: "https://cdn.dal.ca/content/dam/dalhousie/pdf/sites/agri-food/Canada's%20Food%20Price%20Report%202023_Digital.pdf"
+    sha256: "7ebe7c536231254099c9b7ba4eb3ddeaf3104347bdfd1ab82fa5743653c5afa5"
+
+  - year: 2024
+    edition: "14th edition"
+    lang: en
+    publication_date: 2023-12-07
+    url: "https://cdn.dal.ca/content/dam/dalhousie/pdf/sites/agri-food/EN_CANADA'S%20FOOD%20PRICE%20REPORT%202024.pdf"
+    sha256: "84c737dc85eb8b786ef1cb779d6cab21fa6afd76b788b5ddb88282f9552f1b2f"
+
+  - year: 2025
+    edition: "15th edition"
+    lang: en
+    publication_date: 2024-12-05
+    url: "https://cdn.dal.ca/content/dam/dalhousie/pdf/sites/agri-food/EN%20-%20Food%20Price%20Report%202025.pdf"
+    sha256: "bcd929c9a880829ec7fb58799c59e3640486f35a2c3ff2f37cad70a3f1363dc9"
+
+  - year: 2026
+    edition: "16th edition"
+    lang: en
+    publication_date: 2025-12-04
+    url: "https://cdn.dal.ca/content/dam/dalhousie/pdf/sites/agri-food/FINAL%20E%20low.res%20DAL_PRICE_REPORT_2026.pdf"
+    sha256: "d3187d59eab16471176d7fd17b82d68496c328e31befe7799304951c73136b00"

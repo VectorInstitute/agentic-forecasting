@@ -53,6 +53,8 @@ DEFAULT_CACHE_DIR = REPO_ROOT / "data" / "fred"
 #   - Canadian 10-year bond yield: measures cost of capital and credit
 #     conditions affecting food production and distribution.
 #   - Canada/US exchange rate: direct pass-through to import food prices.
+#   - Canada unemployment rate: labour-market covariate for the BoC
+#     rate-decision experiment (implementations/boc_rate_decisions/).
 #
 # All series below are published at monthly (MS) frequency on FRED, which
 # matches the Statistics Canada food CPI target frequency.  Daily series
@@ -91,6 +93,12 @@ FRED_SERIES: list[tuple[str, str, str, str]] = [
         "EXCAUS",
         "Canada / US Foreign Exchange Rate (CAD per 1 USD, monthly average)",
         "CAD per USD",
+    ),
+    (
+        "fred_canada_unemployment_rate",
+        "LRUNTTTTCAM156S",
+        "Unemployment Rate: Total, All Persons for Canada (seasonally adjusted, monthly)",
+        "Percent",
     ),
 ]
 

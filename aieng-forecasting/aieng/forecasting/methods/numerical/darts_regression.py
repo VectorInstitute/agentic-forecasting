@@ -107,16 +107,23 @@ def _to_timeseries(df: pd.DataFrame, frequency: str) -> Any:
 
     Gaps are backfilled with ``fill_missing_dates=True`` so the regression
     models — which need regularly spaced observations — can consume the result.
+    Pandas' ``B`` frequency counts US trading holidays as business days even
+    though daily market series have no observation on those days, which would
+    otherwise inject NaN rows that the sklearn-style fitters reject. We forward-
+    fill those gaps so the model sees a contiguous series (a no-op for inputs
+    with no missing days).
     """
     from darts import TimeSeries  # noqa: PLC0415
+    from darts.utils.missing_values import fill_missing_values  # noqa: PLC0415
 
-    return TimeSeries.from_dataframe(
+    ts = TimeSeries.from_dataframe(
         df,
         time_col="timestamp",
         value_cols="value",
         fill_missing_dates=True,
         freq=frequency,
     )
+    return fill_missing_values(ts, fill="auto")
 
 
 def _build_past_covariates(context: ForecastContext, series_ids: list[str], frequency: str) -> Any:

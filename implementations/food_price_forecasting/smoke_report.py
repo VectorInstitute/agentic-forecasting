@@ -62,7 +62,7 @@ def summarize_agent_predictions(
         if abs(point - q50) >= 0.01:
             issues.append(f"point_forecast != q50 at {month}")
 
-    rationale = predictions[0].metadata.get("agent_rationale") if predictions else None
+    rationale = predictions[0].metadata.get("rationale") if predictions else None
     if rationale:
         print("\n  Rationale:")
         for line in textwrap.wrap(str(rationale), width=72):

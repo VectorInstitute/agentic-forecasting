@@ -177,7 +177,7 @@ def summarize_crps(results_by_predictor: dict[str, dict[str, BacktestResult]]) -
     rows: list[dict[str, object]] = []
     for pid, task_results in results_by_predictor.items():
         for tid, result in task_results.items():
-            rows.append({"predictor_id": pid, "task_id": tid, "mean_crps": result.mean_crps})
+            rows.append({"predictor_id": pid, "task_id": tid, "mean_crps": result.mean_score})
     if not rows:
         return pd.DataFrame()
     df = pd.DataFrame(rows).pivot(index="task_id", columns="predictor_id", values="mean_crps").round(4)

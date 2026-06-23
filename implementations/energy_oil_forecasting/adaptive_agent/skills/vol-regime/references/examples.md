@@ -1,17 +1,36 @@
 # vol-regime: code examples
 
-These patterns assume `df` is already defined in the same code block with columns
-`date` (datetime) and `close` (float), sorted ascending — as produced by the
-`fetch-yfinance` skill.
+Each `run_code` call is a fresh Python process. These patterns must be part of
+a self-contained script that starts with a yfinance fetch. See the
+`fetch-yfinance` skill for the data-loading block — paste it above these
+patterns in the same script.
+
+The variable `df` (columns: `date`, `close`, sorted ascending) comes from the
+`fetch-yfinance` pattern. Every script that uses vol-regime must define `df`
+first by fetching from yfinance with the appropriate `end=as_of_date` cutoff.
 
 ---
 
 ## Pattern 1: Rolling vol and regime classification
 
 ```python
+import yfinance as yf
+import pandas as pd
 import numpy as np
 
-# Use only the daily-frequency portion (drop gaps > 3 days, i.e. weekly averages)
+AS_OF = "2026-02-16"  # replace with actual as_of from the prediction payload
+
+ticker = yf.Ticker("CL=F")
+raw = ticker.history(start="2004-01-01", end="2026-06-01", auto_adjust=False)
+raw = raw.reset_index()
+df = pd.DataFrame({
+    "date": pd.to_datetime(raw["Date"]).dt.tz_localize(None).dt.normalize(),
+    "close": raw["Close"].values,
+}).dropna().sort_values("date").reset_index(drop=True)
+cutoff = pd.Timestamp(AS_OF)
+df = df[df["date"] < cutoff].copy()
+
+# Use only the daily-frequency portion (drop gaps > 3 days)
 day_gaps = df["date"].diff().dt.days
 daily = df[day_gaps <= 3].copy().reset_index(drop=True)
 
@@ -19,7 +38,6 @@ log_returns = np.log(daily["close"] / daily["close"].shift(1)).dropna()
 rolling_vol = log_returns.rolling(30).std() * np.sqrt(252) * 100  # annualised %
 current_vol = float(rolling_vol.iloc[-1])
 
-# WTI regime thresholds — adjust for other assets
 if current_vol < 20:
     regime = "low"
 elif current_vol < 35:
@@ -42,7 +60,7 @@ REGIME: elevated  |  current_vol=41.3%  |  n_daily_rows=312
 ## Pattern 2: Anomaly detection (z-score of last move)
 
 ```python
-# Assumes `daily` DataFrame is already defined from Pattern 1
+# Add this after Pattern 1 (daily is already defined)
 
 close_changes = daily["close"].diff().dropna()
 rolling_std = close_changes.rolling(30).std()
@@ -64,12 +82,8 @@ ANOMALY: z=+3.14  |  last_move=+4.21  |  flagged=True
 
 ## Pattern 3: Adaptive trend window
 
-Use `regime` and `z_score` from Patterns 1–2 to choose how many recent days to
-use when fitting a trend. A shorter window is appropriate when the market is
-noisy or a recent shock may have broken the prior trend.
-
 ```python
-# Assumes `regime` and `z_score` are already defined
+# Add this after Patterns 1–2 (regime and z_score are already defined)
 
 if regime in ("elevated", "extreme") or abs(z_score) > 2.5:
     trend_window = 15

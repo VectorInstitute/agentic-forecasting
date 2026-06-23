@@ -24,4 +24,4 @@ def test_discrete_output_to_predictions() -> None:
     assert len(preds) == 1
     assert isinstance(preds[0].payload, BinaryForecast)
     assert preds[0].payload.probability == 0.65
-    assert preds[0].metadata["agent_rationale"] == "elevated risk"
+    assert preds[0].metadata["rationale"] == "elevated risk"

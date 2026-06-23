@@ -294,11 +294,11 @@ class TestEvaluateFunction:
 
         assert tracker.runs_for(spec.spec_id) == 10
 
-    def test_evaluate_mean_crps_matches_scores(self) -> None:
-        """mean_crps equals the mean of per-origin scores."""
+    def test_evaluate_mean_score_matches_scores(self) -> None:
+        """mean_score equals the mean of per-origin scores."""
         svc = _build_data_service()
         result = evaluate(ConstantPredictor(), _make_spec(), svc)
-        assert abs(result.mean_crps - float(np.mean(result.scores))) < 1e-10
+        assert abs(result.mean_score - float(np.mean(result.scores))) < 1e-10
 
     def test_evaluate_raises_when_all_origins_skipped(self) -> None:
         """Raise when warmup skips every forecast origin."""

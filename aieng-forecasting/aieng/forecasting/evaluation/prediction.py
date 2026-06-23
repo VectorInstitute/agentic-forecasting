@@ -74,7 +74,43 @@ class BinaryForecast(BaseModel):
         return value
 
 
-ForecastPayload = ContinuousForecast | BinaryForecast
+class CategoricalForecast(BaseModel):
+    """Ordered-categorical probability payload for one future target.
+
+    The category order and allowed label set are declared on the
+    :class:`~aieng.forecasting.evaluation.task.ForecastingTask` via
+    ``task.categories``. The scorer aligns this probability dictionary to that
+    task-declared order before computing the Ranked Probability Score.
+
+    Parameters
+    ----------
+    probabilities : dict[str, float]
+        Mapping from category label to predicted probability. Values must be
+        finite probabilities in ``[0, 1]`` and sum to 1 within absolute
+        tolerance ``1e-6``.
+    """
+
+    probabilities: dict[str, float] = Field(description="Predicted probability for each category label.")
+
+    @field_validator("probabilities")
+    @classmethod
+    def probabilities_are_valid(cls, value: dict[str, float]) -> dict[str, float]:
+        """Validate that probabilities form a finite distribution."""
+        if len(value) < 2:
+            raise ValueError("Categorical probabilities must include at least two categories.")
+        bad_finite = [label for label, probability in value.items() if not isfinite(probability)]
+        if bad_finite:
+            raise ValueError(f"Categorical probabilities must be finite. Invalid labels: {bad_finite}")
+        bad_range = [label for label, probability in value.items() if not (0.0 <= probability <= 1.0)]
+        if bad_range:
+            raise ValueError(f"Categorical probabilities must be in [0, 1]. Invalid labels: {bad_range}")
+        total = sum(value.values())
+        if abs(total - 1.0) > 1e-6:
+            raise ValueError(f"Categorical probabilities must sum to 1 within 1e-6; got {total}.")
+        return value
+
+
+ForecastPayload = ContinuousForecast | BinaryForecast | CategoricalForecast
 
 
 class Prediction(BaseModel):
@@ -106,7 +142,7 @@ class Prediction(BaseModel):
         predictor.
     forecast_date : datetime
         The future date being predicted (``as_of`` + horizon steps).
-    payload : ContinuousForecast | BinaryForecast
+    payload : ContinuousForecast | BinaryForecast | CategoricalForecast
         The forecast payload.
     metadata : dict[str, Any]
         Optional free-form metadata the predictor wants to return alongside the

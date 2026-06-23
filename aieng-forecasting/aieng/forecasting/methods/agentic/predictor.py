@@ -24,12 +24,14 @@ from collections.abc import Coroutine
 from typing import Any, Protocol, TypeVar, cast
 
 from aieng.forecasting.data.context import ForecastContext
+from aieng.forecasting.evaluation.langfuse_traces import stamp_forecast_on_trace
 from aieng.forecasting.evaluation.prediction import Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig
 from aieng.forecasting.methods.agentic.agent_factory import AgentConfig, build_adk_agent
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
+from aieng.forecasting.methods.llm_processes._client import strip_markdown_fence, trace_url_for
 from google.adk.agents.base_agent import BaseAgent
 from pydantic import ValidationError
 
@@ -63,7 +65,19 @@ def _run_coroutine_sync(coro: Coroutine[Any, Any, T]) -> T:
         except BaseException as exc:  # pragma: no cover - defensive thread boundary
             error = exc
         finally:
-            loop.close()
+            # Cancel and drain any background tasks (e.g. LiteLLM's LoggingWorker)
+            # before closing the loop.  Without this, Python emits
+            # "Task was destroyed but it is pending!" warnings for every run.
+            try:
+                pending = asyncio.all_tasks(loop)
+                if pending:
+                    for task in pending:
+                        task.cancel()
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            except Exception:
+                pass
+            finally:
+                loop.close()
 
     thread = threading.Thread(target=run_in_thread, daemon=True)
     thread.start()
@@ -204,6 +218,7 @@ class AgentPredictor(Predictor):
                     fresh_session_per_message=True,
                     enable_langfuse_tracing=self.enable_langfuse_tracing,
                     langfuse_tags=["agent_predictor", "track1"],
+                    langfuse_trace_name=self.predictor_id,
                     langfuse_propagate_metadata={
                         "predictor_id": self.predictor_id,
                         "agent_name": built_agent.name,
@@ -254,9 +269,13 @@ class AgentPredictor(Predictor):
         prompt = self.prompt_builder(task=task, context=context)
         output_str = _run_coroutine_sync(self._runner.run_text_async(prompt))
 
+        # Normalise: strip markdown fences before validation so any model can
+        # be swapped in without breaking the parse layer.
+        output_str = strip_markdown_fence(output_str)
+
         # Validate the output against the output schema; tolerate JSON
-        # responses wrapped in a fenced block that ``model_validate_json``
-        # cannot parse but ``json.loads`` + ``model_validate`` can.
+        # responses that ``model_validate_json`` cannot parse but
+        # ``json.loads`` + ``model_validate`` can.
         try:
             output = self.output_schema.model_validate_json(output_str)
         except ValidationError:
@@ -277,5 +296,22 @@ class AgentPredictor(Predictor):
             # Log the error and return an empty list of predictions
             logger.error("Error converting output to list of predictions: %s", e)
             return []
+
+        # Link each prediction back to its Langfuse trace so side-channel
+        # evaluators can attach scores. The agent runs on a worker event loop whose
+        # trace context isn't active here, so use the id the runner captured during
+        # the run (not the current context, which is empty on this thread).
+        trace_id = self._runner.last_trace_id
+        if trace_id is not None:
+            trace_url = trace_url_for(trace_id)
+            for prediction in predictions:
+                prediction.metadata.setdefault("langfuse_trace_id", trace_id)
+                if trace_url is not None:
+                    prediction.metadata.setdefault("langfuse_trace_url", trace_url)
+
+            # Make the trace the canonical record for rationale evaluation: stamp the
+            # structured forecast onto that trace (post-hoc, by id) so the evaluator
+            # reads the rationale + distribution from Langfuse, not from a cached run.
+            stamp_forecast_on_trace(predictions, trace_id=trace_id)
 
         return predictions

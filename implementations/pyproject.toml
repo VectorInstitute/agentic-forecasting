@@ -8,7 +8,8 @@ authors = [{name = "Vector AI Engineering", email = "ai_engineering@vectorinstit
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "aieng-forecasting[numerical,llm,agentic]",
+    "aieng-forecasting[numerical,llm,agentic,documents]",
+    "beautifulsoup4>=4.12,<5",  # BoC press-release HTML extraction (boc_rate_decisions.press_releases)
 ]
 
 [tool.setuptools.packages.find]

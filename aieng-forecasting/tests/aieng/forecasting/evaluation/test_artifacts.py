@@ -111,7 +111,7 @@ class TestSingleTargetArtifacts:
         loaded = load_backtest_result("bt_1", predictor.predictor_id, store_dir=tmp_path)
         assert loaded is not None
         assert loaded.predictor_id == predictor.predictor_id
-        assert loaded.mean_crps == result.mean_crps
+        assert loaded.mean_score == result.mean_score
         assert loaded.spec.description == "round-trip test"
 
     def test_cache_hit_skips_compute(self, tmp_path: Path) -> None:

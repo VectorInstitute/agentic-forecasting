@@ -159,10 +159,23 @@ class AdkTextRunner:
         self._runner = InMemoryRunner(agent=agent, app_name=config.app_name)
         # Sticky ADK session per user when ``fresh_session_per_message`` is False.
         self._conversation_session_by_user: dict[str, str] = {}
+        # Trace id captured during the most recent traced run (see ``last_trace_id``).
+        self._last_trace_id: str | None = None
         if config.enable_langfuse_tracing:
             from aieng.forecasting.langfuse_tracing import init_langfuse_tracing  # noqa: PLC0415
 
             init_langfuse_tracing()
+
+    @property
+    def last_trace_id(self) -> str | None:
+        """Langfuse trace id captured during the most recent traced run, if any.
+
+        The agent runs on a worker event loop whose trace context the caller's
+        thread cannot see; the runner captures the id here so a predictor can link
+        and score the trace after the run. ``None`` when tracing is off or the last
+        run produced no trace.
+        """
+        return self._last_trace_id
 
     @property
     def runner(self) -> InMemoryRunner:
@@ -253,6 +266,8 @@ class AdkTextRunner:
         When ``enable_langfuse_tracing`` is True, each turn runs inside Langfuse
         ``propagate_attributes`` using the resolved ``user_id`` and ADK ``session_id``.
         """
+        from aieng.forecasting.methods.agentic.agent_factory import SMR_STATE_KEY  # noqa: PLC0415
+
         user_id = user_id or self.config.default_user_id
 
         session_id = await self._resolve_session_id(user_id, session_id)
@@ -270,8 +285,26 @@ class AdkTextRunner:
                     return event.content.parts[0].text or ""
             return ""
 
+        async def run_and_resolve() -> str:
+            """Run the agent and return the best available output string.
+
+            When the agent uses our set_model_response shim (LiteLlm path with
+            tools + output_schema), the structured JSON is stored in session
+            state under SMR_STATE_KEY.  We prefer that over the model's
+            subsequent "Task complete." text response.
+            """
+            text = await drain_run()
+            session = await self._runner.session_service.get_session(
+                app_name=self.config.app_name,
+                user_id=user_id,
+                session_id=session_id,
+            )
+            if session is not None and SMR_STATE_KEY in (session.state or {}):
+                return str(session.state[SMR_STATE_KEY])
+            return text
+
         if self.config.enable_langfuse_tracing:
-            from langfuse import propagate_attributes  # noqa: PLC0415
+            from langfuse import get_client, propagate_attributes  # noqa: PLC0415
 
             metadata: dict[str, str] = {"adk_app_name": self.config.app_name}
             if self.config.langfuse_propagate_metadata:
@@ -289,10 +322,19 @@ class AdkTextRunner:
                 }.items()
                 if v is not None
             }
-            with propagate_attributes(**pa_kw):
-                return await drain_run()
+            # Wrap the run in an explicit Langfuse span so (a) the ADK spans nest
+            # under one root trace and (b) we can capture the trace id while its
+            # context is active — the caller's thread cannot see it otherwise.
+            self._last_trace_id = None
+            client = get_client()
+            root_name = self.config.langfuse_trace_name or self.config.app_name
+            with client.start_as_current_observation(name=root_name, as_type="agent"):
+                with propagate_attributes(**pa_kw):
+                    result = await run_and_resolve()
+                self._last_trace_id = client.get_current_trace_id()
+            return result
 
-        return await drain_run()
+        return await run_and_resolve()
 
     def clear_conversation(self, *, user_id: str | None = None) -> None:
         """Drop sticky session id(s). Next ``run_text_async`` starts a new chat.

@@ -26,7 +26,7 @@
 #
 #   tracker = EvalTracker(Path("data/eval_runs.yaml"))
 #   result = evaluate(predictor=my_predictor, spec=spec, data_service=svc, tracker=tracker)
-#   print(f"Eval mean CRPS: {result.mean_crps:.4f}  (run {result.run_number}/{spec.max_runs})")
+#   print(f"Eval mean CRPS: {result.mean_score:.4f}  (run {result.run_number}/{spec.max_runs})")
 #
 # The target series must be registered before running.  Use
 # scripts/fetch_cpi.py to populate the local data cache, then register

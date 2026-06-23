@@ -20,7 +20,7 @@ Usage::
 
     predictor = DartsAutoARIMAPredictor()
     result = backtest(predictor=predictor, spec=spec, data_service=svc)
-    print(f"Mean CRPS: {result.mean_crps:.4f}")
+    print(f"Mean CRPS: {result.mean_score:.4f}")
 """
 
 from __future__ import annotations

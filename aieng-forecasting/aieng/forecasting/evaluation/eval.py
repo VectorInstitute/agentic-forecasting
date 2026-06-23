@@ -31,7 +31,7 @@ Intended usage in a bootcamp session::
 
     tracker = EvalTracker(Path("eval_runs.yaml"))
     result = evaluate(my_predictor, spec, svc, tracker=tracker)
-    print(f"Eval mean CRPS: {result.mean_crps:.4f}")
+    print(f"Eval mean {result.metric.upper()}: {result.mean_score:.4f}")
 
 If ``tracker`` is omitted, :func:`evaluate` runs unconditionally and sets
 ``run_number=1``.
@@ -45,11 +45,11 @@ from pathlib import Path
 import numpy as np
 import yaml
 from aieng.forecasting.data.service import DataService
-from aieng.forecasting.evaluation.backtest import _compute_origins, run_eval_loop
+from aieng.forecasting.evaluation.backtest import METRIC_BY_PAYLOAD_TYPE, ScoreMetric, _compute_origins, run_eval_loop
 from aieng.forecasting.evaluation.prediction import Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
-from pydantic import BaseModel, Field, model_validator
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +116,12 @@ class EvalSpec(BaseModel):
         Last candidate forecast origin (inclusive).
     stride : int
         Step size between origins in task-frequency units.
+    origin_dates : list[datetime] or None
+        Optional explicit forecast origins. When provided, :meth:`origins`
+        returns exactly these dates (sorted ascending) instead of deriving a
+        regular grid from ``start``/``end``/``stride``. Supports irregular
+        event calendars (e.g. Bank of Canada fixed announcement dates). All
+        dates must fall within ``[start, end]``.
     warmup : int
         Minimum number of observations required before a forecast origin is used.
     max_runs : int or None
@@ -146,6 +152,13 @@ class EvalSpec(BaseModel):
     start: datetime = Field(description="First candidate forecast origin.")
     end: datetime = Field(description="Last candidate forecast origin (inclusive).")
     stride: int = Field(default=1, ge=1, description="Step size between origins in task-frequency units.")
+    origin_dates: list[datetime] | None = Field(
+        default=None,
+        description=(
+            "Optional explicit forecast origins for irregular calendars (e.g. central bank "
+            "announcement dates). When set, overrides the start/end/stride grid derivation."
+        ),
+    )
     warmup: int = Field(default=0, ge=0, description="Minimum observations required before first forecast.")
     max_runs: int | None = Field(
         default=None,
@@ -164,14 +177,34 @@ class EvalSpec(BaseModel):
             raise ValueError(f"start ({self.start}) must be before end ({self.end})")
         return self
 
+    @model_validator(mode="after")
+    def origin_dates_in_window(self) -> "EvalSpec":
+        """Validate that explicit origin dates fall within [start, end]."""
+        if self.origin_dates is not None:
+            if not self.origin_dates:
+                raise ValueError("origin_dates must be non-empty when provided; omit it to derive origins.")
+            out_of_window = [d for d in self.origin_dates if not (self.start <= d <= self.end)]
+            if out_of_window:
+                raise ValueError(
+                    f"All origin_dates must fall within [start, end] = [{self.start}, {self.end}]. "
+                    f"Out of window: {out_of_window}"
+                )
+        return self
+
     def origins(self) -> list[datetime]:
         """Return the candidate forecast origins derived from this spec.
+
+        When ``origin_dates`` is set, those dates are returned sorted
+        ascending. Otherwise origins are derived from
+        ``start``/``end``/``stride`` on the task's frequency grid.
 
         Returns
         -------
         list[datetime]
             Candidate forecast origin dates, sorted ascending.
         """
+        if self.origin_dates is not None:
+            return sorted(self.origin_dates)
         return _compute_origins(self.start, self.end, self.task.frequency, self.stride)
 
 
@@ -198,9 +231,15 @@ class EvalResult(BaseModel):
     predictions : list[Prediction]
         One ``Prediction`` per evaluated forecast origin, in chronological order.
     scores : list[float]
-        CRPS score for each prediction. Lower is better.
-    mean_crps : float
-        Mean CRPS across all evaluated origins.
+        Score for each prediction. CRPS for continuous tasks, Brier for binary
+        tasks, RPS for categorical tasks. Lower is better.
+    metric : {"crps", "brier", "rps"}
+        Which scoring rule produced ``scores`` / ``mean_score``. Determined by
+        the task's ``payload_type``. Defaults to ``"crps"`` so artefacts
+        written before binary support existed still load correctly.
+    mean_score : float
+        Mean score across all evaluated origins. Older artefacts serialized
+        this field as ``mean_crps``; both keys are accepted on load.
     ran_at : datetime
         UTC wall-clock time when the eval was executed.
     skipped_origins : int
@@ -215,7 +254,14 @@ class EvalResult(BaseModel):
     predictor_id: str
     predictions: list[Prediction]
     scores: list[float]
-    mean_crps: float
+    metric: ScoreMetric = Field(
+        default="crps",
+        description="Scoring rule used: 'crps' (continuous), 'brier' (binary), or 'rps' (categorical).",
+    )
+    mean_score: float = Field(
+        validation_alias=AliasChoices("mean_score", "mean_crps"),
+        description="Mean score across all scored predictions (CRPS or Brier; lower is better).",
+    )
     ran_at: datetime
     skipped_origins: int = Field(default=0)
     run_number: int = Field(default=1, ge=1, description="Which run against this spec this was (1-indexed).")
@@ -365,8 +411,8 @@ def evaluate(
     Returns
     -------
     EvalResult
-        A fully populated result record including all predictions, CRPS
-        scores, and run provenance.
+        A fully populated result record including all predictions, scores,
+        and run provenance.
 
     Raises
     ------
@@ -381,7 +427,7 @@ def evaluate(
     Examples
     --------
     >>> result = evaluate(predictor=my_predictor, spec=spec, data_service=svc)
-    >>> print(f"Eval mean CRPS: {result.mean_crps:.4f}")
+    >>> print(f"Eval mean {result.metric.upper()}: {result.mean_score:.4f}")
     """
     runs_used = tracker.runs_for(spec.spec_id) if tracker is not None else 0
 
@@ -410,7 +456,8 @@ def evaluate(
         predictor_id=predictor.predictor_id,
         predictions=predictions,
         scores=scores,
-        mean_crps=float(np.mean(scores)),
+        metric=METRIC_BY_PAYLOAD_TYPE[spec.task.payload_type],
+        mean_score=float(np.mean(scores)),
         ran_at=ran_at,
         skipped_origins=skipped,
         run_number=runs_used + 1,
@@ -572,7 +619,7 @@ def multi_evaluate(
     --------
     >>> results = multi_evaluate(my_predictor, spec, svc, tracker=tracker)
     >>> for task_id, result in results.items():
-    ...     print(f"{task_id}: mean CRPS = {result.mean_crps:.4f}")
+    ...     print(f"{task_id}: mean {result.metric.upper()} = {result.mean_score:.4f}")
     """
     runs_used = tracker.runs_for(spec.spec_id) if tracker is not None else 0
 
@@ -610,7 +657,8 @@ def multi_evaluate(
             predictor_id=predictor.predictor_id,
             predictions=predictions,
             scores=scores,
-            mean_crps=float(np.mean(scores)),
+            metric=METRIC_BY_PAYLOAD_TYPE[task.payload_type],
+            mean_score=float(np.mean(scores)),
             ran_at=ran_at,
             skipped_origins=skipped,
             run_number=run_number,

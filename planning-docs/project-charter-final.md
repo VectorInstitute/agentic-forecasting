@@ -182,4 +182,4 @@ The project is successful for cohort 1 if:
 
 ## 13. Current Planning Source
 
-This charter is intended as a project-manager-friendly export for review and communication. The operational source of truth for implementation planning remains `planning-docs/bootcamp-workplan.md`.
+This charter is a retired project-manager-friendly export, kept for archaeology. The maintained design reference is `planning-docs/roadmap.md`.

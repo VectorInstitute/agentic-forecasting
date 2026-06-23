@@ -1,0 +1,3 @@
+# Committed: eval_*.json and backtest_*.json — reference outputs from NB04/NB06.
+# These are small, reproducibility-critical, and intentionally tracked.
+# The only files to exclude here are large intermediate artifacts if any are added.

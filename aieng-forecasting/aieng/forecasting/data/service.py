@@ -1,6 +1,9 @@
 """DataService: registration and management of time series data."""
 
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from aieng.forecasting.data.adapters.base import BaseAdapter
@@ -8,6 +11,10 @@ from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.data.cutoff import CutoffEnforcer
 from aieng.forecasting.data.models import SeriesMetadata
 from aieng.forecasting.data.store import SeriesStore
+
+
+if TYPE_CHECKING:
+    from aieng.forecasting.documents.store import DocumentStore
 
 
 class DataService:
@@ -51,9 +58,10 @@ class DataService:
     >>> df = svc.get_series("cpi_all_items_canada", as_of=datetime(2023, 1, 1))
     """
 
-    def __init__(self) -> None:
+    def __init__(self, doc_store: DocumentStore | None = None) -> None:
         self._store = SeriesStore()
         self._cutoff = CutoffEnforcer()
+        self._doc_store = doc_store
 
     def register(
         self,
@@ -122,6 +130,9 @@ class DataService:
         returned context bakes in ``as_of`` so that ``get_series()`` always
         enforces the information cutoff automatically.
 
+        If a ``DocumentStore`` was provided at construction, it is wired into
+        every context so predictors can call ``context.get_documents()``.
+
         Parameters
         ----------
         as_of : datetime
@@ -132,7 +143,7 @@ class DataService:
         ForecastContext
             A read-only, cutoff-scoped view of the series store.
         """
-        return ForecastContext(self._store, as_of)
+        return ForecastContext(self._store, as_of, doc_store=self._doc_store)
 
     def get_metadata(self, series_id: str) -> SeriesMetadata:
         """Return metadata for a registered series.

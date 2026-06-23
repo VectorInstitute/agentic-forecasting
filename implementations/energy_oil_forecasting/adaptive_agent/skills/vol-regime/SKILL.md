@@ -1,10 +1,10 @@
 ---
 name: vol-regime
 description: >-
-  One-shot code patterns for classifying the current volatility regime of a
-  price series and detecting anomalous recent moves. Load this skill when you
-  need to characterise market conditions before projecting a trend or sizing
-  forecast intervals. Load references/examples.md for working code.
+  Code patterns for classifying the current volatility regime and detecting
+  anomalous recent moves. Always load alongside fetch-yfinance — the examples
+  require a yfinance data fetch at the top of the same script. Load
+  references/examples.md for working code.
 ---
 
 # Volatility regime classification

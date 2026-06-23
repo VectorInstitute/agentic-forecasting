@@ -18,10 +18,17 @@ from pathlib import Path
 
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.adapters.statcan import StatCanAdapter
+from aieng.forecasting.documents.store import DocumentStore
 
 
 STATCAN_TABLE = "18-10-0004-11"
 """StatCan table 18-10-0004-11 — Consumer Price Index, monthly, not seasonally adjusted."""
+
+CFPR_REPORTS_SOURCE = "cfpr"
+"""Document-source key for Canada's Food Price Report editions."""
+
+DEFAULT_REPORTS_DIR = Path("data/reports/cfpr")
+"""Default cache directory for extracted CFPR report artifacts (.json/.md/.pdf)."""
 
 
 # (series_id, product_group_label, description, units)
@@ -104,7 +111,10 @@ DEFAULT_CACHE_DIR = Path("data/statcan")
 """Default StatCan CSV cache directory (same default as ``StatCanAdapter``)."""
 
 
-def build_food_cpi_service(cache_dir: Path | None = None) -> DataService:
+def build_food_cpi_service(
+    cache_dir: Path | None = None,
+    reports_dir: Path | None = None,
+) -> DataService:
     """Return a :class:`DataService` with all 9 food CPI series registered.
 
     Each series gets its own :class:`StatCanAdapter` (StatCan's adapter is
@@ -117,6 +127,14 @@ def build_food_cpi_service(cache_dir: Path | None = None) -> DataService:
     cache_dir : Path or None
         StatCan CSV cache directory.  Defaults to ``data/statcan`` at the
         repo root, which is what ``scripts/fetch_cpi.py`` populates.
+    reports_dir : Path or None
+        When set, attach a :class:`DocumentStore` loading CFPR report artifacts
+        from this directory (the ``.json``/``.md`` files written by
+        ``scripts/extract_reports.py``), registered under the ``"cfpr"`` source.
+        This is what enables report-grounded LLMP recipes (``report_sources=
+        ["cfpr"]``) — predictors then see only editions published on or before
+        the forecast ``as_of`` date.  ``None`` leaves the service report-free,
+        unchanged from the canonical numeric-only experiment.
 
     Returns
     -------
@@ -126,7 +144,8 @@ def build_food_cpi_service(cache_dir: Path | None = None) -> DataService:
         :func:`evaluate` / :func:`multi_evaluate`.
     """
     resolved_cache_dir: Path = cache_dir if cache_dir is not None else DEFAULT_CACHE_DIR
-    svc = DataService()
+    doc_store = DocumentStore({CFPR_REPORTS_SOURCE: reports_dir}) if reports_dir is not None else None
+    svc = DataService(doc_store=doc_store)
     for series_id, product_group, description, units in FOOD_CPI_SERIES:
         adapter = StatCanAdapter(
             table_id=STATCAN_TABLE,
@@ -150,7 +169,9 @@ def build_food_cpi_service(cache_dir: Path | None = None) -> DataService:
 
 __all__ = [
     "CATEGORY_LABELS",
+    "CFPR_REPORTS_SOURCE",
     "DEFAULT_CACHE_DIR",
+    "DEFAULT_REPORTS_DIR",
     "FOOD_CPI_SERIES",
     "STATCAN_TABLE",
     "build_food_cpi_service",

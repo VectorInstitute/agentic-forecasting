@@ -40,8 +40,8 @@ from pydantic import ValidationError
 class _StubRunner:
     """Minimal ``AdkTextRunner``-shaped object for predictor tests.
 
-    Exposes the two attributes the predictor reads (``agent`` and
-    ``run_text_async``) and nothing else.
+    Exposes the attributes the predictor reads (``agent``, ``run_text_async``,
+    ``last_trace_id``) and nothing else.
     """
 
     def __init__(
@@ -55,6 +55,8 @@ class _StubRunner:
         self._agent = MagicMock()
         self._agent.name = agent_name
         self._agent.model = model
+        # No tracing in unit tests, so no trace is captured.
+        self.last_trace_id: str | None = None
 
     @property
     def agent(self) -> Any:
@@ -199,7 +201,7 @@ class TestPredictHappyPath:
 
         prediction = predictor.predict(_task([1]), _context())[0]
 
-        assert prediction.metadata["agent_rationale"] == "overall rationale"
+        assert prediction.metadata["rationale"] == "overall rationale"
         assert prediction.metadata["horizon_rationale"] == "horizon 1 rationale"
 
     def test_prompt_builder_is_invoked_with_task_and_context(self) -> None:
@@ -210,6 +212,21 @@ class TestPredictHappyPath:
         predictor.predict(task, context)
 
         builder.assert_called_once_with(task=task, context=context)
+
+    def test_fenced_json_is_accepted_and_converts_to_predictions(self) -> None:
+        """JSON wrapped in a ```json ... ``` fence still produces valid predictions.
+
+        Models sometimes emit fenced JSON even when response_format is set.
+        strip_markdown_fence runs before validation; this test confirms the
+        full strip → validate → convert pipeline works end-to-end.
+        """
+        fenced = f"```json\n{_output_json([1])}\n```"
+        predictor, _ = _make_predictor(response=fenced)
+
+        predictions = predictor.predict(_task([1]), _context())
+
+        assert len(predictions) == 1
+        assert predictions[0].payload.point_forecast == 101.0
 
 
 # ---------------------------------------------------------------------------

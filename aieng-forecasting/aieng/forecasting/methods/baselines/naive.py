@@ -21,7 +21,7 @@ Usage::
     from aieng.forecasting.evaluation import backtest, BacktestSpec
 
     result = backtest(predictor=LastValuePredictor(), spec=spec, data_service=svc)
-    print(f"Naive mean CRPS: {result.mean_crps:.4f}")  # your model must beat this
+    print(f"Naive mean CRPS: {result.mean_score:.4f}")  # your model must beat this
 """
 
 from __future__ import annotations

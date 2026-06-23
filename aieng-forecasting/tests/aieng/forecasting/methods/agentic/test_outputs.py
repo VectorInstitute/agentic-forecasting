@@ -70,7 +70,7 @@ class TestContinuousAgentForecastOutput:
         assert predictions[0].payload.quantiles == {
             level: 100.0 + (level - 0.50) * 10.0 for level in STANDARD_QUANTILES
         }
-        assert predictions[0].metadata["agent_rationale"] == "overall rationale"
+        assert predictions[0].metadata["rationale"] == "overall rationale"
         assert predictions[0].metadata["horizon_rationale"] == "horizon 1 rationale"
         assert predictions[0].metadata["trace_id"] == "abc"
 

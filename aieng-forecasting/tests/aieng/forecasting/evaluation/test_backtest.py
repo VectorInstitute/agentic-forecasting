@@ -171,7 +171,7 @@ class TestBacktestResult:
                 predictor_id="test",
                 predictions=[],
                 scores=[1.0],
-                mean_crps=1.0,
+                mean_score=1.0,
                 ran_at=datetime(2024, 1, 1),
             )
 
@@ -212,12 +212,13 @@ class TestBacktestFunction:
         result_with = backtest(ConstantPredictor(), spec_with_warmup, svc)
         assert result_with.skipped_origins > result_no.skipped_origins
 
-    def test_backtest_mean_crps_is_mean_of_scores(self) -> None:
-        """mean_crps equals the arithmetic mean of per-origin scores."""
+    def test_backtest_mean_score_is_mean_of_scores(self) -> None:
+        """mean_score equals the arithmetic mean of per-origin scores."""
         svc = _build_data_service()
         spec = _make_spec(start="2010-01-01", end="2012-01-01", stride=6, warmup=0)
         result = backtest(ConstantPredictor(), spec, svc)
-        assert abs(result.mean_crps - float(np.mean(result.scores))) < 1e-10
+        assert abs(result.mean_score - float(np.mean(result.scores))) < 1e-10
+        assert result.metric == "crps"
 
     def test_backtest_raises_when_all_origins_skipped(self) -> None:
         """backtest() must raise ValueError if no origins can be scored."""

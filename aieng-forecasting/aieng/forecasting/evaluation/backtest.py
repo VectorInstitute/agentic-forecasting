@@ -9,17 +9,25 @@ evaluation window parameters.
 from __future__ import annotations
 
 import logging
+import math
 import time
 from datetime import datetime, timezone
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 import properscoring as ps
 from aieng.forecasting.data.service import DataService
-from aieng.forecasting.evaluation.prediction import ContinuousForecast, Prediction
+from aieng.forecasting.evaluation.prediction import BinaryForecast, CategoricalForecast, ContinuousForecast, Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
-from pydantic import BaseModel, Field, model_validator
+from pydantic import AliasChoices, BaseModel, Field, model_validator
+
+
+ScoreMetric = Literal["crps", "brier", "rps"]
+
+#: Score metric names, keyed by ``ForecastingTask.payload_type``.
+METRIC_BY_PAYLOAD_TYPE: dict[str, ScoreMetric] = {"continuous": "crps", "binary": "brier", "categorical": "rps"}
 
 
 logger = logging.getLogger(__name__)
@@ -77,6 +85,15 @@ class BacktestSpec(BaseModel):
         Step size between origins in task-frequency units. ``stride=1`` means
         every period; ``stride=6`` on monthly data means twice per year
         (January and July when ``start`` falls on a month boundary).
+    origin_dates : list[datetime] or None
+        Optional explicit forecast origins. When provided, :meth:`origins`
+        returns exactly these dates (sorted ascending) instead of deriving a
+        regular grid from ``start``/``end``/``stride``. This supports
+        irregular event calendars — for example Bank of Canada fixed
+        announcement dates, which occur eight times per year on dates that no
+        pandas frequency alias can generate. All dates must fall within
+        ``[start, end]`` so the window fields remain an honest summary of the
+        evaluation period.
     warmup : int
         Minimum number of observations required in the cutoff-filtered series
         before a forecast origin is used. Origins that do not have enough
@@ -113,6 +130,13 @@ class BacktestSpec(BaseModel):
     start: datetime = Field(description="First candidate forecast origin.")
     end: datetime = Field(description="Last candidate forecast origin (inclusive).")
     stride: int = Field(default=1, ge=1, description="Step size between origins in task-frequency units.")
+    origin_dates: list[datetime] | None = Field(
+        default=None,
+        description=(
+            "Optional explicit forecast origins for irregular calendars (e.g. central bank "
+            "announcement dates). When set, overrides the start/end/stride grid derivation."
+        ),
+    )
     warmup: int = Field(default=0, ge=0, description="Minimum observations required before first forecast.")
     description: str = Field(
         default="",
@@ -126,19 +150,36 @@ class BacktestSpec(BaseModel):
             raise ValueError(f"start ({self.start}) must be before end ({self.end})")
         return self
 
+    @model_validator(mode="after")
+    def origin_dates_in_window(self) -> "BacktestSpec":
+        """Validate that explicit origin dates fall within [start, end]."""
+        if self.origin_dates is not None:
+            if not self.origin_dates:
+                raise ValueError("origin_dates must be non-empty when provided; omit it to derive origins.")
+            out_of_window = [d for d in self.origin_dates if not (self.start <= d <= self.end)]
+            if out_of_window:
+                raise ValueError(
+                    f"All origin_dates must fall within [start, end] = [{self.start}, {self.end}]. "
+                    f"Out of window: {out_of_window}"
+                )
+        return self
+
     def origins(self) -> list[datetime]:
         """Return the candidate forecast origins derived from this spec.
 
-        Origins are generated using ``pd.date_range`` with the task's
-        frequency and the configured stride. The returned list does not apply
-        the warmup filter — that is applied inside :func:`backtest` where the
-        actual series data is available.
+        When ``origin_dates`` is set, those dates are returned sorted
+        ascending. Otherwise origins are generated using ``pd.date_range``
+        with the task's frequency and the configured stride. The returned
+        list does not apply the warmup filter — that is applied inside
+        :func:`backtest` where the actual series data is available.
 
         Returns
         -------
         list[datetime]
             Candidate forecast origin dates, sorted ascending.
         """
+        if self.origin_dates is not None:
+            return sorted(self.origin_dates)
         return _compute_origins(self.start, self.end, self.task.frequency, self.stride)
 
 
@@ -163,10 +204,16 @@ class BacktestResult(BaseModel):
         ``origins_scored × len(task.horizons)`` (minus any future steps that
         could not yet be resolved). Ordered by origin then by horizon.
     scores : list[float]
-        CRPS score for each prediction, parallel to ``predictions``.
+        Score for each prediction, parallel to ``predictions``. CRPS for
+        continuous tasks, Brier for binary tasks, RPS for categorical tasks.
         Lower is better.
-    mean_crps : float
-        Mean CRPS across all scored (origin, horizon) pairs.
+    metric : {"crps", "brier", "rps"}
+        Which scoring rule produced ``scores`` / ``mean_score``. Determined by
+        the task's ``payload_type``. Defaults to ``"crps"`` so artefacts
+        written before binary support existed still load correctly.
+    mean_score : float
+        Mean score across all scored (origin, horizon) pairs. Older artefacts
+        serialized this field as ``mean_crps``; both keys are accepted on load.
     ran_at : datetime
         UTC wall-clock time when the backtest was executed.
     skipped_origins : int
@@ -178,7 +225,14 @@ class BacktestResult(BaseModel):
     predictor_id: str
     predictions: list[Prediction]
     scores: list[float]
-    mean_crps: float
+    metric: ScoreMetric = Field(
+        default="crps",
+        description="Scoring rule used: 'crps' (continuous), 'brier' (binary), or 'rps' (categorical).",
+    )
+    mean_score: float = Field(
+        validation_alias=AliasChoices("mean_score", "mean_crps"),
+        description="Mean score across all scored predictions (CRPS or Brier; lower is better).",
+    )
     ran_at: datetime
     skipped_origins: int = Field(default=0, description="Candidate origins skipped due to warmup.")
 
@@ -217,6 +271,197 @@ def _crps_for_prediction(prediction: Prediction, actual: float) -> float:
     payload = prediction.payload
     ensemble = np.array(sorted(payload.quantiles.values()), dtype=float)
     return float(ps.crps_ensemble(actual, ensemble))
+
+
+def compute_brier_score(probabilities: list[float], outcomes: list[float]) -> float:
+    """Mean Brier score for a batch of binary forecasts.
+
+    The Brier score is ``mean((p - y)**2)`` over forecast/outcome pairs. It is
+    a strictly proper scoring rule for binary events: it is minimised in
+    expectation only by reporting the true event probability.
+
+    Parameters
+    ----------
+    probabilities : list[float]
+        Predicted P(event), each in [0, 1].
+    outcomes : list[float]
+        Realised outcomes (0 or 1), parallel to ``probabilities``.
+
+    Returns
+    -------
+    float
+        Mean Brier score in [0, 1]; lower is better. ``nan`` for empty input.
+    """
+    if not probabilities:
+        return float("nan")
+    if len(probabilities) != len(outcomes):
+        raise ValueError(
+            f"probabilities ({len(probabilities)}) and outcomes ({len(outcomes)}) must have the same length"
+        )
+    probs = np.asarray(probabilities, dtype=float)
+    ys = np.asarray(outcomes, dtype=float)
+    return float(np.mean((probs - ys) ** 2))
+
+
+def compute_rps(probabilities: list[list[float]], outcome_indices: list[int]) -> float:
+    """Mean Ranked Probability Score for ordered-categorical forecasts.
+
+    RPS is a strictly proper scoring rule for ordinal outcomes. For one
+    forecast with ``K`` ordered category probabilities ``p`` and realised
+    category index ``j``, this implementation uses the standard unnormalized
+    Epstein/Murphy convention:
+    ``sum((cumsum(p)[k] - I[j <= k])**2 for k in range(K - 1))``.
+
+    For ``K=2`` it equals the binary Brier score ``(p - y)**2`` as implemented
+    by :func:`compute_brier_score`. This convention is one half of Brier's
+    original 1950 multi-category score, which is noted here because both
+    normalizations appear in the literature.
+
+    Parameters
+    ----------
+    probabilities : list[list[float]]
+        Ordered category probability rows, one row per forecast. All rows must
+        have the same length ``K >= 2``.
+    outcome_indices : list[int]
+        Realised category indices in ``[0, K)``, parallel to ``probabilities``.
+
+    Returns
+    -------
+    float
+        Mean RPS in ``[0, K-1]``; lower is better. ``nan`` for empty input.
+    """
+    if not probabilities:
+        return float("nan")
+    if len(probabilities) != len(outcome_indices):
+        raise ValueError(
+            f"probabilities ({len(probabilities)}) and outcome_indices ({len(outcome_indices)}) "
+            "must have the same length"
+        )
+
+    row_length = len(probabilities[0])
+    if row_length < 2:
+        raise ValueError(f"RPS probability rows must have length K >= 2; got {row_length}.")
+    for row in probabilities:
+        if len(row) != row_length:
+            raise ValueError("RPS probability rows must all have the same length.")
+
+    scores: list[float] = []
+    for row, outcome_index in zip(probabilities, outcome_indices, strict=True):
+        if outcome_index < 0 or outcome_index >= row_length:
+            raise ValueError(f"RPS outcome index {outcome_index} is out of range for K={row_length}.")
+        cumulative = np.cumsum(np.asarray(row, dtype=float))[:-1]
+        observed = np.asarray([1.0 if outcome_index <= k else 0.0 for k in range(row_length - 1)], dtype=float)
+        scores.append(float(np.sum((cumulative - observed) ** 2)))
+    return float(np.mean(scores))
+
+
+def _brier_for_prediction(prediction: Prediction, actual: float) -> float:
+    """Compute the Brier score for a single BinaryForecast against an observed outcome.
+
+    The Brier score is the squared error between the forecast probability and
+    the realised binary outcome: ``(p - y)**2``. It is a strictly proper
+    scoring rule for binary events — the binary counterpart of CRPS.
+
+    Parameters
+    ----------
+    prediction : Prediction
+        Must have a :class:`BinaryForecast` payload.
+    actual : float
+        The observed outcome at the forecast date. Must be 0.0 or 1.0
+        (binary tasks resolve against a 0/1 event series).
+
+    Returns
+    -------
+    float
+        Brier score in [0, 1] (lower is better).
+    """
+    if not isinstance(prediction.payload, BinaryForecast):
+        raise TypeError("Brier scoring requires a BinaryForecast payload.")
+    if actual not in (0.0, 1.0):
+        raise ValueError(
+            f"Brier scoring requires a binary (0/1) resolved outcome; got {actual}. "
+            f"Check that the task's target series is a 0/1 event series."
+        )
+    return compute_brier_score([prediction.payload.probability], [actual])
+
+
+def _rps_for_prediction(task: ForecastingTask, prediction: Prediction, actual: float) -> float:
+    """Compute RPS for a single CategoricalForecast against an observed outcome."""
+    if task.categories is None:
+        raise ValueError(f"Task '{task.task_id}' declares payload_type='categorical' but has no categories.")
+    if not isinstance(prediction.payload, CategoricalForecast):
+        raise TypeError("RPS scoring requires a CategoricalForecast payload.")
+
+    categories = task.categories
+    labels = [category.label for category in categories]
+    values = [category.value for category in categories]
+    expected_labels = set(labels)
+    predicted_labels = set(prediction.payload.probabilities)
+    if predicted_labels != expected_labels:
+        missing = sorted(expected_labels - predicted_labels)
+        extra = sorted(predicted_labels - expected_labels)
+        raise ValueError(
+            f"Categorical prediction from predictor '{prediction.predictor_id}' must contain exactly the task "
+            f"category labels. Missing labels: {missing}; extra labels: {extra}."
+        )
+
+    outcome_index: int | None = None
+    for index, value in enumerate(values):
+        if math.isclose(actual, value, abs_tol=1e-9):
+            outcome_index = index
+            break
+    if outcome_index is None:
+        raise ValueError(
+            f"Categorical resolved outcome {actual} does not match any task category value. Allowed values: {values}."
+        )
+
+    ordered_probabilities = [prediction.payload.probabilities[label] for label in labels]
+    return compute_rps([ordered_probabilities], [outcome_index])
+
+
+def _score_for_prediction(task: ForecastingTask, prediction: Prediction, actual: float) -> float:
+    """Score a prediction with the metric implied by the task's payload type.
+
+    Dispatches to CRPS for ``payload_type="continuous"``, Brier for
+    ``payload_type="binary"``, and RPS for ``payload_type="categorical"``,
+    after validating that the payload the predictor returned actually matches
+    the task declaration. A mismatch fails loudly: a probability scored with
+    CRPS (or quantiles scored with Brier/RPS) would be silently meaningless.
+
+    Parameters
+    ----------
+    task : ForecastingTask
+        Declares the expected payload modality.
+    prediction : Prediction
+        The prediction to score.
+    actual : float
+        The resolved ground-truth value.
+
+    Returns
+    -------
+    float
+        CRPS, Brier, or RPS score (lower is better).
+    """
+    if task.payload_type == "binary":
+        if not isinstance(prediction.payload, BinaryForecast):
+            raise TypeError(
+                f"Task '{task.task_id}' declares payload_type='binary' but predictor "
+                f"'{prediction.predictor_id}' returned a {type(prediction.payload).__name__} payload."
+            )
+        return _brier_for_prediction(prediction, actual)
+    if task.payload_type == "categorical":
+        if not isinstance(prediction.payload, CategoricalForecast):
+            raise TypeError(
+                f"Task '{task.task_id}' declares payload_type='categorical' but predictor "
+                f"'{prediction.predictor_id}' returned a {type(prediction.payload).__name__} payload."
+            )
+        return _rps_for_prediction(task, prediction, actual)
+    if not isinstance(prediction.payload, ContinuousForecast):
+        raise TypeError(
+            f"Task '{task.task_id}' declares payload_type='continuous' but predictor "
+            f"'{prediction.predictor_id}' returned a {type(prediction.payload).__name__} payload."
+        )
+    return _crps_for_prediction(prediction, actual)
 
 
 def _resolve(task: ForecastingTask, forecast_date: datetime, data_service: DataService) -> float | None:
@@ -263,7 +508,9 @@ def run_eval_loop(
     """Core evaluation loop shared by ``backtest()`` and ``evaluate()``.
 
     Iterates over ``origins``, calls the predictor at each origin, resolves
-    predictions against the observed series, and scores with CRPS.
+    predictions against the observed series, and scores with the metric
+    implied by the task's ``payload_type`` (CRPS for continuous, Brier for
+    binary, RPS for categorical).
 
     Parameters
     ----------
@@ -288,7 +535,7 @@ def run_eval_loop(
     -------
     tuple[list[Prediction], list[float], int]
         ``(predictions, scores, skipped)`` — parallel lists of predictions and
-        CRPS scores, plus the count of origins that were skipped.
+        scores, plus the count of origins that were skipped.
 
     Raises
     ------
@@ -343,7 +590,7 @@ def run_eval_loop(
             actual = _resolve(task, pred.forecast_date, data_service)
             if actual is None:
                 continue
-            score = _crps_for_prediction(pred, actual)
+            score = _score_for_prediction(task, pred, actual)
             predictions.append(pred)
             scores.append(score)
             origin_scored += 1
@@ -373,7 +620,8 @@ def backtest(
     Iterates over forecast origins derived from the spec, calls the predictor
     at each origin (with a :class:`~aieng.forecasting.data.context.ForecastContext`
     scoped to that date), resolves predictions against the observed series, and
-    scores with CRPS.
+    scores with the metric implied by the task's ``payload_type`` (CRPS for
+    continuous tasks, Brier for binary tasks, RPS for categorical tasks).
 
     Origins with insufficient history (fewer than ``spec.warmup`` observations
     in the cutoff-filtered series) are silently skipped. Origins whose
@@ -396,7 +644,7 @@ def backtest(
     Returns
     -------
     BacktestResult
-        A fully populated result record including all predictions and CRPS scores.
+        A fully populated result record including all predictions and scores.
 
     Raises
     ------
@@ -408,7 +656,7 @@ def backtest(
     Examples
     --------
     >>> results = backtest(predictor=my_predictor, spec=spec, data_service=svc)
-    >>> print(f"Mean CRPS: {results.mean_crps:.4f}")
+    >>> print(f"Mean {results.metric.upper()}: {results.mean_score:.4f}")
     """
     predictions, scores, skipped = run_eval_loop(
         predictor=predictor,
@@ -424,7 +672,8 @@ def backtest(
         predictor_id=predictor.predictor_id,
         predictions=predictions,
         scores=scores,
-        mean_crps=float(np.mean(scores)),
+        metric=METRIC_BY_PAYLOAD_TYPE[spec.task.payload_type],
+        mean_score=float(np.mean(scores)),
         ran_at=datetime.now(tz=timezone.utc).replace(tzinfo=None),
         skipped_origins=skipped,
     )
@@ -484,7 +733,7 @@ class MultiTargetBacktestSpec(BaseModel):
     ... )
     >>> per_task_results = multi_backtest(my_predictor, spec, svc)
     >>> for task_id, result in per_task_results.items():
-    ...     print(f"{task_id}: mean CRPS = {result.mean_crps:.4f}")
+    ...     print(f"{task_id}: mean CRPS = {result.mean_score:.4f}")
     """
 
     spec_id: str = Field(description="Stable identifier for this spec; keys the artefact store.")
@@ -566,6 +815,6 @@ def multi_backtest(
     --------
     >>> results = multi_backtest(predictor=my_predictor, spec=spec, data_service=svc)
     >>> for task_id, result in results.items():
-    ...     print(f"{task_id}: {result.mean_crps:.4f}")
+    ...     print(f"{task_id}: {result.mean_score:.4f}")
     """
     return {single_spec.task.task_id: backtest(predictor, single_spec, data_service) for single_spec in spec.specs()}

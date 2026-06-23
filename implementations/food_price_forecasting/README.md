@@ -1,23 +1,19 @@
 # Food Price CPI Forecasting
 
+> **Reference implementation 2 of 4.** Recommended order: [getting_started](../getting_started/) → [S&P 500](../sp500_forecasting/) → **food CPI** → [energy / WTI](../energy_oil_forecasting/) → [BoC rate decisions](../boc_rate_decisions/). Each stands on its own.
+
 Replicates the **Canada's Food Price Report (CFPR)** forecasting methodology —
 an annual estimate of the year-over-year percentage change in Canadian food
 prices across nine CPI sub-categories.
 
-This is the bootcamp's flagship **no-futures multivariate** reference
-experiment — the graduation step from
-`implementations/getting_started/`, and the case where
-context genuinely matters because no market aggregator summarises the
-answer.  It is a fully working, literature-aligned forecasting task that
-runs in minutes on a laptop and provides a launching pad for LLM and
-agent-based predictors.  If this is your first session with the repo,
-start at `implementations/getting_started/` and come here once the single-series loop is
-familiar.
-
-> See `planning-docs/bootcamp-workplan.md` for the current cohort 1
-> scope. CFPR remains the flagship no-futures multivariate reference
-> experiment; S&P 500 is the first formal financial-markets Track 1
-> template, and energy/oil is the May 21 and interactive analyst demo.
+This is the **no-futures multivariate** reference implementation — the case
+where context genuinely matters because no market aggregator summarises the
+answer. It is a fully working, literature-aligned forecasting task that runs
+in minutes on a laptop and provides a launching pad for LLM and agent-based
+predictors. It extends the single-series evaluation loop from
+[`getting_started/`](../getting_started/) to multiple correlated targets and a
+multi-step trajectory, but stands on its own — you don't need to work through
+that one first.
 
 ---
 
@@ -100,14 +96,20 @@ smoke-testing during development.
 ```
 implementations/food_price_forecasting/
 ├── specs/         # backtest YAML (full, mini_recent, mini_single)
+├── reports_manifest.yaml  # committed CFPR PDF URLs + publication dates (2021-2026)
+├── reports.py     # load_manifest(); CFPRReportEntry (manifest URLs + cutoff dates)
 ├── data.py        # build_food_cpi_service(); FOOD_CPI_SERIES; CATEGORY_LABELS
 ├── analysis.py    # predictions_to_dataframe, compute_avgyoy, summarize_crps,
 │                  # compute_mape, rationales_table
 ├── plots.py       # plot_trajectory_fan, plot_avgyoy_grid,
 │                  # plot_crps_disaggregated, plot_mape_distribution,
 │                  # plot_food_cpi_small_multiples
-├── 01_food_data_exploration.ipynb # 9-cell warm-up tour of the 9 series
-└── 02_food_cpi_experiment.ipynb   # 26-cell narrative over the helpers above
+├── predictors/    # QuantileGridLLMPredictor, SampledTrajectoryLLMPredictor (report-grounded LLMP)
+├── smoke_report.py # summarize_agent_predictions() — plain-text agent smoke-test summary
+├── starter_agent/  # fresh, hackable agent template (toggleable search/code-exec + skills)
+├── 01_food_data_exploration.ipynb # warm-up tour of the 9 series
+├── 02_food_cpi_experiment.ipynb   # narrative over the helpers above
+└── 99_starter_agent.ipynb         # ← start here to build your own agent
 ```
 
 Unit tests for the analysis helpers live under
@@ -118,9 +120,9 @@ Unit tests for the analysis helpers live under
 ## Covariates
 
 FRED macro covariates are **not** used in the canonical experiment. Framing
-multivariate exogenous inputs for agentic and LLM-based predictors remains
-extension work tracked in `planning-docs/bootcamp-workplan.md`. Experiments
-that need FRED covariates should register their own via `FREDAdapter`.
+multivariate exogenous inputs for agentic and LLM-based predictors is a natural
+extension. Experiments that need FRED covariates should register their own via
+`FREDAdapter`.
 
 ---
 
@@ -148,12 +150,59 @@ No FRED API key is required for the canonical experiment.
 
 ---
 
+## Report context (CFPR PDFs)
+
+The Canada's Food Price Report is published each December as a PDF. We extract
+the full text of each report so it can later be co-located with the numeric CPI
+history in LLM-P prompts.
+
+```bash
+# 1. download the report PDFs into data/reports/cfpr/ (gitignored)
+uv run python scripts/fetch_cfpr.py
+# 2. extract each PDF -> <year>_en.md (full text) + <year>_en.json (metadata)
+uv run python scripts/extract_reports.py
+```
+
+- **Manifest:** `reports_manifest.yaml` pins the Dalhousie CDN URLs, editions,
+  and `publication_date` for 2021-2026 (English). It is the committed source of
+  truth; the PDFs and extracted text are cached under `data/` and never
+  committed. `fetch_cfpr.py` fails loudly if a URL has moved (non-PDF response).
+- **Extraction:** a single source-agnostic
+  [`extract_document`](../../aieng-forecasting/aieng/forecasting/documents/extract.py)
+  function (lightweight, deterministic, CPU-only `pymupdf4llm`; the `documents`
+  optional dependency, installed by `uv sync`). It returns an
+  `ExtractedDocument` = full `text` + `publication_date` + `page_count` +
+  `n_chars` + `est_tokens`. No section/segment structure is reconstructed — the
+  planned LLM-P formats consume the whole document, and report families share no
+  common structure, so per-source heading heuristics would be brittle.
+- **`publication_date` is the cutoff key.** A cutoff-aware document store
+  filters reports with `publication_date <= as_of`, so a report is never
+  visible at a forecast origin before its real release. The BoC use case ships
+  a worked example of exactly this pattern —
+  [`PressReleaseStore`](../boc_rate_decisions/press_releases.py) — if you want
+  a reference before building the food-CPI equivalent. For the canonical
+  July-origin CFPR backtest only the month/year matters.
+- **Context-cost estimate:** `extract_reports.py` prints per-document and total
+  char/token counts (token estimate ≈ chars/4, model-agnostic) so you can gauge
+  the cost of putting one — or several — reports into a prompt.
+- **Report-grounded LLMP (now wired):** `build_food_cpi_service(reports_dir=...)`
+  builds a cutoff-aware `DocumentStore`, and `02_food_cpi_experiment.ipynb`
+  passes `report_sources=["cfpr"]` to the LLM-P predictors so the extracted
+  reports enter the prompt filtered by `publication_date <= as_of`. Measure the
+  lift over the quantitative-only baseline. **Still a good extension:**
+  generalize the same `--source`-keyed fetcher + `extract_document` to Bank of
+  Canada Monetary Policy Reports, mirroring BoC's `PressReleaseStore` pattern
+  for additional document families.
+
+---
+
 ## Notebooks
 
 | Notebook | Purpose |
 |----------|---------|
 | `01_food_data_exploration.ipynb` | Short warm-up tour: register the 9 series, small-multiples history, YoY overlay, coverage table. |
 | `02_food_cpi_experiment.ipynb`   | **Main experiment.** Selectable via `EXPERIMENT_CONFIG` (`"full"` / `"mini_recent"` / `"mini_single"`). Runs cached backtests for two baselines (`LastValuePredictor`, `DartsAutoARIMAPredictor`) and two LLMPs. Plots trajectory fans, avg/avg YoY grid, and CRPS/MAPE leaderboards. |
+| `99_starter_agent.ipynb`         | **Your starter agent.** This use case's first agent — a fresh, hackable food-CPI forecaster (toggleable news search + code execution, two lightweight tool-usage skills). Interactive (Track 2) cell, one scored trajectory (Track 1), and a "make it yours" guide pointing at the bigger projects (all 9 series, report-grounded context). |
 
 ---
 
@@ -171,4 +220,4 @@ No FRED API key is required for the canonical experiment.
 - **CRPS is the primary metric.**  MAPE on the median is a secondary,
   point-estimate sanity check.
 - **No ensemble model selection.** The leaderboard compares individual
-  predictors; assembling them into a committee is left as a bootcamp exercise.
+  predictors; assembling them into a committee is left as an exercise.

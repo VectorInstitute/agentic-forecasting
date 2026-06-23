@@ -25,10 +25,13 @@ from aieng.forecasting.methods.llm_processes._client import (
     make_json_schema_response_format,
     run_async,
     sample_n_async,
+    set_current_trace_name,
 )
 from aieng.forecasting.methods.llm_processes.base import (
     LLMPredictor,
     LLMPredictorConfig,
+    apply_report_context,
+    fetch_report_docs,
     get_history_and_meta,
     serialize_history,
 )
@@ -216,10 +219,10 @@ def _sample_quantile_grid(
     *,
     cfg: QuantileGridLLMPredictorConfig,
     system_prompt: str,
-    user_prompt: str,
+    user_prompt: str | list[dict[str, Any]],
 ) -> tuple[_QuantileTrajectory, float, int, int, int]:
     """Issue one structured completion and return the parsed quantile trajectory."""
-    base_messages = [
+    base_messages: list[dict[str, Any]] = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
@@ -236,6 +239,8 @@ def _sample_quantile_grid(
             max_tokens=cfg.max_tokens,
             timeout_s=cfg.timeout_s,
             reasoning_effort=cfg.reasoning_effort,
+            api_base=cfg.proxy_base_url,
+            api_key=cfg.proxy_api_key,
         ),
     )
     if not parsed:
@@ -264,6 +269,7 @@ class QuantileGridLLMPredictor(LLMPredictor):
         context: ForecastContext,
     ) -> list[Prediction]:
         """Produce forecasts from directly elicited quantiles."""
+        set_current_trace_name(self.predictor_id)
         series_df, series_meta = get_history_and_meta(task, context)
         if self.cfg.history_window is not None:
             series_df = series_df.tail(self.cfg.history_window).reset_index(drop=True)
@@ -274,6 +280,11 @@ class QuantileGridLLMPredictor(LLMPredictor):
         forecast_end = (pd.Timestamp(context.as_of) + offset * n_steps).normalize()
 
         history_str = serialize_history(series_df, precision=self.cfg.precision)
+
+        # Report context (before the task/history block): text preamble (CiK
+        # Format A) or native PDF parts, per cfg.report_ingestion.
+        report_docs = fetch_report_docs(config=self.cfg, context=context)
+
         system_prompt = _build_system_prompt(self.cfg.system_prompt_override)
         user_prompt = _build_user_prompt(
             task,
@@ -285,11 +296,12 @@ class QuantileGridLLMPredictor(LLMPredictor):
             series_description_override=self.cfg.series_description,
             suffix=self.cfg.user_prompt_suffix,
         )
+        user_content = apply_report_context(config=self.cfg, docs=report_docs, user_prompt=user_prompt)
 
         parsed, cost_usd, in_tokens, out_tokens, parse_failures = _sample_quantile_grid(
             cfg=self.cfg,
             system_prompt=system_prompt,
-            user_prompt=user_prompt,
+            user_prompt=user_content,
         )
         q_grid = _quantile_grid_from_response(parsed, n_steps=n_steps)
 
@@ -317,6 +329,10 @@ class QuantileGridLLMPredictor(LLMPredictor):
                         out_tokens=out_tokens,
                         parse_failures=parse_failures,
                         history_window=self.cfg.history_window,
+                        extra={
+                            "n_report_docs": len(report_docs),
+                            **({"report_sources": self.cfg.report_sources} if self.cfg.report_sources else {}),
+                        },
                     ),
                 ),
             )
