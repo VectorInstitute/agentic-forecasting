@@ -1,18 +1,17 @@
-# BoC Rate Cut Smoke Spec — Fast CI/Testing Backtest
+# BoC Rate Cut Spec — binary reference (cut vs no cut), 3 origins
 #
-# Three-origin subset of boc_rate_cut_backtest.yaml for running the full
-# notebook pipeline cheaply during development and end-to-end testing.
-# Use by setting SMOKE_TEST = True in the notebook setup cell.
+# The compact binary (Brier-scored) reference for the notebook 02 warm-up:
+# the K=2 corner of the categorical machinery, kept deliberately small so it
+# demonstrates the binary payload + scoring format in the fewest moving parts.
 #
 # The three origins span both outcome classes: a hold (2024-04-10), the
 # first cut of the 2024 easing cycle (2024-06-05), and a mid-cycle cut
 # (2024-09-04) — enough to exercise scoring and plotting paths without
-# burning tokens on 120 LLM calls.
+# burning tokens on a long run.
 
 description: >-
-  Three-origin smoke backtest for local and CI testing of the BoC rate-cut
-  pipeline. Same task and warmup as boc_rate_cut_backtest, restricted to
-  one hold and two cut meetings in 2024.
+  Binary (cut vs no cut) reference backtest for the notebook 02 warm-up,
+  restricted to one hold and two cut meetings in 2024.
 
 task:
   task_id: boc_rate_cut_next_meeting

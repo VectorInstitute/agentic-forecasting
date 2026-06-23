@@ -25,9 +25,7 @@ DIRECTION_BACKTEST_SPECS = [
     "boc_rate_direction_smoke.yaml",
     "boc_rate_direction_backtest.yaml",
     "boc_rate_direction_eve_smoke.yaml",
-    "boc_rate_direction_eve_backtest.yaml",
     "boc_rate_cut_smoke.yaml",
-    "boc_rate_cut_backtest.yaml",
 ]
 
 
@@ -70,13 +68,12 @@ class TestSpecScheduleConsistency:
         ("name", "first_meeting", "last_meeting", "n_meetings"),
         [
             ("boc_rate_direction_backtest.yaml", "2010-01-19", "2024-12-11", 120),
-            ("boc_rate_direction_eve_backtest.yaml", "2010-01-19", "2024-12-11", 120),
         ],
     )
     def test_canonical_windows_cover_every_meeting(
         self, name: str, first_meeting: str, last_meeting: str, n_meetings: int
     ) -> None:
-        """The full backtests target every scheduled meeting in their window, no gaps."""
+        """The full backtest targets every scheduled meeting in its window, no gaps."""
         spec = _load_backtest(name)
         lead = _lead(spec)
         covered = {pd.Timestamp(o) + lead for o in spec.origins()}

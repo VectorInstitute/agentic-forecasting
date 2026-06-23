@@ -9,8 +9,8 @@
 # already absorbed the market consensus, so a T-1 forecast mostly reads
 # market pricing off a curve. Four weeks out the decision is genuinely
 # uncertain — the interesting skill is anticipating cycle turns before the
-# market converges. The eve-of-decision variant is kept as a diagnostic in
-# boc_rate_direction_eve_backtest.yaml; comparing the two shows how skill
+# market converges. The eve-of-decision variant is kept as a small diagnostic in
+# boc_rate_direction_eve_smoke.yaml; comparing the two shows how skill
 # concentrates as information arrives.
 #
 # Origins are EXPLICIT because BoC meetings are an irregular calendar —

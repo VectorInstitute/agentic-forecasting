@@ -136,18 +136,25 @@ end-to-end in notebook 03.
 
 ## Reference specs
 
+Five specs, two jobs — a pedagogical pre-2025 backtest (cutoff-safe baselines
+are honest; LLM/agent rows are an upper bound) and the honest post-2025 eval —
+plus two small single-purpose illustrations:
+
 ```
 specs/
-├── boc_rate_direction_backtest.yaml      # CANONICAL: T−28, 120 origins, 2010–2024 (3 easing + 3 tightening cycles)
-├── boc_rate_direction_eval.yaml          # T−28, 12 origins, Jan 2025 – Jun 2026, max_runs: 5 (no hikes in window)
-├── boc_rate_direction_smoke.yaml         # T−28, 3 origins in 2024 (one hold, two cuts) — dev loop
-├── boc_rate_direction_eve_backtest.yaml  # T−1 eve-of-decision diagnostic, 120 origins
-├── boc_rate_direction_eve_smoke.yaml     # T−1 diagnostic, 3 origins — lead comparison dev loop
-├── boc_rate_cut_backtest.yaml            # binary reference: T−1, 120 origins, Brier-scored
-└── boc_rate_cut_smoke.yaml               # binary reference: T−1, 3 origins — dev loop
+├── boc_rate_direction_backtest.yaml      # CANONICAL backtest: T−28, 120 origins, 2010–2024 (3 easing + 3 tightening cycles)
+├── boc_rate_direction_smoke.yaml         # a 3-origin slice of the above (2024: one hold, two cuts) — fast dev loop
+├── boc_rate_direction_eval.yaml          # HONEST eval: T−28, 12 origins, Jan 2025 – Jun 2026, max_runs: 5 (no hikes in window)
+├── boc_rate_cut_smoke.yaml               # binary reference (cut vs no cut), Brier-scored — §3 warm-up
+└── boc_rate_direction_eve_smoke.yaml     # T−1 eve-of-decision diagnostic, 3 origins — §7 lead comparison
 ```
 
-Notebook 02 selects between smoke and full via `EXPERIMENT_CONFIG`.
+The post-2025 window is too scarce (12 meetings) to split into both a held-out
+eval and a separate LLM backtest, so there is no "recent backtest" tier: the
+deep pre-2025 history is the backtest surface (numerical methods + LLM
+upper-bound) and the 2025–26 window is reserved for the eval. Notebook 02
+sizes the main backtest (smoke slice vs full window) via `EXPERIMENT_CONFIG`;
+the warm-up and eve specs are always the small ones.
 
 ---
 
