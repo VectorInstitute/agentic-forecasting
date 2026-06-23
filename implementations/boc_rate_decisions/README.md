@@ -125,11 +125,12 @@ also emits `reasoning` and `key_signals` per meeting — the input for the
 reasoning-alignment evaluator in `rationale_eval.py`, demonstrated
 end-to-end in notebook 03.
 
-> **Leakage note:** frontier LLMs have seen news coverage of every
-> historical BoC decision, and for a discrete outcome a single recalled
-> label is the whole answer. Backtest RPS for the LLMP and agent is an
-> upper bound on live skill; the conventional rows are the honest backtest
-> comparison, and the protected 2025–2026 eval is the fairer LLM test.
+> **Leakage note (cutoff posture).** Gemini's parametric knowledge cutoff is
+> ~January 2025, and for a discrete outcome a single recalled label is the whole
+> answer — so the 2010–2024 backtest RPS for the LLMP and agent is an **upper
+> bound** on live skill (the conventional rows are the honest backtest there).
+> The **post-2025 protected eval** (12 resolved meetings, Jan 2025 – Jun 2026) is
+> the honest LLM/agent scoreboard; notebook 02 §10 now runs it by default.
 
 ---
 
