@@ -146,7 +146,7 @@ resource "coder_agent" "main" {
     if command -v onboard &> /dev/null; then
       eval "$(onboard \
         --bootcamp-name "$BOOTCAMP_NAME" \
-        --test-script "/home/${local.username}/${local.repo_name}/aieng-forecasting/tests/test_integration.py" \
+        --test-script "/home/${local.username}/${local.repo_name}/tests/test_integration.py" \
         --test-marker "integration_test")" || echo "Onboarding failed, continuing..."
     else
       echo "Onboarding CLI not found, skipping automated onboarding"
