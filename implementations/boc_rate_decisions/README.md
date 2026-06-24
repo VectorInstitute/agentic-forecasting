@@ -90,13 +90,20 @@ validation, but no forecast origin targets them.
 | Unemployment rate | FRED `LRUNTTTTCAM156S` | Labour-market pressure |
 | BoC rate-announcement press releases | Bank of Canada announcement pages (`scripts/fetch_boc_press_releases.py`) | One release per scheduled meeting, cached to `data/reports/boc_press_releases/`; served cutoff-aware by `PressReleaseStore` (only releases published on or before the origin are visible). Currently the published-rationale source for the reasoning-alignment evaluator; available as a context seam for the LLMP/agent predictors |
 
-Populate the cache once (`FRED_API_KEY` in `.env` needed for the
-unemployment covariate; the script degrades gracefully without it):
+Populate the cache once:
 
 ```bash
 uv run python scripts/fetch_boc.py                 # series: rate, 2yr yield, CPI, unemployment
 uv run python scripts/fetch_boc_press_releases.py  # press releases (for the rationale-alignment eval)
 ```
+
+`fetch_boc.py` uses the FRED API for the unemployment covariate (`FRED_API_KEY` in
+your repo-root `.env`); the script degrades gracefully without it, but the unemployment
+feature will be absent. FRED keys are free but must be requested individually —
+**we cannot provide one for you**. Request yours at
+https://fred.stlouisfed.org/docs/api/api_key.html (approval is usually quick, but
+allow some time). A description like "Requesting an API key to explore the
+effectiveness of various forecasting techniques on economic data." works well.
 
 **Cutoff discipline.** Monthly adapters carry *approximate* `released_at`
 stamps that are optimistic by roughly one month (the lag is measured from
