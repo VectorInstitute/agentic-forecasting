@@ -123,7 +123,7 @@ def plot_mean_crps_by_horizon(
     """Small-multiples: one CRPS bar panel per horizon, methods sorted within each.
 
     Expects a combined frame from
-    :func:`~sp500_forecasting.backtest_grid.run_horizon_grid` (with a ``horizon``
+    :func:`~sp500_forecasting.leaderboard.build_leaderboard` (with a ``horizon``
     column).  Makes the "predictability decays with horizon" story visible.
     """
     d = results_df.dropna(subset=["mean_crps"]).copy()
@@ -159,7 +159,7 @@ def plot_return_forecast_vs_actual_multi(
     """Realised return (once) vs each run's median forecast, rendered as percent.
 
     Each value frame is from
-    :func:`~sp500_forecasting.backtest_grid.build_return_compare_frame` for a
+    :func:`~sp500_forecasting.leaderboard.build_return_compare_frame` for a
     single horizon.  Insertion order controls legend order.
     """
     fig, ax = plt.subplots(figsize=(12, 5.0), layout="constrained", facecolor="0.98")
@@ -218,8 +218,8 @@ def plot_return_forecast_vs_actual_multi(
 
 
 _RESULTS_EMPTY_HINT = (
-    "RESULTS_DF is empty — set at least one run_models entry to true in the "
-    "active YAML (e.g. ``specs/sp500_smoke.yaml``)."
+    "RESULTS_DF is empty — add at least one predictor to ``all_predictors`` in the "
+    "notebook's predictors cell, then re-run the backtest loop."
 )
 
 

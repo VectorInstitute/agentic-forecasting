@@ -62,10 +62,11 @@ The notebook's opening note develops this.
 | ML regression | `DartsLinearRegressionPredictor`, `DartsLightGBMPredictor` | ✅ optional past covariates |
 | LLM-Process | `SampledTrajectoryLLMPredictor` | ✅ optional covariate prompt blocks |
 
-The `llmp_target_only` vs `llmp_with_covariates` rows are the centerpiece: the
-covariate variant serializes labeled covariate-history blocks into the prompt
-(`SampledTrajectoryLLMPredictorConfig.covariate_series_ids`), so their CRPS gap
-measures whether an LLM can use the same exogenous observations the ML methods do.
+The **LLMP (target)** vs **LLMP + cov** rows are the centerpiece: the covariate
+variant serializes labeled covariate-history blocks into the prompt (the
+`covariate_series_ids=` passed to `build_sp500_llmp_sampled_trajectory`), so their
+CRPS gap measures whether an LLM can use the same exogenous observations the ML
+methods do. Both are built in the notebook's predictors cell.
 
 ---
 
@@ -124,26 +125,27 @@ Missing optional feeds are **skipped with warnings** by default
 
 ---
 
-## Specs — windows and configuration
+## Specs — windows and tasks (experiment design only)
 
-Four co-located YAML configs. The window, covariate panel, method roster,
-horizons, and sampling are all just configuration; each spec's `horizons` list
-(default `[1, 5, 21]`) becomes one backtest/eval per `sp500_logret_{h}b` target.
-The first three use a `backtest:` block; the eval spec uses an `eval:` block that
-adds `spec_id` and `max_runs`.
+Four co-located YAML configs. Each spec carries **only the experiment design** —
+the window (`start`/`end`/`stride`/`warmup`) and one single-horizon task per
+`sp500_logret_{N}b` target (`horizons: [N]`, `frequency: B`). The first three are
+`MultiTargetBacktestSpec`; the eval spec is a `MultiTargetEvalSpec` that adds
+`max_runs`. **Which predictors run, and all their hyperparameters (including the
+covariate panel), live in the notebook — not the spec.**
 
 ```text
 specs/
-├── sp500_smoke.yaml         # fast laptop run, LLMP on — short late-2025 window (post-cutoff)
-├── sp500_backtest_2025.yaml # main comparison: weekly origins across 2025, full panel, AutoARIMA
-├── sp500_eval_2026.yaml     # protected held-out 2026 eval (evaluate(), spec_id + max_runs); finalists only
-└── sp500_stress_2020.yaml   # COVID-crash stress, NUMERICAL METHODS ONLY (LLMP off — pre-cutoff is leaked)
+├── sp500_smoke.yaml         # fast laptop run — short late-2025 window (post-cutoff)
+├── sp500_backtest_2025.yaml # main comparison: weekly origins across 2025
+├── sp500_eval_2026.yaml     # protected held-out 2026 eval (MultiTargetEvalSpec, max_runs)
+└── sp500_stress_2020.yaml   # COVID-crash stress, numerical only (notebook drops LLMP — pre-cutoff is leaked)
 ```
 
 The notebook runs the 2025 backtest (Section 5) and the protected 2026 eval
-(Section 7); swap `BACKTEST_CONFIG_PATH` to `sp500_stress_2020.yaml` to study the
-volatile regime with the cutoff-safe methods. Copy a spec and edit it to pose a
-new study.
+(Section 7); set `EXPERIMENT_CONFIG = "stress_2020"` to study the volatile regime
+with the cutoff-safe methods (the predictors cell drops the LLMP rows
+automatically). Copy a spec and edit the window/tasks to pose a new study.
 
 ---
 
@@ -152,9 +154,10 @@ new study.
 ```text
 implementations/sp500_forecasting/
 ├── data.py                    # build_sp500_multivariate_service(); cumulative-return targets; covariate ids
+├── predictors/                # build_sp500_llmp_sampled_trajectory() — the S&P 500 LLMP recipe
+├── leaderboard.py             # build_leaderboard(): cached results → RESULTS_DF; forecast-vs-actual frame
 ├── analysis.py                # style_results_dataframe(); direction metrics
 ├── plots.py                   # target history; per-horizon CRPS; forecast vs realised return
-├── backtest_grid.py           # run_horizon_grid() + run_horizon_eval(); per-model rows; live progress
 ├── starter_agent/             # fresh, hackable agent template (toggleable search/code-exec + skills)
 ├── specs/                     # sp500_smoke / sp500_backtest_2025 / sp500_eval_2026 / sp500_stress_2020
 ├── 01_sp500_multivariate_backtest.ipynb
@@ -167,21 +170,25 @@ Unit tests for data helpers live under
 
 ---
 
-## Adding a Darts method
+## Adding a method
 
-The conventional roster is meant to grow. To add a fast probabilistic Darts model:
+The roster is meant to grow, and it's all just code now — no registry or dispatch
+to edit. In the notebook's predictors cell:
 
-1. Wrap it behind the `Predictor` interface — mirror
-   `aieng-forecasting/aieng/forecasting/methods/numerical/darts_classical.py`
-   (univariate, probabilistic via `num_samples`, per-horizon quantiles). Export it
-   from `methods/numerical/__init__.py` and `methods/__init__.py`.
-2. Add a `run_key` branch in `backtest_grid.py:_predictor_for` (and, if it reads
-   the covariate panel, list it in `_COVARIATE_RUN_KEYS`).
-3. Toggle it under `experiment.run_models` in a spec.
+1. Instantiate any `Predictor` and append it to `all_predictors`. For a new Darts
+   model, mirror `aieng-forecasting/aieng/forecasting/methods/numerical/darts_classical.py`
+   (univariate, probabilistic via `num_samples`, per-horizon quantiles) and export
+   it from `methods/numerical/__init__.py` and `methods/__init__.py` first.
+2. Add a `PREDICTOR_LABELS` entry (the leaderboard "model" column). If it reads the
+   covariate panel, also add a `PREDICTOR_COVARIATES` entry so the leaderboard's
+   covariate columns are correct.
 
-Keep the model **fast** (sub-second per origin) and **probabilistic** (CRPS needs
-a distribution — deterministic models like Theta need a conformal/residual wrapper
-first).
+For a tuned LLM-Process variant, add a builder to `predictors/` (mirror
+`predictors/llmp_sampled_trajectory.py`) so the prompt framing is reusable.
+
+Keep numerical models **fast** (sub-second per origin) and **probabilistic** (CRPS
+needs a distribution — deterministic models like Theta need a conformal/residual
+wrapper first).
 
 ---
 
@@ -209,15 +216,16 @@ The `llmp_*` rows call the Vector proxy, so a populated repo-root `.env` (with
 `PROXY_BASE_URL` / `PROXY_API_KEY`) is required when those rows are enabled.
 
 **How to run:** open `01_sp500_multivariate_backtest.ipynb` and **Run All**. The
-`BACKTEST_CONFIG_PATH` cell selects the 2025 comparison spec (`./specs/sp500_smoke.yaml`
-by default; `sp500_backtest_2025.yaml` for the full run, `sp500_stress_2020.yaml`
-for the numerical-only COVID study); the protected 2026 eval (`sp500_eval_2026.yaml`)
-runs in Section 7.
+`EXPERIMENT_CONFIG` cell selects the 2025 comparison spec (`"smoke"` by default;
+`"backtest_2025"` for the full run, `"stress_2020"` for the numerical-only COVID
+study); the protected 2026 eval (`sp500_eval_2026.yaml`) runs in Section 7. The
+predictor roster is configured in the predictors cell (Section 4).
 
 The default smoke run keeps the LLM-Process rows on in the 2025 backtest (the
-headline comparison) but **off in the 2026 eval**, so a first Run All isn't a
-long/expensive surprise. Enable the eval's `llmp_*` rows in `sp500_eval_2026.yaml`
-when you're ready to spend the proxy tokens on the protected scoreboard.
+headline comparison); the 2026 eval's `eval_finalists` list defaults to the
+cutoff-safe baselines plus `LightGBM + cov`, so a first Run All isn't a
+long/expensive surprise. Add `llmp` / `llmp_cov` to `eval_finalists` when you're
+ready to spend the proxy tokens on the protected scoreboard.
 
 ---
 
