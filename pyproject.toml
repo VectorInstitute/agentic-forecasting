@@ -120,6 +120,8 @@ ignore = [
 # Playground: throwaway exploration/diagnostics. Same relaxations as scripts,
 # plus PLC0415 (optional deps are imported inside try/except by design).
 "playground/**" = ["D1", "E402", "W505", "ERA001", "PLC0415"]
+# Repo-root integration tests: optional extras imported inside try/except.
+"tests/**" = ["D1", "E402", "W505", "ERA001", "PLC0415"]
 
 [tool.ruff.lint.pep8-naming]
 ignore-names = ["X*", "setUp"]
