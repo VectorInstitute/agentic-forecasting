@@ -20,7 +20,7 @@ Usage::
 
 Environment
 -----------
-Requires ``PROXY_BASE_URL`` and ``PROXY_API_KEY`` environment variables (or a
+Requires ``OPENAI_BASE_URL`` and ``OPENAI_API_KEY`` environment variables (or a
 ``.env`` file at the repo root).  These are used by the Vector LLM proxy to
 route the Google Search calls.
 
@@ -49,7 +49,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "aieng-forecasting"))
 
-# Load .env if present (for PROXY_BASE_URL / PROXY_API_KEY)
+# Load .env if present (for OPENAI_BASE_URL / OPENAI_API_KEY)
 try:
     from dotenv import load_dotenv
 
@@ -152,12 +152,12 @@ async def main(
     *,
     dry_run: bool = False,
 ) -> None:
-    proxy_base_url = os.getenv("PROXY_BASE_URL", "")
-    proxy_api_key = os.getenv("PROXY_API_KEY")
+    openai_base_url = os.getenv("OPENAI_BASE_URL", "")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
 
-    if not proxy_base_url and not dry_run:
+    if not openai_base_url and not dry_run:
         print(
-            "ERROR: PROXY_BASE_URL is not set. Export it or add it to your .env file.",
+            "ERROR: OPENAI_BASE_URL is not set. Export it or add it to your .env file.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -170,8 +170,8 @@ async def main(
     )
     search_web = _build_search_tool(
         config,
-        proxy_base_url=proxy_base_url,
-        proxy_api_key=proxy_api_key,
+        openai_base_url=openai_base_url,
+        openai_api_key=openai_api_key,
     )
 
     _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

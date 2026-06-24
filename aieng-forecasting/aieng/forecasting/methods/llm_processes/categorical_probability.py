@@ -303,8 +303,8 @@ def _sample_distribution(
             max_tokens=cfg.max_tokens,
             timeout_s=cfg.timeout_s,
             reasoning_effort=cfg.reasoning_effort,
-            api_base=cfg.proxy_base_url,
-            api_key=cfg.proxy_api_key,
+            api_base=cfg.openai_base_url,
+            api_key=cfg.openai_api_key,
         ),
     )
     if not parsed:

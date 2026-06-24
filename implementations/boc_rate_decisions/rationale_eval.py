@@ -187,8 +187,8 @@ def judge_rationale_alignment(
             max_tokens=max_tokens,
             timeout_s=timeout_s,
             reasoning_effort=reasoning_effort,
-            api_base=os.getenv("PROXY_BASE_URL"),
-            api_key=os.getenv("PROXY_API_KEY"),
+            api_base=os.getenv("OPENAI_BASE_URL"),
+            api_key=os.getenv("OPENAI_API_KEY"),
         ),
     )
     if not parsed:

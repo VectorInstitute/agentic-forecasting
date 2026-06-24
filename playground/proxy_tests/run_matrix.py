@@ -72,8 +72,8 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(REPO_ROOT / ".env")
 
-PROXY_BASE_URL = os.environ.get("PROXY_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
-PROXY_API_KEY = os.environ.get("PROXY_API_KEY", "")
+OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 
 # ===========================================================================
@@ -189,8 +189,8 @@ async def cap_json_schema(model: str) -> CapabilityResult:
     }
     resp = await litellm.acompletion(
         model=_proxy_model(model),
-        api_base=PROXY_BASE_URL,
-        api_key=PROXY_API_KEY,
+        api_base=OPENAI_BASE_URL,
+        api_key=OPENAI_API_KEY,
         messages=[
             {
                 "role": "user",
@@ -218,8 +218,8 @@ async def cap_adk_text(model: str) -> CapabilityResult:
         factory.AgentConfig(
             name="matrix_text",
             model=model,
-            proxy_base_url=PROXY_BASE_URL,
-            proxy_api_key=PROXY_API_KEY,
+            openai_base_url=OPENAI_BASE_URL,
+            openai_api_key=OPENAI_API_KEY,
             instruction="You are a concise assistant.",
         )
     )
@@ -249,7 +249,7 @@ async def cap_function_tool(model: str) -> CapabilityResult:
 
     agent = llm_agent_cls(
         name="matrix_tool",
-        model=lite_llm_cls(model=_proxy_model(model), api_base=PROXY_BASE_URL, api_key=PROXY_API_KEY),
+        model=lite_llm_cls(model=_proxy_model(model), api_base=OPENAI_BASE_URL, api_key=OPENAI_API_KEY),
         instruction="Use the tool to answer commodity price questions.",
         tools=[get_commodity_price],
     )
@@ -293,8 +293,8 @@ async def cap_output_schema(model: str) -> CapabilityResult:
         factory.AgentConfig(
             name="matrix_schema",
             model=model,
-            proxy_base_url=PROXY_BASE_URL,
-            proxy_api_key=PROXY_API_KEY,
+            openai_base_url=OPENAI_BASE_URL,
+            openai_api_key=OPENAI_API_KEY,
             instruction=instruction,
             context_retrieval=factory.ContextRetrievalConfig(
                 enabled=True,
@@ -337,8 +337,8 @@ async def cap_smr_probe(model: str) -> CapabilityResult:
     try:
         resp = await litellm.acompletion(
             model=_proxy_model(model),
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
             messages=[{"role": "user", "content": "Reply with a tiny forecast object."}],
             response_format={"type": "json_schema", "json_schema": {"name": "forecast", "schema": schema}},
             tools=[tool],
@@ -372,7 +372,7 @@ async def cap_multiturn_tools(model: str) -> CapabilityResult:
 
     agent = llm_agent_cls(
         name="matrix_multiturn",
-        model=lite_llm_cls(model=_proxy_model(model), api_base=PROXY_BASE_URL, api_key=PROXY_API_KEY),
+        model=lite_llm_cls(model=_proxy_model(model), api_base=OPENAI_BASE_URL, api_key=OPENAI_API_KEY),
         instruction="Look up each symbol with the tool, one call per symbol, then summarise.",
         tools=[lookup],
     )
@@ -399,8 +399,8 @@ async def cap_reasoning_effort(model: str) -> CapabilityResult:
     litellm = _litellm()
     resp = await litellm.acompletion(
         model=_proxy_model(model),
-        api_base=PROXY_BASE_URL,
-        api_key=PROXY_API_KEY,
+        api_base=OPENAI_BASE_URL,
+        api_key=OPENAI_API_KEY,
         messages=[{"role": "user", "content": "Think step by step: what is 17*23? Give only the number."}],
         timeout=REQUEST_TIMEOUT,
         extra_body={"reasoning_effort": "high"},
@@ -426,8 +426,8 @@ async def cap_search_grounding(model: str) -> CapabilityResult:
     litellm = _litellm()
     resp = await litellm.acompletion(
         model=_proxy_model(SEARCH_MODEL),
-        api_base=PROXY_BASE_URL,
-        api_key=PROXY_API_KEY,
+        api_base=OPENAI_BASE_URL,
+        api_key=OPENAI_API_KEY,
         messages=[{"role": "user", "content": "Current WTI crude oil price? Search for it."}],
         tools=[{"googleSearch": {}}],
         timeout=REQUEST_TIMEOUT,
@@ -456,7 +456,7 @@ async def cap_cutoff_probe(model: str) -> CapabilityResult:
         instruction="You are a web search assistant. Return a one-line summary with sources.",
         enforce_cutoff=True,
     )
-    search_web = factory._build_search_tool(cfg, proxy_base_url=PROXY_BASE_URL, proxy_api_key=PROXY_API_KEY)
+    search_web = factory._build_search_tool(cfg, openai_base_url=OPENAI_BASE_URL, openai_api_key=OPENAI_API_KEY)
     out = await search_web(query="latest OPEC+ production decision", cutoff_date="2020-01-01")
     n_sources = out.count("http")
     return _ok(f"ran with cutoff=2020-01-01; sources_returned~={n_sources} (audit text manually for leakage)")
@@ -574,7 +574,7 @@ def render_markdown(state: RunState, models: list[str], tier: str) -> str:
     lines.append(f"# Proxy capability matrix — tier `{tier}`")
     lines.append("")
     lines.append(f"- Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    lines.append(f"- Proxy: `{PROXY_BASE_URL}`")
+    lines.append(f"- Proxy: `{OPENAI_BASE_URL}`")
     lines.append("")
 
     # Grid
@@ -633,8 +633,8 @@ def _print_config() -> None:
 
 
 async def _amain(args: argparse.Namespace) -> int:
-    if not PROXY_API_KEY:
-        print("ERROR: PROXY_API_KEY not set. Check your .env file.")
+    if not OPENAI_API_KEY:
+        print("ERROR: OPENAI_API_KEY not set. Check your .env file.")
         return 1
 
     models = [m.strip() for m in args.models.split(",") if m.strip()] or MODELS
@@ -644,7 +644,7 @@ async def _amain(args: argparse.Namespace) -> int:
 
     bootstrap_litellm()
 
-    print(f"Proxy   : {PROXY_BASE_URL}")
+    print(f"Proxy   : {OPENAI_BASE_URL}")
     print(f"Tier    : {args.tier}")
     print(f"Models  : {', '.join(models)}")
 

@@ -36,8 +36,8 @@ load_dotenv(REPO_ROOT / ".env")
 from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
 
 
-PROXY_BASE_URL = os.environ.get("PROXY_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
-PROXY_API_KEY = os.environ.get("PROXY_API_KEY", "")
+OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 DEFAULT_PDF = REPO_ROOT / "data" / "reports" / "cfpr" / "2021_en.pdf"
 
 MINIMAL_PROMPT = (
@@ -89,8 +89,8 @@ async def _call(label: str, model: str, content_parts: list, *, extra_body=None)
 
         kwargs = {
             "model": f"openai/{model}",
-            "api_base": PROXY_BASE_URL,
-            "api_key": PROXY_API_KEY,
+            "api_base": OPENAI_BASE_URL,
+            "api_key": OPENAI_API_KEY,
             "messages": [{"role": "user", "content": content_parts}],
             "max_tokens": 128,
             "timeout": 90,
@@ -106,15 +106,15 @@ async def _call(label: str, model: str, content_parts: list, *, extra_body=None)
 
 
 async def main() -> None:
-    if not PROXY_API_KEY:
-        print("ERROR: PROXY_API_KEY not set.")
+    if not OPENAI_API_KEY:
+        print("ERROR: OPENAI_API_KEY not set.")
         sys.exit(1)
     pdf_path = Path(os.environ.get("TEST_PDF_PATH", DEFAULT_PDF))
     if not pdf_path.exists():
         print(f"ERROR: PDF not found at {pdf_path}")
         sys.exit(1)
 
-    print(f"Proxy : {PROXY_BASE_URL}")
+    print(f"Proxy : {OPENAI_BASE_URL}")
     print(f"PDF   : {pdf_path} ({pdf_path.stat().st_size:,} bytes)")
     b64 = _pdf_b64(pdf_path)
     data_uri = f"data:application/pdf;base64,{b64}"

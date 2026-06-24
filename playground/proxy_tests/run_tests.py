@@ -44,8 +44,8 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(REPO_ROOT / ".env")
 
-PROXY_BASE_URL = "https://proxy.vectorinstitute.ai/v1"
-PROXY_API_KEY = os.environ.get("PROXY_API_KEY", "")
+OPENAI_BASE_URL = "https://proxy.vectorinstitute.ai/v1"
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 # gpt-4o-mini: reliably handles JSON schema and function calling on the proxy.
 PROXY_MODEL_LITELLM = "openai/gpt-4o-mini"  # LiteLLM provider/model string
@@ -113,8 +113,8 @@ async def test_t1_llmp_basic() -> None:
         litellm = _litellm()
         resp = await litellm.acompletion(
             model=PROXY_MODEL_LITELLM,
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
             messages=[
                 {
                     "role": "user",
@@ -152,8 +152,8 @@ async def test_t2_adk_basic() -> None:
 
         model = lite_llm_cls(
             model=PROXY_MODEL_LITELLM,
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
         )
         agent = llm_agent_cls(
             name="proxy_test_agent",
@@ -197,8 +197,8 @@ async def test_t3_adk_function_tool() -> None:
 
         model = lite_llm_cls(
             model=PROXY_MODEL_LITELLM,
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
         )
         agent = llm_agent_cls(
             name="proxy_tool_agent",
@@ -237,8 +237,8 @@ async def test_t4_adk_output_schema() -> None:
 
         model = lite_llm_cls(
             model=PROXY_MODEL_LITELLM,
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
         )
         agent = llm_agent_cls(
             name="proxy_schema_agent",
@@ -271,8 +271,8 @@ async def test_t5_google_search_raw() -> None:
         litellm = _litellm()
         resp = await litellm.acompletion(
             model=model,
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
             messages=[
                 {
                     "role": "user",
@@ -332,8 +332,8 @@ async def test_t6_google_search_in_adk() -> None:
             """
             resp = await litellm.acompletion(
                 model="openai/gemini-2.5-flash",
-                api_base=PROXY_BASE_URL,
-                api_key=PROXY_API_KEY,
+                api_base=OPENAI_BASE_URL,
+                api_key=OPENAI_API_KEY,
                 messages=[{"role": "user", "content": query}],
                 tools=[{"googleSearch": {}}],
                 max_tokens=512,
@@ -356,8 +356,8 @@ async def test_t6_google_search_in_adk() -> None:
 
         model = lite_llm_cls(
             model=PROXY_MODEL_LITELLM,
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
         )
         agent = llm_agent_cls(
             name="proxy_search_agent",
@@ -385,13 +385,13 @@ async def test_t6_google_search_in_adk() -> None:
 
 async def main() -> None:
     """Run all proxy integration checks in sequence."""
-    if not PROXY_API_KEY:
-        print("ERROR: PROXY_API_KEY not set. Check your .env file.")
+    if not OPENAI_API_KEY:
+        print("ERROR: OPENAI_API_KEY not set. Check your .env file.")
         sys.exit(1)
 
-    print(f"Proxy URL : {PROXY_BASE_URL}")
+    print(f"Proxy URL : {OPENAI_BASE_URL}")
     print(f"Model     : {PROXY_MODEL_LITELLM}")
-    print(f"API key   : {PROXY_API_KEY[:12]}...")
+    print(f"API key   : {OPENAI_API_KEY[:12]}...")
 
     await test_t1_llmp_basic()
     await test_t2_adk_basic()

@@ -210,8 +210,8 @@ def _build_automatic_function_calling_config(
 def _build_search_tool(
     config: ContextRetrievalConfig,
     *,
-    proxy_base_url: str,
-    proxy_api_key: str | None,
+    openai_base_url: str,
+    openai_api_key: str | None,
 ) -> Callable[..., Any]:
     """Return an async ``search_web`` FunctionTool backed by the proxy's googleSearch.
 
@@ -243,8 +243,8 @@ def _build_search_tool(
             search_model = f"openai/{search_model}"
         resp = await litellm.acompletion(
             model=search_model,
-            api_base=proxy_base_url,
-            api_key=proxy_api_key,
+            api_base=openai_base_url,
+            api_key=openai_api_key,
             messages=[
                 {"role": "system", "content": config.instruction},
                 {"role": "user", "content": user_content},
@@ -277,16 +277,16 @@ class AgentConfig(BaseModel):
     model : str | BaseLlm, default=LITE_MODEL (``"gemini-3.1-flash-lite-preview"``)
         Model name (bare, no provider prefix) or a custom
         :class:`~google.adk.models.base_llm.BaseLlm` instance.  When
-        ``proxy_base_url`` is set and ``model`` is a plain string,
+        ``openai_base_url`` is set and ``model`` is a plain string,
         :func:`build_adk_agent` wraps it in a
         :class:`~google.adk.models.lite_llm.LiteLlm` instance pointing to
         the proxy.  Pass a ``BaseLlm`` directly to skip automatic wrapping.
-    proxy_base_url : str | None, default=PROXY_BASE_URL env var
+    openai_base_url : str | None, default=OPENAI_BASE_URL env var
         Base URL for the OpenAI-compatible LLM proxy.  Defaults to the
-        ``PROXY_BASE_URL`` environment variable.  When set, the agent (and
+        ``OPENAI_BASE_URL`` environment variable.  When set, the agent (and
         the ``search_web`` tool) route all calls through the proxy.
-    proxy_api_key : str | None, default=PROXY_API_KEY env var
-        API key for the proxy.  Defaults to the ``PROXY_API_KEY``
+    openai_api_key : str | None, default=OPENAI_API_KEY env var
+        API key for the proxy.  Defaults to the ``OPENAI_API_KEY``
         environment variable.
     description : str, default=""
         Description of the agent. Useful when the agent is used as a sub-agent.
@@ -342,15 +342,15 @@ class AgentConfig(BaseModel):
 
     name: str = "adk_forecasting_agent"
     model: str | BaseLlm = LITE_MODEL
-    proxy_base_url: str | None = Field(
-        default_factory=lambda: os.getenv("PROXY_BASE_URL"),
+    openai_base_url: str | None = Field(
+        default_factory=lambda: os.getenv("OPENAI_BASE_URL"),
         description=(
-            "Base URL for the OpenAI-compatible LLM proxy. Defaults to the PROXY_BASE_URL environment variable."
+            "Base URL for the OpenAI-compatible LLM proxy. Defaults to the OPENAI_BASE_URL environment variable."
         ),
     )
-    proxy_api_key: str | None = Field(
-        default_factory=lambda: os.getenv("PROXY_API_KEY"),
-        description="API key for the proxy. Defaults to the PROXY_API_KEY environment variable.",
+    openai_api_key: str | None = Field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY"),
+        description="API key for the proxy. Defaults to the OPENAI_API_KEY environment variable.",
     )
     description: str = ""
     instruction: str = ""
@@ -404,7 +404,7 @@ def build_adk_agent(
     Code execution (E2B) and the web-search context-retrieval tool are wired
     only when the corresponding capability blocks in ``config`` are enabled.
 
-    When ``config.proxy_base_url`` is set and ``config.model`` is a plain
+    When ``config.openai_base_url`` is set and ``config.model`` is a plain
     string, the model is automatically wrapped in a
     :class:`~google.adk.models.lite_llm.LiteLlm` instance that routes all
     calls through the proxy.  Pass a ``BaseLlm`` instance directly to bypass
@@ -452,7 +452,7 @@ def build_adk_agent(
     """
     # Resolve model: wrap bare string in LiteLlm when proxy is configured.
     model: str | BaseLlm = config.model
-    if isinstance(model, str) and config.proxy_base_url:
+    if isinstance(model, str) and config.openai_base_url:
         from google.adk.models.lite_llm import LiteLlm  # noqa: PLC0415
 
         # Prefix with "openai/" so LiteLLM uses the OpenAI-compatible path.
@@ -461,8 +461,8 @@ def build_adk_agent(
         litellm_model = model if model.startswith("openai/") else f"openai/{model}"
         model = LiteLlm(
             model=litellm_model,
-            api_base=config.proxy_base_url,
-            api_key=config.proxy_api_key,
+            api_base=config.openai_base_url,
+            api_key=config.openai_api_key,
         )
 
     # Configure tools
@@ -478,12 +478,12 @@ def build_adk_agent(
         )
 
     if config.context_retrieval.enabled:
-        proxy_base_url = config.proxy_base_url or os.getenv("PROXY_BASE_URL") or ""
+        openai_base_url = config.openai_base_url or os.getenv("OPENAI_BASE_URL") or ""
         tools.append(
             _build_search_tool(
                 config.context_retrieval,
-                proxy_base_url=proxy_base_url,
-                proxy_api_key=config.proxy_api_key,
+                openai_base_url=openai_base_url,
+                openai_api_key=config.openai_api_key,
             )
         )
 

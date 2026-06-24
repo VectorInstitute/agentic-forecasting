@@ -24,8 +24,8 @@ from dotenv import load_dotenv
 REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
 
-BASE = os.environ.get("PROXY_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
-KEY = os.environ.get("PROXY_API_KEY", "")
+BASE = os.environ.get("OPENAI_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
+KEY = os.environ.get("OPENAI_API_KEY", "")
 PDF = REPO_ROOT / "data" / "reports" / "cfpr" / "2021_en.pdf"
 PROMPT = "What edition number is printed on the title page of this document? Answer with just the number."
 MODEL = os.environ.get("TEST_MODEL", "gemini-3.5-flash")
@@ -75,7 +75,7 @@ def _shape(body: dict) -> object:
 
 def main() -> None:
     if not KEY:
-        print("PROXY_API_KEY not set")
+        print("OPENAI_API_KEY not set")
         sys.exit(1)
     b64 = base64.b64encode(PDF.read_bytes()).decode()
     data_uri = f"data:application/pdf;base64,{b64}"

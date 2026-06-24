@@ -58,24 +58,24 @@ class TestAgentConfig:
             AgentConfig(instruction="Forecast.", skills_dirs=[missing])
 
     def test_proxy_fields_default_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """proxy_base_url and proxy_api_key pick up environment variables."""
-        monkeypatch.setenv("PROXY_BASE_URL", "https://proxy.example.com/v1")
-        monkeypatch.setenv("PROXY_API_KEY", "test-key-123")
+        """openai_base_url and openai_api_key pick up environment variables."""
+        monkeypatch.setenv("OPENAI_BASE_URL", "https://proxy.example.com/v1")
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key-123")
 
         config = AgentConfig(instruction="Forecast.")
 
-        assert config.proxy_base_url == "https://proxy.example.com/v1"
-        assert config.proxy_api_key == "test-key-123"
+        assert config.openai_base_url == "https://proxy.example.com/v1"
+        assert config.openai_api_key == "test-key-123"
 
     def test_proxy_fields_none_when_env_absent(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Proxy fields are None when the env vars are unset."""
-        monkeypatch.delenv("PROXY_BASE_URL", raising=False)
-        monkeypatch.delenv("PROXY_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
         config = AgentConfig(instruction="Forecast.")
 
-        assert config.proxy_base_url is None
-        assert config.proxy_api_key is None
+        assert config.openai_base_url is None
+        assert config.openai_api_key is None
 
 
 class TestBuildAdkAgent:
@@ -94,11 +94,11 @@ class TestBuildAdkAgent:
         assert agent.output_schema is ContinuousAgentForecastOutput
 
     def test_string_model_wrapped_in_litellm_when_proxy_set(self) -> None:
-        """A plain model string is wrapped in LiteLlm when proxy_base_url is set."""
+        """A plain model string is wrapped in LiteLlm when openai_base_url is set."""
         config = AgentConfig(
             instruction="Forecast.",
-            proxy_base_url="https://proxy.example.com/v1",
-            proxy_api_key="test-key",
+            openai_base_url="https://proxy.example.com/v1",
+            openai_api_key="test-key",
         )
         agent = build_adk_agent(config)
 
@@ -110,13 +110,13 @@ class TestBuildAdkAgent:
 
     def test_string_model_kept_as_string_without_proxy(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Without a proxy URL the model is passed as a plain string to LlmAgent."""
-        monkeypatch.delenv("PROXY_BASE_URL", raising=False)
-        monkeypatch.delenv("PROXY_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
         config = AgentConfig(
             instruction="Forecast.",
-            proxy_base_url=None,
-            proxy_api_key=None,
+            openai_base_url=None,
+            openai_api_key=None,
         )
         agent = build_adk_agent(config)
 
@@ -129,7 +129,7 @@ class TestBuildAdkAgent:
         config = AgentConfig(
             instruction="Forecast.",
             model=custom_model,
-            proxy_base_url="https://proxy.example.com/v1",
+            openai_base_url="https://proxy.example.com/v1",
         )
         agent = build_adk_agent(config)
 
@@ -143,8 +143,8 @@ class TestBuildAdkAgent:
                 enabled=True,
                 instruction="Search for market news before the cutoff date.",
             ),
-            proxy_base_url="https://proxy.example.com/v1",
-            proxy_api_key="test-key",
+            openai_base_url="https://proxy.example.com/v1",
+            openai_api_key="test-key",
         )
         agent = build_adk_agent(config, output_schema=ContinuousAgentForecastOutput)
 
@@ -156,14 +156,14 @@ class TestBuildAdkAgent:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Minimal interactive agents keep genai AFC at provider defaults."""
-        monkeypatch.delenv("PROXY_BASE_URL", raising=False)
-        agent = build_adk_agent(AgentConfig(instruction="You are a helpful analyst.", proxy_base_url=None))
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+        agent = build_adk_agent(AgentConfig(instruction="You are a helpful analyst.", openai_base_url=None))
 
         assert agent.generate_content_config.automatic_function_calling is None
 
     def test_function_tools_are_attached(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Conventional function tools in the config are appended to the agent."""
-        monkeypatch.delenv("PROXY_BASE_URL", raising=False)
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
 
         def my_tool(x: str) -> str:
             """Echo the input. Args: x: anything. Returns: the same string."""
@@ -173,7 +173,7 @@ class TestBuildAdkAgent:
             AgentConfig(
                 instruction="Forecast the supplied series.",
                 function_tools=[my_tool],
-                proxy_base_url=None,
+                openai_base_url=None,
             )
         )
 
@@ -199,8 +199,8 @@ class TestSmrShimRegistration:
                 enabled=True,
                 instruction="Search for market news before the cutoff date.",
             ),
-            proxy_base_url="https://proxy.example.com/v1",
-            proxy_api_key="test-key",
+            openai_base_url="https://proxy.example.com/v1",
+            openai_api_key="test-key",
         )
         agent = build_adk_agent(config, output_schema=ContinuousAgentForecastOutput)
 
@@ -218,11 +218,11 @@ class TestSmrShimRegistration:
         without the shim, ADK would send the Pydantic schema as Gemini's
         response_schema and 400 on $defs/$ref/additionalProperties through the proxy.
         """
-        monkeypatch.delenv("PROXY_BASE_URL", raising=False)
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
         config = AgentConfig(
             instruction="Forecast.",
-            proxy_base_url="https://proxy.example.com/v1",
-            proxy_api_key="test-key",
+            openai_base_url="https://proxy.example.com/v1",
+            openai_api_key="test-key",
         )
         agent = build_adk_agent(config, output_schema=ContinuousAgentForecastOutput)
 
@@ -232,8 +232,8 @@ class TestSmrShimRegistration:
 
     def test_output_schema_retained_on_direct_gemini(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """No proxy (direct Gemini): native output_schema enforcement is preserved."""
-        monkeypatch.delenv("PROXY_BASE_URL", raising=False)
-        config = AgentConfig(instruction="Forecast.")  # no proxy_base_url → model stays a plain string
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+        config = AgentConfig(instruction="Forecast.")  # no openai_base_url → model stays a plain string
         agent = build_adk_agent(config, output_schema=ContinuousAgentForecastOutput)
 
         assert agent.output_schema is ContinuousAgentForecastOutput
@@ -252,8 +252,8 @@ class TestBuildSearchTool:
         )
         tool = _build_search_tool(
             config,
-            proxy_base_url="https://proxy.example.com/v1",
-            proxy_api_key="test-key",
+            openai_base_url="https://proxy.example.com/v1",
+            openai_api_key="test-key",
         )
 
         assert callable(tool)
@@ -273,8 +273,8 @@ class TestBuildSearchTool:
         )
         tool = _build_search_tool(
             config,
-            proxy_base_url="https://proxy.example.com/v1",
-            proxy_api_key="test-key",
+            openai_base_url="https://proxy.example.com/v1",
+            openai_api_key="test-key",
         )
 
         captured: list[dict] = []
@@ -303,8 +303,8 @@ class TestBuildSearchTool:
         )
         tool = _build_search_tool(
             config,
-            proxy_base_url="https://proxy.example.com/v1",
-            proxy_api_key="test-key",
+            openai_base_url="https://proxy.example.com/v1",
+            openai_api_key="test-key",
         )
 
         captured: list[dict] = []
@@ -331,8 +331,8 @@ class TestBuildSearchTool:
         )
         tool = _build_search_tool(
             config,
-            proxy_base_url="https://proxy.example.com/v1",
-            proxy_api_key="test-key",
+            openai_base_url="https://proxy.example.com/v1",
+            openai_api_key="test-key",
         )
 
         async def _fake_acompletion(**kwargs):  # type: ignore[override]

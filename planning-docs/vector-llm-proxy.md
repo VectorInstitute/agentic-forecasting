@@ -11,8 +11,8 @@ Vector runs a shared LLM gateway at `proxy.vectorinstitute.ai`. It is OpenAI-API
 ## How it is wired in
 
 - **All model strings are bare** (e.g. `gemini-3.1-flash-lite-preview`). No `gemini/` or `openai/` prefix in user-facing config. Internally, the library prepends `openai/` before passing to LiteLLM so it routes via the OpenAI-compatible path; LiteLLM strips the prefix before sending to the proxy.
-- **LLMP predictors** (`SampledTrajectoryLLMPredictor`, `QuantileGridLLMPredictor`): `LLMPredictorConfig` reads `PROXY_BASE_URL` and `PROXY_API_KEY` from the environment and passes them as `api_base`/`api_key` to `litellm.acompletion`.
-- **ADK agents** (`build_adk_agent`): `AgentConfig` reads the same env vars. When `proxy_base_url` is set and `model` is a plain string, the factory automatically wraps it in `LiteLlm(model="openai/<model>", api_base=..., api_key=...)`.
+- **LLMP predictors** (`SampledTrajectoryLLMPredictor`, `QuantileGridLLMPredictor`): `LLMPredictorConfig` reads `OPENAI_BASE_URL` and `OPENAI_API_KEY` from the environment and passes them as `api_base`/`api_key` to `litellm.acompletion`.
+- **ADK agents** (`build_adk_agent`): `AgentConfig` reads the same env vars. When `openai_base_url` is set and `model` is a plain string, the factory automatically wraps it in `LiteLlm(model="openai/<model>", api_base=..., api_key=...)`.
 - **Web search / context retrieval**: replaced the Gemini-native `google_search` sub-agent with a `search_web` FunctionTool backed by the proxy's `{"googleSearch": {}}` server-side extension. Grounding metadata (source URLs) is extracted from `choices[0].provider_specific_fields["grounding_metadata"]`.
 - **Default model everywhere**: the lite model (`gemini-3.1-flash-lite-preview`). See the project model convention below.
 
@@ -30,8 +30,8 @@ Both are defined once in `aieng.forecasting.models` as `LITE_MODEL` and `ADVANCE
 ## Required environment variables
 
 ```
-PROXY_BASE_URL=https://proxy.vectorinstitute.ai/v1
-PROXY_API_KEY=your_proxy_api_key
+OPENAI_BASE_URL=https://proxy.vectorinstitute.ai/v1
+OPENAI_API_KEY=your_api_key
 ```
 
 Both are read via `os.getenv(...)` with `None` as the fallback. If neither is set, callers fall back to direct provider routing via LiteLLM's standard env vars (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, etc.).
@@ -46,7 +46,7 @@ Both are read via `os.getenv(...)` with `None` as the fallback. If neither is se
 
 | Need | Route |
 | --- | --- |
-| LLMP forecasting calls | Proxy — `LLMPredictorConfig` with `proxy_base_url`/`proxy_api_key` |
+| LLMP forecasting calls | Proxy — `LLMPredictorConfig` with `openai_base_url`/`openai_api_key` |
 | ADK analyst/reasoning agent | Proxy — `AgentConfig` auto-wraps model in `LiteLlm` |
 | Web search / context retrieval | Proxy — `search_web` tool uses `{"googleSearch": {}}` extension |
 | Code execution | E2B sandbox (`CodeExecutionConfig(enabled=True)`) |

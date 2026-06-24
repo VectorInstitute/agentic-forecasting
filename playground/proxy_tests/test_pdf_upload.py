@@ -43,8 +43,8 @@ load_dotenv(REPO_ROOT / ".env")
 bootstrap_litellm()
 init_langfuse_tracing()
 
-PROXY_BASE_URL = "https://proxy.vectorinstitute.ai/v1"
-PROXY_API_KEY = os.environ.get("PROXY_API_KEY", "")
+OPENAI_BASE_URL = "https://proxy.vectorinstitute.ai/v1"
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 MODEL_ADVANCED = ADVANCED_MODEL  # "gemini-3.5-flash"
 MODEL_LITE = LITE_MODEL  # "gemini-3.1-flash-lite-preview"
@@ -156,8 +156,8 @@ async def test_t7a_openai_data_uri(pdf_b64: str) -> None:
 
         resp = await litellm.acompletion(
             model=f"openai/{MODEL_ADVANCED}",
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
             messages=messages,
             max_tokens=128,
             timeout=60,
@@ -192,8 +192,8 @@ async def test_t7b_extra_body_inline_data(pdf_b64: str) -> None:
 
         resp = await litellm.acompletion(
             model=f"openai/{MODEL_ADVANCED}",
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
             messages=[{"role": "user", "content": MINIMAL_PROMPT}],
             max_tokens=128,
             timeout=60,
@@ -254,8 +254,8 @@ async def test_t7d_lite_model(pdf_b64: str) -> None:
 
         resp = await litellm.acompletion(
             model=f"openai/{MODEL_LITE}",
-            api_base=PROXY_BASE_URL,
-            api_key=PROXY_API_KEY,
+            api_base=OPENAI_BASE_URL,
+            api_key=OPENAI_API_KEY,
             messages=messages,
             max_tokens=128,
             timeout=60,
@@ -331,8 +331,8 @@ async def test_t7c_gemini_native_direct(pdf_path: Path) -> None:
 
 async def main() -> None:
     """Run all PDF upload integration checks."""
-    if not PROXY_API_KEY:
-        print("ERROR: PROXY_API_KEY not set. Check your .env file.")
+    if not OPENAI_API_KEY:
+        print("ERROR: OPENAI_API_KEY not set. Check your .env file.")
         sys.exit(1)
 
     pdf_path = Path(os.environ.get("TEST_PDF_PATH", DEFAULT_PDF))
@@ -340,11 +340,11 @@ async def main() -> None:
         print(f"ERROR: test PDF not found at {pdf_path}")
         sys.exit(1)
 
-    print(f"Proxy URL : {PROXY_BASE_URL}")
+    print(f"Proxy URL : {OPENAI_BASE_URL}")
     print(f"Advanced  : {MODEL_ADVANCED}")
     print(f"Lite      : {MODEL_LITE}")
     print(f"Test PDF  : {pdf_path} ({pdf_path.stat().st_size:,} bytes)")
-    print(f"API key   : {PROXY_API_KEY[:12]}...")
+    print(f"API key   : {OPENAI_API_KEY[:12]}...")
 
     pdf_b64 = _pdf_base64(pdf_path)
     print(f"Base64    : {len(pdf_b64):,} chars")

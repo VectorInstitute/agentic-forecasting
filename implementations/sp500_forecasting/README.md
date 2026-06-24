@@ -208,12 +208,12 @@ uv run python scripts/fetch_fred.py                     # macro covariates (FRED
 
 `fetch_fred.py` requires a **FRED API key** in your repo-root `.env` (`FRED_API_KEY=...`).
 FRED keys are free but must be requested individually — **we cannot provide one for you**.
-Request yours at https://fred.stlouisfed.org/docs/api/api_key.html (approval is usually
+Request yours at <https://fred.stlouisfed.org/docs/api/api_key.html> (approval is usually
 quick, but allow some time). A description like "Requesting an API key to explore the
 effectiveness of various forecasting techniques on economic data." works well.
 
 The `llmp_*` rows call the Vector proxy, so a populated repo-root `.env` (with
-`PROXY_BASE_URL` / `PROXY_API_KEY`) is required when those rows are enabled.
+`OPENAI_BASE_URL` / `OPENAI_API_KEY`) is required when those rows are enabled.
 
 **How to run:** open `01_sp500_multivariate_backtest.ipynb` and **Run All**. The
 `EXPERIMENT_CONFIG` cell selects the 2025 comparison spec (`"smoke"` by default;
