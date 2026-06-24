@@ -140,15 +140,14 @@ resource "coder_agent" "main" {
     # Wait a moment to ensure all installations are finalized
     sleep 2
 
-    # Run automatic onboarding
+    # Run automatic onboarding — fetches API keys from Secret Manager and
+    # exports them into this shell session. Secrets are never written to disk.
     echo "Running automatic onboarding..."
     if command -v onboard &> /dev/null; then
-      onboard \
+      eval "$(onboard \
         --bootcamp-name "$BOOTCAMP_NAME" \
-        --output-dir "/home/${local.username}/${local.repo_name}" \
         --test-script "/home/${local.username}/${local.repo_name}/aieng-forecasting/tests/test_integration.py" \
-        --env-example "/home/${local.username}/${local.repo_name}/.env.example" \
-        --test-marker "integration_test" || echo "Onboarding failed, continuing..."
+        --test-marker "integration_test")" || echo "Onboarding failed, continuing..."
     else
       echo "Onboarding CLI not found, skipping automated onboarding"
     fi
@@ -161,8 +160,10 @@ resource "coder_agent" "main" {
 }
 VSCODE_SETTINGS
 
-    # Configure shell to always start in repo with venv activated
-    # Only add to bashrc if not already present (idempotent)
+    # Configure shell to always start in repo with venv activated and
+    # re-export bootcamp environment variables on every new terminal.
+    # The eval line stores the *command*, not the secret values — secrets
+    # are fetched fresh from Secret Manager each time a shell opens.
     if ! grep -q "Auto-navigate to ${local.repo_name}" "/home/${local.username}/.bashrc" 2>/dev/null; then
       cat >> "/home/${local.username}/.bashrc" <<BASHRC
 
@@ -171,10 +172,14 @@ if [ -f ~/${local.repo_name}/.venv/bin/activate ]; then
     cd ~/${local.repo_name}
     source .venv/bin/activate
 fi
+
+# Load bootcamp environment variables from Secret Manager
+if command -v onboard &> /dev/null && [ -n "$BOOTCAMP_NAME" ]; then
+    eval "\$(onboard --bootcamp-name "$BOOTCAMP_NAME" --skip-test 2>/dev/null)"
+fi
 BASHRC
     fi
 
-    # Configure zshrc to auto-navigate to repo with venv activated
     if ! grep -q "Auto-navigate to ${local.repo_name}" "/home/${local.username}/.zshrc" 2>/dev/null; then
       cat >> "/home/${local.username}/.zshrc" <<ZSHRC
 
@@ -183,7 +188,26 @@ if [ -f ~/${local.repo_name}/.venv/bin/activate ]; then
     cd ~/${local.repo_name}
     source .venv/bin/activate
 fi
+
+# Load bootcamp environment variables from Secret Manager
+if command -v onboard &> /dev/null && [ -n "\$BOOTCAMP_NAME" ]; then
+    eval "\$(onboard --bootcamp-name "\$BOOTCAMP_NAME" --skip-test 2>/dev/null)"
+fi
 ZSHRC
+    fi
+
+    # Add to .profile so VS Code server (login shell) and all child processes
+    # — including Jupyter kernels and the Python extension — inherit the
+    # bootcamp environment variables automatically.
+    if ! grep -q "bootcamp-env" "/home/${local.username}/.profile" 2>/dev/null; then
+      cat >> "/home/${local.username}/.profile" <<PROFILE
+
+# bootcamp-env: load API keys from Secret Manager at login
+# The command is stored here, not the secret values.
+if command -v onboard > /dev/null 2>&1 && [ -n "\$BOOTCAMP_NAME" ]; then
+    eval "\$(onboard --bootcamp-name "\$BOOTCAMP_NAME" --skip-test 2>/dev/null)"
+fi
+PROFILE
     fi
 
     echo "Startup script ran successfully!"
