@@ -109,7 +109,7 @@ requires-dist = [
 
 [[package]]
 name = "aieng-agents"
-version = "0.3.0"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -121,9 +121,9 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "rich" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d8/e8/27f866b04cc1ce7c5c0a0d89cdb07fcc581b0116b85e9f5fb8b52cd2040c/aieng_agents-0.3.0.tar.gz", hash = "sha256:a5de575ea3a66bc1b15654ab1a6cee211d6dc0c62af1856eac75a0227cca8015", size = 54936, upload-time = "2026-04-30T19:42:43.717Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/72/7e28081b0bef6efddc444a4bc46bd5f2f8874207db2aafe16b2c6f88bdd7/aieng_agents-0.3.1.tar.gz", hash = "sha256:c2b0a6c6c441e81788a01e29e79d45d9bc8d6f95583b970d7b54efec10377088", size = 56142, upload-time = "2026-06-23T19:58:26.283Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d4/85/342fe6f5bc387b3a0cbc75d229d1e11061d2f2b7c7e8f32f273a4c0895bf/aieng_agents-0.3.0-py3-none-any.whl", hash = "sha256:743815ab9315fa16fb13971a2fb889bd04760d77b20753d8e6336f110bb109d5", size = 71409, upload-time = "2026-04-30T19:42:42.125Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/b9/a6e1eba4b254882672d73fcb866b433eccaead1825111a51e8f9e7ee5845/aieng_agents-0.3.1-py3-none-any.whl", hash = "sha256:3a9301261bbbb3abf24caba2b388307baea18102899b57d681305e47843a8259", size = 72576, upload-time = "2026-06-23T19:58:25.087Z" },
 ]
 
 [package.optional-dependencies]
@@ -177,7 +177,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aieng-agents", extras = ["code-interpreter"], marker = "extra == 'agentic'", specifier = ">=0.3.0" },
+    { name = "aieng-agents", extras = ["code-interpreter"], marker = "extra == 'agentic'", specifier = ">=0.3.1" },
     { name = "darts", marker = "extra == 'numerical'", specifier = ">=0.44.1" },
     { name = "fredapi", specifier = ">=0.5.2" },
     { name = "google-adk", marker = "extra == 'agentic'", specifier = ">=2.2.0" },
