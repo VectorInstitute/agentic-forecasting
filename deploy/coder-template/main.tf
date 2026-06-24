@@ -220,9 +220,7 @@ PROFILE
     GIT_COMMITTER_NAME   = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
     GIT_COMMITTER_EMAIL  = "${data.coder_workspace_owner.me.email}"
     GITHUB_USER          = data.coder_workspace_owner.me.name
-    TOKEN_SERVICE_URL    = var.token_service_url
-    BOOTCAMP_NAME        = var.bootcamp_name
-    FIREBASE_WEB_API_KEY = var.firebase_api_key
+    BOOTCAMP_NAME = var.bootcamp_name
   }
 
   metadata {

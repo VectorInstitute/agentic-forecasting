@@ -53,17 +53,7 @@ variable "service_account_email" {
   type = string
 }
 
-variable "token_service_url" {
-  type        = string
-  description = "URL of the Firebase token generation service"
-}
-
 variable "bootcamp_name" {
   type        = string
-  description = "Name of the bootcamp (e.g., agentic-forecasting-bootcamp)"
-}
-
-variable "firebase_api_key" {
-  type        = string
-  description = "Firebase Web API key for token exchange"
+  description = "Name of the bootcamp (e.g., agentic-forecasting)"
 }
