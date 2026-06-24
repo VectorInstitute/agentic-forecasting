@@ -180,7 +180,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aieng-agents", extras = ["code-interpreter"], marker = "extra == 'agentic'", specifier = ">=0.3.1" },
-    { name = "darts", marker = "extra == 'numerical'", specifier = ">=0.44.1" },
+    { name = "darts", marker = "extra == 'numerical'", specifier = ">=0.45.0" },
     { name = "fredapi", specifier = ">=0.5.2" },
     { name = "google-adk", marker = "extra == 'agentic'", specifier = ">=2.2.0" },
     { name = "google-cloud-storage", marker = "extra == 'agentic'", specifier = ">=2.18,<4" },
@@ -1143,7 +1143,7 @@ wheels = [
 
 [[package]]
 name = "darts"
-version = "0.44.1"
+version = "0.45.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "holidays" },
@@ -1164,9 +1164,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6c/78/3d603cf436208a343c89cb61aaea1d4a7e289de6fa0ef89996a31ec2c53d/darts-0.44.1.tar.gz", hash = "sha256:6d5bdcf1cfa98e29a0fa692e05c6c4660f998887b6c1c4fe6b6f3765808da883", size = 666262, upload-time = "2026-05-05T14:20:59.484Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3a/b1/cae38a86011799c23ee6baa35c0345a34e3002e4ef0e0685e9a1947e41ff/darts-0.45.0.tar.gz", hash = "sha256:ae59113e56a9798a6f05cfb4c306c6d0d6f356d17dc215cb3956887d54539831", size = 690353, upload-time = "2026-06-19T14:50:34.46Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/c9/9596249ebe6c00ad717c74e010c282e5b3495bf583f21da32bb92768952e/darts-0.44.1-py3-none-any.whl", hash = "sha256:eb32897e9cd2833d98c6f33a9afbd160e234180332c9dabe74555d2786e8db2c", size = 780858, upload-time = "2026-05-05T14:20:57.462Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/f6/3c0fbd1c412e55ed644852b1f7f98fce7f6d9967933d266c69da7aba7e13/darts-0.45.0-py3-none-any.whl", hash = "sha256:f6e1571295c245fffc194fcae135e812a63af884ae5fbb517f6379d57357adfd", size = 808760, upload-time = "2026-06-19T14:50:32.873Z" },
 ]
 
 [[package]]
