@@ -187,8 +187,11 @@ uv run python scripts/extract_reports.py
   the cost of putting one — or several — reports into a prompt.
 - **Report-grounded LLMP (now wired):** `build_food_cpi_service(reports_dir=...)`
   builds a cutoff-aware `DocumentStore`, and `02_food_cpi_experiment.ipynb`
-  passes `report_sources=["cfpr"]` to the LLM-P predictors so the extracted
-  reports enter the prompt filtered by `publication_date <= as_of`. Measure the
+  passes `report_sources=["cfpr"]` to the LLM-P predictors so the reports enter
+  the prompt filtered by `publication_date <= as_of`. Ingestion defaults to
+  `native` (source PDFs uploaded as document parts, intact tables/figures —
+  works for Gemini, Claude, and GPT through the proxy); pass
+  `report_ingestion="text"` for the cheaper pymupdf4llm preamble. Measure the
   lift over the quantitative-only baseline. **Still a good extension:**
   generalize the same `--source`-keyed fetcher + `extract_document` to Bank of
   Canada Monetary Policy Reports, mirroring BoC's `PressReleaseStore` pattern

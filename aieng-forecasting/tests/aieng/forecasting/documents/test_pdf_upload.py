@@ -51,14 +51,19 @@ class TestPdfToContentPartOpenAI:
 
 
 class TestPdfToContentPartGemini:
-    """Tests for the unsupported Gemini branch."""
+    """Tests for the Gemini branch (shares the OpenAI-style file block)."""
 
-    def test_gemini_raises_not_implemented(self, tmp_path: Path) -> None:
-        """A Gemini model raises NotImplementedError (proxy limitation)."""
-        pdf = tmp_path / "test.pdf"
-        pdf.write_bytes(b"%PDF-1.4 x")
-        with pytest.raises(NotImplementedError, match="not supported through the Vector Proxy"):
-            pdf_to_content_part(pdf, model="gemini-3.5-flash")
+    def test_gemini_returns_file_block(self, tmp_path: Path) -> None:
+        """A Gemini model produces an OpenAI-style 'file' part.
+
+        The proxy translates this to Gemini's native ``inline_data``.
+        """
+        pdf = tmp_path / "report.pdf"
+        pdf.write_bytes(b"%PDF-1.4 fake pdf content")
+        part = pdf_to_content_part(pdf, model="gemini-3.5-flash")
+        assert part["type"] == "file"
+        assert part["file"]["filename"] == "report.pdf"
+        assert part["file"]["file_data"].startswith("data:application/pdf;base64,")
 
 
 class TestPdfToContentPartErrors:

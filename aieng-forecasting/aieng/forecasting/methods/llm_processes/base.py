@@ -118,18 +118,16 @@ class LLMPredictorConfig(BaseModel):
         ),
     )
     report_ingestion: Literal["text", "native"] = Field(
-        default="text",
+        default="native",
         description=(
             "How report documents are fed to the model when ``report_sources`` is "
-            "set.  ``'text'`` (default) injects pymupdf4llm-extracted markdown as a "
-            "CiK-style text preamble — works for every model through the proxy.  "
-            "``'native'`` uploads the source PDFs as backend-native document parts "
-            "so the model reads the original (tables/figures intact).  "
-            "TEMPORARY LIMITATION: native ingestion works only for Claude/GPT "
-            "models — the proxy drops document parts on the Gemini route.  Once the "
-            "proxy routes Gemini natively (see TODO(proxy-pdf) in "
-            "documents/pdf_upload.py), native ingestion will apply uniformly and "
-            "this becomes a free text-vs-native choice for any model."
+            "set.  ``'native'`` (default) uploads the source PDFs as backend-native "
+            "document parts so the model reads the original (tables/figures intact); "
+            "it works for every supported family — Claude, GPT, and Gemini (the "
+            "proxy translates the OpenAI-style file part to Gemini's "
+            "``inline_data``).  ``'text'`` injects pymupdf4llm-extracted markdown as "
+            "a CiK-style text preamble instead — cheaper on tokens, and the fallback "
+            "when a source has no resolvable ``pdf_path``."
         ),
     )
 
@@ -322,8 +320,7 @@ def apply_report_context(
       parts (:func:`~aieng.forecasting.documents.pdf_upload.pdf_to_content_part`)
       so the model reads the originals directly.  Returns a content-part list
       ``[intro_text, <pdf parts...>, prompt_text]``.  Requires each document to
-      carry a resolvable ``pdf_path`` and a Claude/GPT model — Gemini native
-      ingestion is not supported through the proxy yet (see ``pdf_upload.py``).
+      carry a resolvable ``pdf_path``; works for any Claude/GPT/Gemini model.
 
     When ``docs`` is empty the bare ``user_prompt`` is returned unchanged, so
     callers can pass the result straight through as message content regardless
@@ -360,9 +357,6 @@ def _build_native_report_content(
     ------
     ValueError
         If any document lacks a resolved ``pdf_path``.
-    NotImplementedError
-        If ``config.model`` is a Gemini model (proxy limitation; raised by
-        :func:`~aieng.forecasting.documents.pdf_upload.pdf_to_content_part`).
     """
     parts: list[dict[str, Any]] = [{"type": "text", "text": _REPORT_INTRO}]
     for doc in docs:

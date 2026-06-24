@@ -160,12 +160,14 @@ class TestApplyReportContext:
         assert "=== Report 2021_en ===" in result
         assert result.endswith("Forecast CPI.")
 
-    def test_text_is_default_mode(self) -> None:
-        """Text is the default ingestion mode."""
+    def test_native_is_default_mode(self, tmp_path: Path) -> None:
+        """Native is the default ingestion mode."""
         config = LLMPredictorConfig()
-        assert config.report_ingestion == "text"
-        doc = _make_doc("2021_en", date(2020, 12, 8), "text")
-        assert isinstance(apply_report_context(config=config, docs=[doc], user_prompt="P"), str)
+        assert config.report_ingestion == "native"
+        pdf = tmp_path / "2021_en.pdf"
+        pdf.write_bytes(b"%PDF-1.4 fake")
+        doc = _make_doc("2021_en", date(2020, 12, 8), "text", pdf_path=str(pdf))
+        assert isinstance(apply_report_context(config=config, docs=[doc], user_prompt="P"), list)
 
     def test_native_mode_anthropic_returns_content_parts(self, tmp_path: Path) -> None:
         """Native mode for Claude emits an intro, a document part, then the prompt."""
@@ -197,14 +199,18 @@ class TestApplyReportContext:
         with pytest.raises(ValueError, match="no resolved pdf_path"):
             apply_report_context(config=config, docs=[doc], user_prompt="P")
 
-    def test_native_mode_gemini_raises_not_implemented(self, tmp_path: Path) -> None:
-        """Native mode for Gemini raises NotImplementedError (proxy limitation)."""
+    def test_native_mode_gemini_returns_file_parts(self, tmp_path: Path) -> None:
+        """Native mode for Gemini emits an OpenAI-style 'file' content part.
+
+        The proxy translates this to Gemini's native ``inline_data``.
+        """
         pdf = tmp_path / "2021_en.pdf"
         pdf.write_bytes(b"%PDF-1.4 fake")
         config = LLMPredictorConfig(report_ingestion="native", model="gemini-3.5-flash")
         doc = _make_doc("2021_en", date(2020, 12, 8), "text", pdf_path=str(pdf))
-        with pytest.raises(NotImplementedError, match="not supported through the Vector Proxy"):
-            apply_report_context(config=config, docs=[doc], user_prompt="P")
+        result = apply_report_context(config=config, docs=[doc], user_prompt="P")
+        assert isinstance(result, list)
+        assert result[1]["type"] == "file"
 
 
 class TestBuildReportPreambleLLMPromptIntegration:

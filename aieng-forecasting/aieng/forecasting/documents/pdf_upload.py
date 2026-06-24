@@ -6,15 +6,10 @@ different document-block shape and the Vector Proxy forwards content blocks to
 each backend largely untranslated:
 
 - **Anthropic** (``claude-*``): ``{"type": "document", "source": {...}}``
-- **OpenAI** (``gpt-*``, ``o*``): ``{"type": "file", "file": {...}}``
-- **Google** (``gemini-*``): **not supported through the proxy yet** — the
-  proxy routes Gemini via Google's OpenAI-compatibility endpoint, which drops
-  document (and image) parts. ``pdf_to_content_part`` raises
-  :class:`NotImplementedError` for Gemini models. See the ``TODO(proxy-pdf)``
-  below: once the proxy routes Gemini through the native ``generateContent``
-  API with ``inline_data``, emit that part here and Gemini becomes just another
-  branch — at which point native ingestion can be configured uniformly
-  alongside text extraction for every model.
+- **OpenAI** (``gpt-*``, ``o*``) and **Google** (``gemini-*``):
+  ``{"type": "file", "file": {...}}`` — the same OpenAI-style ``file`` block.
+  The proxy forwards it to OpenAI directly and translates it to Gemini's
+  native ``inline_data`` part, so both families read the original PDF.
 
 Usage::
 
@@ -58,8 +53,9 @@ def _backend_family(model: str) -> str:
         return "google"
     raise ValueError(
         f"Cannot determine backend family for model {model!r}; native PDF "
-        "ingestion supports Anthropic ('claude-*') and OpenAI ('gpt-*', 'o*') "
-        "models. Use text extraction (report_ingestion='text') for others."
+        "ingestion supports Anthropic ('claude-*'), OpenAI ('gpt-*', 'o*'), and "
+        "Google ('gemini-*') models. Use text extraction "
+        "(report_ingestion='text') for others."
     )
 
 
@@ -88,9 +84,7 @@ def pdf_bytes_to_content_part(
     Raises
     ------
     ValueError
-        If ``model`` is not a recognised Anthropic/OpenAI family member.
-    NotImplementedError
-        If ``model`` is a Gemini model (unsupported through the proxy today).
+        If ``model`` is not a recognised Anthropic/OpenAI/Google family member.
     """
     family = _backend_family(model)
     b64 = base64.b64encode(pdf_bytes).decode("utf-8")
@@ -99,27 +93,13 @@ def pdf_bytes_to_content_part(
             "type": "document",
             "source": {"type": "base64", "media_type": MIME_PDF, "data": b64},
         }
-    if family == "openai":
-        return {
-            "type": "file",
-            "file": {"filename": filename, "file_data": f"data:{MIME_PDF};base64,{b64}"},
-        }
-    # Remaining family: Google (Gemini).
-    # TODO(proxy-pdf): the Vector Proxy currently routes Gemini through Google's
-    # OpenAI-compatibility endpoint, which silently drops document/image parts
-    # (verified: multimodal content reaches Gemini as 0 added prompt tokens).
-    # Once the proxy routes Gemini via the native generateContent API, emit a
-    # Gemini-native inline_data part here (a "file"/"file_data" data-URI part
-    # that the proxy translates to inline_data) and delete this guard, so native
-    # ingestion becomes configurable uniformly for every model alongside text
-    # extraction.
-    raise NotImplementedError(
-        f"Native PDF ingestion for Gemini model {model!r} is not supported "
-        "through the Vector Proxy yet: the proxy routes Gemini via Google's "
-        "OpenAI-compatibility endpoint, which drops document parts. Use text "
-        "extraction (report_ingestion='text') for Gemini, or a Claude/GPT "
-        "model for native ingestion."
-    )
+    # OpenAI and Google (Gemini) both take the OpenAI-style ``file`` block: the
+    # proxy forwards it to OpenAI directly and translates it to Gemini's native
+    # ``inline_data`` part.
+    return {
+        "type": "file",
+        "file": {"filename": filename, "file_data": f"data:{MIME_PDF};base64,{b64}"},
+    }
 
 
 def pdf_to_content_part(pdf_path: Path, model: str) -> dict[str, Any]:
@@ -143,9 +123,7 @@ def pdf_to_content_part(pdf_path: Path, model: str) -> dict[str, Any]:
     FileNotFoundError
         If ``pdf_path`` does not exist.
     ValueError
-        If ``model`` is not a recognised Anthropic/OpenAI family member.
-    NotImplementedError
-        If ``model`` is a Gemini model (unsupported through the proxy today).
+        If ``model`` is not a recognised Anthropic/OpenAI/Google family member.
     """
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
