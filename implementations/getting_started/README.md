@@ -59,7 +59,7 @@ before opening the notebooks below.
 The FRED check is optional for `getting_started` itself, but required by the
 S&P 500 reference implementation and useful for the BoC rate decisions one. FRED
 API keys are free but must be requested individually — **we cannot provide one
-for you**. Request yours early at https://fred.stlouisfed.org/docs/api/api_key.html
+for you**. Request yours early at <https://fred.stlouisfed.org/docs/api/api_key.html>
 (approval is usually quick but can take some time). A description like "Requesting
 an API key to explore the effectiveness of various forecasting techniques on
 economic data." works well. Once approved, add `FRED_API_KEY=your_key` to your
