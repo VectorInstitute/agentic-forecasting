@@ -1,0 +1,52 @@
+# Source: implementations/boc_rate_decisions/specs/boc_rate_direction_smoke.yaml
+
+kind: yaml
+
+```yaml
+# BoC Rate Direction Smoke Spec — Fast CI/Testing Backtest, T-28
+#
+# Three-origin subset of boc_rate_direction_backtest.yaml for running the full
+# notebook pipeline cheaply during development and end-to-end testing.
+# Use by setting EXPERIMENT_CONFIG = "smoke" in the notebook setup cell.
+#
+# The three origins span holds and cuts but no hikes: a hold (2024-04-10), the
+# first cut of the 2024 easing cycle (2024-06-05), and a mid-cycle cut
+# (2024-09-04) — enough to exercise categorical scoring and plotting paths
+# without burning tokens on 120 LLM calls. Origins sit 28 days before each
+# announcement, matching the canonical backtest lead.
+
+description: >-
+  Three-origin smoke backtest for local and CI testing of the BoC
+  rate-direction pipeline. Same task and warmup as
+  boc_rate_direction_backtest, restricted to one hold and two cut meetings
+  in 2024, with origins 28 days before each announcement.
+
+task:
+  task_id: boc_rate_direction_next_meeting
+  target_series_id: boc_rate_decision_direction
+  horizons: [28]
+  frequency: D
+  payload_type: categorical
+  categories:
+    - {label: cut, value: -1}
+    - {label: hold, value: 0}
+    - {label: hike, value: 1}
+  description: >-
+    At the Bank of Canada fixed announcement date occurring 28 days after the
+    forecast origin, will the Bank CUT, HOLD, or HIKE its target for the
+    overnight rate? Outcome is the direction of the target-rate change at
+    that announcement (any size). Announcements are at 09:45 ET; the
+    forecast must be issued with information available four weeks before
+    the announcement, before markets have converged on the decision.
+
+start: "2024-03-01"
+end: "2024-09-30"
+stride: 1
+warmup: 8
+
+# One origin per meeting: announcement_date - 28 days.
+origin_dates:
+  - "2024-03-13"  # meeting 2024-04-10
+  - "2024-05-08"  # meeting 2024-06-05 (cut)
+  - "2024-08-07"  # meeting 2024-09-04 (cut)
+```

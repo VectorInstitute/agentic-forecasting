@@ -14,7 +14,8 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]          # treat implementations/ as the src root
-exclude = ["tests*", "getting_started*"]
+exclude = ["tests*"]
+# getting_started/ is mostly notebooks; only concierge_agent/ is packaged.
 
 [tool.uv.sources]
 aieng-forecasting = { workspace = true }

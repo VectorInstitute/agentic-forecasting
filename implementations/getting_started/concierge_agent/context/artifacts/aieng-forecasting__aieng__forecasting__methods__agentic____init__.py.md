@@ -1,0 +1,116 @@
+# Source: aieng-forecasting/aieng/forecasting/methods/agentic/__init__.py
+
+kind: python
+
+```python
+"""ADK-based agentic predictors.
+
+Concrete forecasting components that use tool execution, code interpreters,
+or hybrid numerical reasoning to produce forecasts.
+
+This subpackage requires the ``agentic`` extra. Install it with::
+
+    pip install aieng-forecasting[agentic]
+
+Importing any name from this package (or its submodules) without the extra
+raises :class:`ImportError` with installation guidance.
+
+Public API
+----------
+AdaptiveSkillState, AdaptiveSkillStore
+    Abstract base and generic persistence layer for learnable agent skills.
+    Subclass ``AdaptiveSkillState`` with domain-specific fields and implement
+    ``build_markdown()`` to render the strategy to a ``SKILL.md`` the agent
+    reads.  ``AdaptiveSkillStore`` handles YAML serialisation, ``SKILL.md``
+    rendering, and timestamped backup on every mutation.
+format_backtest_report, load_context_documents, build_curriculum_prompt
+    Curriculum assembly utilities for adaptive agent training.  Format a
+    :class:`~aieng.forecasting.evaluation.backtest.BacktestResult` as a
+    structured markdown document, load pre-cached context files by date, and
+    assemble both into a single curriculum message for the agent.
+AgentConfig, CodeExecutionConfig, ContextRetrievalConfig
+    Pydantic configuration for building an ADK ``LlmAgent`` with optional
+    code execution and a Google Search sub-agent.
+build_adk_agent
+    Factory that turns an :class:`AgentConfig` into a configured
+    :class:`google.adk.agents.LlmAgent`.
+AdkTextRunner, AdkTextRunnerConfig
+    Text-in / text-out wrapper around ADK's ``InMemoryRunner`` with session
+    management and optional Langfuse tracing.
+AgentForecastOutput, ContinuousAgentForecastOutput, ...
+    Schemas for structured agent output and conversion to evaluation
+    :class:`~aieng.forecasting.evaluation.prediction.Prediction` objects.
+    See :mod:`aieng.forecasting.methods.agentic.outputs`.
+AgentPredictor, ForecastPromptBuilder
+    :class:`~aieng.forecasting.evaluation.predictor.Predictor`
+    that drives an ADK agent and converts its structured output into
+    predictions, plus the prompt-builder protocol it depends on.
+
+Examples
+--------
+Building a predictor from a config::
+
+    from aieng.forecasting.methods.agentic import (
+        AgentConfig,
+        AgentPredictor,
+        ContinuousAgentForecastOutput,
+    )
+
+    config = AgentConfig(instruction="Forecast the target series.")
+    predictor = AgentPredictor(
+        config,
+        my_prompt_builder,
+        output_schema=ContinuousAgentForecastOutput,
+    )
+"""
+
+from aieng.forecasting.methods.agentic.adaptive_skill import AdaptiveSkillState, AdaptiveSkillStore
+from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig
+from aieng.forecasting.methods.agentic.agent_factory import (
+    AgentConfig,
+    CodeExecutionConfig,
+    ContextRetrievalConfig,
+    build_adk_agent,
+)
+from aieng.forecasting.methods.agentic.curriculum import (
+    build_curriculum_prompt,
+    format_backtest_report,
+    load_context_documents,
+)
+from aieng.forecasting.methods.agentic.forecast_tool import ForecastTool
+from aieng.forecasting.methods.agentic.outputs import (
+    AgentCategoryProbability,
+    AgentForecastOutput,
+    AgentQuantileForecast,
+    CategoricalAgentForecastOutput,
+    ContinuousAgentForecastOutput,
+    ContinuousAgentHorizonForecast,
+    DiscreteAgentForecastOutput,
+)
+from aieng.forecasting.methods.agentic.predictor import AgentPredictor, ForecastPromptBuilder
+
+
+__all__: list[str] = [
+    "AdaptiveSkillState",
+    "AdaptiveSkillStore",
+    "AdkTextRunner",
+    "AdkTextRunnerConfig",
+    "AgentCategoryProbability",
+    "AgentConfig",
+    "AgentForecastOutput",
+    "AgentPredictor",
+    "AgentQuantileForecast",
+    "CategoricalAgentForecastOutput",
+    "CodeExecutionConfig",
+    "ContinuousAgentForecastOutput",
+    "ContinuousAgentHorizonForecast",
+    "ContextRetrievalConfig",
+    "DiscreteAgentForecastOutput",
+    "ForecastPromptBuilder",
+    "ForecastTool",
+    "build_adk_agent",
+    "build_curriculum_prompt",
+    "format_backtest_report",
+    "load_context_documents",
+]
+```

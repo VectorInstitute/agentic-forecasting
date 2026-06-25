@@ -1,0 +1,72 @@
+# Source: implementations/boc_rate_decisions/specs/boc_rate_direction_eval.yaml
+
+kind: yaml
+
+```yaml
+# BoC Rate Direction Eval Spec — 2025-2026 protected window, T-28
+#
+# Held-out, budget-controlled evaluation over the 12 BoC fixed announcement
+# dates from January 2025 through June 2026. All 12 are resolved as of
+# June 2026 (the June 10 announcement resolves the final origin).
+#
+# Origins sit 28 days before each announcement — the same lead as the
+# canonical backtest — so the eval measures anticipation, not eve-of-decision
+# market reading. This window contains cuts and holds but NO hikes, so it
+# cannot reward hike discrimination. That is acceptable for this protected
+# slice because RPS handles absent categories while still scoring calibrated
+# mass over the full ordered support.
+#
+# Use this spec sparingly. max_runs: 5 limits how many times a participant
+# may run evaluate() against it, reducing the risk of inadvertently
+# over-fitting to the held-out window.
+#
+# Origins are explicit (announcement_date - 28 days) because BoC meetings are
+# an irregular calendar; derived from ../meeting_schedule.yaml.
+
+spec_id: boc_rate_direction_eval_2025_2026
+
+description: >-
+  Protected eval across the 12 BoC fixed announcement dates from January
+  2025 through June 2026. At each origin (announcement date minus 28 days)
+  predictors emit probabilities over cut, hold, and hike, scored with RPS.
+  Budget-limited to 5 runs per participant tracker.
+
+task:
+  task_id: boc_rate_direction_next_meeting
+  target_series_id: boc_rate_decision_direction
+  horizons: [28]
+  frequency: D
+  payload_type: categorical
+  categories:
+    - {label: cut, value: -1}
+    - {label: hold, value: 0}
+    - {label: hike, value: 1}
+  description: >-
+    At the Bank of Canada fixed announcement date occurring 28 days after the
+    forecast origin, will the Bank CUT, HOLD, or HIKE its target for the
+    overnight rate? Outcome is the direction of the target-rate change at
+    that announcement (any size). Announcements are at 09:45 ET; the
+    forecast must be issued with information available four weeks before
+    the announcement, before markets have converged on the decision.
+
+start: "2025-01-01"
+end: "2026-06-30"
+stride: 1
+warmup: 8
+max_runs: 5
+
+# One origin per meeting: announcement_date - 28 days.
+origin_dates:
+  - "2025-01-01"  # meeting 2025-01-29 (cut)
+  - "2025-02-12"  # meeting 2025-03-12 (cut)
+  - "2025-03-19"  # meeting 2025-04-16
+  - "2025-05-07"  # meeting 2025-06-04
+  - "2025-07-02"  # meeting 2025-07-30
+  - "2025-08-20"  # meeting 2025-09-17 (cut)
+  - "2025-10-01"  # meeting 2025-10-29 (cut)
+  - "2025-11-12"  # meeting 2025-12-10
+  - "2025-12-31"  # meeting 2026-01-28
+  - "2026-02-18"  # meeting 2026-03-18
+  - "2026-04-01"  # meeting 2026-04-29
+  - "2026-05-13"  # meeting 2026-06-10
+```

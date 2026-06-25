@@ -1,0 +1,44 @@
+# Source: implementations/boc_rate_decisions/specs/boc_rate_cut_smoke.yaml
+
+kind: yaml
+
+```yaml
+# BoC Rate Cut Spec — binary reference (cut vs no cut), 3 origins
+#
+# The compact binary (Brier-scored) reference for the notebook 02 warm-up:
+# the K=2 corner of the categorical machinery, kept deliberately small so it
+# demonstrates the binary payload + scoring format in the fewest moving parts.
+#
+# The three origins span both outcome classes: a hold (2024-04-10), the
+# first cut of the 2024 easing cycle (2024-06-05), and a mid-cycle cut
+# (2024-09-04) — enough to exercise scoring and plotting paths without
+# burning tokens on a long run.
+
+description: >-
+  Binary (cut vs no cut) reference backtest for the notebook 02 warm-up,
+  restricted to one hold and two cut meetings in 2024.
+
+task:
+  task_id: boc_rate_cut_next_meeting
+  target_series_id: boc_rate_cut_event
+  horizons: [1]
+  frequency: D
+  payload_type: binary
+  description: >-
+    Will the Bank of Canada LOWER its target for the overnight rate at the
+    fixed announcement date occurring one day after the forecast origin?
+    Outcome is 1 if the target rate decreases at that announcement (any cut
+    size), 0 otherwise (hold or hike). Announcements are at 09:45 ET; the
+    forecast must be issued with information available the day before.
+
+start: "2024-04-01"
+end: "2024-09-30"
+stride: 1
+warmup: 8
+
+# One origin per meeting: announcement_date - 1 day.
+origin_dates:
+  - "2024-04-09"  # meeting 2024-04-10 (hold)
+  - "2024-06-04"  # meeting 2024-06-05 (cut)
+  - "2024-09-03"  # meeting 2024-09-04 (cut)
+```

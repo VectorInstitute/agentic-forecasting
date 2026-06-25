@@ -1,0 +1,2883 @@
+source_url: https://github.com/VectorInstitute/agentic-forecasting
+git_ref: d4a22d05c7a9e86763a8d9b5e2891bcc24eda429
+branch: main
+built_at: '2026-06-25T15:12:49+00:00'
+ingest_source: /home/coder/agentic-forecasting
+entry_count: 195
+entries:
+- path: AGENTS.md
+  kind: markdown
+  domain: docs
+  summary: AGENTS.md
+  symbols: []
+  sections:
+  - AGENTS.md
+  - How to use this file
+  - Project documentation
+  - Documentation is part of every change (hard rule)
+  - planning-docs/
+  - README files
+  - Development conventions
+  - Data cache
+  - Model selection
+  - Code quality (not on commit)
+  - Test philosophy
+  chars: 6702
+  artifact: artifacts/AGENTS.md.md
+- path: README.md
+  kind: markdown
+  domain: docs
+  summary: Agentic Forecasting
+  symbols: []
+  sections:
+  - Agentic Forecasting
+  - What's here
+  - Two ways to use a forecaster
+  - Reference implementations
+  - Time Series Data sources
+  - FRED API key
+  - Repository layout
+  - Setup
+  - Coder Workspaces
+  - Verify your environment first
+  - Populate the data cache
+  - Build the E2B sandbox image (agentic implementations only)
+  - Core concepts
+  - Extending the foundation
+  - Code quality
+  - Documentation
+  chars: 14710
+  artifact: artifacts/README.md.md
+- path: aieng-forecasting/aieng/forecasting/__init__.py
+  kind: python
+  domain: core.root
+  summary: "Agentic Forecasting \u2014 data service and evaluation harness."
+  symbols:
+  - ADVANCED_MODEL
+  - DEFAULT_MODEL
+  - LITE_MODEL
+  sections: []
+  chars: 294
+  artifact: artifacts/aieng-forecasting__aieng__forecasting____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/data/__init__.py
+  kind: python
+  domain: core.data
+  summary: 'Data service: adapters, series store, and cutoff enforcement.'
+  symbols:
+  - DataService
+  - ForecastContext
+  - SeriesMetadata
+  - SeriesRecord
+  sections: []
+  chars: 427
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/data/adapters/__init__.py
+  kind: python
+  domain: core.data
+  summary: Adapter implementations for ingesting data into the SeriesStore.
+  symbols:
+  - BaseAdapter
+  - FREDAdapter
+  - StatCanAdapter
+  - YFinanceDailyAdapter
+  sections: []
+  chars: 521
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__adapters____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/data/adapters/base.py
+  kind: python
+  domain: core.data
+  summary: Base adapter protocol for data ingestion.
+  symbols:
+  - BaseAdapter
+  sections: []
+  chars: 2094
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__adapters__base.py.md
+- path: aieng-forecasting/aieng/forecasting/data/adapters/fred.py
+  kind: python
+  domain: core.data
+  summary: FRED (Federal Reserve Economic Data) adapter for the SeriesStore.
+  symbols:
+  - FREDAdapter
+  sections: []
+  chars: 7400
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__adapters__fred.py.md
+- path: aieng-forecasting/aieng/forecasting/data/adapters/statcan.py
+  kind: python
+  domain: core.data
+  summary: Statistics Canada adapter using the stats-can library.
+  symbols:
+  - StatCanAdapter
+  sections: []
+  chars: 8934
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__adapters__statcan.py.md
+- path: aieng-forecasting/aieng/forecasting/data/adapters/yfinance.py
+  kind: python
+  domain: core.data
+  summary: Yahoo Finance adapter for daily market series.
+  symbols:
+  - YFinanceDailyConfig
+  - YFinanceDailyAdapter
+  - YFinanceDailyAdapter
+  - YFinanceDailyConfig
+  - YFinanceField
+  - YFinanceInterval
+  sections: []
+  chars: 13674
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__adapters__yfinance.py.md
+- path: aieng-forecasting/aieng/forecasting/data/context.py
+  kind: python
+  domain: core.data
+  summary: 'ForecastContext: the predictor-facing, cutoff-scoped data view.'
+  symbols:
+  - ForecastContext
+  sections: []
+  chars: 4947
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__context.py.md
+- path: aieng-forecasting/aieng/forecasting/data/cutoff.py
+  kind: python
+  domain: core.data
+  summary: Information cutoff enforcement.
+  symbols:
+  - CutoffEnforcer
+  sections: []
+  chars: 2581
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__cutoff.py.md
+- path: aieng-forecasting/aieng/forecasting/data/models.py
+  kind: python
+  domain: core.data
+  summary: Pydantic models for the data service layer.
+  symbols:
+  - SeriesRecord
+  - SeriesMetadata
+  sections: []
+  chars: 2728
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__models.py.md
+- path: aieng-forecasting/aieng/forecasting/data/service.py
+  kind: python
+  domain: core.data
+  summary: 'DataService: registration and management of time series data.'
+  symbols:
+  - DataService
+  sections: []
+  chars: 7060
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__service.py.md
+- path: aieng-forecasting/aieng/forecasting/data/store.py
+  kind: python
+  domain: core.data
+  summary: In-memory series store.
+  symbols:
+  - SeriesStore
+  sections: []
+  chars: 3768
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__store.py.md
+- path: aieng-forecasting/aieng/forecasting/documents/__init__.py
+  kind: python
+  domain: core.documents
+  summary: 'Document extraction: source-agnostic PDF -> full text + cutoff metadata.'
+  symbols:
+  - DocumentMeta
+  - DocumentStore
+  - ExtractedDocument
+  - MIME_PDF
+  - estimate_tokens
+  - extract_document
+  - inject_pdf_parts
+  - pdf_bytes_to_content_part
+  - pdf_to_content_part
+  sections: []
+  chars: 1310
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__documents____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/documents/extract.py
+  kind: python
+  domain: core.documents
+  summary: Document text extraction.
+  symbols:
+  - extract_document
+  sections: []
+  chars: 3698
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__documents__extract.py.md
+- path: aieng-forecasting/aieng/forecasting/documents/models.py
+  kind: python
+  domain: core.documents
+  summary: Pydantic models for extracted documents.
+  symbols:
+  - DocumentMeta
+  - estimate_tokens
+  - ExtractedDocument
+  sections: []
+  chars: 3581
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__documents__models.py.md
+- path: aieng-forecasting/aieng/forecasting/documents/pdf_upload.py
+  kind: python
+  domain: core.documents
+  summary: PDF-to-message-part conversion for native document ingestion.
+  symbols:
+  - pdf_bytes_to_content_part
+  - pdf_to_content_part
+  - inject_pdf_parts
+  - MIME_PDF
+  - inject_pdf_parts
+  - pdf_bytes_to_content_part
+  - pdf_to_content_part
+  sections: []
+  chars: 7397
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__documents__pdf_upload.py.md
+- path: aieng-forecasting/aieng/forecasting/documents/store.py
+  kind: python
+  domain: core.documents
+  summary: Cutoff-aware in-memory store for extracted documents.
+  symbols:
+  - DocumentStore
+  - DocumentStore
+  sections: []
+  chars: 7587
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__documents__store.py.md
+- path: aieng-forecasting/aieng/forecasting/evaluation/__init__.py
+  kind: python
+  domain: core.evaluation
+  summary: 'Evaluation harness: forecasting tasks, prediction payloads, and scoring.'
+  symbols:
+  - DEFAULT_STORE_DIR
+  - BacktestResult
+  - BacktestSpec
+  - BinaryForecast
+  - CategoricalForecast
+  - ContinuousForecast
+  - EvalBudgetExceededError
+  - EvalResult
+  - EvalSpec
+  - EvalTracker
+  - ForecastingTask
+  - MultiTargetBacktestSpec
+  - MultiTargetEvalSpec
+  - Prediction
+  - Predictor
+  - STANDARD_QUANTILES
+  - TaskCategory
+  - backtest
+  - cached_backtest
+  - cached_multi_backtest
+  - compute_brier_score
+  - compute_rps
+  - describe_spec
+  - describe_task
+  - evaluate
+  - load_backtest_result
+  - load_multi_backtest_results
+  - multi_backtest
+  - multi_evaluate
+  - save_backtest_result
+  sections: []
+  chars: 2037
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__evaluation____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/evaluation/artifacts.py
+  kind: python
+  domain: core.evaluation
+  summary: Persist backtest and eval results to a filesystem artefact store.
+  symbols:
+  - save_backtest_result
+  - load_backtest_result
+  - cached_backtest
+  - save_multi_backtest_results
+  - load_multi_backtest_results
+  - cached_multi_backtest
+  - save_eval_result
+  - save_multi_eval_results
+  sections: []
+  chars: 15131
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__evaluation__artifacts.py.md
+- path: aieng-forecasting/aieng/forecasting/evaluation/backtest.py
+  kind: python
+  domain: core.evaluation
+  summary: BacktestSpec, BacktestResult, and the backtest() harness.
+  symbols:
+  - BacktestSpec
+  - BacktestResult
+  - compute_brier_score
+  - compute_rps
+  - run_eval_loop
+  - backtest
+  - MultiTargetBacktestSpec
+  - multi_backtest
+  sections: []
+  chars: 32734
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__evaluation__backtest.py.md
+- path: aieng-forecasting/aieng/forecasting/evaluation/describe.py
+  kind: python
+  domain: core.evaluation
+  summary: Human-readable descriptions of forecasting tasks and specs.
+  symbols:
+  - describe_task
+  - describe_spec
+  sections: []
+  chars: 7042
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__evaluation__describe.py.md
+- path: aieng-forecasting/aieng/forecasting/evaluation/eval.py
+  kind: python
+  domain: core.evaluation
+  summary: EvalSpec, EvalResult, EvalTracker, and the evaluate() harness.
+  symbols:
+  - EvalBudgetExceededError
+  - EvalSpec
+  - EvalResult
+  - EvalTracker
+  - evaluate
+  - MultiTargetEvalSpec
+  - multi_evaluate
+  sections: []
+  chars: 25346
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__evaluation__eval.py.md
+- path: aieng-forecasting/aieng/forecasting/evaluation/langfuse_traces.py
+  kind: python
+  domain: core.evaluation
+  summary: 'Langfuse trace-evaluation plumbing: stamp forecasts, fetch traces, push
+    scores.'
+  symbols:
+  - stamp_forecast_on_trace
+  - read_forecasts_from_trace
+  - trace_has_forecast
+  - fetch_trace_with_wait
+  - list_trace_ids
+  - push_trace_score
+  - flush_scores
+  - FORECAST_OBSERVATION_NAME
+  - FORECAST_TRACE_OUTPUT_KEY
+  - fetch_trace_with_wait
+  - flush_scores
+  - list_trace_ids
+  - push_trace_score
+  - read_forecasts_from_trace
+  - stamp_forecast_on_trace
+  - trace_has_forecast
+  sections: []
+  chars: 12009
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__evaluation__langfuse_traces.py.md
+- path: aieng-forecasting/aieng/forecasting/evaluation/prediction.py
+  kind: python
+  domain: core.evaluation
+  summary: Prediction payload types and the Prediction metadata wrapper.
+  symbols:
+  - ContinuousForecast
+  - BinaryForecast
+  - CategoricalForecast
+  - Prediction
+  sections: []
+  chars: 7884
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__evaluation__prediction.py.md
+- path: aieng-forecasting/aieng/forecasting/evaluation/predictor.py
+  kind: python
+  domain: core.evaluation
+  summary: "Predictor ABC \u2014 the interface all forecasting models must implement."
+  symbols:
+  - Predictor
+  sections: []
+  chars: 5577
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__evaluation__predictor.py.md
+- path: aieng-forecasting/aieng/forecasting/evaluation/task.py
+  kind: python
+  domain: core.evaluation
+  summary: 'ForecastingTask: defines a prediction problem against the data service.'
+  symbols:
+  - TaskCategory
+  - ForecastingTask
+  sections: []
+  chars: 9402
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__evaluation__task.py.md
+- path: aieng-forecasting/aieng/forecasting/langfuse_tracing.py
+  kind: python
+  domain: core.root
+  summary: Langfuse-oriented tracing bootstrap for LiteLLM and Google ADK.
+  symbols:
+  - _LangfuseTracingBootstrap
+  - init_langfuse_tracing
+  - print_langfuse_trace_url
+  sections: []
+  chars: 6632
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__langfuse_tracing.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/README.md
+  kind: markdown
+  domain: core.methods
+  summary: Methods
+  symbols: []
+  sections:
+  - Methods
+  - What belongs here
+  - What does NOT belong here
+  - Import patterns
+  - Current contents
+  - Baselines
+  - Numerical
+  - LLM Processes
+  - Agentic
+  chars: 7424
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__README.md.md
+- path: aieng-forecasting/aieng/forecasting/methods/__init__.py
+  kind: python
+  domain: core.methods
+  summary: Reference predictor implementations for ``aieng.forecasting``.
+  symbols:
+  - BinaryProbabilityLLMPredictor
+  - BinaryProbabilityLLMPredictorConfig
+  - CategoricalFrequencyPredictor
+  - CategoricalProbabilityLLMPredictor
+  - CategoricalProbabilityLLMPredictorConfig
+  - DartsAutoARIMAPredictor
+  - DartsExponentialSmoothingPredictor
+  - DartsKalmanForecasterPredictor
+  - DartsLightGBMPredictor
+  - DartsLinearRegressionPredictor
+  - HistoricalFrequencyPredictor
+  - LastValuePredictor
+  - QuantileGridLLMPredictor
+  - QuantileGridLLMPredictorConfig
+  - SampledTrajectoryLLMPredictor
+  - SampledTrajectoryLLMPredictorConfig
+  sections: []
+  chars: 3470
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/agentic/__init__.py
+  kind: python
+  domain: core.methods
+  summary: ADK-based agentic predictors.
+  symbols: []
+  sections: []
+  chars: 4216
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/agentic/adaptive_skill.py
+  kind: python
+  domain: core.methods
+  summary: Generic adaptive skill infrastructure for learnable agent strategies.
+  symbols:
+  - AdaptiveSkillState
+  - AdaptiveSkillStore
+  sections: []
+  chars: 8583
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__adaptive_skill.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/agentic/adk_runner.py
+  kind: python
+  domain: core.methods
+  summary: 'General-purpose ADK runner: text-in / text-out over ``InMemoryRunner``.'
+  symbols:
+  - AdkTextRunnerConfig
+  - AdkTextRunner
+  sections: []
+  chars: 15228
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__adk_runner.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/agentic/agent_factory.py
+  kind: python
+  domain: core.methods
+  summary: Factory functions for building Google ADK agents for forecasting.
+  symbols:
+  - _LiteLLMNoiseFilter
+  - ContextRetrievalConfig
+  - CodeExecutionConfig
+  - AgentConfig
+  - build_adk_agent
+  sections: []
+  chars: 24986
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__agent_factory.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/agentic/curriculum.py
+  kind: python
+  domain: core.methods
+  summary: Curriculum assembly utilities for adaptive agent training.
+  symbols:
+  - format_backtest_report
+  - load_context_documents
+  - build_curriculum_prompt
+  sections: []
+  chars: 20460
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__curriculum.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/agentic/forecast_tool.py
+  kind: python
+  domain: core.methods
+  summary: A conventional ADK function tool that runs a forecasting model on demand.
+  symbols:
+  - ForecastTool
+  sections: []
+  chars: 10814
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__forecast_tool.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/agentic/outputs.py
+  kind: python
+  domain: core.methods
+  summary: Output schemas for agentic forecasting.
+  symbols:
+  - AgentForecastOutput
+  - AgentQuantileForecast
+  - ContinuousAgentHorizonForecast
+  - ContinuousAgentForecastOutput
+  - DiscreteAgentForecastOutput
+  - AgentCategoryProbability
+  - CategoricalAgentForecastOutput
+  sections: []
+  chars: 25341
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__outputs.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/agentic/predictor.py
+  kind: python
+  domain: core.methods
+  summary: Predictor that uses an ADK agent for forecasting.
+  symbols:
+  - ForecastPromptBuilder
+  - AgentPredictor
+  sections: []
+  chars: 13655
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__predictor.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/baselines/__init__.py
+  kind: python
+  domain: core.methods
+  summary: Baseline predictor implementations.
+  symbols:
+  - CategoricalFrequencyPredictor
+  - HistoricalFrequencyPredictor
+  - LastValuePredictor
+  sections: []
+  chars: 534
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__baselines____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/baselines/categorical_frequency.py
+  kind: python
+  domain: core.methods
+  summary: "Categorical-frequency predictor \u2014 the floor baseline for ordinal\
+    \ tasks."
+  symbols:
+  - CategoricalFrequencyPredictor
+  sections: []
+  chars: 5867
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__baselines__categorical_frequency.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/baselines/historical_frequency.py
+  kind: python
+  domain: core.methods
+  summary: "Historical-frequency predictor \u2014 the floor baseline for binary-event\
+    \ tasks."
+  symbols:
+  - HistoricalFrequencyPredictor
+  sections: []
+  chars: 4586
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__baselines__historical_frequency.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/baselines/naive.py
+  kind: python
+  domain: core.methods
+  summary: "Naive last-value predictor \u2014 the floor baseline for any continuous\
+    \ forecasting task."
+  symbols:
+  - LastValuePredictor
+  sections: []
+  chars: 6138
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__baselines__naive.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/llm_processes/__init__.py
+  kind: python
+  domain: core.methods
+  summary: LLM-process predictor implementations.
+  symbols:
+  - BinaryProbabilityLLMPredictor
+  - BinaryProbabilityLLMPredictorConfig
+  - CategoricalProbabilityLLMPredictor
+  - CategoricalProbabilityLLMPredictorConfig
+  - SampledTrajectoryLLMPredictor
+  - SampledTrajectoryLLMPredictorConfig
+  - QuantileGridLLMPredictor
+  - QuantileGridLLMPredictorConfig
+  - LLMPredictor
+  - LLMPredictorConfig
+  sections: []
+  chars: 3300
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/llm_processes/_client.py
+  kind: python
+  domain: core.methods
+  summary: Shared LiteLLM call seam for all ``llm_processes`` predictors.
+  symbols:
+  - bootstrap_litellm
+  - langfuse_observe
+  - current_trace_info
+  - trace_url_for
+  - set_current_trace_name
+  - make_json_schema_response_format
+  - strip_markdown_fence
+  - sample_n_async
+  - run_async
+  sections: []
+  chars: 18293
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes___client.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/llm_processes/base.py
+  kind: python
+  domain: core.methods
+  summary: Abstract base class and shared config for LLM-process predictors.
+  symbols:
+  - LLMPredictorConfig
+  - serialize_history
+  - build_covariate_block
+  - get_history_and_meta
+  - fetch_report_docs
+  - build_report_preamble
+  - apply_report_context
+  - LLMPredictor
+  sections: []
+  chars: 19537
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes__base.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/llm_processes/binary_probability.py
+  kind: python
+  domain: core.methods
+  summary: "BinaryProbabilityLLMPredictor \u2014 direct probability elicitation for\
+    \ binary events."
+  symbols:
+  - BinaryProbabilityLLMPredictorConfig
+  - _BinaryProbability
+  - BinaryProbabilityLLMPredictor
+  - BinaryProbabilityLLMPredictor
+  - BinaryProbabilityLLMPredictorConfig
+  sections: []
+  chars: 13182
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes__binary_probability.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/llm_processes/categorical_probability.py
+  kind: python
+  domain: core.methods
+  summary: "CategoricalProbabilityLLMPredictor \u2014 direct categorical distribution\
+    \ elicitation."
+  symbols:
+  - CategoricalProbabilityLLMPredictorConfig
+  - _CategoryProbability
+  - _CategoricalDistribution
+  - serialize_categorical_history
+  - CategoricalProbabilityLLMPredictor
+  - CategoricalProbabilityLLMPredictor
+  - CategoricalProbabilityLLMPredictorConfig
+  - serialize_categorical_history
+  sections: []
+  chars: 19430
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes__categorical_probability.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/llm_processes/point_intervals.py
+  kind: python
+  domain: core.methods
+  summary: Design placeholder for point-plus-interval LLM forecasting.
+  symbols: []
+  sections: []
+  chars: 1354
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes__point_intervals.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/llm_processes/quantile_grid.py
+  kind: python
+  domain: core.methods
+  summary: "QuantileGridLLMPredictor \u2014 one-shot quantile forecaster."
+  symbols:
+  - QuantileGridLLMPredictorConfig
+  - _QuantileStep
+  - _QuantileTrajectory
+  - QuantileGridLLMPredictor
+  - QuantileGridLLMPredictor
+  - QuantileGridLLMPredictorConfig
+  sections: []
+  chars: 12304
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes__quantile_grid.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/llm_processes/sampled_trajectory.py
+  kind: python
+  domain: core.methods
+  summary: "SampledTrajectoryLLMPredictor \u2014 sample-based quantile forecaster."
+  symbols:
+  - SampledTrajectoryLLMPredictorConfig
+  - _Trajectory
+  - SampledTrajectoryLLMPredictor
+  sections: []
+  chars: 17095
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes__sampled_trajectory.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/numerical/__init__.py
+  kind: python
+  domain: core.methods
+  summary: Numerical forecasting predictor implementations.
+  symbols:
+  - DartsAutoARIMAPredictor
+  - DartsExponentialSmoothingPredictor
+  - DartsKalmanForecasterPredictor
+  - DartsLightGBMPredictor
+  - DartsLinearRegressionPredictor
+  sections: []
+  chars: 747
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__numerical____init__.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/numerical/darts_arima.py
+  kind: python
+  domain: core.methods
+  summary: "Darts AutoARIMA predictor \u2014 probabilistic forecast via Monte Carlo\
+    \ sampling."
+  symbols:
+  - DartsAutoARIMAPredictor
+  sections: []
+  chars: 5294
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__numerical__darts_arima.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/numerical/darts_classical.py
+  kind: python
+  domain: core.methods
+  summary: "Fast classical Darts predictors \u2014 Exponential Smoothing and Kalman\
+    \ filter."
+  symbols:
+  - DartsExponentialSmoothingPredictor
+  - DartsKalmanForecasterPredictor
+  sections: []
+  chars: 8365
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__numerical__darts_classical.py.md
+- path: aieng-forecasting/aieng/forecasting/methods/numerical/darts_regression.py
+  kind: python
+  domain: core.methods
+  summary: "Darts regression-model predictors \u2014 LinearRegression and LightGBM."
+  symbols:
+  - _DartsRegressionModel
+  - DartsLinearRegressionPredictor
+  - DartsLightGBMPredictor
+  sections: []
+  chars: 15304
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__numerical__darts_regression.py.md
+- path: aieng-forecasting/aieng/forecasting/models.py
+  kind: python
+  domain: core.root
+  summary: Canonical proxy model identifiers used across the project.
+  symbols:
+  - ADVANCED_MODEL
+  - DEFAULT_MODEL
+  - LITE_MODEL
+  sections: []
+  chars: 1315
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__models.py.md
+- path: docs/adk-skills-guide.md
+  kind: markdown
+  domain: docs
+  summary: "ADK Skills and Code Execution \u2014 How-To for This Repo"
+  symbols: []
+  sections:
+  - "ADK Skills and Code Execution \u2014 How-To for This Repo"
+  - 1. The three ways to extend an agent
+  - 2. Code execution is E2B-only
+  - 3. How ADK skills work
+  - 4. The design rules
+  - "Rule 1 \u2014 Don't attach a skill that has no files in `references/`, `assets/`,\
+    \ or `scripts/`."
+  - "Rule 2 \u2014 If a skill has references but no scripts, say so in the prompt."
+  - "Rule 3 \u2014 Keep the SKILL.md body minimal."
+  - 5. Worked examples in the repo
+  - "Read-only skills \u2014 `energy_oil_forecasting/analyst_agent/skills/`"
+  - "Adaptive skills \u2014 a learnable strategy"
+  - 6. Checklist for adding a skill
+  - 7. Current status
+  chars: 10079
+  artifact: artifacts/docs__adk-skills-guide.md.md
+- path: implementations/README.md
+  kind: markdown
+  domain: impl.README.md
+  summary: implementations
+  symbols: []
+  sections:
+  - implementations
+  - Directory layout
+  - Relationship to `aieng-forecasting`
+  - Adding a new use case
+  chars: 3644
+  artifact: artifacts/implementations__README.md.md
+- path: implementations/__init__.py
+  kind: python
+  domain: impl.__init__.py
+  summary: Namespace package root for per-topic experiment notebooks and helpers.
+  symbols: []
+  sections: []
+  chars: 144
+  artifact: artifacts/implementations____init__.py.md
+- path: implementations/boc_rate_decisions/01_boc_data_exploration.ipynb
+  kind: notebook
+  domain: impl.boc_rate_decisions
+  summary: "BoC Rate Decisions \u2014 Data Exploration & Problem Framing"
+  symbols: []
+  sections:
+  - "BoC Rate Decisions \u2014 Data Exploration & Problem Framing"
+  chars: 18051
+  artifact: artifacts/implementations__boc_rate_decisions__01_boc_data_exploration.ipynb.md
+- path: implementations/boc_rate_decisions/02_boc_rate_direction_experiment.ipynb
+  kind: notebook
+  domain: impl.boc_rate_decisions
+  summary: "BoC Rate Decisions \u2014 3-Way Direction Prediction Experiment"
+  symbols: []
+  sections:
+  - "BoC Rate Decisions \u2014 3-Way Direction Prediction Experiment"
+  - Viewing other meetings
+  chars: 27955
+  artifact: artifacts/implementations__boc_rate_decisions__02_boc_rate_direction_experiment.ipynb.md
+- path: implementations/boc_rate_decisions/03_rationale_alignment.ipynb
+  kind: notebook
+  domain: impl.boc_rate_decisions
+  summary: "BoC \u2014 Rationale-alignment evaluation (LLM-as-a-judge, on the side)"
+  symbols: []
+  sections:
+  - "BoC \u2014 Rationale-alignment evaluation (LLM-as-a-judge, on the side)"
+  chars: 11377
+  artifact: artifacts/implementations__boc_rate_decisions__03_rationale_alignment.ipynb.md
+- path: implementations/boc_rate_decisions/99_starter_agent.ipynb
+  kind: notebook
+  domain: impl.boc_rate_decisions
+  summary: "Bank of Canada Rate Decisions \u2014 Your Starter Agent"
+  symbols: []
+  sections:
+  - "Bank of Canada Rate Decisions \u2014 Your Starter Agent"
+  chars: 8070
+  artifact: artifacts/implementations__boc_rate_decisions__99_starter_agent.ipynb.md
+- path: implementations/boc_rate_decisions/README.md
+  kind: markdown
+  domain: impl.boc_rate_decisions
+  summary: BoC Rate Decisions
+  symbols: []
+  sections:
+  - BoC Rate Decisions
+  - Prediction task
+  - Data
+  - Predictors
+  - Reference specs
+  - Module layout
+  - Notebooks
+  - Roadmap
+  - Implemented since the first draft
+  - "Remaining extensions \u2014 good participant projects"
+  chars: 15157
+  artifact: artifacts/implementations__boc_rate_decisions__README.md.md
+- path: implementations/boc_rate_decisions/__init__.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: "Bank of Canada rate-decision experiment \u2014 helper modules and reference\
+    \ implementations."
+  symbols: []
+  sections: []
+  chars: 1091
+  artifact: artifacts/implementations__boc_rate_decisions____init__.py.md
+- path: implementations/boc_rate_decisions/analysis.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: Analysis helpers for the BoC rate-decision experiment.
+  symbols:
+  - predictions_to_frame
+  - score_leaderboard
+  - one_vs_rest_frame
+  - calibration_table
+  - yearly_outcome_table
+  - rationales_table
+  - PanelRow
+  - DecisionPanel
+  - decision_panel_data
+  - panel_rationales_markdown
+  - DecisionPanel
+  - PanelRow
+  - calibration_table
+  - decision_panel_data
+  - one_vs_rest_frame
+  - panel_rationales_markdown
+  - predictions_to_frame
+  - rationales_table
+  - score_leaderboard
+  - yearly_outcome_table
+  sections: []
+  chars: 19911
+  artifact: artifacts/implementations__boc_rate_decisions__analysis.py.md
+- path: implementations/boc_rate_decisions/analyst_agent/__init__.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: Bank of Canada policy analyst agent module.
+  symbols:
+  - BoCDecisionPromptBuilder
+  - build_boc_agent_predictor
+  - build_boc_basic_config
+  - build_boc_news_config
+  sections: []
+  chars: 610
+  artifact: artifacts/implementations__boc_rate_decisions__analyst_agent____init__.py.md
+- path: implementations/boc_rate_decisions/analyst_agent/agent.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: Bank of Canada policy analyst agent configuration and prompt builder.
+  symbols:
+  - BoCDecisionPromptBuilder
+  - build_boc_basic_config
+  - build_boc_news_config
+  - build_boc_agent_predictor
+  sections: []
+  chars: 16347
+  artifact: artifacts/implementations__boc_rate_decisions__analyst_agent__agent.py.md
+- path: implementations/boc_rate_decisions/data.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: Data-service setup for the Bank of Canada rate-decision experiment.
+  symbols:
+  - load_meeting_schedule
+  - load_unscheduled_announcements
+  - derive_rate_decision_directions
+  - derive_rate_cut_events
+  - validate_schedule_against_rate_series
+  - BoCDecisionEventAdapter
+  - build_boc_service
+  - BOND_YIELD_2YR_SERIES_ID
+  - CPI_SERIES_ID
+  - CPI_TABLE_ID
+  - DEFAULT_FRED_CACHE_DIR
+  - DEFAULT_STATCAN_CACHE_DIR
+  - DIRECTION_SERIES_ID
+  - DIRECTION_TASK_CATEGORIES
+  - MEETING_SCHEDULE_PATH
+  - RATES_TABLE_ID
+  - RATE_CUT_EVENT_SERIES_ID
+  - TARGET_RATE_SERIES_ID
+  - UNEMPLOYMENT_FRED_ID
+  - UNEMPLOYMENT_SERIES_ID
+  - BoCDecisionEventAdapter
+  - build_boc_service
+  - derive_rate_decision_directions
+  - derive_rate_cut_events
+  - load_meeting_schedule
+  - load_unscheduled_announcements
+  - validate_schedule_against_rate_series
+  sections: []
+  chars: 20204
+  artifact: artifacts/implementations__boc_rate_decisions__data.py.md
+- path: implementations/boc_rate_decisions/plots.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: Plotting helpers for the BoC rate-decision experiment.
+  symbols:
+  - plot_policy_rate_with_decisions
+  - plot_reliability_curve
+  - plot_decision_timeline
+  - plot_probability_timeline
+  - plot_decision_panel
+  - CATEGORY_COLORS
+  - DEFAULT_PREDICTOR_PALETTE
+  - plot_decision_panel
+  - plot_decision_timeline
+  - plot_policy_rate_with_decisions
+  - plot_probability_timeline
+  - plot_reliability_curve
+  sections: []
+  chars: 22061
+  artifact: artifacts/implementations__boc_rate_decisions__plots.py.md
+- path: implementations/boc_rate_decisions/predictors/__init__.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: Tuned predictor recipes for the BoC rate-decision experiment.
+  symbols:
+  - BoCLogisticPredictor
+  - build_llmp_binary
+  - build_llmp_direction
+  sections: []
+  chars: 1151
+  artifact: artifacts/implementations__boc_rate_decisions__predictors____init__.py.md
+- path: implementations/boc_rate_decisions/predictors/llmp_binary.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: 'BoC rate-cut recipe: binary-probability LLMP.'
+  symbols:
+  - build_llmp_binary
+  - build_llmp_binary
+  sections: []
+  chars: 4511
+  artifact: artifacts/implementations__boc_rate_decisions__predictors__llmp_binary.py.md
+- path: implementations/boc_rate_decisions/predictors/llmp_direction.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: 'BoC rate-direction recipe: categorical-probability LLMP.'
+  symbols:
+  - build_llmp_direction
+  - build_llmp_direction
+  sections: []
+  chars: 4818
+  artifact: artifacts/implementations__boc_rate_decisions__predictors__llmp_direction.py.md
+- path: implementations/boc_rate_decisions/predictors/logistic_baseline.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: Logistic-regression conventional baseline for BoC rate-decision prediction.
+  symbols:
+  - build_feature_row
+  - BoCLogisticPredictor
+  - FEATURE_NAMES
+  - BoCLogisticPredictor
+  - build_feature_row
+  sections: []
+  chars: 15030
+  artifact: artifacts/implementations__boc_rate_decisions__predictors__logistic_baseline.py.md
+- path: implementations/boc_rate_decisions/press_releases.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: Bank of Canada rate-announcement press-release ingestion (use-case glue).
+  symbols:
+  - press_release_url
+  - PressReleaseEntry
+  - press_release_entries
+  - extract_press_release_html
+  - write_artifact
+  - PressReleaseStore
+  - BOC_PRESS_RELEASE_SOURCE
+  - DEFAULT_PRESS_RELEASE_CACHE_DIR
+  - PressReleaseEntry
+  - PressReleaseStore
+  - extract_press_release_html
+  - press_release_entries
+  - press_release_url
+  - write_artifact
+  sections: []
+  chars: 12251
+  artifact: artifacts/implementations__boc_rate_decisions__press_releases.py.md
+- path: implementations/boc_rate_decisions/rationale_eval.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: LLM-as-a-judge rationale-alignment evaluator for BoC forecasts (trace-driven).
+  symbols:
+  - AlignmentVerdict
+  - judge_rationale_alignment
+  - resolve_trace_url
+  - trace_ids_from_result
+  - evaluate_trace_alignment
+  - evaluate_result_alignment
+  - AlignmentVerdict
+  - evaluate_result_alignment
+  - evaluate_trace_alignment
+  - judge_rationale_alignment
+  - resolve_trace_url
+  - trace_ids_from_result
+  sections: []
+  chars: 18090
+  artifact: artifacts/implementations__boc_rate_decisions__rationale_eval.py.md
+- path: implementations/boc_rate_decisions/specs/boc_rate_cut_smoke.yaml
+  kind: yaml
+  domain: impl.boc_rate_decisions
+  summary: "BoC Rate Cut Spec \u2014 binary reference (cut vs no cut), 3 origins"
+  symbols: []
+  sections:
+  - "BoC Rate Cut Spec \u2014 binary reference (cut vs no cut), 3 origins"
+  - '# The compact binary (Brier-scored) reference for the notebook 02 warm-up:'
+  - the K=2 corner of the categorical machinery, kept deliberately small so it
+  - demonstrates the binary payload + scoring format in the fewest moving parts.
+  - '# The three origins span both outcome classes: a hold (2024-04-10), the'
+  - first cut of the 2024 easing cycle (2024-06-05), and a mid-cycle cut
+  - "(2024-09-04) \u2014 enough to exercise scoring and plotting paths without"
+  - burning tokens on a long run.
+  - 'One origin per meeting: announcement_date - 1 day.'
+  chars: 1579
+  artifact: artifacts/implementations__boc_rate_decisions__specs__boc_rate_cut_smoke.yaml.md
+- path: implementations/boc_rate_decisions/specs/boc_rate_direction_backtest.yaml
+  kind: yaml
+  domain: impl.boc_rate_decisions
+  summary: "BoC Rate Direction Backtest Spec \u2014 2010-2024 fixed announcement dates,\
+    \ T-28"
+  symbols: []
+  sections:
+  - "BoC Rate Direction Backtest Spec \u2014 2010-2024 fixed announcement dates, T-28"
+  - '# Canonical 3-way ordered-categorical backtest: at each forecast origin'
+  - (28 days before a BoC fixed announcement date), predict whether the Bank
+  - will cut, hold, or hike its target for the overnight rate at the
+  - 'announcement. Scored with RPS (task payload_type: categorical).'
+  - '# Why a 28-day lead: on the eve of a decision the 2-year GoC yield has'
+  - already absorbed the market consensus, so a T-1 forecast mostly reads
+  - market pricing off a curve. Four weeks out the decision is genuinely
+  - "uncertain \u2014 the interesting skill is anticipating cycle turns before the"
+  - market converges. The eve-of-decision variant is kept as a small diagnostic in
+  - boc_rate_direction_eve_smoke.yaml; comparing the two shows how skill
+  - concentrates as information arrives.
+  - "# Origins are EXPLICIT because BoC meetings are an irregular calendar \u2014"
+  - 8 dates per year that no pandas frequency alias can generate. Each origin
+  - is announcement_date - 28 days, so the 28-day horizon resolves exactly on
+  - the announcement. The minimum gap between scheduled meetings is 35 days,
+  - so the previous meeting's outcome is always visible at the origin.
+  - The origin list is derived from ../meeting_schedule.yaml; a use-case test
+  - asserts the two files stay consistent.
+  - '# Origin count : 120 (8 per year, 2010-2024)'
+  - 'Coverage     : spans the 2010 + 2017-18 + 2022-23 hike cycles and the'
+  - 2015 + 2020 + 2024 cut cycles.
+  - 'Warmup       : 8 events (the full 2009 easing cycle is visible history at'
+  - every origin).
+  - 'One origin per meeting: announcement_date - 28 days.'
+  chars: 7750
+  artifact: artifacts/implementations__boc_rate_decisions__specs__boc_rate_direction_backtest.yaml.md
+- path: implementations/boc_rate_decisions/specs/boc_rate_direction_eval.yaml
+  kind: yaml
+  domain: impl.boc_rate_decisions
+  summary: "BoC Rate Direction Eval Spec \u2014 2025-2026 protected window, T-28"
+  symbols: []
+  sections:
+  - "BoC Rate Direction Eval Spec \u2014 2025-2026 protected window, T-28"
+  - '# Held-out, budget-controlled evaluation over the 12 BoC fixed announcement'
+  - dates from January 2025 through June 2026. All 12 are resolved as of
+  - June 2026 (the June 10 announcement resolves the final origin).
+  - "# Origins sit 28 days before each announcement \u2014 the same lead as the"
+  - "canonical backtest \u2014 so the eval measures anticipation, not eve-of-decision"
+  - market reading. This window contains cuts and holds but NO hikes, so it
+  - cannot reward hike discrimination. That is acceptable for this protected
+  - slice because RPS handles absent categories while still scoring calibrated
+  - mass over the full ordered support.
+  - '# Use this spec sparingly. max_runs: 5 limits how many times a participant'
+  - may run evaluate() against it, reducing the risk of inadvertently
+  - over-fitting to the held-out window.
+  - '# Origins are explicit (announcement_date - 28 days) because BoC meetings are'
+  - an irregular calendar; derived from ../meeting_schedule.yaml.
+  - 'One origin per meeting: announcement_date - 28 days.'
+  chars: 2813
+  artifact: artifacts/implementations__boc_rate_decisions__specs__boc_rate_direction_eval.yaml.md
+- path: implementations/boc_rate_decisions/specs/boc_rate_direction_eve_smoke.yaml
+  kind: yaml
+  domain: impl.boc_rate_decisions
+  summary: "BoC Rate Direction EVE Smoke Spec \u2014 T-1 diagnostic, 3 origins"
+  symbols: []
+  sections:
+  - "BoC Rate Direction EVE Smoke Spec \u2014 T-1 diagnostic, 3 origins"
+  - '# Eve-of-decision companion to boc_rate_direction_smoke.yaml: same three'
+  - meetings, origins the day before each announcement. Used in notebook 02
+  - "(\xA77) for the cheap lead-time comparison (T-28 vs T-1) \u2014 the eve lead\
+    \ is"
+  - kept only as this small diagnostic, not as a full backtest.
+  - '# The three origins span holds and cuts but no hikes: a hold (2024-04-10), the'
+  - first cut of the 2024 easing cycle (2024-06-05), and a mid-cycle cut
+  - "(2024-09-04) \u2014 enough to exercise categorical scoring and plotting paths"
+  - without burning tokens on a long run.
+  - 'One origin per meeting: announcement_date - 1 day.'
+  chars: 1840
+  artifact: artifacts/implementations__boc_rate_decisions__specs__boc_rate_direction_eve_smoke.yaml.md
+- path: implementations/boc_rate_decisions/specs/boc_rate_direction_smoke.yaml
+  kind: yaml
+  domain: impl.boc_rate_decisions
+  summary: "BoC Rate Direction Smoke Spec \u2014 Fast CI/Testing Backtest, T-28"
+  symbols: []
+  sections:
+  - "BoC Rate Direction Smoke Spec \u2014 Fast CI/Testing Backtest, T-28"
+  - '# Three-origin subset of boc_rate_direction_backtest.yaml for running the full'
+  - notebook pipeline cheaply during development and end-to-end testing.
+  - Use by setting EXPERIMENT_CONFIG = "smoke" in the notebook setup cell.
+  - '# The three origins span holds and cuts but no hikes: a hold (2024-04-10), the'
+  - first cut of the 2024 easing cycle (2024-06-05), and a mid-cycle cut
+  - "(2024-09-04) \u2014 enough to exercise categorical scoring and plotting paths"
+  - without burning tokens on 120 LLM calls. Origins sit 28 days before each
+  - announcement, matching the canonical backtest lead.
+  - 'One origin per meeting: announcement_date - 28 days.'
+  chars: 1993
+  artifact: artifacts/implementations__boc_rate_decisions__specs__boc_rate_direction_smoke.yaml.md
+- path: implementations/boc_rate_decisions/starter_agent/__init__.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: "BoC starter agent \u2014 a fresh, hackable template for your own exploration."
+  symbols:
+  - build_starter_agent_config
+  - build_starter_agent_predictor
+  sections: []
+  chars: 534
+  artifact: artifacts/implementations__boc_rate_decisions__starter_agent____init__.py.md
+- path: implementations/boc_rate_decisions/starter_agent/agent.py
+  kind: python
+  domain: impl.boc_rate_decisions
+  summary: "BoC starter agent \u2014 a fresh, hackable template for your own exploration."
+  symbols:
+  - build_starter_agent_config
+  - _StarterForecastPromptBuilder
+  - build_starter_agent_predictor
+  sections: []
+  chars: 9637
+  artifact: artifacts/implementations__boc_rate_decisions__starter_agent__agent.py.md
+- path: implementations/boc_rate_decisions/starter_agent/skills/code-analysis-playbook/SKILL.md
+  kind: markdown
+  domain: impl.boc_rate_decisions
+  summary: Code-analysis playbook
+  symbols: []
+  sections:
+  - Code-analysis playbook
+  - Where your data lives
+  - Compute before you forecast
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 2313
+  artifact: artifacts/implementations__boc_rate_decisions__starter_agent__skills__code-analysis-playbook__SKILL.md.md
+- path: implementations/boc_rate_decisions/starter_agent/skills/forecasting/SKILL.md
+  kind: markdown
+  domain: impl.boc_rate_decisions
+  summary: Forecasting skill
+  symbols: []
+  sections:
+  - Forecasting skill
+  - What you'll receive
+  - The output contract
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 2186
+  artifact: artifacts/implementations__boc_rate_decisions__starter_agent__skills__forecasting__SKILL.md.md
+- path: implementations/boc_rate_decisions/starter_agent/skills/research-playbook/SKILL.md
+  kind: markdown
+  domain: impl.boc_rate_decisions
+  summary: Research playbook
+  symbols: []
+  sections:
+  - Research playbook
+  - The one rule that matters
+  - How to search
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 1947
+  artifact: artifacts/implementations__boc_rate_decisions__starter_agent__skills__research-playbook__SKILL.md.md
+- path: implementations/energy_oil_forecasting/01_wti_case_study.ipynb
+  kind: notebook
+  domain: impl.energy_oil_forecasting
+  summary: "Oil Prices in 2026 \u2014 A Forecasting Case Study"
+  symbols: []
+  sections:
+  - "Oil Prices in 2026 \u2014 A Forecasting Case Study"
+  - Load WTI price data
+  - What happened?
+  - The Futures Curve
+  chars: 10319
+  artifact: artifacts/implementations__energy_oil_forecasting__01_wti_case_study.ipynb.md
+- path: implementations/energy_oil_forecasting/02_intro_agentic_predictor.ipynb
+  kind: notebook
+  domain: impl.energy_oil_forecasting
+  summary: "WTI Crude Oil Price Forecasting \u2014 Introducing the Agentic Predictor\
+    \ (Notebook 2 of 7)"
+  symbols: []
+  sections:
+  - "WTI Crude Oil Price Forecasting \u2014 Introducing the Agentic Predictor (Notebook\
+    \ 2 of 7)"
+  chars: 16360
+  artifact: artifacts/implementations__energy_oil_forecasting__02_intro_agentic_predictor.ipynb.md
+- path: implementations/energy_oil_forecasting/03_one_agent_three_tasks.ipynb
+  kind: notebook
+  domain: impl.energy_oil_forecasting
+  summary: "WTI Oil Price Forecasting \u2014 One Agent, Three Tasks"
+  symbols: []
+  sections:
+  - "WTI Oil Price Forecasting \u2014 One Agent, Three Tasks"
+  chars: 14481
+  artifact: artifacts/implementations__energy_oil_forecasting__03_one_agent_three_tasks.ipynb.md
+- path: implementations/energy_oil_forecasting/04_systematic_backtest_eval.ipynb
+  kind: notebook
+  domain: impl.energy_oil_forecasting
+  summary: "WTI Crude Oil Price Forecasting \u2014 Stateless Methods: Systematic Backtest\
+    \ (Notebook 4 of 7)"
+  symbols: []
+  sections:
+  - "WTI Crude Oil Price Forecasting \u2014 Stateless Methods: Systematic Backtest\
+    \ (Notebook 4 of 7)"
+  chars: 13343
+  artifact: artifacts/implementations__energy_oil_forecasting__04_systematic_backtest_eval.ipynb.md
+- path: implementations/energy_oil_forecasting/05_adaptive_agent_training.ipynb
+  kind: notebook
+  domain: impl.energy_oil_forecasting
+  summary: "WTI Crude Oil \u2014 Adaptive Agent: Self-Directed Study (Notebook 5 of\
+    \ 7)"
+  symbols: []
+  sections:
+  - "WTI Crude Oil \u2014 Adaptive Agent: Self-Directed Study (Notebook 5 of 7)"
+  - "Task A \u2014 Cross-Period Robustness (2023\u20132024)"
+  - "Task B \u2014 Scope Check and Graduation Attempt"
+  - Strategy state after robustness testing
+  chars: 15882
+  artifact: artifacts/implementations__energy_oil_forecasting__05_adaptive_agent_training.ipynb.md
+- path: implementations/energy_oil_forecasting/05_forecast_tool_demo.ipynb
+  kind: notebook
+  domain: impl.energy_oil_forecasting
+  summary: "WTI Crude Oil \u2014 The Forecast Tool (Notebook 5)"
+  symbols: []
+  sections:
+  - "WTI Crude Oil \u2014 The Forecast Tool (Notebook 5)"
+  chars: 6855
+  artifact: artifacts/implementations__energy_oil_forecasting__05_forecast_tool_demo.ipynb.md
+- path: implementations/energy_oil_forecasting/06_protected_eval.ipynb
+  kind: notebook
+  domain: impl.energy_oil_forecasting
+  summary: "WTI Crude Oil \u2014 Protected Evaluation (Notebook 6 of 7)"
+  symbols: []
+  sections:
+  - "WTI Crude Oil \u2014 Protected Evaluation (Notebook 6 of 7)"
+  chars: 15724
+  artifact: artifacts/implementations__energy_oil_forecasting__06_protected_eval.ipynb.md
+- path: implementations/energy_oil_forecasting/99_starter_agent.ipynb
+  kind: notebook
+  domain: impl.energy_oil_forecasting
+  summary: "WTI Crude Oil \u2014 Your Starter Agent"
+  symbols: []
+  sections:
+  - "WTI Crude Oil \u2014 Your Starter Agent"
+  chars: 7557
+  artifact: artifacts/implementations__energy_oil_forecasting__99_starter_agent.ipynb.md
+- path: implementations/energy_oil_forecasting/README.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: WTI Crude Oil Price Forecasting
+  symbols: []
+  sections:
+  - WTI Crude Oil Price Forecasting
+  - Curriculum Structure
+  - Stateless capability track
+  - Adaptive-agent track
+  - Side demo
+  - Build your own
+  - The Forecasting Tasks
+  - 'Task A: Trajectory Forecast (Track 1)'
+  - 'Task B: Binary Up-shock Probability (Track 1)'
+  - 'Task C: Scenario Analysis (Track 2)'
+  - Module Layout
+  - Agent layering
+  - Data Source & Setup
+  chars: 7707
+  artifact: artifacts/implementations__energy_oil_forecasting__README.md.md
+- path: implementations/energy_oil_forecasting/__init__.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: __init__.py
+  symbols: []
+  sections: []
+  chars: 91
+  artifact: artifacts/implementations__energy_oil_forecasting____init__.py.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/__init__.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Adaptive WTI crude oil analyst agent module.
+  symbols:
+  - WtiAdaptiveForecastPromptBuilder
+  - build_skill_tools
+  - build_wti_adaptive_config
+  - build_wti_adaptive_predictor
+  - compress_history
+  sections: []
+  chars: 788
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent____init__.py.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/agent.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Adaptive WTI crude oil analyst agent.
+  symbols:
+  - WtiAdaptiveForecastPromptBuilder
+  - build_wti_adaptive_config
+  - build_wti_adaptive_predictor
+  sections: []
+  chars: 19884
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__agent.py.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/curriculum/snapshot_utils.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Skill state snapshot helpers for the adaptive agent training notebooks.
+  symbols:
+  - snapshot_state
+  - restore_state
+  - state_checksum
+  sections: []
+  chars: 3571
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__curriculum__snapshot_utils.py.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skill_state.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: WTI forecasting strategy state model.
+  symbols:
+  - Observation
+  - Hypothesis
+  - CalibrationCorrection
+  - VersionEntry
+  - WtiStrategyState
+  sections: []
+  chars: 7381
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skill_state.py.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skill_tools.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Mutation tools for the ``wti-strategy`` adaptive skill.
+  symbols:
+  - build_skill_tools
+  sections: []
+  chars: 16387
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skill_tools.py.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skills/fetch-yfinance/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: Fetching market data with yfinance
+  symbols: []
+  sections:
+  - Fetching market data with yfinance
+  - E2B execution model
+  - What this skill provides
+  - Workflow
+  - Common tickers
+  - Gotchas
+  chars: 1873
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skills__fetch-yfinance__SKILL.md.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skills/fetch-yfinance/references/examples.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: 'fetch-yfinance: code examples'
+  symbols: []
+  sections:
+  - 'fetch-yfinance: code examples'
+  - 'Pattern 1: Single ticker, full date range'
+  - 'Pattern 2: Temporal cutoff for backtesting'
+  - 'Apply cutoff: keep only data strictly before as_of'
+  - 'Pattern 3: Multiple tickers'
+  chars: 2471
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skills__fetch-yfinance__references__examples.md.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skills/meta-learning/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: 'Meta-learning: strategy update governance'
+  symbols: []
+  sections:
+  - 'Meta-learning: strategy update governance'
+  - The four learning layers
+  - When to update
+  - 'How to update: the tool call sequence'
+  - "Step 1 \u2014 Always: record an observation"
+  - "Step 2 \u2014 If a durable pattern is suspected: open a hypothesis"
+  - "Step 3 \u2014 On each subsequent resolution: update hypothesis counts"
+  - "Step 4 \u2014 When the threshold is reached: graduate to calibration"
+  - "Step 5 \u2014 Rarely: update the approach narrative"
+  - Guarding against over-learning
+  - What NOT to update
+  chars: 5836
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skills__meta-learning__SKILL.md.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skills/trend-projection/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: Linear trend projection
+  symbols: []
+  sections:
+  - Linear trend projection
+  - What this skill provides
+  - Typical usage
+  - Key formula
+  - Interval calibration note
+  chars: 1752
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skills__trend-projection__SKILL.md.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skills/trend-projection/references/examples.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: 'trend-projection: code examples'
+  symbols: []
+  sections:
+  - 'trend-projection: code examples'
+  - 'Pattern 1: Fit linear trend and project to horizons'
+  - 'Requires: daily (DataFrame, columns date/close, sorted ascending)'
+  - trend_window (int, from vol-regime Pattern 3)
+  - 'Pattern 2: Calibrated 80% prediction intervals'
+  - 'Requires: projections (dict), residual_std (float), regime (str)'
+  - 'Pattern 3: Plausibility guard'
+  - 'Requires: projections (dict), df (full DataFrame, not just window)'
+  - Full Pipeline Example
+  - "\u2500\u2500 1. Fetch data (fetch-yfinance) \u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+  - "\u2500\u2500 2. Vol regime (vol-regime) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500"
+  - "\u2500\u2500 3. Trend projection (trend-projection) \u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500"
+  chars: 5291
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skills__trend-projection__references__examples.md.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skills/vol-regime/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: Volatility regime classification
+  symbols: []
+  sections:
+  - Volatility regime classification
+  - What this skill provides
+  - Typical usage
+  - Regime thresholds (WTI crude oil)
+  - Output of Pattern 3
+  chars: 1693
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skills__vol-regime__SKILL.md.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skills/vol-regime/references/examples.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: 'vol-regime: code examples'
+  symbols: []
+  sections:
+  - 'vol-regime: code examples'
+  - 'Pattern 1: Rolling vol and regime classification'
+  - Use only the daily-frequency portion (drop gaps > 3 days)
+  - 'Pattern 2: Anomaly detection (z-score of last move)'
+  - Add this after Pattern 1 (daily is already defined)
+  - 'Pattern 3: Adaptive trend window'
+  - "Add this after Patterns 1\u20132 (regime and z_score are already defined)"
+  chars: 3089
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skills__vol-regime__references__examples.md.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skills/wti-strategy-trained/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: WTI Forecasting Strategy
+  symbols: []
+  sections:
+  - WTI Forecasting Strategy
+  - Approach
+  - Active calibration corrections
+  - Open hypotheses
+  - Observations
+  - Version history
+  chars: 2999
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skills__wti-strategy-trained__SKILL.md.md
+- path: implementations/energy_oil_forecasting/adaptive_agent/skills/wti-strategy/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: WTI Forecasting Strategy
+  symbols: []
+  sections:
+  - WTI Forecasting Strategy
+  - Approach
+  - Active calibration corrections
+  - Open hypotheses
+  - Observations
+  - Version history
+  chars: 1744
+  artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__skills__wti-strategy__SKILL.md.md
+- path: implementations/energy_oil_forecasting/analysis.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Analysis helpers for the WTI crude oil experiment.
+  symbols:
+  - rolling_coverage_pct
+  - score_backtest_results
+  - backtest_results_to_frame
+  - trajectory_mae_table
+  - select_top_predictors
+  - backtest_results_to_frame
+  - compute_brier_score
+  - rolling_coverage_pct
+  - score_backtest_results
+  - select_top_predictors
+  - trajectory_mae_table
+  sections: []
+  chars: 6287
+  artifact: artifacts/implementations__energy_oil_forecasting__analysis.py.md
+- path: implementations/energy_oil_forecasting/analyst_agent/__init__.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: WTI crude oil analyst agent module.
+  symbols:
+  - WtiPriceForecastPromptBuilder
+  - build_wti_agent_predictor
+  - build_wti_basic_config
+  - build_wti_code_exec_config
+  - build_wti_multitask_news_config
+  - build_wti_news_config
+  - build_wti_tool_config
+  - compress_history
+  sections: []
+  chars: 857
+  artifact: artifacts/implementations__energy_oil_forecasting__analyst_agent____init__.py.md
+- path: implementations/energy_oil_forecasting/analyst_agent/agent.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: WTI crude oil analyst agent configurations and prompt builder.
+  symbols:
+  - compress_history
+  - WtiPriceForecastPromptBuilder
+  - build_wti_basic_config
+  - build_wti_multitask_news_config
+  - build_wti_news_config
+  - build_wti_code_exec_config
+  - build_wti_tool_config
+  - build_wti_agent_predictor
+  sections: []
+  chars: 22599
+  artifact: artifacts/implementations__energy_oil_forecasting__analyst_agent__agent.py.md
+- path: implementations/energy_oil_forecasting/analyst_agent/skills/statistical-analysis/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: Statistical analysis skill
+  symbols: []
+  sections:
+  - Statistical analysis skill
+  - Your data universe
+  - What this skill provides
+  - Recommended workflow
+  chars: 2861
+  artifact: artifacts/implementations__energy_oil_forecasting__analyst_agent__skills__statistical-analysis__SKILL.md.md
+- path: implementations/energy_oil_forecasting/analyst_agent/skills/statistical-analysis/references/analysis-patterns.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: "Statistical Analysis \u2014 Code Patterns"
+  symbols: []
+  sections:
+  - "Statistical Analysis \u2014 Code Patterns"
+  - 'Section 0: Working with the Gemini execution environment'
+  - "Parse once \u2014 reference `df` and `daily` in subsequent blocks"
+  - Split daily (recent) vs weekly (older) rows by detecting date gaps > 3 days
+  - 'Pattern 1: Is the current vol regime normal or elevated?'
+  - Assumes `daily` DataFrame is already defined (Section 0)
+  - Assumes `benchmarks` dict is already loaded from wti_benchmarks.json
+  - Rolling 30-day annualised vol
+  - 'Pattern 2: Was the most recent move anomalous?'
+  - Assumes `daily` DataFrame is already defined (Section 0)
+  - 'Pattern 3: How many recent days should I trust for trend estimation?'
+  - Assumes `regime` string and `z_score` float are already defined
+  chars: 6386
+  artifact: artifacts/implementations__energy_oil_forecasting__analyst_agent__skills__statistical-analysis__references__analysis-patterns.md.md
+- path: implementations/energy_oil_forecasting/analyst_agent/skills/trend-projection/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: Trend projection skill
+  symbols: []
+  sections:
+  - Trend projection skill
+  - Quick-reference steps
+  chars: 1924
+  artifact: artifacts/implementations__energy_oil_forecasting__analyst_agent__skills__trend-projection__SKILL.md.md
+- path: implementations/energy_oil_forecasting/analyst_agent/skills/trend-projection/references/projection-examples.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: "Trend Projection \u2014 Code Patterns"
+  symbols: []
+  sections:
+  - "Trend Projection \u2014 Code Patterns"
+  - 'Pattern 1: Linear regression trend + residual-based 80% CI'
+  - "\u2500\u2500 1. Parse the CSV payload \u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+  - Assume `history_csv` is the string value of task_payload["target_history_csv"]
+  - "\u2500\u2500 2. Select the most recent 30 trading days \u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+  - "\u2500\u2500 3. Fit linear regression \u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+  - "\u2500\u2500 4. Project to horizons \u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+    \u2500\u2500"
+  - 'Pattern 2: Plausibility guard for trend extrapolation'
+  - "Allow \xB150% of 52-week range as plausible boundary"
+  - 'Pattern 3: Standard quantile grid from point + CI'
+  - 'Derive sigma from the 80% CI: CI_half_width = 1.28 * sigma'
+  - Verify median matches point_forecast
+  - Notes on Gemini code execution limits
+  chars: 4035
+  artifact: artifacts/implementations__energy_oil_forecasting__analyst_agent__skills__trend-projection__references__projection-examples.md.md
+- path: implementations/energy_oil_forecasting/data.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Data-service setup for the WTI Crude Oil forecasting experiment.
+  symbols:
+  - naive_utc_now
+  - build_wti_service
+  - DEFAULT_CACHE_DIR
+  - WTI_SERIES_ID
+  - build_wti_service
+  - naive_utc_now
+  sections: []
+  chars: 3494
+  artifact: artifacts/implementations__energy_oil_forecasting__data.py.md
+- path: implementations/energy_oil_forecasting/paths.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Shared paths, simulation constants, and colour palette for the energy/oil
+    experiment.
+  symbols:
+  - repo_data_dir
+  - CLR_ACTUAL
+  - CLR_AGENT
+  - CLR_CI_CURR_FILL
+  - CLR_CI_PAST_FILL
+  - CLR_DAY_LINE
+  - CLR_HISTORY
+  - CLR_HIT
+  - CLR_MISS
+  - CLR_PROPHET
+  - DATA_DIR
+  - IRAN_COLOR
+  - PROPHET_SHOCK_TRAJ_CACHE
+  - PROPHET_TRAJ_CACHE
+  - ROLLING_CI_WIDTH
+  - ROLLING_FORECAST_CACHE
+  - ROLLING_HORIZON_DAYS
+  - SCENARIO_CACHE
+  - SCENARIO_ORIGIN
+  - SHOCK_ANALYST_CACHE
+  - SHOCK_CONTEXT_CACHE
+  - SHOCK_HORIZON
+  - SHOCK_ORIGINS
+  - SHOCK_THRESHOLD
+  - SIMULATION_END
+  - SIMULATION_START
+  - TRAJ_AGENT_CACHE
+  - TRAJ_CONTEXT_CACHE
+  - TRAJECTORY_ORIGINS
+  - WARN_COLOR
+  sections: []
+  chars: 3268
+  artifact: artifacts/implementations__energy_oil_forecasting__paths.py.md
+- path: implementations/energy_oil_forecasting/prophet_baseline.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Prophet baseline helpers for the WTI crude oil experiment.
+  symbols:
+  - find_nearest_trading_day
+  - price_series_to_prophet_df
+  - compute_rolling_forecasts
+  - load_prophet_trajectories
+  - check_shock_outcome
+  - prophet_prob_shock
+  - ProphetPredictor
+  - wti_series_to_price_df
+  - ProphetPredictor
+  - check_shock_outcome
+  - compute_rolling_forecasts
+  - find_nearest_trading_day
+  - load_prophet_trajectories
+  - prophet_prob_shock
+  - wti_series_to_price_df
+  sections: []
+  chars: 10873
+  artifact: artifacts/implementations__energy_oil_forecasting__prophet_baseline.py.md
+- path: implementations/energy_oil_forecasting/specs/energy_oil_backtest.yaml
+  kind: yaml
+  domain: impl.energy_oil_forecasting
+  summary: "Energy Oil Backtest Spec \u2014 2025 Weekly Rolling Backtest"
+  symbols: []
+  sections:
+  - "Energy Oil Backtest Spec \u2014 2025 Weekly Rolling Backtest"
+  - '# Runs weekly origins across 2025. Stride is 5 business days (weekly).'
+  - 'Target is WTI Crude Oil price (yfinance ticker: CL=F).'
+  - 'Horizons: 5, 10, 21 business days.'
+  - '# Origin count : 51 (weekly in 2025)'
+  - 'Warmup       : 250 trading days (~1 year) of historical prices'
+  chars: 1104
+  artifact: artifacts/implementations__energy_oil_forecasting__specs__energy_oil_backtest.yaml.md
+- path: implementations/energy_oil_forecasting/specs/energy_oil_eval.yaml
+  kind: yaml
+  domain: impl.energy_oil_forecasting
+  summary: "Energy Oil Eval Spec \u2014 2026 Prospective Competition"
+  symbols: []
+  sections:
+  - "Energy Oil Eval Spec \u2014 2026 Prospective Competition"
+  - '# Runs on 8 weekly origins from Feb 2, 2026 to Mar 23, 2026.'
+  - Covers the high-volatility Persian Gulf geopolitical price shock period.
+  - 'Target is WTI Crude Oil price (yfinance ticker: CL=F).'
+  - 'Horizons: 5, 10, 21 business days.'
+  chars: 1019
+  artifact: artifacts/implementations__energy_oil_forecasting__specs__energy_oil_eval.yaml.md
+- path: implementations/energy_oil_forecasting/specs/energy_oil_eval_smoke.yaml
+  kind: yaml
+  domain: impl.energy_oil_forecasting
+  summary: "Energy Oil Eval Smoke Spec \u2014 Fast CI/Testing Evaluation"
+  symbols: []
+  sections:
+  - "Energy Oil Eval Smoke Spec \u2014 Fast CI/Testing Evaluation"
+  - '# Two-origin subset of energy_oil_eval.yaml for running the 2026 protected'
+  - arena cheaply during development and end-to-end testing.
+  - Use by setting SMOKE_TEST = True in the notebook setup cell.
+  - '# Origin count : 2 (vs. 8 in the full eval)'
+  - 'Warmup       : 250 trading days (~1 year) of historical prices'
+  chars: 1084
+  artifact: artifacts/implementations__energy_oil_forecasting__specs__energy_oil_eval_smoke.yaml.md
+- path: implementations/energy_oil_forecasting/specs/energy_oil_smoke.yaml
+  kind: yaml
+  domain: impl.energy_oil_forecasting
+  summary: "Energy Oil Smoke Spec \u2014 Fast CI/Testing Backtest"
+  symbols: []
+  sections:
+  - "Energy Oil Smoke Spec \u2014 Fast CI/Testing Backtest"
+  - '# Two-origin subset of energy_oil_backtest.yaml for running the full'
+  - NB04 pipeline cheaply during development and end-to-end testing.
+  - Use by setting SMOKE_TEST = True in the notebook setup cell.
+  - '# Origin count : 2 (vs. 51 in the full backtest)'
+  - 'Warmup       : 250 trading days (~1 year) of historical prices'
+  chars: 1133
+  artifact: artifacts/implementations__energy_oil_forecasting__specs__energy_oil_smoke.yaml.md
+- path: implementations/energy_oil_forecasting/starter_agent/__init__.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: "WTI starter agent \u2014 a fresh, hackable template for your own exploration."
+  symbols:
+  - build_starter_agent_config
+  - build_starter_agent_predictor
+  sections: []
+  chars: 542
+  artifact: artifacts/implementations__energy_oil_forecasting__starter_agent____init__.py.md
+- path: implementations/energy_oil_forecasting/starter_agent/agent.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: "WTI starter agent \u2014 a fresh, hackable template for your own exploration."
+  symbols:
+  - build_starter_agent_config
+  - _StarterForecastPromptBuilder
+  - build_starter_agent_predictor
+  sections: []
+  chars: 9265
+  artifact: artifacts/implementations__energy_oil_forecasting__starter_agent__agent.py.md
+- path: implementations/energy_oil_forecasting/starter_agent/skills/code-analysis-playbook/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: Code-analysis playbook
+  symbols: []
+  sections:
+  - Code-analysis playbook
+  - Where your data lives
+  - Compute before you forecast
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 2093
+  artifact: artifacts/implementations__energy_oil_forecasting__starter_agent__skills__code-analysis-playbook__SKILL.md.md
+- path: implementations/energy_oil_forecasting/starter_agent/skills/forecasting/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: Forecasting skill
+  symbols: []
+  sections:
+  - Forecasting skill
+  - What you'll receive
+  - The output contract
+  - Calibration
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 2295
+  artifact: artifacts/implementations__energy_oil_forecasting__starter_agent__skills__forecasting__SKILL.md.md
+- path: implementations/energy_oil_forecasting/starter_agent/skills/research-playbook/SKILL.md
+  kind: markdown
+  domain: impl.energy_oil_forecasting
+  summary: Research playbook
+  symbols: []
+  sections:
+  - Research playbook
+  - The one rule that matters
+  - How to search
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 1830
+  artifact: artifacts/implementations__energy_oil_forecasting__starter_agent__skills__research-playbook__SKILL.md.md
+- path: implementations/energy_oil_forecasting/tasks.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Task specifications and agent predictor wiring for the WTI experiment.
+  symbols:
+  - WtiMultitaskPromptBuilder
+  - ScenarioCard
+  - ScenarioAgentForecastOutput
+  - build_wti_news_predictor
+  - build_wti_agent_predictor_for_task
+  - TASK_SCENARIOS_SPEC
+  - TASK_SHOCK_SPEC
+  - TASK_SPECS
+  - TASK_TRAJECTORY_SPEC
+  - ScenarioAgentForecastOutput
+  - ScenarioCard
+  - TaskKind
+  - WtiMultitaskPromptBuilder
+  - build_wti_agent_predictor_for_task
+  - build_wti_news_predictor
+  sections: []
+  chars: 8968
+  artifact: artifacts/implementations__energy_oil_forecasting__tasks.py.md
+- path: implementations/energy_oil_forecasting/viz.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: Plotly visualisation helpers for the WTI crude oil experiment.
+  symbols:
+  - build_forecast_animation
+  - make_context_chart
+  - make_error_timeline
+  - coverage_summary_table
+  - make_coverage_chart
+  - make_punchline_charts
+  - make_futures_curve_chart
+  - export_animation_html
+  - make_trajectory_fan_chart
+  - make_shock_comparison_chart
+  - verdict_label
+  - prob_bar
+  - conf_bar
+  sections: []
+  chars: 43163
+  artifact: artifacts/implementations__energy_oil_forecasting__viz.py.md
+- path: implementations/food_price_forecasting/01_food_data_exploration.ipynb
+  kind: notebook
+  domain: impl.food_price_forecasting
+  summary: "Food Price CPI \u2014 Data Exploration"
+  symbols: []
+  sections:
+  - "Food Price CPI \u2014 Data Exploration"
+  chars: 3591
+  artifact: artifacts/implementations__food_price_forecasting__01_food_data_exploration.ipynb.md
+- path: implementations/food_price_forecasting/02_food_cpi_experiment.ipynb
+  kind: notebook
+  domain: impl.food_price_forecasting
+  summary: "Canada Food CPI \u2014 CFPR Replica Experiment"
+  symbols: []
+  sections:
+  - "Canada Food CPI \u2014 CFPR Replica Experiment"
+  - 8.2 MAPE per category
+  chars: 26434
+  artifact: artifacts/implementations__food_price_forecasting__02_food_cpi_experiment.ipynb.md
+- path: implementations/food_price_forecasting/99_starter_agent.ipynb
+  kind: notebook
+  domain: impl.food_price_forecasting
+  summary: "Food Price (CPI) \u2014 Your Starter Agent"
+  symbols: []
+  sections:
+  - "Food Price (CPI) \u2014 Your Starter Agent"
+  chars: 7733
+  artifact: artifacts/implementations__food_price_forecasting__99_starter_agent.ipynb.md
+- path: implementations/food_price_forecasting/README.md
+  kind: markdown
+  domain: impl.food_price_forecasting
+  summary: Food Price CPI Forecasting
+  symbols: []
+  sections:
+  - Food Price CPI Forecasting
+  - Forecasting task
+  - CFPR methodology
+  - Reference specs
+  - Module layout
+  - Covariates
+  - Artifact storage
+  - Prerequisites
+  - Report context (CFPR PDFs)
+  - 1. download the report PDFs into data/reports/cfpr/ (gitignored)
+  - 2. extract each PDF -> <year>_en.md (full text) + <year>_en.json (metadata)
+  - Notebooks
+  - Key design decisions
+  chars: 10973
+  artifact: artifacts/implementations__food_price_forecasting__README.md.md
+- path: implementations/food_price_forecasting/__init__.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: "Canada Food CPI experiment \u2014 helper modules and reference implementations."
+  symbols: []
+  sections: []
+  chars: 727
+  artifact: artifacts/implementations__food_price_forecasting____init__.py.md
+- path: implementations/food_price_forecasting/analysis.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: Analysis helpers for the Canada Food CPI experiment.
+  symbols:
+  - predictions_to_dataframe
+  - compute_avgyoy
+  - summarize_crps
+  - compute_ape_long
+  - compute_mape
+  - rationales_table
+  - compute_ape_long
+  - compute_avgyoy
+  - compute_mape
+  - predictions_to_dataframe
+  - rationales_table
+  - summarize_crps
+  sections: []
+  chars: 13091
+  artifact: artifacts/implementations__food_price_forecasting__analysis.py.md
+- path: implementations/food_price_forecasting/data.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: Data-service setup for the Canada Food CPI experiment.
+  symbols:
+  - build_food_cpi_service
+  - CATEGORY_LABELS
+  - CFPR_REPORTS_SOURCE
+  - DEFAULT_CACHE_DIR
+  - DEFAULT_REPORTS_DIR
+  - FOOD_CPI_SERIES
+  - STATCAN_TABLE
+  - build_food_cpi_service
+  sections: []
+  chars: 6528
+  artifact: artifacts/implementations__food_price_forecasting__data.py.md
+- path: implementations/food_price_forecasting/plots.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: Plotting helpers for the Canada Food CPI experiment.
+  symbols:
+  - plot_trajectory_fan
+  - plot_avgyoy_grid
+  - plot_crps_disaggregated
+  - plot_mape_distribution
+  - plot_mape_by_category
+  - plot_food_cpi_small_multiples
+  - DEFAULT_PREDICTOR_PALETTE
+  - plot_avgyoy_grid
+  - plot_crps_disaggregated
+  - plot_food_cpi_small_multiples
+  - plot_mape_by_category
+  - plot_mape_distribution
+  - plot_trajectory_fan
+  sections: []
+  chars: 19740
+  artifact: artifacts/implementations__food_price_forecasting__plots.py.md
+- path: implementations/food_price_forecasting/predictors/__init__.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: Tuned predictor recipes for the Canada Food CPI experiment.
+  symbols:
+  - build_llmp_quantile_grid
+  - build_llmp_sampled_trajectory
+  sections: []
+  chars: 955
+  artifact: artifacts/implementations__food_price_forecasting__predictors____init__.py.md
+- path: implementations/food_price_forecasting/predictors/llmp_quantile_grid.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: 'Food CPI recipe: quantile-grid LLMP.'
+  symbols:
+  - build_llmp_quantile_grid
+  - build_llmp_quantile_grid
+  sections: []
+  chars: 5311
+  artifact: artifacts/implementations__food_price_forecasting__predictors__llmp_quantile_grid.py.md
+- path: implementations/food_price_forecasting/predictors/llmp_sampled_trajectory.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: 'Food CPI recipe: sampled-trajectory LLMP.'
+  symbols:
+  - build_llmp_sampled_trajectory
+  - build_llmp_sampled_trajectory
+  sections: []
+  chars: 3507
+  artifact: artifacts/implementations__food_price_forecasting__predictors__llmp_sampled_trajectory.py.md
+- path: implementations/food_price_forecasting/reports.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: CFPR report acquisition manifest.
+  symbols:
+  - CFPRReportEntry
+  - load_manifest
+  - DEFAULT_REPORTS_CACHE_DIR
+  - REPORTS_MANIFEST_PATH
+  - CFPRReportEntry
+  - load_manifest
+  sections: []
+  chars: 3343
+  artifact: artifacts/implementations__food_price_forecasting__reports.py.md
+- path: implementations/food_price_forecasting/smoke_report.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: Plain-text reporting for food CPI agent smoke tests.
+  symbols:
+  - summarize_agent_predictions
+  sections: []
+  chars: 3339
+  artifact: artifacts/implementations__food_price_forecasting__smoke_report.py.md
+- path: implementations/food_price_forecasting/specs/food_cpi_cfpr_backtest.yaml
+  kind: yaml
+  domain: impl.food_price_forecasting
+  summary: 'Reference MultiTargetBacktestSpec: Canada Food CPI, CFPR trajectory replica'
+  symbols: []
+  sections:
+  - 'Reference MultiTargetBacktestSpec: Canada Food CPI, CFPR trajectory replica'
+  - '# This spec is the canonical backtest for the Canada''s Food Price Report'
+  - (CFPR) forecasting exercise.  The CFPR produces, once a year, an
+  - '*average-over-average* YoY CPI change projection for the upcoming calendar'
+  - 'year: "by how much will the average food CPI index in year Y+1 differ'
+  - from the average in year Y?"
+  - '# To compute that quantity from a monthly CPI forecast we need the full'
+  - 12-month trajectory for calendar year Y+1, issued from a July-of-year-Y
+  - 'origin.  Concretely:'
+  - '#   * Origin:   July 1, year Y  (the most recent CPI data available in hand'
+  - is typically May or June Y, so July is the first origin at
+  - which a CFPR-style prediction can be made).
+  - '* Horizons: 6, 7, 8, ..., 17  (January .. December of year Y+1).'
+  - '* Stride:   12 months (one origin per July, annual cadence).'
+  - '# From these 12 forecasts one computes:'
+  - '#     avg/avg YoY = mean(predictions for Jan..Dec of Y+1)'
+  - / mean(actuals for Jan..Dec of Y)
+  - '- 1'
+  - '# Window'
+  - '------'
+  - "Jul 2009 \u2192 Jul 2024 = 16 annual origins.  This spans three distinct"
+  - macro regimes (low-inflation 2010-19, COVID shock 2020-21, food-price
+  - surge/retreat 2021-24).  The last origin (Jul 2024) forecasts out to
+  - Dec 2025, which resolves in the StatCan release of Jan 2026.
+  - '# Predictors'
+  - '----------'
+  - "This is the open backtesting resource \u2014 run it as many times as you"
+  - like to tune predictors and build intuition.  There is no protected eval
+  - 'spec for this experiment: historical LLM/agent scores are upper bounds'
+  - on live performance (see the food CPI experiment notebook).
+  - '# Prerequisites'
+  - '-------------'
+  - 'uv run python scripts/fetch_cpi.py    # StatCan food CPI cache'
+  - "# (FRED covariates are deliberately NOT part of this canonical spec \u2014 see"
+  - '`planning-docs/bootcamp-workplan.md` for the deferred "covariate framing" design'
+  - discussion.  Predictors that want exogenous inputs should be evaluated
+  - on a separate experiment.)
+  - '# Loading'
+  - '-------'
+  - '#   import yaml'
+  chars: 5921
+  artifact: artifacts/implementations__food_price_forecasting__specs__food_cpi_cfpr_backtest.yaml.md
+- path: implementations/food_price_forecasting/specs/food_cpi_recent_backtest.yaml
+  kind: yaml
+  domain: impl.food_price_forecasting
+  summary: 'Mini backtest spec: all 9 targets, recent 6 origins.'
+  symbols: []
+  sections:
+  - 'Mini backtest spec: all 9 targets, recent 6 origins.'
+  - '# All nine food CPI categories, 6 annual July origins (2019-2024).'
+  - "Covers two meaningful macro regimes \u2014 the COVID shock (2020-21) and the"
+  - "food-price surge and retreat (2021-24) \u2014 while keeping total agent calls"
+  - manageable.  Not budget-gated; run freely.
+  - '# Origin count : 6    (Jul 2019, 2020, 2021, 2022, 2023, 2024)'
+  - "Agent calls  : ~54  (9 tasks \xD7 6 origins, all 12 trajectory horizons per call)"
+  - '# Use `food_cpi_cfpr_backtest.yaml` for the full 16-origin canonical backtest.'
+  - '# Prerequisites'
+  - '-------------'
+  - uv run python scripts/fetch_cpi.py
+  - Jul 2019 -> Jul 2024 = 6 annual origins.
+  chars: 3865
+  artifact: artifacts/implementations__food_price_forecasting__specs__food_cpi_recent_backtest.yaml.md
+- path: implementations/food_price_forecasting/specs/food_cpi_single_mini_backtest.yaml
+  kind: yaml
+  domain: impl.food_price_forecasting
+  summary: 'Mini backtest spec: single target, recent 6 origins.'
+  symbols: []
+  sections:
+  - 'Mini backtest spec: single target, recent 6 origins.'
+  - '# One task (bakery & cereal), 6 annual July origins (2019-2024).'
+  - Use this for fast agent development and pipeline smoke-testing.
+  - Not budget-gated; run freely.
+  - '# Origin count : 6   (Jul 2019, 2020, 2021, 2022, 2023, 2024)'
+  - 'Agent calls  : ~6  (one per origin, all 12 trajectory horizons in one call)'
+  - '# Prerequisites'
+  - '-------------'
+  - uv run python scripts/fetch_cpi.py
+  - Jul 2019 -> Jul 2024 = 6 annual origins.
+  chars: 1260
+  artifact: artifacts/implementations__food_price_forecasting__specs__food_cpi_single_mini_backtest.yaml.md
+- path: implementations/food_price_forecasting/starter_agent/__init__.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: "Food CPI starter agent \u2014 a fresh, hackable template for your own\
+    \ exploration."
+  symbols:
+  - FoodCpiStarterPromptBuilder
+  - build_starter_agent_config
+  - build_starter_agent_predictor
+  sections: []
+  chars: 651
+  artifact: artifacts/implementations__food_price_forecasting__starter_agent____init__.py.md
+- path: implementations/food_price_forecasting/starter_agent/agent.py
+  kind: python
+  domain: impl.food_price_forecasting
+  summary: "Food CPI starter agent \u2014 a fresh, hackable template for your own\
+    \ exploration."
+  symbols:
+  - FoodCpiStarterPromptBuilder
+  - build_starter_agent_config
+  - _StarterForecastPromptBuilder
+  - build_starter_agent_predictor
+  sections: []
+  chars: 10665
+  artifact: artifacts/implementations__food_price_forecasting__starter_agent__agent.py.md
+- path: implementations/food_price_forecasting/starter_agent/skills/code-analysis-playbook/SKILL.md
+  kind: markdown
+  domain: impl.food_price_forecasting
+  summary: Code-analysis playbook
+  symbols: []
+  sections:
+  - Code-analysis playbook
+  - Where your data lives
+  - Compute before you forecast
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 2157
+  artifact: artifacts/implementations__food_price_forecasting__starter_agent__skills__code-analysis-playbook__SKILL.md.md
+- path: implementations/food_price_forecasting/starter_agent/skills/forecasting/SKILL.md
+  kind: markdown
+  domain: impl.food_price_forecasting
+  summary: Forecasting skill
+  symbols: []
+  sections:
+  - Forecasting skill
+  - What you'll receive
+  - The output contract
+  - Calibration
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 2323
+  artifact: artifacts/implementations__food_price_forecasting__starter_agent__skills__forecasting__SKILL.md.md
+- path: implementations/food_price_forecasting/starter_agent/skills/research-playbook/SKILL.md
+  kind: markdown
+  domain: impl.food_price_forecasting
+  summary: Research playbook
+  symbols: []
+  sections:
+  - Research playbook
+  - The one rule that matters
+  - How to search
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 1871
+  artifact: artifacts/implementations__food_price_forecasting__starter_agent__skills__research-playbook__SKILL.md.md
+- path: implementations/getting_started/00_environment_check.ipynb
+  kind: notebook
+  domain: impl.getting_started
+  summary: "00 \xB7 Environment Check \u2014 start here"
+  symbols: []
+  sections:
+  - "00 \xB7 Environment Check \u2014 start here"
+  - Setup
+  - "1 \xB7 API key inventory"
+  - "2 \xB7 Package imports & native libraries"
+  - "3 \xB7 LLM inference via the Vector proxy"
+  - "4 \xB7 Langfuse tracing connection"
+  - "5 \xB7 E2B code execution sandbox"
+  - "6 \xB7 StatCan data access"
+  - "7 \xB7 FRED data access (optional)"
+  - "8 \xB7 End-to-end mini forecast"
+  - Summary
+  chars: 22120
+  artifact: artifacts/implementations__getting_started__00_environment_check.ipynb.md
+- path: implementations/getting_started/01_cpi_data_exploration.ipynb
+  kind: notebook
+  domain: impl.getting_started
+  summary: "Getting Started \u2014 CPI Data Exploration"
+  symbols: []
+  sections:
+  - "Getting Started \u2014 CPI Data Exploration"
+  - 1. Build the DataService
+  - 2. Inspect the registered series
+  - "3. Cutoff filtering \u2014 the core discipline"
+  - '4. Plot: the three series side by side'
+  - 5. Year-over-year change
+  - 6. Define a `ForecastingTask`
+  - 'Next: `02_cpi_backtest_demo.ipynb`'
+  chars: 7140
+  artifact: artifacts/implementations__getting_started__01_cpi_data_exploration.ipynb.md
+- path: implementations/getting_started/02_cpi_backtest_demo.ipynb
+  kind: notebook
+  domain: impl.getting_started
+  summary: "Getting Started \u2014 CPI Gasoline Backtest"
+  symbols: []
+  sections:
+  - "Getting Started \u2014 CPI Gasoline Backtest"
+  - 1. Register CPI Gasoline
+  - 2. Load the reference spec
+  - 3. Define the predictors
+  - 4. Run both backtests
+  - 5. Per-origin CRPS comparison
+  - "6. Predictions vs. actuals \u2014 the visual story"
+  - 7. Where does it fail?
+  - 8. Spend an eval run (optional)
+  - '9. Try this next: re-run against Shelter'
+  - 10. Serialize the result to YAML
+  chars: 16383
+  artifact: artifacts/implementations__getting_started__02_cpi_backtest_demo.ipynb.md
+- path: implementations/getting_started/99_repo_concierge.ipynb
+  kind: notebook
+  domain: impl.getting_started
+  summary: "Repo Concierge \u2014 ask questions about this codebase"
+  symbols: []
+  sections:
+  - "Repo Concierge \u2014 ask questions about this codebase"
+  chars: 5634
+  artifact: artifacts/implementations__getting_started__99_repo_concierge.ipynb.md
+- path: implementations/getting_started/README.md
+  kind: markdown
+  domain: impl.getting_started
+  summary: Getting Started
+  symbols: []
+  sections:
+  - Getting Started
+  - The task
+  - Before you start
+  - 0. Check your environment - `00_environment_check.ipynb`
+  - Populate the local data cache
+  - Walkthrough
+  - 1. Warm up - `01_cpi_data_exploration.ipynb`
+  - 2. Run the backtest - `02_cpi_backtest_demo.ipynb`
+  - 3. Write your own predictor
+  - 4. Compare predictors
+  - 5. Spend an eval run
+  - "6. Ask the repo concierge \u2014 `99_repo_concierge.ipynb`"
+  - Where to go next
+  - Directory layout
+  - Key interfaces (from `aieng-forecasting`)
+  chars: 9228
+  artifact: artifacts/implementations__getting_started__README.md.md
+- path: implementations/getting_started/__init__.py
+  kind: python
+  domain: impl.getting_started
+  summary: Getting started reference implementation (notebooks + repo concierge agent).
+  symbols: []
+  sections: []
+  chars: 166
+  artifact: artifacts/implementations__getting_started____init__.py.md
+- path: implementations/getting_started/concierge_agent/__init__.py
+  kind: python
+  domain: impl.getting_started
+  summary: "Repo concierge agent \u2014 onboarding helper for the agentic-forecasting\
+    \ codebase."
+  symbols:
+  - build_concierge_config
+  - fetch_repo_artifact
+  - search_repo_catalog
+  - search_repo_knowledge
+  sections: []
+  chars: 713
+  artifact: artifacts/implementations__getting_started__concierge_agent____init__.py.md
+- path: implementations/getting_started/concierge_agent/agent.py
+  kind: python
+  domain: impl.getting_started
+  summary: "Repo concierge agent \u2014 onboarding helper for the agentic-forecasting\
+    \ codebase."
+  symbols:
+  - build_concierge_config
+  sections: []
+  chars: 4534
+  artifact: artifacts/implementations__getting_started__concierge_agent__agent.py.md
+- path: implementations/getting_started/concierge_agent/catalog.py
+  kind: python
+  domain: impl.getting_started
+  summary: Runtime catalog search and artifact fetch for the repo concierge agent.
+  symbols:
+  - CatalogHit
+  - search_repo_catalog
+  - fetch_repo_artifact
+  - clear_catalog_cache
+  - clear_catalog_cache
+  - fetch_repo_artifact
+  - search_repo_catalog
+  sections: []
+  chars: 7426
+  artifact: artifacts/implementations__getting_started__concierge_agent__catalog.py.md
+- path: implementations/getting_started/concierge_agent/catalog_build.py
+  kind: python
+  domain: impl.getting_started
+  summary: Build the repo concierge catalog and per-source artifacts (maintainer-only).
+  symbols:
+  - CatalogEntry
+  - repo_root_from_here
+  - context_dir
+  - path_to_artifact_slug
+  - infer_domain
+  - infer_kind
+  - collect_source_paths
+  - build_entry
+  - git_ref
+  - build_catalog
+  sections: []
+  chars: 11490
+  artifact: artifacts/implementations__getting_started__concierge_agent__catalog_build.py.md
+- path: implementations/getting_started/concierge_agent/knowledge.py
+  kind: python
+  domain: impl.getting_started
+  summary: "Repo knowledge tools \u2014 catalog search and artifact fetch."
+  symbols:
+  - clear_knowledge_cache
+  - search_repo_knowledge
+  - clear_knowledge_cache
+  - fetch_repo_artifact
+  - search_repo_catalog
+  - search_repo_knowledge
+  sections: []
+  chars: 1845
+  artifact: artifacts/implementations__getting_started__concierge_agent__knowledge.py.md
+- path: implementations/getting_started/concierge_agent/skills/repo-navigation/SKILL.md
+  kind: markdown
+  domain: impl.getting_started
+  summary: Repo navigation skill
+  symbols: []
+  sections:
+  - Repo navigation skill
+  - Workflow
+  chars: 665
+  artifact: artifacts/implementations__getting_started__concierge_agent__skills__repo-navigation__SKILL.md.md
+- path: implementations/getting_started/concierge_agent/skills/repo-navigation/references/catalog-guide.md
+  kind: markdown
+  domain: impl.getting_started
+  summary: Catalog guide
+  symbols: []
+  sections:
+  - Catalog guide
+  - Two-step retrieval
+  - Domain filters (`domain=`)
+  - Kind filters (`kind=`)
+  - Example sequences
+  chars: 1855
+  artifact: artifacts/implementations__getting_started__concierge_agent__skills__repo-navigation__references__catalog-guide.md.md
+- path: implementations/getting_started/concierge_agent/skills/repo-navigation/references/navigation-map.md
+  kind: markdown
+  domain: impl.getting_started
+  summary: Bootcamp navigation map
+  symbols: []
+  sections:
+  - Bootcamp navigation map
+  - First steps
+  - Reference implementations (pick by problem)
+  - Related agents
+  - Key library entry points
+  chars: 1832
+  artifact: artifacts/implementations__getting_started__concierge_agent__skills__repo-navigation__references__navigation-map.md.md
+- path: implementations/getting_started/specs/cpi_gasoline_1m.yaml
+  kind: yaml
+  domain: impl.getting_started
+  summary: 'Reference BacktestSpec: CPI Gasoline Canada, 1-month ahead forecast'
+  symbols: []
+  sections:
+  - 'Reference BacktestSpec: CPI Gasoline Canada, 1-month ahead forecast'
+  - '# Gasoline is the "hello-world" target for the getting-started experiment.'
+  - It is deliberately chosen over headline All-items because it is visibly
+  - volatile (2008 crude collapse, 2014-16 OPEC-led decline, 2020 COVID
+  - "demand shock, 2022 Russia/Ukraine surge) \u2014 a single-series backtest"
+  - makes the "why is this hard?" teaching point land without needing the
+  - full CFPR trajectory machinery.
+  - '# Horizon is 1 month ahead (h=1).  Rationale:'
+  - '- One-step-ahead is the most natural short-term question on a monthly'
+  - series and is immediately interpretable.
+  - '- StatCan releases CPI ~3 weeks after the reference month, so a'
+  - forecast made at origin T resolves at T+1 within the same month the
+  - next CPI print is published.  This is short enough to enable
+  - genuine live / prospective evaluation (make a prediction today,
+  - validate it next month).
+  - "- The backtest (2000\u20132025) provides ~276 training-window origins;"
+  - "the eval set (2025\u2013present) covers ~15+ already-resolved origins,"
+  - enough for a stable CRPS estimate.
+  - '- Naive (last-value) is meaningfully bad at turning points, so the'
+  - naive-vs-AutoARIMA comparison still lands even at h=1.
+  - '# To load this spec in Python:'
+  - '#   import yaml'
+  - from aieng.forecasting.evaluation import BacktestSpec
+  - '#   with open("implementations/getting_started/specs/cpi_gasoline_1m.yaml") as
+    f:'
+  - spec = BacktestSpec.model_validate(yaml.safe_load(f))
+  - '# The target series must be registered in the DataService before running'
+  - a backtest.  Use scripts/fetch_cpi.py to populate the local data cache,
+  - then register "cpi_gasoline_canada" from StatCan table 18-10-0004-11.
+  - 'Backtest window: January 2000 through January 2025.'
+  - Origins from January 2025 onward are reserved for the eval set.
+  - stride=1 on monthly (MS) frequency gives one origin per month.
+  - Require 24 months of history before the first forecast.
+  chars: 2930
+  artifact: artifacts/implementations__getting_started__specs__cpi_gasoline_1m.yaml.md
+- path: implementations/getting_started/specs/cpi_gasoline_eval_2025.yaml
+  kind: yaml
+  domain: impl.getting_started
+  summary: "Reference EvalSpec: CPI Gasoline Canada, 1-month ahead \u2014 2025 eval\
+    \ window"
+  symbols: []
+  sections:
+  - "Reference EvalSpec: CPI Gasoline Canada, 1-month ahead \u2014 2025 eval window"
+  - '# Companion to cpi_gasoline_1m.yaml.  Covers origins from January 2025'
+  - "through March 2026 \u2014 the most recent window where every forecast (h=1)"
+  - has a published resolution as of the time of writing (May 2026; StatCan
+  - releases CPI ~3 weeks after the reference month, so April 2026 data was
+  - published ~May 19 2026 and all h=1 forecasts up to March 2026 are
+  - resolved).
+  - '# This spec is intentionally "live-adjacent": origins from late 2025 and'
+  - early 2026 are as recent as possible, making it possible to extend the
+  - eval window month by month as new CPI prints are published.
+  - '# Use this spec sparingly.  max_runs: 5 limits how many times a'
+  - participant may run evaluate() against it, reducing the risk of
+  - inadvertently over-fitting to the held-out window.
+  - '# To load this spec in Python:'
+  - '#   import yaml'
+  - from pathlib import Path
+  - from aieng.forecasting.evaluation import EvalSpec, EvalTracker, evaluate
+  - '#   with open("implementations/getting_started/specs/cpi_gasoline_eval_2025.yaml")
+    as f:'
+  - spec = EvalSpec.model_validate(yaml.safe_load(f))
+  - '#   tracker = EvalTracker(Path("data/eval_runs.yaml"))'
+  - result = evaluate(predictor=my_predictor, spec=spec, data_service=svc, tracker=tracker)
+  - 'print(f"Eval mean CRPS: {result.mean_score:.4f}  (run {result.run_number}/{spec.max_runs})")'
+  - '# The target series must be registered before running.  Use'
+  - scripts/fetch_cpi.py to populate the local data cache, then register
+  - '"cpi_gasoline_canada".'
+  - 'Eval window: January 2025 through March 2026.'
+  - "Origins Jan 2025 \u2013 Mar 2026 with h=1 produce forecast dates Feb 2025 \u2013\
+    \ Apr 2026,"
+  - all of which are published as of May 2026.
+  - stride=1 gives one origin per month (~15 origins).
+  - Require 24 months of history before the first forecast.
+  - 'Budget cap: each participant may run evaluate() against this spec at'
+  - most 5 times.  Enforced by EvalTracker when passed to evaluate().
+  chars: 2789
+  artifact: artifacts/implementations__getting_started__specs__cpi_gasoline_eval_2025.yaml.md
+- path: implementations/sp500_forecasting/01_sp500_multivariate_backtest.ipynb
+  kind: notebook
+  domain: impl.sp500_forecasting
+  summary: "S&P 500 \u2014 multivariate conventional-methods comparison"
+  symbols: []
+  sections:
+  - "S&P 500 \u2014 multivariate conventional-methods comparison"
+  - What's actually forecastable at daily resolution?
+  - "\u26A0\uFE0F Cutoff-aware evaluation \u2014 why the windows are what they are"
+  - "Leaderboard \u2014 mean CRPS by method and horizon"
+  - "Reading the LLMP \xB1 covariates rows"
+  chars: 20376
+  artifact: artifacts/implementations__sp500_forecasting__01_sp500_multivariate_backtest.ipynb.md
+- path: implementations/sp500_forecasting/99_starter_agent.ipynb
+  kind: notebook
+  domain: impl.sp500_forecasting
+  summary: "S&P 500 \u2014 Your Starter Agent"
+  symbols: []
+  sections:
+  - "S&P 500 \u2014 Your Starter Agent"
+  chars: 7839
+  artifact: artifacts/implementations__sp500_forecasting__99_starter_agent.ipynb.md
+- path: implementations/sp500_forecasting/README.md
+  kind: markdown
+  domain: impl.sp500_forecasting
+  summary: S&P 500 multivariate forecasting (leak-safe covariates)
+  symbols: []
+  sections:
+  - S&P 500 multivariate forecasting (leak-safe covariates)
+  - Forecasting task
+  - Methods compared
+  - Canonical covariates (when enabled)
+  - Cutoff-aware evaluation (read this)
+  - No-leakage design
+  - "Specs \u2014 windows and tasks (experiment design only)"
+  - Module layout
+  - Adding a method
+  - Prerequisites
+  - "Build your own \u2014 `99_starter_agent.ipynb`"
+  chars: 11662
+  artifact: artifacts/implementations__sp500_forecasting__README.md.md
+- path: implementations/sp500_forecasting/__init__.py
+  kind: python
+  domain: impl.sp500_forecasting
+  summary: "S&P 500 multivariate log-return experiment \u2014 leak-safe covariates."
+  symbols:
+  - DEFAULT_COVARIATE_SERIES_IDS
+  - FRED_PREFETCH_REGISTRY
+  - FRED_SERIES_IDS_FOR_PREFETCH
+  - SERIES_ID_2Y10Y_SPREAD
+  - SERIES_ID_10Y_YIELD
+  - SERIES_ID_CPI_INFLATION_CHANGE
+  - SERIES_ID_DOLLAR_INDEX_RETURN
+  - SERIES_ID_FED_FUNDS
+  - SERIES_ID_GOLD_RETURN
+  - SERIES_ID_NASDAQ_RETURN
+  - SERIES_ID_OIL_RETURN
+  - SERIES_ID_UNEMPLOYMENT
+  - SERIES_ID_VIX_CHANGE
+  - SERIES_ID_VIX_LEVEL
+  - SP500_LOG_RETURN_SERIES_ID
+  - SP500_SERIES_ID
+  - SP500_TICKER
+  - build_sp500_multivariate_service
+  sections: []
+  chars: 2086
+  artifact: artifacts/implementations__sp500_forecasting____init__.py.md
+- path: implementations/sp500_forecasting/analysis.py
+  kind: python
+  domain: impl.sp500_forecasting
+  summary: Notebook-oriented formatting and direction metrics for the S&P 500 demo.
+  symbols:
+  - style_results_dataframe
+  - prob_return_above_threshold_from_quantiles
+  - build_direction_eval_frame
+  - direction_classification_metrics
+  - build_direction_eval_frame
+  - direction_classification_metrics
+  - prob_return_above_threshold_from_quantiles
+  - style_results_dataframe
+  sections: []
+  chars: 5762
+  artifact: artifacts/implementations__sp500_forecasting__analysis.py.md
+- path: implementations/sp500_forecasting/data.py
+  kind: python
+  domain: impl.sp500_forecasting
+  summary: Leak-safe data-service setup for multivariate S&P 500 log-return forecasting.
+  symbols:
+  - sp500_logret_series_id
+  - YahooFinanceDailyAdapter
+  - StaticFrameAdapter
+  - build_sp500_log_return_service
+  - build_sp500_multivariate_service
+  - DEFAULT_COVARIATE_SERIES_IDS
+  - FRED_PREFETCH_REGISTRY
+  - FRED_SERIES_IDS_FOR_PREFETCH
+  - SERIES_ID_10Y_YIELD
+  - SERIES_ID_2Y10Y_SPREAD
+  - SERIES_ID_CPI_INFLATION_CHANGE
+  - SERIES_ID_DOLLAR_INDEX_RETURN
+  - SERIES_ID_FED_FUNDS
+  - SERIES_ID_GOLD_RETURN
+  - SERIES_ID_NASDAQ_RETURN
+  - SERIES_ID_OIL_RETURN
+  - SERIES_ID_UNEMPLOYMENT
+  - SERIES_ID_VIX_CHANGE
+  - SERIES_ID_VIX_LEVEL
+  - SP500_LOG_RETURN_SERIES_ID
+  - SP500_RETURN_TARGETS
+  - SP500_RETURN_WINDOWS
+  - SP500_SERIES_ID
+  - SP500_TICKER
+  - SP500_WINDOW_LABELS
+  - StaticFrameAdapter
+  - build_sp500_log_return_service
+  - build_sp500_multivariate_service
+  - sp500_logret_series_id
+  sections: []
+  chars: 35434
+  artifact: artifacts/implementations__sp500_forecasting__data.py.md
+- path: implementations/sp500_forecasting/leaderboard.py
+  kind: python
+  domain: impl.sp500_forecasting
+  summary: Leaderboard rows for the multivariate S&P 500 experiment.
+  symbols:
+  - build_return_compare_frame
+  - build_leaderboard
+  - build_leaderboard
+  - build_return_compare_frame
+  sections: []
+  chars: 7679
+  artifact: artifacts/implementations__sp500_forecasting__leaderboard.py.md
+- path: implementations/sp500_forecasting/plots.py
+  kind: python
+  domain: impl.sp500_forecasting
+  summary: Matplotlib helpers for the multivariate S&P 500 demo notebook.
+  symbols:
+  - plot_sp500_log_return_recent
+  - plot_mean_crps_leaderboard
+  - plot_mean_crps_by_horizon
+  - plot_return_forecast_vs_actual_multi
+  - display_multivariate_backtest_leaderboard
+  sections: []
+  chars: 8856
+  artifact: artifacts/implementations__sp500_forecasting__plots.py.md
+- path: implementations/sp500_forecasting/predictors/__init__.py
+  kind: python
+  domain: impl.sp500_forecasting
+  summary: Tuned predictor recipes for the multivariate S&P 500 experiment.
+  symbols:
+  - build_sp500_llmp_sampled_trajectory
+  sections: []
+  chars: 987
+  artifact: artifacts/implementations__sp500_forecasting__predictors____init__.py.md
+- path: implementations/sp500_forecasting/predictors/llmp_sampled_trajectory.py
+  kind: python
+  domain: impl.sp500_forecasting
+  summary: 'S&P 500 recipe: sampled-trajectory LLMP (target-only and with-covariates).'
+  symbols:
+  - build_sp500_llmp_sampled_trajectory
+  - build_sp500_llmp_sampled_trajectory
+  sections: []
+  chars: 4804
+  artifact: artifacts/implementations__sp500_forecasting__predictors__llmp_sampled_trajectory.py.md
+- path: implementations/sp500_forecasting/specs/sp500_backtest_2025.yaml
+  kind: yaml
+  domain: impl.sp500_forecasting
+  summary: "Main backtest spec \u2014 weekly origins across 2025 (post-cutoff)."
+  symbols: []
+  sections:
+  - "Main backtest spec \u2014 weekly origins across 2025 (post-cutoff)."
+  - '# 2025 is after the Gemini training cutoff (~Jan 2025), so this is the window'
+  - "where the conventional methods AND the LLM-Process can be compared *fairly* \u2014"
+  - the LLM has not memorised these outcomes. Mirrors the energy reference's 2025
+  - backtest window. Use it for open iteration; spend the protected 2026 eval
+  - (`sp500_eval_2026.yaml`) sparingly on your finalists.
+  - '# This spec carries experiment design only (window + one single-horizon task
+    per'
+  - target). The predictor roster and hyperparameters live in the notebook. Note
+  - "the LLMP predictors are token-heavy over ~50 weekly origins \u2014 the notebook\
+    \ lets"
+  - you trim the predictor list (or widen the stride here) before enabling them.
+  chars: 1854
+  artifact: artifacts/implementations__sp500_forecasting__specs__sp500_backtest_2025.yaml.md
+- path: implementations/sp500_forecasting/specs/sp500_eval_2026.yaml
+  kind: yaml
+  domain: impl.sp500_forecasting
+  summary: "Protected eval \u2014 held-out 2026 window, scored through multi_evaluate()\
+    \ with a budget."
+  symbols: []
+  sections:
+  - "Protected eval \u2014 held-out 2026 window, scored through multi_evaluate() with\
+    \ a budget."
+  - '# This is the honest scoreboard. 2026 is unambiguously after the Gemini training'
+  - cutoff, so neither the numerical methods nor the LLM-Process can have seen the
+  - 'outcomes. Treat it as scarce: `max_runs` caps how many times the spec may be'
+  - scored (via EvalTracker), so iterate on `sp500_backtest_2025.yaml` and spend
+  - this only on a curated set of finalists (chosen in the notebook's eval cell).
+  - '# Loaded as a MultiTargetEvalSpec: one single-horizon task per target, all under'
+  - a single shared run budget. One multi_evaluate() call across all three
+  - "horizons counts as ONE run against `max_runs` \u2014 the budget is keyed by"
+  - '`spec_id`, not per-horizon. The predictor roster lives in the notebook.'
+  - 'Budget cap: each multi_evaluate() call (all 3 horizons) counts as one run.'
+  chars: 2004
+  artifact: artifacts/implementations__sp500_forecasting__specs__sp500_eval_2026.yaml.md
+- path: implementations/sp500_forecasting/specs/sp500_smoke.yaml
+  kind: yaml
+  domain: impl.sp500_forecasting
+  summary: "Smoke spec \u2014 fast laptop run over a short, post-cutoff (2025) window."
+  symbols: []
+  sections:
+  - "Smoke spec \u2014 fast laptop run over a short, post-cutoff (2025) window."
+  - '# Weekly origins in late 2025: after the Gemini training cutoff (~Jan 2025),
+    so'
+  - the LLM-Process rows in the notebook can be compared *fairly* against the
+  - conventional methods here. The notebook keeps its LLMP predictors ON for this
+  - window (the predictors cell gates them on a post-cutoff flag).
+  - "# This spec carries experiment design only \u2014 the window, stride/warmup,\
+    \ and one"
+  - single-horizon task per target. WHICH predictors run (and all their
+  - hyperparameters, including the covariate panel) is configured in the notebook,
+  - not here. Each task targets `sp500_logret_{N}b` (the close-to-close cumulative
+  - log return over N business days), so forecasting it N steps ahead resolves to
+  - the forward N-session return.
+  - '# Prerequisites (warm caches to the present first):'
+  - 'uv run python scripts/fetch_sp500_market.py --refresh   # ^GSPC / ^VIX / ^IXIC'
+  - 'uv run python scripts/fetch_fred.py                     # macro covariates'
+  chars: 2090
+  artifact: artifacts/implementations__sp500_forecasting__specs__sp500_smoke.yaml.md
+- path: implementations/sp500_forecasting/specs/sp500_stress_2020.yaml
+  kind: yaml
+  domain: impl.sp500_forecasting
+  summary: "Regime-stress spec \u2014 the 2020 COVID crash, NUMERICAL METHODS ONLY."
+  symbols: []
+  sections:
+  - "Regime-stress spec \u2014 the 2020 COVID crash, NUMERICAL METHODS ONLY."
+  - "# \u26A0\uFE0F  Keep the notebook's LLM-Process predictors OFF for this window.\
+    \ 2020 is"
+  - BEFORE the Gemini training cutoff (~Jan 2025), so an LLM has effectively
+  - "memorised these outcomes \u2014 scoring an LLMP here measures recall, not"
+  - forecasting, and would silently flatter it in the comparison. The numerical
+  - methods are cutoff-safe by construction (they only see the series up to the
+  - "origin), so this volatile window is a perfectly valid stress test *for them*\
+    \ \u2014"
+  - it's where a covariate edge is most visible.
+  - '# The notebook enforces "numerical only" in code: its predictors cell gates the'
+  - LLMP variants on a post-cutoff flag that is False for this config. Use this to
+  - study "when do covariates help?" among the conventional methods; use the 2025
+  - backtest / 2026 eval for anything involving the LLMP.
+  chars: 1986
+  artifact: artifacts/implementations__sp500_forecasting__specs__sp500_stress_2020.yaml.md
+- path: implementations/sp500_forecasting/starter_agent/__init__.py
+  kind: python
+  domain: impl.sp500_forecasting
+  summary: "S&P 500 starter agent \u2014 a fresh, hackable template for your own exploration."
+  symbols:
+  - Sp500StarterPromptBuilder
+  - build_starter_agent_config
+  - build_starter_agent_predictor
+  sections: []
+  chars: 636
+  artifact: artifacts/implementations__sp500_forecasting__starter_agent____init__.py.md
+- path: implementations/sp500_forecasting/starter_agent/agent.py
+  kind: python
+  domain: impl.sp500_forecasting
+  summary: "S&P 500 starter agent \u2014 a fresh, hackable template for your own exploration."
+  symbols:
+  - Sp500StarterPromptBuilder
+  - build_starter_agent_config
+  - _StarterForecastPromptBuilder
+  - build_starter_agent_predictor
+  sections: []
+  chars: 11869
+  artifact: artifacts/implementations__sp500_forecasting__starter_agent__agent.py.md
+- path: implementations/sp500_forecasting/starter_agent/skills/code-analysis-playbook/SKILL.md
+  kind: markdown
+  domain: impl.sp500_forecasting
+  summary: Code-analysis playbook
+  symbols: []
+  sections:
+  - Code-analysis playbook
+  - Where your data lives
+  - Compute before you forecast
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 2172
+  artifact: artifacts/implementations__sp500_forecasting__starter_agent__skills__code-analysis-playbook__SKILL.md.md
+- path: implementations/sp500_forecasting/starter_agent/skills/forecasting/SKILL.md
+  kind: markdown
+  domain: impl.sp500_forecasting
+  summary: Forecasting skill
+  symbols: []
+  sections:
+  - Forecasting skill
+  - What you'll receive
+  - The output contract
+  - Calibration
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 2299
+  artifact: artifacts/implementations__sp500_forecasting__starter_agent__skills__forecasting__SKILL.md.md
+- path: implementations/sp500_forecasting/starter_agent/skills/research-playbook/SKILL.md
+  kind: markdown
+  domain: impl.sp500_forecasting
+  summary: Research playbook
+  symbols: []
+  sections:
+  - Research playbook
+  - The one rule that matters
+  - How to search
+  - Domain focus (edit this for your use case)
+  - Room to grow
+  chars: 1860
+  artifact: artifacts/implementations__sp500_forecasting__starter_agent__skills__research-playbook__SKILL.md.md
+- path: planning-docs/roadmap.md
+  kind: markdown
+  domain: docs
+  summary: Roadmap and Architecture Notes
+  symbols: []
+  sections:
+  - Roadmap and Architecture Notes
+  - Forecasting taxonomy
+  - Architecture principles
+  - Agent modes
+  - Extension ideas
+  - Deepen a reference implementation
+  - Agent and analyst depth
+  - Broaden coverage
+  - Live testing
+  - Core-library follow-up
+  chars: 7708
+  artifact: artifacts/planning-docs__roadmap.md.md
+- path: scripts/fetch_boc.py
+  kind: python
+  domain: scripts
+  summary: Populate the local data cache for the BoC rate-decision experiment.
+  symbols:
+  - main
+  sections: []
+  chars: 4192
+  artifact: artifacts/scripts__fetch_boc.py.md
+- path: scripts/fetch_boc_press_releases.py
+  kind: python
+  domain: scripts
+  summary: Download and extract Bank of Canada FAD press releases into the data cache.
+  symbols:
+  - fetch_entry
+  - main
+  sections: []
+  chars: 5157
+  artifact: artifacts/scripts__fetch_boc_press_releases.py.md
+- path: scripts/fetch_cfpr.py
+  kind: python
+  domain: scripts
+  summary: Download and cache published report PDFs into the local ``data/`` cache.
+  symbols:
+  - fetch_entry
+  - main
+  sections: []
+  chars: 5955
+  artifact: artifacts/scripts__fetch_cfpr.py.md
+- path: scripts/fetch_cpi.py
+  kind: python
+  domain: scripts
+  summary: Fetch and cache Canada-wide CPI series from Statistics Canada.
+  symbols:
+  - build_data_service
+  - main
+  sections: []
+  chars: 13054
+  artifact: artifacts/scripts__fetch_cpi.py.md
+- path: scripts/fetch_fred.py
+  kind: python
+  domain: scripts
+  summary: Populate the local FRED cache with series used by the CFPR experiment.
+  symbols:
+  - build_data_service
+  - main
+  sections: []
+  chars: 6004
+  artifact: artifacts/scripts__fetch_fred.py.md
+- path: scripts/fetch_sp500_market.py
+  kind: python
+  domain: scripts
+  summary: Populate / refresh the local Yahoo market caches for the S&P 500 use case.
+  symbols:
+  - main
+  sections: []
+  chars: 2742
+  artifact: artifacts/scripts__fetch_sp500_market.py.md
+- path: scripts/fetch_wti.py
+  kind: python
+  domain: scripts
+  summary: Fetch and cache WTI Crude Oil daily price history from Yahoo Finance.
+  symbols:
+  - main
+  sections: []
+  chars: 1509
+  artifact: artifacts/scripts__fetch_wti.py.md

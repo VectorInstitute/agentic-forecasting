@@ -48,6 +48,8 @@ The repository is a foundation. Each reference implementation's README ends with
 
 Every domain implementation (S&P 500, food, energy, BoC) now ships a **`starter_agent/` module + `99_starter_agent.ipynb`** — a fresh, participant-owned agent template with toggleable proxy news search and E2B code execution, two lightweight tool-usage skills, an interactive (Track 2) cell, and one scored (Track 1) prediction. It is the canonical "build your own" entry point and doubles as a quick end-to-end smoke test of each use case's agent stack. Natural next steps from here: richer E2B code-execution configs, prompt and context-formatting optimization, and deeper Track 2 interactive analyst configurations per use case (see [`../docs/adk-skills-guide.md`](../docs/adk-skills-guide.md) for the skill design rules).
 
+**Repo concierge (shipped).** `getting_started/concierge_agent/` + `99_repo_concierge.ipynb` — a `gemini-3.1-flash-lite-preview` ADK agent that answers bootcamp onboarding questions by searching a committed catalog of public `main` (maintainers rebuild via `scripts/build_concierge_context.py`). Points participants to notebooks, modules, and snippets; complements the domain starter agents.
+
 ### Broaden coverage
 
 - Transpose the S&P 500 template to additional energy commodities, or to other liquid assets, equities, or indices. The S&P 500 reference now compares conventional numerical methods (incl. ETS and Kalman) against a **covariate-aware LLM-Process** across cumulative-return horizons — `SampledTrajectoryLLMPredictor` supports `covariate_series_ids` (exogenous-series prompt blocks), so the "can an LLM use the covariate panel as well as gradient boosting?" comparison is shipped, not deferred.

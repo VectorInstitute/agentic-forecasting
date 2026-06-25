@@ -1,0 +1,119 @@
+# Source: aieng-forecasting/aieng/forecasting/methods/README.md
+
+kind: markdown
+
+# Methods
+
+This directory contains **reference predictor implementations** — concrete
+`Predictor` subclasses that are reusable across more than one forecasting
+experiment.
+
+The package is organized by method family:
+
+```text
+methods/
+├── baselines/       # simple floor baselines and teaching references
+├── numerical/       # classical / ML numerical forecasters
+├── llm_processes/   # LLM-process predictors (sampled trajectories, quantile grids, etc.)
+└── agentic/         # reusable ADK runners, agent factory, predictors, and output schemas
+```
+
+---
+
+## What belongs here
+
+- Concrete `Predictor` subclasses that are **not** tied to a specific use case
+- Implementations that a participant would use as-is or as a copy-paste
+  starting point across more than one experiment
+- Well-documented, linted Python modules (not notebooks)
+
+## What does NOT belong here
+
+- Task-specific configuration (prompts tuned for CFPR, specs, task YAMLs) —
+  those live in `implementations/<use-case>/`
+- Notebooks or experiment scripts — those live in `implementations/<use-case>/`
+- Infrastructure or ABCs — those live elsewhere in `aieng.forecasting`
+  (`data/`, `evaluation/`, future `agents/`)
+
+---
+
+## Import patterns
+
+Common imports:
+
+```python
+from aieng.forecasting.methods import (
+    DartsAutoARIMAPredictor,
+    DartsLightGBMPredictor,
+    DartsLinearRegressionPredictor,
+    LastValuePredictor,
+)
+```
+
+Sub-package imports are also fine when you want to signal the method family:
+
+```python
+from aieng.forecasting.methods.baselines import LastValuePredictor
+from aieng.forecasting.methods.numerical import DartsAutoARIMAPredictor
+```
+
+Agentic runner, factory, and output schemas:
+
+```python
+from aieng.forecasting.methods.agentic import (
+    AdkTextRunner,
+    AdkTextRunnerConfig,
+    AgentConfig,
+    AgentPredictor,
+    ContinuousAgentForecastOutput,
+    build_adk_agent,
+)
+```
+
+---
+
+## Current contents
+
+### Baselines
+
+| Module | Class | Description |
+|---|---|---|
+| `baselines/naive.py` | `LastValuePredictor` | Last-value naive baseline. Predicts the most recently observed value at all quantiles. The floor every predictor must beat. Also the annotated reference implementation — read this to understand the `Predictor` interface. |
+| `baselines/historical_frequency.py` | `HistoricalFrequencyPredictor` | Binary floor baseline: the constant historical base rate of the event, optionally over a trailing window. |
+| `baselines/categorical_frequency.py` | `CategoricalFrequencyPredictor` | Categorical floor baseline: the constant climatological distribution over the task-declared ordered categories. |
+
+### Numerical
+
+| Module | Class | Description |
+|---|---|---|
+| `numerical/darts_arima.py` | `DartsAutoARIMAPredictor` | Univariate Darts AutoARIMA with probabilistic multi-horizon output via Monte Carlo sampling. |
+| `numerical/darts_classical.py` | `DartsExponentialSmoothingPredictor` | Univariate state-space exponential smoothing (ETS); fast probabilistic baseline (non-seasonal by default, optional `seasonal_periods`). |
+| `numerical/darts_classical.py` | `DartsKalmanForecasterPredictor` | Univariate linear Gaussian state-space (Kalman) forecaster; fast probabilistic baseline with configurable latent dimension `dim_x`. |
+| `numerical/darts_regression.py` | `DartsLinearRegressionPredictor` | Darts linear regression predictor with optional past covariates and probabilistic output. |
+| `numerical/darts_regression.py` | `DartsLightGBMPredictor` | Darts LightGBM quantile-regression predictor with optional past covariates. |
+
+### LLM Processes
+
+| Module | Class | Description |
+|---|---|---|
+| `llm_processes/sampled_trajectory.py` | `SampledTrajectoryLLMPredictor` | Samples full trajectories from an LLM, then computes empirical quantiles per horizon. Supports optional covariates: set `covariate_series_ids` to serialize labeled exogenous-series history into the prompt (Context-is-Key §5.4). |
+| `llm_processes/quantile_grid.py` | `QuantileGridLLMPredictor` | Asks an LLM for the standard quantile grid in one structured completion. |
+| `llm_processes/binary_probability.py` | `BinaryProbabilityLLMPredictor` | Direct elicitation of one calibrated event probability for binary tasks (Brier-scored), in one structured completion. |
+| `llm_processes/categorical_probability.py` | `CategoricalProbabilityLLMPredictor` | Direct elicitation of a calibrated distribution over the task-declared ordered categories (RPS-scored); history serialized as category labels. |
+| `llm_processes/point_intervals.py` | — | Placeholder for a compact point-plus-interval contract; may become configurable sparse quantile-grid elicitation. |
+
+### Agentic
+
+| Module | Class / Function | Description |
+|---|---|---|
+| `agentic/adk_runner.py` | `AdkTextRunner` | Async text-in / text-out wrapper around ADK `InMemoryRunner`. Manages ADK sessions (fresh-per-message or sticky) and optionally traces each turn to Langfuse via `propagate_attributes`. |
+| `agentic/adk_runner.py` | `AdkTextRunnerConfig` | Pydantic configuration for `AdkTextRunner` (session mode, Langfuse fields). |
+| `agentic/agent_factory.py` | `build_adk_agent` | Generic ADK `LlmAgent` factory with optional code execution, context retrieval, skills, generation controls, and structured output schema. |
+| `agentic/agent_factory.py` | `AgentConfig` | Pydantic configuration for reusable ADK agents. `output_schema=None` supports interactive/free-form agents; a structured `AgentForecastOutput` schema supports Track 1 predictors. The `function_tools` field attaches conventional ADK tools (e.g. `ForecastTool`). Use-case-specific prompts and presets should live in `implementations/<use-case>/`. |
+| `agentic/forecast_tool.py` | `ForecastTool` | Conventional ADK `FunctionTool` that runs a pre-specified `Predictor` (AutoARIMA by default) on any registered series at a given cutoff/horizon, returning a structured JSON forecast. A controlled, reproducible alternative to open-ended code execution; series data never enters the LLM context. |
+| `agentic/outputs.py` | `AgentForecastOutput` | Abstract output adapter interface for converting structured agent JSON into evaluation `Prediction` objects. |
+| `agentic/outputs.py` | `ContinuousAgentForecastOutput` | Canonical continuous forecasting output schema. Declares `modality = "continuous"`, requires one forecast per task horizon and the standard quantile grid, then converts to `ContinuousForecast` payloads. |
+| `agentic/outputs.py` | `DiscreteAgentForecastOutput` | Binary event output schema (`modality = "discrete"`): one probability plus `reasoning` / `key_signals` metadata, converted to a `BinaryForecast` payload. |
+| `agentic/outputs.py` | `CategoricalAgentForecastOutput` | Ordered-categorical output schema (`modality = "categorical"`): one `{label, probability}` row per task category, validated against `task.categories` and converted to a `CategoricalForecast` payload. |
+| `agentic/predictor.py` | `AgentPredictor` | Track 1 `Predictor` that builds prompts, runs an ADK agent through `AdkTextRunner`, validates structured JSON, and converts it to `Prediction` objects. Accepts an optional injected runner for tests or custom observability. |
+| `agentic/predictor.py` | `ForecastPromptBuilder` | Protocol for task-specific prompt builders that turn `(task, context)` into the text passed to the agent. |

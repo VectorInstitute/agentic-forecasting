@@ -1,0 +1,187 @@
+# Source: implementations/boc_rate_decisions/specs/boc_rate_direction_backtest.yaml
+
+kind: yaml
+
+```yaml
+# BoC Rate Direction Backtest Spec — 2010-2024 fixed announcement dates, T-28
+#
+# Canonical 3-way ordered-categorical backtest: at each forecast origin
+# (28 days before a BoC fixed announcement date), predict whether the Bank
+# will cut, hold, or hike its target for the overnight rate at the
+# announcement. Scored with RPS (task payload_type: categorical).
+#
+# Why a 28-day lead: on the eve of a decision the 2-year GoC yield has
+# already absorbed the market consensus, so a T-1 forecast mostly reads
+# market pricing off a curve. Four weeks out the decision is genuinely
+# uncertain — the interesting skill is anticipating cycle turns before the
+# market converges. The eve-of-decision variant is kept as a small diagnostic in
+# boc_rate_direction_eve_smoke.yaml; comparing the two shows how skill
+# concentrates as information arrives.
+#
+# Origins are EXPLICIT because BoC meetings are an irregular calendar —
+# 8 dates per year that no pandas frequency alias can generate. Each origin
+# is announcement_date - 28 days, so the 28-day horizon resolves exactly on
+# the announcement. The minimum gap between scheduled meetings is 35 days,
+# so the previous meeting's outcome is always visible at the origin.
+# The origin list is derived from ../meeting_schedule.yaml; a use-case test
+# asserts the two files stay consistent.
+#
+# Origin count : 120 (8 per year, 2010-2024)
+# Coverage     : spans the 2010 + 2017-18 + 2022-23 hike cycles and the
+#                2015 + 2020 + 2024 cut cycles.
+# Warmup       : 8 events (the full 2009 easing cycle is visible history at
+#                every origin).
+
+description: >-
+  Backtest across all 120 BoC fixed announcement dates from 2010 through
+  2024. At each origin (announcement date minus 28 days) predictors emit
+  probabilities over cut, hold, and hike, resolved against the derived
+  direction series and scored with RPS. 2009 meetings are excluded as
+  targets but visible as history.
+
+task:
+  task_id: boc_rate_direction_next_meeting
+  target_series_id: boc_rate_decision_direction
+  horizons: [28]
+  frequency: D
+  payload_type: categorical
+  categories:
+    - {label: cut, value: -1}
+    - {label: hold, value: 0}
+    - {label: hike, value: 1}
+  description: >-
+    At the Bank of Canada fixed announcement date occurring 28 days after the
+    forecast origin, will the Bank CUT, HOLD, or HIKE its target for the
+    overnight rate? Outcome is the direction of the target-rate change at
+    that announcement (any size). Announcements are at 09:45 ET; the
+    forecast must be issued with information available four weeks before
+    the announcement, before markets have converged on the decision.
+
+start: "2009-12-01"
+end: "2024-12-31"
+stride: 1
+warmup: 8
+
+# One origin per meeting: announcement_date - 28 days.
+origin_dates:
+  - "2009-12-22"  # meeting 2010-01-19
+  - "2010-02-02"  # meeting 2010-03-02
+  - "2010-03-23"  # meeting 2010-04-20
+  - "2010-05-04"  # meeting 2010-06-01 (hike)
+  - "2010-06-22"  # meeting 2010-07-20 (hike)
+  - "2010-08-11"  # meeting 2010-09-08 (hike)
+  - "2010-09-21"  # meeting 2010-10-19
+  - "2010-11-09"  # meeting 2010-12-07
+  - "2010-12-21"  # meeting 2011-01-18
+  - "2011-02-01"  # meeting 2011-03-01
+  - "2011-03-15"  # meeting 2011-04-12
+  - "2011-05-03"  # meeting 2011-05-31
+  - "2011-06-21"  # meeting 2011-07-19
+  - "2011-08-10"  # meeting 2011-09-07
+  - "2011-09-27"  # meeting 2011-10-25
+  - "2011-11-08"  # meeting 2011-12-06
+  - "2011-12-20"  # meeting 2012-01-17
+  - "2012-02-09"  # meeting 2012-03-08
+  - "2012-03-20"  # meeting 2012-04-17
+  - "2012-05-08"  # meeting 2012-06-05
+  - "2012-06-19"  # meeting 2012-07-17
+  - "2012-08-08"  # meeting 2012-09-05
+  - "2012-09-25"  # meeting 2012-10-23
+  - "2012-11-06"  # meeting 2012-12-04
+  - "2012-12-26"  # meeting 2013-01-23
+  - "2013-02-06"  # meeting 2013-03-06
+  - "2013-03-20"  # meeting 2013-04-17
+  - "2013-05-01"  # meeting 2013-05-29
+  - "2013-06-19"  # meeting 2013-07-17
+  - "2013-08-07"  # meeting 2013-09-04
+  - "2013-09-25"  # meeting 2013-10-23
+  - "2013-11-06"  # meeting 2013-12-04
+  - "2013-12-25"  # meeting 2014-01-22
+  - "2014-02-05"  # meeting 2014-03-05
+  - "2014-03-19"  # meeting 2014-04-16
+  - "2014-05-07"  # meeting 2014-06-04
+  - "2014-06-18"  # meeting 2014-07-16
+  - "2014-08-06"  # meeting 2014-09-03
+  - "2014-09-24"  # meeting 2014-10-22
+  - "2014-11-05"  # meeting 2014-12-03
+  - "2014-12-24"  # meeting 2015-01-21 (cut)
+  - "2015-02-04"  # meeting 2015-03-04
+  - "2015-03-18"  # meeting 2015-04-15
+  - "2015-04-29"  # meeting 2015-05-27
+  - "2015-06-17"  # meeting 2015-07-15 (cut)
+  - "2015-08-12"  # meeting 2015-09-09
+  - "2015-09-23"  # meeting 2015-10-21
+  - "2015-11-04"  # meeting 2015-12-02
+  - "2015-12-23"  # meeting 2016-01-20
+  - "2016-02-10"  # meeting 2016-03-09
+  - "2016-03-16"  # meeting 2016-04-13
+  - "2016-04-27"  # meeting 2016-05-25
+  - "2016-06-15"  # meeting 2016-07-13
+  - "2016-08-10"  # meeting 2016-09-07
+  - "2016-09-21"  # meeting 2016-10-19
+  - "2016-11-09"  # meeting 2016-12-07
+  - "2016-12-21"  # meeting 2017-01-18
+  - "2017-02-01"  # meeting 2017-03-01
+  - "2017-03-15"  # meeting 2017-04-12
+  - "2017-04-26"  # meeting 2017-05-24
+  - "2017-06-14"  # meeting 2017-07-12 (hike)
+  - "2017-08-09"  # meeting 2017-09-06 (hike)
+  - "2017-09-27"  # meeting 2017-10-25
+  - "2017-11-08"  # meeting 2017-12-06
+  - "2017-12-20"  # meeting 2018-01-17 (hike)
+  - "2018-02-07"  # meeting 2018-03-07
+  - "2018-03-21"  # meeting 2018-04-18
+  - "2018-05-02"  # meeting 2018-05-30
+  - "2018-06-13"  # meeting 2018-07-11 (hike)
+  - "2018-08-08"  # meeting 2018-09-05
+  - "2018-09-26"  # meeting 2018-10-24 (hike)
+  - "2018-11-07"  # meeting 2018-12-05
+  - "2018-12-12"  # meeting 2019-01-09
+  - "2019-02-06"  # meeting 2019-03-06
+  - "2019-03-27"  # meeting 2019-04-24
+  - "2019-05-01"  # meeting 2019-05-29
+  - "2019-06-12"  # meeting 2019-07-10
+  - "2019-08-07"  # meeting 2019-09-04
+  - "2019-10-02"  # meeting 2019-10-30
+  - "2019-11-06"  # meeting 2019-12-04
+  - "2019-12-25"  # meeting 2020-01-22
+  - "2020-02-05"  # meeting 2020-03-04 (cut)
+  - "2020-03-18"  # meeting 2020-04-15
+  - "2020-05-06"  # meeting 2020-06-03
+  - "2020-06-17"  # meeting 2020-07-15
+  - "2020-08-12"  # meeting 2020-09-09
+  - "2020-09-30"  # meeting 2020-10-28
+  - "2020-11-11"  # meeting 2020-12-09
+  - "2020-12-23"  # meeting 2021-01-20
+  - "2021-02-10"  # meeting 2021-03-10
+  - "2021-03-24"  # meeting 2021-04-21
+  - "2021-05-12"  # meeting 2021-06-09
+  - "2021-06-16"  # meeting 2021-07-14
+  - "2021-08-11"  # meeting 2021-09-08
+  - "2021-09-29"  # meeting 2021-10-27
+  - "2021-11-10"  # meeting 2021-12-08
+  - "2021-12-29"  # meeting 2022-01-26
+  - "2022-02-02"  # meeting 2022-03-02 (hike)
+  - "2022-03-16"  # meeting 2022-04-13 (hike)
+  - "2022-05-04"  # meeting 2022-06-01 (hike)
+  - "2022-06-15"  # meeting 2022-07-13 (hike)
+  - "2022-08-10"  # meeting 2022-09-07 (hike)
+  - "2022-09-28"  # meeting 2022-10-26 (hike)
+  - "2022-11-09"  # meeting 2022-12-07 (hike)
+  - "2022-12-28"  # meeting 2023-01-25 (hike)
+  - "2023-02-08"  # meeting 2023-03-08
+  - "2023-03-15"  # meeting 2023-04-12
+  - "2023-05-10"  # meeting 2023-06-07 (hike)
+  - "2023-06-14"  # meeting 2023-07-12 (hike)
+  - "2023-08-09"  # meeting 2023-09-06
+  - "2023-09-27"  # meeting 2023-10-25
+  - "2023-11-08"  # meeting 2023-12-06
+  - "2023-12-27"  # meeting 2024-01-24
+  - "2024-02-07"  # meeting 2024-03-06
+  - "2024-03-13"  # meeting 2024-04-10
+  - "2024-05-08"  # meeting 2024-06-05 (cut)
+  - "2024-06-26"  # meeting 2024-07-24 (cut)
+  - "2024-08-07"  # meeting 2024-09-04 (cut)
+  - "2024-09-25"  # meeting 2024-10-23 (cut)
+  - "2024-11-13"  # meeting 2024-12-11 (cut)
+```
