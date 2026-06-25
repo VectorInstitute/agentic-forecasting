@@ -6,4 +6,4 @@ ignored. Sources + arXiv links: [`../SOURCES.md`](../SOURCES.md) (richer context
 [`../lms-resources.md`](../lms-resources.md)).
 
 Expected here: ADAS (arXiv:2408.08435), Darwin Gödel Machine (arXiv:2505.22954),
-ALMA / agentic memory (arXiv:2602.07755), SkillOpt (ask owner).
+ALMA / agentic memory (arXiv:2602.07755), SkillOpt (arXiv:2605.23904).

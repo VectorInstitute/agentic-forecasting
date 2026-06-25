@@ -24,7 +24,7 @@ public sources:
 | `agentic-papers/` | Automated Design of Agentic Systems (ADAS) — Hu, Lu, Clune 2025 | [arXiv:2408.08435](https://arxiv.org/abs/2408.08435) |
 | `agentic-papers/` | Darwin Gödel Machine — Zhang, Hu et al. 2025 | [arXiv:2505.22954](https://arxiv.org/abs/2505.22954) |
 | `agentic-papers/` | ALMA: Learning to Continually Learn (agentic memory) — Xiong, Hu, Clune 2026 | [arXiv:2602.07755](https://arxiv.org/abs/2602.07755) |
-| `agentic-papers/` | "SkillOpt" | _no public link on file — ask the deck owner_ |
+| `agentic-papers/` | SkillOpt | [arXiv:2605.23904](https://arxiv.org/abs/2605.23904) · [code](https://github.com/microsoft/SkillOpt) |
 
 ## Presentations
 
