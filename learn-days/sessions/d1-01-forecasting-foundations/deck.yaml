@@ -1,0 +1,123 @@
+deck:
+  title: Time Series Forecasting Foundations
+  subtitle: Comparing classical methods, LLMs, and agents — honestly
+  author: { name: "Ethan Jackson", org: "Vector Institute", date: "July 2026" }
+  footer: true
+  include_title: false   # slide 1 is an explicit title_photo
+
+slides:
+  # 1 — Title (gradient hero; add `image:` to use a photo)
+  - layout: title_photo
+    title: Time Series Forecasting Foundations
+    subtitle: Comparing classical methods, LLMs, and agents — honestly
+
+  # 2 — Agenda
+  - layout: cards_dense
+    title: What we'll cover
+    columns: 3
+    style: outline
+    cards:
+      - { eyebrow: "01", title: "Methods", accent: pink,
+          desc: "A short lineage — ending at LLMs & agents." }
+      - { eyebrow: "02", title: "Honest evaluation", accent: purple,
+          desc: "The shared skeleton, and the cutoff & leakage traps." }
+      - { eyebrow: "03", title: "Head-to-head", accent: blue,
+          desc: "A first result — where LLMs help, or don't." }
+
+  # 3 — History of methods
+  - layout: table
+    title: A short history of methods
+    headers: ["Era", "Representative methods", "What it added"]
+    rows:
+      - ["Statistical", "ARIMA, ETS, Kalman", "Calibrated intervals"]
+      - ["Machine learning", "XGBoost, LightGBM", "Covariates"]
+      - ["Deep learning", "DeepAR, N-BEATS, TFT", "Representations"]
+      - ["Foundation models", "TimesFM, Chronos", "Zero-shot transfer"]
+      - ["LLMs & agents", "LLM Processes, agents", "Language + reasoning"]
+
+  # 4 — Thesis
+  - layout: statement
+    statement: "Same question, same interface, same score."
+    support: "A 50-year-old model and an LLM agent, judged the exact same way."
+    callout: "That's what makes a fair head-to-head possible."
+
+  # 5 — Section break
+  - layout: section
+    eyebrow: Honest evaluation
+    title: Measuring a forecaster
+    subtitle: What makes a comparison honest
+
+  # 6 — The five-part skeleton
+  - layout: numbered_list
+    title: Anatomy of a forecast eval
+    items:
+      - { title: "Task", desc: "What to forecast: series, horizon, frequency" }
+      - { title: "Origin & cutoff", desc: "When you stand — you see only data available then" }
+      - { title: "Predictor", desc: "How you answer — the only part that varies" }
+      - { title: "Resolution", desc: "The ground truth at the target date" }
+      - { title: "Score", desc: "How close the probabilistic answer was (CRPS / Brier / RPS)" }
+
+  # 7 — The honesty crux
+  - layout: compare
+    title: What makes a comparison honest
+    style: emphasis
+    left:
+      label: Numerical methods
+      lines: ["See only data ≤ origin", "Cutoff-safe by construction", "Backtest any period"]
+    right:
+      label: LLMs / agents
+      lines: ["Trained up to ~Jan 2025", "Pre-cutoff = recalled, not forecast", "Honest only after cutoff"]
+    callout: "So we score LLM rows on a protected, post-cutoff window."
+
+  # 8 — One interface, any method (real code)
+  - layout: code
+    title: One interface, any method
+    language: python
+    code: |
+      class Predictor(ABC):
+          @abstractmethod
+          def predict(self, task, context):
+              ...  # -> list[Prediction]
+    side:
+      heading: "Every method, one method."
+      body: "Naive, a Darts ARIMA, an LLM-Process, a tool agent — all implement predict(). The harness can't tell them apart."
+    caption: "aieng/forecasting/evaluation/predictor.py"
+
+  # 9 — A forecast, and where it fails
+  - layout: figure
+    title: A forecast — and where it breaks
+    image: ../../assets/figures/d1-01/cpi_forecast_fanchart.png
+    caption: "CPI Gasoline · 1-month AutoARIMA · 90% interval"
+    side:
+      heading: "It can't see the news."
+      body: "AutoARIMA tracks the level but lags every turn. Its biggest misses are the 2020 crash and 2022 surge — moves driven by news a numbers-only model never sees."
+
+  # 10 — The error isn't random
+  - layout: figure
+    title: The error clusters at the shocks
+    image: ../../assets/figures/d1-01/cpi_crps_over_time.png
+    caption: "Per-origin CRPS · Naive vs AutoARIMA · 301 origins, 2000–2025"
+    side:
+      heading: "AutoARIMA wins — by ~16%."
+      body: "Mean CRPS 8.45 vs 10.11. A real method beats the floor. But both blow up at 2008, 2020, 2022 — exactly where context could help."
+
+  # 11 — The honest head-to-head
+  - layout: figure_full
+    title: An honest head-to-head
+    image: ../../assets/figures/d1-01/sp500_horizon_crps.png
+    caption: "S&P 500 daily log-returns · mean CRPS by horizon · same covariate panel for both"
+    callout: "Same covariates — LightGBM still won every horizon. Established methods are the bar."
+
+  # 12 — What to take forward
+  - layout: cards_dense
+    title: What to take forward
+    columns: 3
+    style: outline
+    cards:
+      - { eyebrow: "01", title: "Honest evaluation, always", accent: pink,
+          desc: "One interface, strict cutoffs, protected evals — for every method." }
+      - { eyebrow: "02", title: "Established methods are strong", accent: purple,
+          desc: "Especially with good covariates on hard markets." }
+      - { eyebrow: "03", title: "Agents earn their place", accent: blue,
+          desc: "By bringing new context and reasoning — tested, not assumed." }
+    callout: "Up next: the conventional methods that set the bar — over to Behnoosh."

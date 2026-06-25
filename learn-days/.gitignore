@@ -1,0 +1,18 @@
+# Regenerable build artifacts — rebuild from deck.yaml with the vector-slides
+# build loop (see HOW-WE-WORK.md). The committed figure PNGs + deck.yaml are the
+# source of truth; the compiled deck and QA renders are derived.
+sessions/*/deck.pptx
+sessions/*/qa/
+
+# Office lock/temp files (created when a .pptx is open in PowerPoint)
+~$*
+*~
+
+# Derived backtest cache (re-created by figures_*.py; the figure PNGs are committed)
+assets/figures/**/_*.json
+
+# PUBLIC REPO — do NOT commit PDFs or presentation binaries (copyrighted papers,
+# internal decks). Keep them locally per SOURCES.md; they stay untracked here.
+*.pdf
+*.pptx
+*.key

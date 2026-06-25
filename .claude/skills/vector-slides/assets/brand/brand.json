@@ -1,0 +1,114 @@
+{
+  "canvas": {
+    "width_in": 10.0,
+    "height_in": 5.625,
+    "aspect": "16:9"
+  },
+  "palette": {
+    "pink": "FF008C",
+    "blue": "313CFF",
+    "purple": "8A25C9",
+    "cyan": "48C0D9",
+    "amber": "FF9E00",
+    "lime": "CFF933",
+    "green": "1DB47F",
+    "red": "E8553A",
+    "black": "000000",
+    "white": "FFFFFF",
+    "ink": "222222",
+    "gray": "666666",
+    "card": "F5F5F5"
+  },
+  "fonts": {
+    "heading": "Open Sans",
+    "body": "Open Sans",
+    "display": "Open Sans"
+  },
+  "footer": {
+    "bar_top_in": 5.2,
+    "bar_height_in": 0.42,
+    "rule_height_in": 0.03,
+    "rule_color": "pink",
+    "label": "VECTOR INSTITUTE",
+    "label_color": "white"
+  },
+  "backgrounds": {
+    "mesh-magenta": "backgrounds/mesh-magenta.png",
+    "mesh-lime": "backgrounds/mesh-lime.png",
+    "mesh-cyan": "backgrounds/mesh-cyan.png",
+    "mesh-amber": "backgrounds/mesh-amber.png"
+  },
+  "arrow": "arrow-rising.png",
+  "logos": {
+    "white": "logo-white.png",
+    "mark": "logo-mark.png"
+  },
+  "icons": {
+    "flask": {
+      "path": "icons/flask.png",
+      "color": "purple"
+    },
+    "shield": {
+      "path": "icons/shield.png",
+      "color": "pink"
+    },
+    "book": {
+      "path": "icons/book.png",
+      "color": "blue"
+    },
+    "bug": {
+      "path": "icons/bug.png",
+      "color": "red"
+    },
+    "brain": {
+      "path": "icons/brain.png",
+      "color": "pink"
+    },
+    "warning": {
+      "path": "icons/warning.png",
+      "color": "amber"
+    },
+    "check": {
+      "path": "icons/check.png",
+      "color": "green"
+    },
+    "x": {
+      "path": "icons/x.png",
+      "color": "red"
+    },
+    "arrow": {
+      "path": "icons/arrow.png",
+      "color": "pink"
+    },
+    "chart": {
+      "path": "icons/chart.png",
+      "color": "pink"
+    },
+    "code": {
+      "path": "icons/code.png",
+      "color": "blue"
+    },
+    "search": {
+      "path": "icons/search.png",
+      "color": "blue"
+    },
+    "gear": {
+      "path": "icons/gear.png",
+      "color": "gray"
+    },
+    "robot": {
+      "path": "icons/robot.png",
+      "color": "blue"
+    }
+  },
+  "font_files": [
+    "fonts/OpenSans-italic.fntdata",
+    "fonts/MontserratSemiBold-regular.fntdata",
+    "fonts/MontserratSemiBold-boldItalic.fntdata",
+    "fonts/MontserratSemiBold-bold.fntdata",
+    "fonts/OpenSans-bold.fntdata",
+    "fonts/OpenSans-regular.fntdata",
+    "fonts/OpenSans-boldItalic.fntdata",
+    "fonts/MontserratSemiBold-italic.fntdata"
+  ]
+}

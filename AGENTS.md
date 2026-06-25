@@ -40,6 +40,10 @@ Project shape to keep in mind:
 
 Search the repo for `README.md` files (excluding `.venv/`) to find every README — there is one at the root, one per package (`aieng-forecasting/`, `implementations/`), the method catalog under `aieng-forecasting/aieng/forecasting/methods/`, and one per use case under `implementations/<use-case>/`. These are the primary user surface and the first thing a new contributor reads; the reconciliation rule above applies to all of them. Keep them accurate and production-quality: describe what the code does and what you can build from it, with no internal program, scheduling, or ownership framing.
 
+### Building learn-day presentations
+
+Presentation/deck work lives under `learn-days/` and has its **own playbook** — start with `learn-days/CLAUDE.md` (auto-loaded in that subtree) and `learn-days/HOW-WE-WORK.md`. The short version: work **content-first** (`sessions/<id>/content.md` before slides), **lead with real-data visuals** (plots/code/dense cards, generated from repo data via `learn-days/assets/plotting/`), and compile with the tracked **vector-slides** skill at `.claude/skills/vector-slides/` (`catalogue.md` is the layout menu; `validate-deck` must pass). The bar is the reference deck in `learn-days/reference-presentations/`; `d1-01-forecasting-foundations` is the worked example.
+
 ---
 
 ## Development conventions

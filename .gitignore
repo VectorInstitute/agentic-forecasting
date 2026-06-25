@@ -55,4 +55,8 @@ implementations/**/data/
 **/presentations
 data/yfinance/
 
-.claude/
+# Ignore local Claude state, but TRACK shared skills (e.g. the vector-slides skill)
+# so teammates get them from git. settings.local.json stays ignored via `.claude/*`.
+# The skill's own .gitignore keeps its .venv / caches out.
+.claude/*
+!.claude/skills/
