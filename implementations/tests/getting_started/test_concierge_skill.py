@@ -8,10 +8,7 @@ from getting_started.concierge_agent.agent import build_concierge_config
 from google.adk.skills import load_skill_from_dir
 
 
-_SKILL_DIR = (
-    Path(__file__).resolve().parents[2]
-    / "getting_started/concierge_agent/skills/repo-navigation"
-)
+_SKILL_DIR = Path(__file__).resolve().parents[2] / "getting_started/concierge_agent/skills/repo-navigation"
 
 
 def test_repo_navigation_skill_has_reference_files() -> None:
