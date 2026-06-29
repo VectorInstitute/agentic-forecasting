@@ -166,13 +166,16 @@ def fig_forecast_fanchart(cache: dict) -> None:
     ax.scatter(dates[worst], actual[worst], color=vp.RED, s=42, marker="x",
                lw=2.0, zorder=5, label="Biggest misses")
 
-    ax.set_ylabel("CPI Gasoline (2002=100)")
+    ax.set_ylabel("CPI Gasoline (2002=100)", fontsize=11)
+    ax.tick_params(labelsize=11)
     ax.xaxis.set_major_locator(mdates.YearLocator(1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    # Legend fonts must clear the on-slide legibility floor (≥9pt after the ~0.88×
+    # `figure`-slot downscale), so keep them ≥10.5pt — never the matplotlib default.
     ax.legend(loc="upper left", ncol=2, columnspacing=1.0, handletextpad=0.5,
-              fontsize=8.5)
+              fontsize=10.5)
     ax.margins(x=0.01)
-    vp.save(fig, f"{SESSION}/cpi_forecast_fanchart")
+    vp.save(fig, f"{SESSION}/cpi_forecast_fanchart", slot="figure")
     print("[fig] cpi_forecast_fanchart")
 
 
@@ -201,14 +204,19 @@ def fig_crps_over_time(cache: dict) -> None:
         ax.axvline(x, color=vp.MUTED, ls=(0, (3, 3)), lw=0.9)
         ax.annotate(label, xy=(x, ymax), xytext=(0, -3),
                     textcoords="offset points", ha="center", va="top",
-                    fontsize=8.5, color=vp.BODY, fontweight="bold")
+                    fontsize=11, color=vp.BODY, fontweight="bold")
 
-    ax.set_ylabel("CRPS  (per origin)")
+    ax.set_ylabel("CRPS  (per origin)", fontsize=11)
+    ax.tick_params(labelsize=11)
     ax.xaxis.set_major_locator(mdates.YearLocator(4))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    ax.legend(loc="upper right", framealpha=0.9, facecolor="white", edgecolor="none")
+    # Anchor the legend in the empty top band *between* the 2008 and 2020 regime
+    # lines (axis-fraction ~0.32 and ~0.80): centering at 0.56 keeps its ~0.3-wide
+    # box clear of all three labels — a text/text overlap the box guard can't see.
+    ax.legend(loc="upper center", bbox_to_anchor=(0.56, 0.99),
+              framealpha=0.9, facecolor="white", edgecolor="none", fontsize=11)
     ax.margins(x=0.01)
-    vp.save(fig, f"{SESSION}/cpi_crps_over_time")
+    vp.save(fig, f"{SESSION}/cpi_crps_over_time", slot="figure")
     print("[fig] cpi_crps_over_time")
 
 
@@ -234,7 +242,10 @@ def fig_sp500_horizon_crps() -> None:
         return float(yaml.safe_load(p.read_text())["mean_score"])
 
     vp.use_brand_style()
-    fig, axes = plt.subplots(1, 3, figsize=vp.SIZES["full"])
+    # Slide 11 is `figure_full` + a callout bar, so the PNG lands in the shorter
+    # `figure_full_callout` slot (8.6×2.27"). Author short/wide and keep every font
+    # ≥11pt so nothing drops below the 9pt on-slide floor after the ~0.85× downscale.
+    fig, axes = plt.subplots(1, 3, figsize=(8.6, 2.55))
     for ax, (hz, htitle) in zip(axes, horizons):
         vals = [mean_crps(pid, hz) for _, pid, _, _ in series]
         xs = np.arange(len(series))
@@ -246,21 +257,23 @@ def fig_sp500_horizon_crps() -> None:
         best = int(np.argmin(vals))
         ax.scatter(best, vals[best] * 1.06 + 0.0005, marker="v", color=vp.GREEN,
                    s=30, zorder=5)
-        ax.set_title(htitle, fontsize=11)
+        ax.set_title(htitle, fontsize=12)
         ax.set_xticks([])
+        ax.tick_params(labelsize=11)
         ax.grid(axis="x", visible=False)
         vp.despine(ax)
         ax.margins(y=0.18)
-    axes[0].set_ylabel("Mean CRPS  (lower = better)")
+    axes[0].set_ylabel("Mean CRPS  (lower = better)", fontsize=12)
 
     handles = [
         plt.Rectangle((0, 0), 1, 1, color=c, alpha=a) for _, _, c, a in series
     ]
     fig.legend(handles, [name for name, _, _, _ in series],
-               loc="lower center", ncol=4, frameon=False,
+               loc="lower center", ncol=4, frameon=False, fontsize=12,
                bbox_to_anchor=(0.5, -0.04), columnspacing=1.4)
-    fig.tight_layout(rect=(0, 0.04, 1, 1))
-    vp.save(fig, f"{SESSION}/sp500_horizon_crps", pad=0.06)
+    fig.tight_layout(rect=(0, 0.05, 1, 1))
+    vp.save(fig, f"{SESSION}/sp500_horizon_crps", pad=0.06,
+            slot="figure_full_callout")
     print("[fig] sp500_horizon_crps")
 
 

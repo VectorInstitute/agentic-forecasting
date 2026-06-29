@@ -10,6 +10,13 @@ slides:
   - layout: title_photo
     title: Time Series Forecasting Foundations
     subtitle: Comparing classical methods, LLMs, and agents — honestly
+    notes: |
+      Good morning. The bootcamp is built around two questions — can LLMs and
+      agents forecast, and how do new agentic ideas apply to forecasting. My job
+      in the next twenty minutes is the foundation underneath all of it: what
+      forecasting is, and — more importantly — how we evaluate any method
+      *honestly*, so that when we put a fifty-year-old statistical model next to
+      an LLM agent, the comparison actually means something.
 
   # 2 — Agenda
   - layout: cards_dense
@@ -23,6 +30,12 @@ slides:
           desc: "The shared skeleton, and the cutoff & leakage traps." }
       - { eyebrow: "03", title: "Head-to-head", accent: blue,
           desc: "A first result — where LLMs help, or don't." }
+    notes: |
+      Three beats. A quick lineage of forecasting methods, so we share vocabulary
+      and see where LLMs and agents actually enter the story. Then the core: how
+      we measure a forecaster honestly — the evaluation skeleton, and the two
+      subtle traps, cutoffs and leakage. And finally a first head-to-head result,
+      including an honest one that sets expectations for the rest of the bootcamp.
 
   # 3 — History of methods
   - layout: table
@@ -34,18 +47,41 @@ slides:
       - ["Deep learning", "DeepAR, N-BEATS, TFT", "Representations"]
       - ["Foundation models", "TimesFM, Chronos", "Zero-shot transfer"]
       - ["LLMs & agents", "LLM Processes, agents", "Language + reasoning"]
+    notes: |
+      The useful way to read forecasting's history is that each era *added* a
+      capability rather than replacing the last. Statistical models gave us
+      parsimony and honest uncertainty bands. Machine learning — gradient
+      boosting especially — brought nonlinearity and the ability to exploit lots
+      of covariates. Deep learning added representation learning across many
+      series. Time-series *foundation models* brought pretraining and zero-shot
+      forecasting. And the newest entrants — LLMs and agents — add something
+      genuinely different: they can read *language*, a headline or a report, and
+      reason over it. The older families are still the right tool most of the
+      time. The point is to find where the new ones actually help — which means
+      we need a way to compare them fairly.
 
   # 4 — Thesis
   - layout: statement
     statement: "Same question, same interface, same score."
     support: "A 50-year-old model and an LLM agent, judged the exact same way."
     callout: "That's what makes a fair head-to-head possible."
+    notes: |
+      Here's the organizing idea. Whether it's ARIMA or an agent that browses the
+      web, every method answers the same underlying question — *what will this
+      series be, and how sure are you* — and to compare them honestly they have to
+      answer it through the same interface, on the same task, judged the same way.
+      That's not housekeeping; it's the precondition for a fair comparison. So
+      let's look at what that shared structure is.
 
   # 5 — Section break
   - layout: section
     eyebrow: Honest evaluation
     title: Measuring a forecaster
     subtitle: What makes a comparison honest
+    notes: |
+      The conceptual core — how we evaluate a forecaster so the number we get is
+      trustworthy. Two of the five parts hide subtle traps; this section is about
+      not falling into them.
 
   # 6 — The five-part skeleton
   - layout: numbered_list
@@ -56,6 +92,15 @@ slides:
       - { title: "Predictor", desc: "How you answer — the only part that varies" }
       - { title: "Resolution", desc: "The ground truth at the target date" }
       - { title: "Score", desc: "How close the probabilistic answer was (CRPS / Brier / RPS)" }
+    notes: |
+      Every honest evaluation has these five parts. The *task* is the question —
+      which series, how far ahead, how often. The *origin* is when you make the
+      call, and the *cutoff* says you only get the information that existed at that
+      moment. The *predictor* is your method — and it's the *only* thing that
+      changes between ARIMA and an agent. *Resolution* is what actually happened.
+      And the *score* measures how close your whole probability distribution was,
+      not just a point — CRPS for continuous, Brier or RPS for events. Two of
+      these parts have subtle traps, so let's zoom in.
 
   # 7 — The honesty crux
   - layout: compare
@@ -68,6 +113,19 @@ slides:
       label: LLMs / agents
       lines: ["Trained up to ~Jan 2025", "Pre-cutoff = recalled, not forecast", "Honest only after cutoff"]
     callout: "So we score LLM rows on a protected, post-cutoff window."
+    notes: |
+      This is the part people get wrong, and it's the crux of the whole 'can LLMs
+      forecast?' question. Numerical methods are cutoff-safe by construction — the
+      context object only ever hands them data up to the forecast origin, so you
+      can backtest them on any historical window honestly. An LLM is *not* safe
+      that way. Gemini's training cutoff is around January 2025, so if I 'backtest'
+      it on 2023, I'm not measuring forecasting — I'm measuring memorized recall of
+      what already happened, and it silently flatters the LLM against the honest
+      numerical baselines. So the discipline is: LLM and agent rows only get scored
+      on data *after* the training cutoff — a recent backtest to iterate, and a
+      protected, held-out window as the real scoreboard. For agents with live web
+      tools, by the way, you can't even enforce this structurally — a tension we
+      come back to later in the bootcamp.
 
   # 8 — One interface, any method (real code)
   - layout: code
@@ -79,9 +137,22 @@ slides:
           def predict(self, task, context):
               ...  # -> list[Prediction]
     side:
-      heading: "Every method, one method."
-      body: "Naive, a Darts ARIMA, an LLM-Process, a tool agent — all implement predict(). The harness can't tell them apart."
+      heading: "One predict() per method."
+      points:
+        - "Naive — few lines"
+        - "Darts ARIMA wrapper"
+        - "LLM-Process: prompt"
+        - "Tool agent: loop"
     caption: "aieng/forecasting/evaluation/predictor.py"
+    notes: |
+      And here's the code that makes the comparison mechanical. One abstract base
+      class with essentially one method: `predict`, taking the task and the
+      cutoff-scoped context, returning a probabilistic prediction per horizon. A
+      naive baseline is a few lines; a Darts ARIMA wraps a classical model; an
+      LLM-Process packs the series into a prompt; an agent runs a multi-step tool
+      loop — and to the evaluation harness they're indistinguishable, because they
+      all return the same `Prediction`. That's the surface anyone implements to add
+      a new method.
 
   # 9 — A forecast, and where it fails
   - layout: figure
@@ -90,7 +161,18 @@ slides:
     caption: "CPI Gasoline · 1-month AutoARIMA · 90% interval"
     side:
       heading: "It can't see the news."
-      body: "AutoARIMA tracks the level but lags every turn. Its biggest misses are the 2020 crash and 2022 surge — moves driven by news a numbers-only model never sees."
+      body: "AutoARIMA tracks the level but lags every turning point — it's essentially extrapolating."
+      points:
+        - "Biggest misses: 2020 crash, 2022 surge"
+        - "Both driven by news a numbers-only model never sees"
+    notes: |
+      So let's make a forecast and look at it honestly. This is AutoARIMA
+      forecasting gasoline CPI one month out, every month, with a 90% interval — a
+      real probabilistic forecast, the same shape every method returns. Notice two
+      things. It tracks the *level* well, but it *lags* every turning point — it's
+      essentially extrapolating. And the biggest misses, the ✕'s, aren't random:
+      they're the 2020 COVID crash and the 2022 surge. The model can't see the news
+      driving those moves. That's the gap context-aware methods are supposed to fill.
 
   # 10 — The error isn't random
   - layout: figure
@@ -99,7 +181,18 @@ slides:
     caption: "Per-origin CRPS · Naive vs AutoARIMA · 301 origins, 2000–2025"
     side:
       heading: "AutoARIMA wins — by ~16%."
-      body: "Mean CRPS 8.45 vs 10.11. A real method beats the floor. But both blow up at 2008, 2020, 2022 — exactly where context could help."
+      body: "Beats the floor — yet both spike at 2008, 2020, 2022, where context could help."
+      stats:
+        - { value: "8.45", label: "AutoARIMA · mean CRPS", color: green }
+        - { value: "10.11", label: "Naive floor", color: muted }
+    notes: |
+      Now score it. CRPS is the proper score that rewards both calibration and
+      sharpness — lower is better. Over 301 monthly origins, AutoARIMA averages
+      8.45 versus naive's 10.11, about 16% better. Good — a real classical method
+      clearly beats the floor. But look *when* the error lives: both models spike
+      together at 2008, 2020, 2022. The average improvement is real, and the
+      failure mode is shared — both are blind at exactly the moments that matter.
+      So… can a method that reads the news do better?
 
   # 11 — The honest head-to-head
   - layout: figure_full
@@ -107,6 +200,17 @@ slides:
     image: ../../assets/figures/d1-01/sp500_horizon_crps.png
     caption: "S&P 500 daily log-returns · mean CRPS by horizon · same covariate panel for both"
     callout: "Same covariates — LightGBM still won every horizon. Established methods are the bar."
+    notes: |
+      Here's the honest result, and I think it's the most useful slide in the talk.
+      On the S&P 500 — one of the hardest, most efficient forecasting problems
+      there is — we gave an LLM-Process the *same* covariate panel the
+      gradient-boosting models get. It did *not* beat them: LightGBM has the lower
+      CRPS at every horizon — one day, one week, one month. That's exactly the
+      right expectation to set. Bolting an LLM onto a hard problem is not an
+      automatic win; established methods with good covariates are the benchmark to
+      beat. That doesn't mean don't explore — exploration is warranted, and the
+      rest of the bootcamp is about doing it well — it means explore with honest
+      evaluation, not hype.
 
   # 12 — What to take forward
   - layout: cards_dense
@@ -121,3 +225,12 @@ slides:
       - { eyebrow: "03", title: "Agents earn their place", accent: blue,
           desc: "By bringing new context and reasoning — tested, not assumed." }
     callout: "Up next: the conventional methods that set the bar — over to Behnoosh."
+    notes: |
+      Three things to carry forward. First, honest evaluation is the through-line
+      of everything we'll do — one interface, strict cutoffs, protected evals, no
+      exceptions. Second, the established methods are strong, especially when good
+      covariates are available, so they're the bar every new idea has to clear.
+      Third, agents earn their place by bringing something the classical methods
+      can't — new context, reasoning — and we'll hold them to the same honest
+      standard. To start, Behnoosh is going to take us deep on those conventional
+      methods that set the bar. Over to you.
