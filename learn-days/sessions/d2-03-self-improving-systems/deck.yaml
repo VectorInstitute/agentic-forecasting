@@ -1,0 +1,254 @@
+deck:
+  title: Self-improving Agentic Systems
+  subtitle: Where the adaptive agent fits in the research landscape
+  author: { name: "Ethan Jackson", org: "Vector Institute", date: "July 2026" }
+  footer: true
+  include_title: false   # slide 1 is an explicit section hero
+
+slides:
+  # 1 — Title (section hero)
+  - layout: section
+    eyebrow: Day 2 · session 3
+    title: Self-improving Agentic Systems
+    subtitle: "Where does the adaptive agent fit in the research landscape?"
+    notes: |
+      We just saw an agent that changes its own strategy based on experience. Five
+      minutes ago I asked whether 'change' and 'improve' are the same thing, and
+      said the research has an answer. Let me show you that answer — and leave you
+      with one concrete thing you could build in the next few days that directly
+      addresses the gap.
+
+  # 2 — Three papers, one arc (lead visual)
+  - layout: figure_full
+    title: Three papers, one arc
+    image: ../../assets/figures/d2-03/research_arc.png
+    caption: "ADAS → DGM → ALMA: each builds on the last — all share a held-out gate."
+    notes: |
+      The research arc that contextualises what we built. Three papers from the same
+      group — Jeff Clune's lab, with Vector affiliation — each building on the last.
+      ADAS establishes the premise: agent design is a search problem, and a meta-agent
+      can find designs that surpass what humans hand-craft. DGM makes that
+      self-referential: the agent edits its own code and keeps only changes that
+      empirically improve performance. And ALMA zooms in on the component that matters
+      most for continual learning — memory — arguing that hand-crafted memory designs
+      are the constraint, and that the schema, retrieval policy, and update rules
+      should all be meta-learned. Let me walk through each quickly.
+
+  # 3 — ADAS and DGM: what transfers
+  - layout: compare
+    title: "ADAS → DGM: two ideas that transfer"
+    left:
+      label: ADAS
+      lines:
+        - "Meta-agent writes agents as code"
+        - "Discovers designs beating hand-crafted ones"
+        - "Our curriculum: a constrained version"
+    right:
+      label: Darwin Gödel Machine
+      lines:
+        - "Self-rewriting + an empirical gate"
+        - "20% → 50% on SWE-bench, one agent"
+        - "Archive of diverse solutions"
+    callout: "We have a version of the gate (graduate_hypothesis). We don't have the archive."
+    notes: |
+      ADAS in one sentence: a meta-agent writes new agents as code and discovers
+      designs that beat what humans hand-crafted. The translation for us: the
+      curriculum study is a constrained version of this — instead of arbitrary agent
+      code, we generate strategy text through typed tools, and the search oracle is
+      the same: does this change improve performance on a benchmark? DGM makes it
+      self-referential — the agent edits its own code. Two transferable ideas matter
+      most. First, the empirical accept/reject gate: changes don't need formal proofs,
+      they need evidence of improvement on a held-out benchmark — our graduate_hypothesis
+      does a version of this with confirmation counts. Second, the archive: DGM keeps a
+      population of interestingly-different solutions, not just the current best, so a
+      dead end still leaves stepping stones. We have no archive — one live strategy.
+
+  # 4 — ALMA: the destination
+  - layout: statement
+    statement: "ALMA learns the memory design itself."
+    support: "Statelessness is the bottleneck. Schema, retrieval, and update rules — meta-learned from task performance, not hand-crafted."
+    callout: "Our adaptive agent hand-designed what ALMA would learn."
+    notes: |
+      ALMA's starting point is something we all feel: foundation models are stateless —
+      they don't carry experience between calls. Memory modules are the fix, but almost
+      every one in use today was designed by a human for a specific domain and then
+      frozen. ALMA's argument: the memory design itself — what you store, how you
+      retrieve it, what triggers an update — should be learned from task performance.
+      It uses a meta-agent to search over memory designs expressed as executable code.
+      Across four sequential decision-making domains, meta-learned designs outperform
+      state-of-the-art hand-crafted baselines on all benchmarks. The honest framing for
+      our work: we hand-designed the four-layer schema, the evidence bars, the
+      threshold. We made good choices. ALMA's claim is that those choices shouldn't be
+      made by us.
+
+  # 5 — What ALMA's vision means for forecasting
+  - layout: table
+    title: What ALMA means for forecasting
+    subtitle: "Three memory components we hand-designed — and where the frontier takes each"
+    headers: ["Memory part", "We hand-designed", "The ALMA frontier"]
+    rows:
+      - ["Schema", "obs → hyp → calib → narrative", "Meta-learned from performance"]
+      - ["Retrieval", "Full strategy, every prediction", "Filtered by regime + horizon"]
+      - ["Update rules", "Evidence bars + threshold", "Validated out-of-sample"]
+    highlights:
+      - { row: 2, col: 2, color: card_green }
+    callout: "The update rules are the most actionable gap — and the bridge to track two."
+    notes: |
+      Concretely for our use case: our adaptive agent has three memory components, all
+      hand-designed. The schema — four layers, observations feeding hypotheses feeding
+      calibrations feeding the narrative — we chose because it made intuitive sense for
+      forecasting. ALMA would search over alternative schemas, maybe a regime-indexed or
+      event-tagged structure we'd never think to design. The retrieval policy: we load
+      the full strategy at every prediction, regardless of regime or horizon; a
+      meta-learned retrieval might load only what matches the current regime and improve
+      accuracy. And the update rules: our evidence bars and thresholds are carefully
+      designed, but not validated against task performance. Every update should
+      demonstrate improvement on a held-out window before being committed. That last one
+      is the most actionable gap — and it's what brings us to the second track.
+
+  # 6 — The hand-designed schema
+  - layout: code
+    title: The hand-designed schema
+    language: python
+    code: |
+      class WtiStrategyState(AdaptiveSkillState):
+          approach_narrative: str
+          calibration_corrections: list[...]
+          hypotheses: list[Hypothesis]
+          observations: list[Observation]
+          version_history: list[VersionEntry]
+    side:
+      heading: "This schema is ours."
+      body: "Five typed fields, an evidence hierarchy — designed in one sitting for WTI."
+      points:
+        - "Deliberate and sound"
+        - "But not discovered"
+        - "ALMA would search over it"
+    caption: "adaptive_agent/skill_state.py"
+    notes: |
+      Here's the schema we designed: five fields — approach narrative, calibration
+      corrections, hypotheses, observations, version history. It's a good design — it's
+      deliberate, it's typed, and the evidence hierarchy is sound. But it was designed
+      by us, in one sitting, for WTI forecasting. ALMA's argument is that this is the
+      constraint: a meta-agent searching over schemas might find that a flat list of
+      regime-indexed findings outperforms a four-layer hierarchy for this domain — or
+      it might validate our design. We don't know, and that's ALMA's point.
+
+  # 7 — Where we stand
+  - layout: table
+    title: The honest lineage
+    subtitle: "What we have from each paper — and the gap that remains"
+    headers: ["Paper", "What we have", "The gap"]
+    rows:
+      - ["ADAS", "Curriculum writes text", "No code search"]
+      - ["DGM", "Confirmation gate", "No archive"]
+      - ["ALMA", "Fixed schema + rules", "No adaptive retrieval"]
+      - ["SkillOpt", "Curriculum self-edits", "No held-out gate"]
+    highlights:
+      - { row: 3, col: 2, color: card_red }
+    callout: "The held-out gate is the gap that matters most."
+    notes: |
+      The honest map of where we sit. ADAS: our curriculum is a constrained version of
+      the meta-agent loop — we write strategy text, not code, through typed tools. DGM:
+      we have the accept/reject gate in graduate_hypothesis, but no archive. ALMA: fixed
+      schema and evidence-governed updates, but no adaptive retrieval and no
+      performance-validated update rules. And SkillOpt, which I'll explain next: an
+      agent that self-edits via curriculum, but missing the held-out validation gate
+      that makes those edits demonstrably improvements rather than just changes. That
+      last gap is the most actionable.
+
+  # 8 — Section break
+  - layout: section
+    eyebrow: A second track
+    title: Skills as trainable state
+    subtitle: "SkillOpt and the discipline of text-space optimization"
+    notes: |
+      The second track approaches self-improvement from a different angle: not
+      meta-learning the memory architecture, but optimising a specific skill artifact
+      as a trainable parameter.
+
+  # 9 — SkillOpt
+  - layout: icon_cards
+    title: "SkillOpt: skill as trainable state"
+    cards:
+      - { icon: code, title: "The artifact", accent: pink,
+          body: "A markdown skill file as the frozen agent's trainable state — our wti-strategy is exactly this." }
+      - { icon: gear, title: "The optimizer", accent: purple,
+          body: "A separate model turns scored rollouts into bounded edits — like DSPy, but for skill docs." }
+      - { icon: check, title: "The gate", accent: blue,
+          body: "Each edit is accepted only if it improves a held-out window; rejected edits become feedback." }
+    callout: "+23.5 pt average gain over no-skill (GPT-5.5, six benchmarks) — held-out gated."
+    notes: |
+      SkillOpt, from Microsoft, published this spring. The core idea: treat a skill
+      markdown file as the trainable external state of a frozen agent. A separate
+      optimizer model turns scored rollouts — the agent trying to forecast, succeeding
+      or failing — into bounded add/delete/replace edits on the skill document. Then a
+      gate: before committing any edit, evaluate the candidate skill on a held-out
+      selection window, and accept only if the score improves. Rejected edits go into a
+      buffer and become negative feedback. The result is a compact best_skill.md that
+      transfers across models and environments — +23.5 points average gain over a
+      no-skill baseline on GPT-5.5 across six benchmarks. If you've used DSPy — same
+      idea for prompts and pipelines — SkillOpt applies it to the artifact we already
+      have. The part that makes it work: the held-out gate.
+
+  # 10 — The shared principle
+  - layout: cards_dense
+    title: The shared principle
+    columns: 3
+    style: outline
+    cards:
+      - { eyebrow: "01", title: "DGM", metric: "accept / reject", accent: pink,
+          desc: "Keep an edit only on evidence of improvement on a held-out benchmark." }
+      - { eyebrow: "02", title: "ALMA", metric: "out-of-sample", accent: purple,
+          desc: "Update rules judged on task performance the design never trained against." }
+      - { eyebrow: "03", title: "SkillOpt", metric: "held-out CRPS", accent: blue,
+          desc: "Commit a skill edit only if it improves an unseen validation window." }
+    callout: "Change is easy. Improvement requires a held-out gate."
+    notes: |
+      This is the through-line. Every paper we've looked at — DGM, ALMA, SkillOpt —
+      shares one structural feature: before a change is committed to the agent's state,
+      it must demonstrate improvement on a window the agent has never seen. DGM calls it
+      the empirical accept/reject gate; SkillOpt calls it the validation gate; ALMA
+      validates update rules against task performance. Our curriculum commits updates as
+      they go, based on evidence accumulation, without this check. That's why we can't
+      be sure the trained agent 'improved' rather than just 'changed.' Here's how to
+      close that gap.
+
+  # 11 — The project idea (lead visual)
+  - layout: figure_full
+    title: "Validation-gated curriculum"
+    image: ../../assets/figures/d2-03/validation_gate_loop.png
+    caption: "Inspired by, not replicating: every committed change must first improve an unseen window."
+    notes: |
+      The project — taking inspiration from SkillOpt's validation gate, framed as one
+      concrete step toward ALMA's vision of performance-validated update rules. Not
+      replicating either paper; drawing the core principle and applying it to what we
+      have. The mechanism: partition the 2025 data — most for curriculum study, but hold
+      back a small window (say the last six weeks) the agent never sees during study.
+      Before any strategy mutation is committed, snapshot the current strategy. The agent
+      proposes the update and the mutation tool runs as usual. Then — before persisting —
+      run evaluate() on the held-out window with the proposed strategy. If mean CRPS
+      improves, commit; if not, revert to the snapshot and log what was tried and why it
+      failed. Those failed edits become negative feedback. The result: a trained strategy
+      where every committed change demonstrably improved held-out performance. Then score
+      the gated agent against the ungated one on the protected 2026 eval — a clean
+      before/after with a clear hypothesis.
+
+  # 12 — Close
+  - layout: statement
+    statement: "Add one held-out gate."
+    support: "That's the principle ADAS, DGM, ALMA, and SkillOpt share — applied to the curriculum you already have."
+    callout: "The evaluation harness is already there. The question is yours."
+    notes: |
+      The closing thought — the one I want you to carry into the build phase. We built an
+      adaptive agent that changes over time; its mechanism is visible, its findings are
+      real, and the 5% improvement on a hard 2026 window is encouraging. But the research
+      we just surveyed — ADAS, DGM, ALMA, SkillOpt — all converge on the same insight: a
+      self-improving agent needs a held-out gate. Not just evidence accumulation, not
+      just confirmation counts, but demonstrated improvement on a window the agent has
+      never optimised against. Add that gate to the curriculum and you go from an agent
+      that changes to one that has a genuine shot at improving over time. The evaluation
+      harness is already there — evaluate(), the EvalSpec, the protected 2026 window. The
+      one thing the literature says you need, you don't yet have. That's the question I'm
+      leaving you with: what happens when you add it? The build phase is where you find
+      out.
