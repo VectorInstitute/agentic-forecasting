@@ -120,6 +120,26 @@ self-contained offline study document — the narration rides along with the vis
 No length budget, no overflow check (notes are a separate package part). Keep the
 slide face within its layout budgets as usual; put the long-form teaching in `notes`.
 
+## Badge (`badge:`) — any layout
+
+Every slide also accepts an optional top-level `badge:` string. It draws a small
+black pill with pink text in the **top-right corner**, over whatever layout the slide
+uses — for flagging a slide as something special (the canonical case is `"LIVE DEMO"`,
+marking where the talk leaves the deck for a live demo, so it's unmistakable on screen
+*and* in the offline reference).
+
+```yaml
+- layout: figure
+  title: Reacting to the news
+  badge: "LIVE DEMO"
+  image: ...
+```
+
+The pill sits in the title band's right edge (width ~2.05"). **Keep the slide's
+`title` short** so it doesn't run into the badge — there is no automatic collision
+check (the badge is drawn after the layout, outside the overflow walk). Text is
+upper-cased automatically. Use it sparingly: a badge on every slide is no signal.
+
 ## Behaviors that are automatic (don't set these)
 
 - **Footer** (black bar + pink rule + VECTOR INSTITUTE) on every content layout

@@ -747,6 +747,23 @@ def _footer(slide, ctx):
         C.footer(slide)
 
 
+def _badge(slide, text):
+    """A top-right corner pill (black, pink text) marking a slide as something special
+    — e.g. `badge: "LIVE DEMO"` to flag the slide where the talk leaves the deck for a
+    live demo, so it's unmistakable on screen and in the offline reference. Drawn over
+    the layout in `render_slide`, so it works on any layout. Sits in the title band's
+    right edge; keep the slide's `title` short enough not to reach it."""
+    w, h = 2.05, 0.42
+    x = brand.CANVAS_W_IN - MX - w
+    y = 0.30
+    C.rect(slide, x, y, w, h, fill="black", rounded=True, radius_in=0.21)
+    C.rect(slide, x + 0.22, y + h / 2 - 0.05, 0.10, 0.10, fill="pink", rounded=True,
+           radius_in=0.05)
+    C.add_text(slide, x + 0.30, y, w - 0.40, h, str(text).upper(), size=T["label"] + 1,
+               color="pink", bold=True, font=HEAD, align="center", anchor="middle",
+               space_after=0)
+
+
 LAYOUTS = {
     "title": render_title,
     "section": render_section,
@@ -776,6 +793,9 @@ def render_slide(prs, spec: dict, ctx: dict):
         )
     slide = C.blank_slide(prs)
     LAYOUTS[layout](slide, spec, ctx)
+    # Optional top-right badge (e.g. "LIVE DEMO") — drawn over any layout.
+    if spec.get("badge"):
+        _badge(slide, spec["badge"])
     # Optional speaker notes: baked into the .pptx notes pane so the deck travels
     # as a self-contained offline study doc. Notes live on a separate notesSlide
     # part — not subject to on-slide geometry/overflow checks.

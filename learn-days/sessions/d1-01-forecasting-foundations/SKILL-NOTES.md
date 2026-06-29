@@ -159,6 +159,9 @@ fail QA — and it matters most in figures, which can't be nudged in a PPTX edit
       `numbered_list` taller desc box.
 - [ ] `scripts/overflow.py` — glyph-height check (`GLYPH_FRAC`): flag a box too
       short for even one line.
+- [ ] `scripts/layouts.py` — `_badge()` + per-slide `badge:` draw in `render_slide`
+      (top-right pill, e.g. `"LIVE DEMO"`, over any layout). Documented in
+      patterns.md + catalogue.md. No auto collision check — keep `title` short.
 - [ ] `scripts/figure_qa.py` — **new module**: `SLOT_DISPLAY` + `check_legibility`
       + `check_overlaps` + `guard(fig, slot)` (figures placed in slots can't be
       QA'd at deck-build; this runs at figure-build). Documented in pitfalls.md +

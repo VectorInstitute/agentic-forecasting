@@ -43,6 +43,10 @@ Any slide also accepts an optional `notes:` string, written to the PowerPoint
 **notes pane** (off-slide) so the deck doubles as a self-contained offline study
 doc. Not budget-limited or overflow-checked — see patterns.md for details.
 
+A slide may also carry an optional `badge:` string — a black/pink pill in the
+**top-right corner** (e.g. `badge: "LIVE DEMO"`), drawn over any layout. Keep the
+`title` short so it doesn't collide; there is no automatic check. See patterns.md.
+
 ## Quick picker
 
 | Content you have | Layout |

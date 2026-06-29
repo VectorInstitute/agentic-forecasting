@@ -1,0 +1,322 @@
+deck:
+  title: The Analyst Agent
+  subtitle: From LLM Processes to agents that fetch and compute
+  author: { name: "Ethan Jackson", org: "Vector Institute", date: "July 2026" }
+  footer: true
+  include_title: false   # slide 1 is an explicit title_photo
+
+slides:
+  # 1 — Title (gradient hero; add `image:` to use a photo)
+  - layout: title_photo
+    title: The Analyst Agent
+    subtitle: From LLM Processes to agents that fetch and compute
+    notes: |
+      Ali just showed you LLM Processes — packing a series and its context into a
+      prompt and reading a forecast back out. I want to take exactly one step past
+      that. What happens when the model doesn't just receive context, but can go get
+      it — search the news, run a calculation — and decide for itself when to do
+      which? That's an agent. For the next half hour we'll look at the architecture of
+      one — the Analyst Agent, forecasting WTI crude — watch it react to live news,
+      and be honest about the one problem agents create that ARIMA never had.
+
+  # 2 — Agenda
+  - layout: icon_cards
+    title: What we'll cover
+    cards:
+      - { icon: arrow, title: "From LLMP to agents", accent: pink,
+          body: "The natural next step from a process: instead of packing context in, the agent goes and gets it — on the same Predictor interface." }
+      - { icon: robot, title: "Anatomy + capabilities", accent: purple,
+          body: "The agent's components, and the capability staircase that's really just which of them are switched on. We'll run it live." }
+      - { icon: chart, title: "One agent, three jobs", accent: blue,
+          body: "One identity forecasts a trajectory, prices a shock, or writes a scenario — where Track 2 first appears." }
+    callout: "Threaded through all of it: one honest tension we won't paper over."
+    notes: |
+      Three beats. First, the conceptual bridge: how an agent is the natural next move
+      from an LLM Process, and why it still drops into the same evaluation harness from
+      this morning. Second, the anatomy of the Analyst Agent and the capabilities its
+      components unlock — which we'll run live so you can watch it search. And third,
+      the payoff: a single agent identity doing three different jobs, one of which
+      isn't a scored forecast at all. Threaded through all of it is one honest tension
+      we won't paper over.
+
+  # 3 — From a process to an agent
+  - layout: compare
+    title: From a process to an agent
+    left:
+      label: LLM Process
+      lines:
+        - "Context packed into the prompt"
+        - "You choose what it sees"
+        - "One shot: prompt to forecast"
+    right:
+      label: Agent
+      lines:
+        - "Goes and gets the context"
+        - "Searches, computes, decides"
+        - "A loop: act, observe, act"
+    callout: "Same goal — a calibrated forecast. New ability: it can act before it answers."
+    notes: |
+      An LLM Process is a single shot: you assemble the context — the series, maybe a
+      report — pack it into the prompt, and read a forecast back. It's powerful, but it
+      only ever sees what you handed it. An agent flips the responsibility. Instead of
+      you pre-loading every relevant fact, the agent has tools — web search, a Python
+      sandbox — and runs a loop: it reasons, decides it needs something, fetches or
+      computes it, looks at the result, and goes again until it's ready to answer. The
+      goal is identical — a calibrated probabilistic forecast. The new ingredient is
+      agency: it can take actions in the world before it commits to a number.
+
+  # 4 — Thesis
+  - layout: statement
+    statement: "An agent is an LLM that can act."
+    support: "Search for context, run code, decide when — then forecast."
+    callout: "And it still implements the same one interface."
+    notes: |
+      The one sentence to hold onto: an agent is an LLM that can act — search, compute,
+      and crucially decide when each is worth doing — and then forecast. Everything else
+      today is detail on top of that. And the part that makes it usable for us: no matter
+      how many tools we bolt on, it still presents the same interface as every other
+      method. That's what lets an agent and a fifty-year-old statistical model compete on
+      the same scoreboard.
+
+  # 5 — Still just a Predictor (real code)
+  - layout: code
+    title: Still just a Predictor
+    language: python
+    code: |
+      config = build_wti_news_config()
+      predictor = build_wti_news_predictor(
+          task="trajectory")
+      # AgentPredictor implements Predictor:
+      predictor.predict(task, context)
+      #   -> list[Prediction]
+    side:
+      heading: "The harness can't tell."
+      body: "An AgentConfig becomes an AgentPredictor implementing predict() — the same ABC as ARIMA."
+      points:
+        - "backtest() treats it identically"
+        - "evaluate() scores it the same"
+    caption: "energy_oil_forecasting/tasks.py · analyst_agent/agent.py"
+    notes: |
+      This is the whole trick to integrating agents honestly. This morning we saw the
+      Predictor base class — one method, predict, takes a task and a cutoff-scoped
+      context, returns a probabilistic prediction. Here, build_wti_news_config defines
+      an agent identity — its instructions and its tools — and AgentPredictor wraps that
+      identity so it satisfies the exact same interface. To backtest() and evaluate(),
+      this agent is indistinguishable from a Darts ARIMA. So what's actually inside that
+      wrapper? Let's open it up.
+
+  # 6 — Anatomy of the Analyst Agent (architecture diagram)
+  - layout: figure_full
+    title: Anatomy of the Analyst Agent
+    image: ../../assets/figures/d1-04/agent_architecture.png
+    caption: "One identity wrapped as a Predictor: instructions + tools + skills + an output schema."
+    notes: |
+      Here's the whole Analyst Agent on one slide — and we'll reuse this exact diagram
+      tomorrow, so it's worth a minute. On the left, the inputs: the task and a
+      cutoff-scoped context, same as every method. In the center, the LLM core running an
+      act-observe loop, steered by its instructions. Around it, the tool belt: a bounded
+      web search, a sandboxed Python environment, and optionally a conventional forecast
+      tool. Hanging off the side, skills — read-only reference material the agent pulls in
+      on demand. On the right, the output schema that turns its answer into a standard
+      Prediction. The whole thing is wrapped as an AgentPredictor, the only surface the
+      harness sees. Notice the dashed box: that's the slot tomorrow's adaptive agent fills
+      with a strategy it can rewrite. Today everything in here is fixed at config time.
+
+  # 7 — Section break
+  - layout: section
+    eyebrow: Capabilities
+    title: Capabilities are configuration
+    subtitle: "Which components are live"
+    notes: |
+      With the anatomy in mind: every 'capability level' is just a choice of which of
+      those components we switch on.
+
+  # 8 — Four configs, one identity
+  - layout: numbered_list
+    title: Four configs, one identity
+    items:
+      - { title: "Basic", desc: "Core + history only — no tools (the LLMP-style baseline, our floor)" }
+      - { title: "News", desc: "+ search_web — reasons over OPEC+, geopolitics, supply it couldn't otherwise see" }
+      - { title: "Code", desc: "+ run_code (E2B) + skills — computes vol, fits a trend, calibrates intervals" }
+      - { title: "Tool", desc: "+ run_forecast (AutoARIMA) — less flexible, but rigid, auditable, reproducible" }
+    notes: |
+      Four configurations of that one architecture. The basic agent lights up only the
+      core with price history — essentially an LLM Process with a reasoning loop. News
+      switches on the search tool, so it can react to what a numbers-only model can't see:
+      an OPEC+ decision, a shipping-lane closure, an escalation in the Gulf. Code switches
+      on the sandbox and the skills, so it stops guessing at statistics and actually
+      computes them — realized volatility, a rolling trend fit, a calibrated interval. And
+      the fourth swaps open-ended code for a single AutoARIMA tool — less flexible, but
+      rigid and auditable. In the code these are four factory functions differing by a few
+      fields each. Same identity, four capability levels — let's run the full one.
+
+  # 9 — LIVE demo (rendered fallback on screen)
+  - layout: figure
+    title: Reacting to the news
+    badge: "LIVE DEMO"
+    image: ../../assets/figures/d1-04/news_agent_forecast.png
+    caption: "WTI · news agent vs AutoARIMA · one 2025 backtest origin."
+    side:
+      heading: "A reasoned forecast, not a flat line."
+      body: "The agent commits to a directional call with a calibrated band — a move AutoARIMA's flat line never makes."
+      points:
+        - "Realized stayed inside the band"
+    notes: |
+      Rather than just tell you, let me run it — the Analyst Agent with news search on,
+      on a recent origin. [Run.] Watch the trace: it decides what it needs, issues a
+      search, reads the result — an OPEC+ headline, a note on the Gulf — then folds that
+      into a forecast, and the median moves off the naive extrapolation toward the regime
+      the news implies. [Fallback:] if the live call is slow, this plot is the news agent
+      on a 2025 backtest origin — it commits to a directional call with a calibrated band,
+      and the realized path stays inside it. This is NOT a cherry-picked accuracy win — on
+      big moves the agent often misses direction — the point is that each capability does
+      something legible, and you can decide if it's worth the cost. This is notebook 2;
+      you can run it yourself this afternoon.
+
+  # 10 — Two kinds of cutoff
+  - layout: compare
+    title: Two kinds of cutoff
+    style: emphasis
+    left:
+      label: The data (hard)
+      lines:
+        - "CutoffEnforcer filters rows"
+        - "Never sees released_at > as_of"
+        - "Structural — can't be violated"
+    right:
+      label: The web (soft)
+      lines:
+        - "Search passes cutoff_date = as_of"
+        - "Proxy is asked to exclude later"
+        - "A discipline, not a guarantee"
+    callout: "You can fence the data. You can't structurally fence the open web."
+    notes: |
+      You just watched it search the web — so we have to confront the honest crux of
+      agentic forecasting. For the data, the cutoff is hard and structural: CutoffEnforcer
+      filters every row by its release date before the agent sees anything, so post-origin
+      data simply isn't in the context — the agent can't cheat. For the web, there's no
+      such guarantee. Every search carries a cutoff_date equal to the forecast origin, and
+      the search proxy is instructed to exclude anything later — and it mostly complies —
+      but that's the model exercising judgment, not a wall. A live model has a training
+      cutoff of its own, and a live search can always surface something stamped after the
+      date. So for any agent with live tools, the cutoff is a discipline we enforce by
+      governance and disclosure, not a property we can prove.
+
+  # 11 — Leakage punchline
+  - layout: statement
+    statement: "You can fence the data. You can't fence the web."
+    support: "So we separate cutoff-fenced backtests from live runs — and say which is which."
+    callout: "Honest disclosure beats a false guarantee."
+    notes: |
+      One line to remember. You can fence the data; you can't fence the web. That's not a
+      reason to avoid live-tool agents — their whole value is reacting to new information,
+      which you just saw. It's a reason to be disciplined and transparent: keep the
+      cutoff-fenced backtest cohort separate from the live cohort, and never quietly mix
+      them into one number. With that honesty in place, let's zoom into the code rung — and
+      what we actually feed it.
+
+  # 12 — Skills: competence by configuration
+  - layout: icon_cards
+    title: Competence by configuration
+    cards:
+      - { icon: flask, title: "statistical-analysis", accent: pink,
+          body: "Classifies the vol regime and spots anomalies, grounded in a JSON of real 2020–25 WTI benchmarks." }
+      - { icon: chart, title: "trend-projection", accent: purple,
+          body: "A worked recipe: fit a trend on recent days, project to each horizon, calibrate an 80% interval." }
+      - { icon: code, title: "E2B sandbox", accent: blue,
+          body: "It reads the skills, then writes and runs the actual Python in an isolated, open-ended sandbox." }
+    callout: "We upgraded competence by adding two folders to a list — configuration, not code."
+    notes: |
+      Zooming into the code component from the diagram: we didn't just hand the agent a
+      bare Python prompt — we gave it skills, read-only folders of instructions and
+      reference data it pulls in on demand. It gets two. statistical-analysis teaches it
+      to classify the volatility regime and spot anomalies, and ships a JSON of real
+      2020-to-2025 WTI benchmarks so its sense of 'normal' is grounded in numbers, not
+      vibes. trend-projection gives it a worked recipe — fit a trend on recent days,
+      project to each horizon, calibrate an 80% interval from the residuals. It reads
+      those, then writes and runs the real Python in an isolated E2B sandbox. The point:
+      we upgraded the agent's analytical competence by adding two folders to a list — no
+      fine-tuning, no redeploy. Configuration, not code, one more time.
+
+  # 13 — Section break
+  - layout: section
+    eyebrow: Configuration, not code
+    title: One agent, three jobs
+    subtitle: "Same identity — different question"
+    notes: |
+      We've seen one capable agent. Now watch the same identity do three completely
+      different jobs — and watch one of them stop being a scored forecast at all.
+
+  # 14 — One identity, three tasks
+  - layout: table
+    title: One identity, three tasks
+    subtitle: "One AgentConfig, paired with three (prompt, output schema) combinations"
+    headers: ["Task", "Output schema", "Track", "Score"]
+    rows:
+      - ["Trajectory", "Quantile grid", "1", "CRPS"]
+      - ["Binary shock", "Probability", "1", "Brier"]
+      - ["Scenario", "Scenario cards", "2", "—"]
+    notes: |
+      This is the one-agent-three-tasks pattern, and it's just tasks.py. One AgentConfig
+      identity — the same news agent — paired with three different (prompt_builder,
+      output_schema) combinations. Ask it for a trajectory and it returns a quantile
+      forecast scored by CRPS — Track 1, head-to-head. Ask it for a binary shock — will
+      WTI jump more than five dollars in a week — and it returns a probability scored by
+      Brier; still Track 1. Or ask it for a scenario analysis, and it returns something
+      structured but unscored — that's Track 2. Same brain, three jobs, picked by which
+      output schema you hand it. That last row is the interesting one.
+
+  # 15 — Track 2: the agent as analyst (real schema)
+  - layout: code
+    title: "Track 2: the agent as analyst"
+    language: python
+    code: |
+      class ScenarioCard(BaseModel):
+          name: str
+          description: str
+          probability: float   # 0–1
+          wti_range_60d: list[float]
+          point_estimate_60d: float
+          key_drivers: list[str]
+      # output: list[ScenarioCard] + base_case
+    side:
+      heading: "Not a score — an analysis."
+      body: "Same agent, swap the output schema: weighted scenarios with ranges and drivers."
+      points:
+        - "Judged by usefulness, not CRPS"
+        - "Meant to support a decision"
+    caption: "energy_oil_forecasting/tasks.py"
+    notes: |
+      Here's what Track 2 looks like. Instead of one number, the agent returns three
+      scenarios — a supply-shock case, a base case, a demand-softening case — each with a
+      probability, a 60-day price range, and the key drivers behind it. There's no CRPS
+      here, and that's the point: this output isn't competing on a leaderboard, it's meant
+      to support a human decision. This is the 'agents as prediction analysts' mode the
+      intro framed this morning, made concrete — and it falls out of the same agent just by
+      swapping the output schema. One capable identity spans both the scored forecaster and
+      the interactive analyst.
+
+  # 16 — What to take forward
+  - layout: cards_dense
+    title: What to take forward
+    columns: 3
+    style: outline
+    cards:
+      - { eyebrow: "01", title: "Agents extend LLMP", metric: "same goal", accent: pink,
+          desc: "By fetching context and running code — a calibrated forecast, new abilities." }
+      - { eyebrow: "02", title: "Capabilities are config", metric: "one interface", accent: purple,
+          desc: "News, code, skills, tools — toggles on one Predictor identity." }
+      - { eyebrow: "03", title: "The web can't be fenced", metric: "disclose it", accent: blue,
+          desc: "Hard cutoff for data, soft for live tools — disclose which." }
+    callout: "Tomorrow: an agent that rewrites its own forecasting strategy."
+    notes: |
+      Three things to carry forward. One: an agent is the natural extension of an LLM
+      Process — same goal, a calibrated forecast, but now it can fetch context and run
+      code, which you saw it do. Two: every capability we added was configuration on a
+      single identity that never stopped being a Predictor — which is what keeps agents on
+      the same honest scoreboard as everything else. Three: the leakage tension is real and
+      specific — data has a hard cutoff, live tools only a soft one, so we stay disciplined
+      and we disclose. Hold onto that architecture diagram, because tomorrow in part two I'll
+      fill its empty slot with a strategy the agent rewrites itself — and we'll measure
+      whether that self-improvement actually helps on a protected 2026 window. Thanks — and
+      after lunch we'll get hands-on.
