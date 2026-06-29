@@ -43,7 +43,8 @@ the [aieng-skills](https://github.com/VectorInstitute/aieng-skills) collection.
 | **[catalogue.md](catalogue.md)** | **The layout menu** — full YAML for every layout, icons, palette, deck schema |
 | [design.md](design.md) | Storyboard discipline, deck rhythm, variety |
 | [patterns.md](patterns.md) | Exact YAML keys + text budgets per layout |
-| [pitfalls.md](pitfalls.md) | Anti-patterns |
+| [pitfalls.md](pitfalls.md) | Anti-patterns (incl. figure legibility/overlap) |
+| `scripts/figure_qa.py` | Importable QA guard for figures placed in slots — flags minuscule plot text + labels straddling a box border (`figure_qa.guard(fig, slot=...)`) |
 
 ## Setup
 
@@ -86,7 +87,11 @@ Open on `title`/`title_photo`, break chapters with `section`, land a thesis on
 than a bullet list — when a slide makes a point about data, a result, or an interface,
 *show* it via `figure`/`figure_full`/`code` rather than a `table` or prose. Generate
 charts as PNGs from **real data** (e.g. brand-styled matplotlib) and place them with
-`figure`. Reserve pure-text layouts for the thesis and connective tissue. `image:` paths
+`figure`. A figure is *scaled to fit* its slot, so on-plot text can land far smaller
+than the slide title — run `figure_qa.guard(fig, slot=...)` before saving each plot to
+catch minuscule text and labels straddling a box border (the deck-level `validate-deck`
+can't see inside a PNG). See [pitfalls.md](pitfalls.md) → "Figures placed in slots".
+Reserve pure-text layouts for the thesis and connective tissue. `image:` paths
 in the deck YAML resolve relative to the YAML file; a missing image renders a placeholder
 so the build never fails.
 

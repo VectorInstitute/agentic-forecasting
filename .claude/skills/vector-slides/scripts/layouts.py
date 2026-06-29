@@ -304,10 +304,12 @@ def render_numbered_list(slide, spec, ctx):
         C.number_circle(slide, MX + 0.20, y + (rh - d) / 2, d, i + 1)
         tx = MX + 0.30 + d
         tw = CW - (tx - MX) - 0.25
-        C.add_text(slide, tx, y + 0.08, tw, 0.30, it.get("title", ""),
+        C.add_text(slide, tx, y + 0.05, tw, 0.26, it.get("title", ""),
                    size=T["row_title"], color="ink", bold=True, font=HEAD, space_after=0)
         if it.get("desc"):
-            C.add_text(slide, tx, y + 0.40, tw, rh - 0.44, it["desc"],
+            # desc box must be ≥ ~1 line tall (≥0.18") so the line clears the card
+            # bottom edge — the overflow check's glyph-height guard enforces this.
+            C.add_text(slide, tx, y + 0.31, tw, max(0.20, rh - 0.36), it["desc"],
                        size=11, color="body", line_spacing=1.05, space_after=0)
     _footer(slide, ctx)
 
@@ -451,7 +453,18 @@ def _highlight_python(line: str) -> dict:
 
 
 def _side_rail(slide, rx, ry, rail_w, rail_h, side):
-    """Bold takeaway heading + body in a right-hand rail (figure / code layouts)."""
+    """Right-hand takeaway rail for the figure / code layouts. Stacks, in order,
+    whichever of these the spec provides (all optional):
+
+      heading  — bold takeaway line
+      body     — str or list of sentences
+      points   — bullet list (short supporting lines)
+      stats    — list of {value, label[, color]} rendered as a compact stat stack
+                 (the "leaderboard beside the plot" element from the reference deck)
+
+    Everything flows in a single text box, so the geometry overflow check measures
+    it directly — keep the combined content within the rail height.
+    """
     C.rect(slide, rx, ry + 0.02, 0.52, brand.ACCENT_H + 0.005,
            fill=side.get("accent", "pink"))
     paras = []
@@ -463,9 +476,52 @@ def _side_rail(slide, rx, ry, rail_w, rail_h, side):
         for b in (body if isinstance(body, list) else [body]):
             paras.append({"text": b, "size": T["lede"], "color": "body",
                           "space_after": 8})
+    for p in side.get("points", []):
+        paras.append({"text": "•  " + str(p), "size": T["body"], "color": "body",
+                      "space_after": 4})
+    stats = side.get("stats", [])
+    for i, s in enumerate(stats):
+        paras.append({"text": str(s.get("value", "")), "bold": True, "font": HEAD,
+                      "size": T["card_title"], "color": s.get("color", "pink"),
+                      "space_after": 1})
+        paras.append({"text": str(s.get("label", "")), "size": T["label"] + 1,
+                      "color": "muted",
+                      "space_after": 6 if i < len(stats) - 1 else 0})
     if paras:
         C.add_text(slide, rx, ry + 0.22, rail_w, rail_h - 0.22, paras,
-                   line_spacing=1.22, space_after=8)
+                   line_spacing=1.20, space_after=8)
+
+
+def _caption_h(caption) -> float:
+    """Vertical space a caption needs: a plain string is one grey line; a two-part
+    {lead, body} caption (bold lead + sentence) needs room for ~2–3 lines."""
+    if not caption:
+        return 0.0
+    return 0.80 if isinstance(caption, dict) else 0.30
+
+
+def _caption(slide, x, y, w, caption, *, align="left"):
+    """Render a figure/code caption. Two forms:
+
+      caption: "a plain grey italic line"
+      caption: { lead: "Bold lead.", body: "A full descriptive sentence under it." }
+
+    The two-part form mirrors the reference deck's bold-title + sentence captions
+    and lets a figure slide carry a real sentence of explanation, not just a label.
+    """
+    if isinstance(caption, dict):
+        paras = []
+        if caption.get("lead"):
+            paras.append({"text": caption["lead"], "bold": True, "font": HEAD,
+                          "size": T["body"], "color": "ink", "space_after": 3})
+        if caption.get("body"):
+            paras.append({"text": caption["body"], "size": T["label"] + 1,
+                          "color": "muted", "space_after": 0})
+        C.add_text(slide, x, y, w, _caption_h(caption), paras, align=align,
+                   line_spacing=1.12, space_after=3)
+    else:
+        C.add_text(slide, x, y, w, 0.28, caption, size=T["label"] + 1,
+                   color="muted", italic=True, align=align, space_after=0)
 
 
 def _resolve_image(ctx, img):
@@ -509,7 +565,7 @@ def render_figure(slide, spec, ctx):
     rail_w = 2.85 if has_side else 0.0
     gap = 0.45 if has_side else 0.0
     img_w = CW - rail_w - gap
-    img_h = (bottom - top) - (0.30 if caption else 0.0)
+    img_h = (bottom - top) - _caption_h(caption)
     img = _resolve_image(ctx, spec.get("image"))
     halign = "left" if has_side else "center"
     if img and img.exists():
@@ -517,8 +573,7 @@ def render_figure(slide, spec, ctx):
     else:
         _placeholder(slide, MX, top, img_w, img_h, f"[missing image: {spec.get('image')}]")
     if caption:
-        C.add_text(slide, MX, top + img_h + 0.06, img_w, 0.28, caption,
-                   size=T["label"] + 1, color="muted", italic=True, space_after=0)
+        _caption(slide, MX, top + img_h + 0.06, img_w, caption)
     if has_side:
         _side_rail(slide, MX + img_w + gap, top, rail_w, bottom - top, side)
     if callout:
@@ -538,16 +593,14 @@ def render_figure_full(slide, spec, ctx):
     callout = spec.get("callout")
     top = _content_top(spec)
     bottom = brand.CALLOUT_Y - 0.10 if callout else brand.CONTENT_BOTTOM
-    img_h = (bottom - top) - (0.30 if caption else 0.0)
+    img_h = (bottom - top) - _caption_h(caption)
     img = _resolve_image(ctx, spec.get("image"))
     if img and img.exists():
         C.image_fit(slide, img, MX, top, CW, img_h, halign="center")
     else:
         _placeholder(slide, MX, top, CW, img_h, f"[missing image: {spec.get('image')}]")
     if caption:
-        C.add_text(slide, MX, top + img_h + 0.08, CW, 0.28, caption,
-                   size=T["label"] + 1, color="muted", italic=True,
-                   align="center", space_after=0)
+        _caption(slide, MX, top + img_h + 0.08, CW, caption, align="center")
     if callout:
         C.callout_bar(slide, MX, brand.CALLOUT_Y, CW, callout, text_color="pink",
                       italic=False)
@@ -570,7 +623,7 @@ def render_code(slide, spec, ctx):
     rail_w = 2.85 if has_side else 0.0
     gap = 0.45 if has_side else 0.0
     panel_w = CW - rail_w - gap
-    panel_h = (bottom - top) - (0.30 if caption else 0.0)
+    panel_h = (bottom - top) - _caption_h(caption)
     C.rect(slide, MX, top, panel_w, panel_h, fill=_CODE_BG, rounded=True,
            radius_in=0.10)
     lines = spec.get("code", "").rstrip("\n").split("\n")
@@ -585,8 +638,7 @@ def render_code(slide, spec, ctx):
                panel_h - 2 * pad + 0.08, paras, size=spec.get("size", 13),
                font=FONT_MONO, color=_CODE_FG, line_spacing=1.30, space_after=0)
     if caption:
-        C.add_text(slide, MX, top + panel_h + 0.06, panel_w, 0.28, caption,
-                   size=T["label"] + 1, color="muted", italic=True, space_after=0)
+        _caption(slide, MX, top + panel_h + 0.06, panel_w, caption)
     if has_side:
         _side_rail(slide, MX + panel_w + gap, top, rail_w, bottom - top, side)
     if callout:
@@ -638,6 +690,17 @@ def render_cards_dense(slide, spec, ctx):
         if c.get("title"):
             paras.append({"text": c["title"], "size": ct_size, "bold": True,
                           "font": HEAD, "color": title_color, "space_after": 6})
+        if c.get("metric"):
+            # A prominent stat line (e.g. "9.12 CRPS" / "3× worse") — accent-colored
+            # in outline cards, white on filled. Adds a number to an otherwise
+            # text-only card, reference-deck style. Only enlarge on wide (1–2 col)
+            # cards: on narrow cards a bigger font would inflate the whole card's
+            # line estimate and crowd out the description.
+            paras.append({"text": str(c["metric"]),
+                          "size": (ct_size + 4) if cols <= 2 else ct_size,
+                          "bold": True, "font": HEAD,
+                          "color": ("white" if filled else accent),
+                          "space_after": 5})
         if c.get("desc"):
             paras.append({"text": c["desc"], "size": T["body"], "color": desc_color,
                           "space_after": 4})
@@ -713,4 +776,10 @@ def render_slide(prs, spec: dict, ctx: dict):
         )
     slide = C.blank_slide(prs)
     LAYOUTS[layout](slide, spec, ctx)
+    # Optional speaker notes: baked into the .pptx notes pane so the deck travels
+    # as a self-contained offline study doc. Notes live on a separate notesSlide
+    # part — not subject to on-slide geometry/overflow checks.
+    notes = spec.get("notes")
+    if notes:
+        slide.notes_slide.notes_text_frame.text = str(notes)
     return slide

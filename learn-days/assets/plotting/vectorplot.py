@@ -18,10 +18,22 @@ and slide chrome stay in sync. Keep them aligned by hand if the skill changes.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+# The figure-QA guards (legibility + border-overlap) and the slot geometry live IN
+# the vector-slides skill (`scripts/figure_qa.py`) so they travel with the skill —
+# an adopter gets them on install. Put the skill's scripts dir on the path and import
+# it as the single source of truth.
+_SKILL_SCRIPTS = (
+    Path(__file__).resolve().parents[3] / ".claude/skills/vector-slides/scripts"
+)
+if _SKILL_SCRIPTS.is_dir() and str(_SKILL_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SKILL_SCRIPTS))
+import figure_qa  # noqa: E402  (path configured just above)
 
 # --- Brand palette (mirrors vector-slides brand.PALETTE) ----------------------
 PINK = "#FF008C"
@@ -42,10 +54,18 @@ GRID = "#E6E6E6"
 #              band beside a takeaway rail. Aspect ~1.7:1.
 #   "full"  -> the `figure_full` layout: plot spans the full content width.
 SIZES = {
-    "side": (6.4, 3.9),
-    "full": (9.6, 3.7),
+    "side": (6.4, 3.4),
+    "full": (8.6, 3.0),
     "square": (4.4, 4.0),
 }
+
+# Slot geometry + the legibility/overlap guards come from the skill's figure_qa
+# module (the single source of truth) — re-exported here so existing callers and
+# `vp.SLOT_DISPLAY` / `vp.check_legibility` keep working.
+SLOT_DISPLAY = figure_qa.SLOT_DISPLAY
+MIN_EFFECTIVE_PT = figure_qa.MIN_EFFECTIVE_PT
+check_legibility = figure_qa.check_legibility
+check_overlaps = figure_qa.check_overlaps
 
 _FONT_STACK = ["Open Sans", "Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans"]
 
@@ -103,11 +123,20 @@ def despine(ax) -> None:
 _FIG_ROOT = (Path(__file__).resolve().parent.parent / "figures").resolve()
 
 
-def save(fig, name: str, *, pad: float = 0.04) -> Path:
+def save(fig, name: str, *, pad: float = 0.04, slot: str | tuple | None = None,
+         min_pt: float = MIN_EFFECTIVE_PT) -> Path:
     """Save ``fig`` as a transparent PNG under ``assets/figures/<name>.png``.
 
     ``name`` may include a session subdir, e.g. ``"d1-01/cpi_forecast"``.
+
+    Pass ``slot`` (a ``SLOT_DISPLAY`` key or ``(w_in, h_in)``) to run the skill's
+    figure-QA guard before saving: it **raises** if any baked-in text would render
+    below ``min_pt`` on the slide, or if any label straddles a box border. Keep the
+    on-slide size range sane (titles ~40pt, so plot text should not drop below ~9pt).
+    Omit ``slot`` to skip the guard.
     """
+    if slot is not None:
+        figure_qa.guard(fig, slot, min_pt=min_pt, name=name)
     out = _FIG_ROOT / f"{name}.png"
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(

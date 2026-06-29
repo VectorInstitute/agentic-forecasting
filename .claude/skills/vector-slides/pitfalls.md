@@ -36,6 +36,35 @@ in the lab — don't reach into the package.
 8. **Mixing canvas sizes** — everything is 10×5.625" (16:9). Don't paste in slides
    from the old 26.67×15" master.
 
+## Figures placed in slots — legibility & border overlaps
+
+`validate-deck` checks the on-slide text the compiler draws, but it **cannot see
+inside a `figure`/`figure_full` PNG** — to it, a plot is an opaque picture. Two
+defects therefore have to be caught where the figure is *built*, not at deck-build:
+
+1. **Minuscule plot text.** A figure is scaled to *fit* its slot. Author a 9″-wide
+   plot for a ~5″ slot and it lands at ~0.4× — an 8pt label becomes ~4pt next to a
+   40pt title. Size the figure to the slot's aspect (so it scales ~0.85×), keep the
+   narration/numbers in the slide's caption + rail, and keep on-plot fonts large
+   enough to clear **~9pt on the slide**.
+2. **Labels straddling a box border.** A diagram label that crosses the edge of its
+   box can't be nudged in a PowerPoint editor — it ships broken.
+
+Use the skill's guard from your figure script (it raises, listing offenders):
+
+```python
+import figure_qa
+figure_qa.guard(fig, slot="figure", name="my_plot")   # legibility + overlap
+fig.savefig("my_plot.png", bbox_inches="tight", transparent=True)
+```
+
+Slot display sizes (inches), from `figure_qa.SLOT_DISPLAY` — pick the one matching
+the slide: `figure` 5.30×2.85 · `figure_cap2` 5.30×2.35 (two-part caption) ·
+`figure_full` 8.60×2.85 · `figure_full_cap2` 8.60×2.35 · `figure_full_callout`
+8.60×2.27. A two-part `{lead, body}` caption or a `callout` bar steals figure height,
+so prefer a **one-line caption** on figure-heavy slides. The brand matplotlib helper
+`learn-days/assets/plotting/vectorplot.py` calls this guard from `vp.save(slot=...)`.
+
 ## Layout-specific lessons (render review)
 
 1. **Overflow first.** Multi-line descriptions in `icon_rows` / `numbered_list` and
@@ -50,8 +79,11 @@ in the lab — don't reach into the package.
 6. **`icon_rows` with 4 rows + callout is tight.** Each row shrinks to ~0.46 inches.
    Keep each `desc` to ≤ 55 characters (one short line). Consider splitting into two
    `icon_rows` slides if content is richer.
-7. **`compare` — avoid `strong` + `callout` together.** The `strong` bold line at the
-   bottom of a column overlaps the `callout` bar. Use one or the other per slide.
+7. **`compare` — avoid `strong` + `callout`, or `footnote` + `callout`, together.**
+   The `strong` bold line *and* the `footnote` line both sit at the bottom of the
+   slide where the `callout` bar goes, and overlap it. The geometry check sees two
+   separate boxes, not their collision, so it won't flag this — use one per slide and
+   confirm visually.
 8. **LibreOffice render artifacts (false signals in `render-qa` PNGs):**
    - `numbered_list` `desc` lines show **strikethrough** in LibreOffice PNGs — this
      is a font-substitution artifact and does not appear in PowerPoint. If the YAML

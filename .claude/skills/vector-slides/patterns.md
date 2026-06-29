@@ -47,10 +47,10 @@ or the other.
 | `numbered_list` | `title`, `subtitle`, `items[]` | ≤ 6 items; `title` ≤ ~52; `desc` ≤ ~95 (one line) |
 | `content` | `title`, `subtitle`, `body`, `panel[]` | body ≤ ~280 total; panel line ≤ ~70 |
 | `table` | `title`, `subtitle`, `headers[]`, `rows[]`, `highlights[]`, `callout` | ≤ 6 rows; ≤ 4–5 cols; cell ≤ ~22 |
-| `figure` | `title`, `subtitle`, `image`, `caption`, `side{heading,body,accent}`, `callout` | title ≤ ~34 (1 line!); caption ≤ ~70; side `heading` ≤ ~28; side `body` ≤ ~200; callout ≤ ~88 |
-| `figure_full` | `title`, `subtitle`, `image`, `caption`, `callout` | title ≤ ~34 (1 line!); caption ≤ ~90; callout ≤ ~88 |
-| `code` | `title`, `subtitle`, `language`, `code`, `size`, `side{...}`, `caption` | ≤ ~9 lines; ≤ ~60 chars/line (≤ ~46 with a `side`); caption ≤ ~60 |
-| `cards_dense` | `title`, `subtitle`, `columns`, `style`, `cards[]`, `callout` | 3–5 cards; card `title` ≤ ~22 (3-up) → ~12 (5-up); `desc` ≤ ~70; `eyebrow` ≤ ~4; callout ≤ ~88 |
+| `figure` | `title`, `subtitle`, `image`, `caption`/`{lead,body}`, `side{heading,body,points,stats,accent}`, `callout` | title ≤ ~34 (1 line!); caption lead ≤ ~40 + body ≤ ~110; side ~10 short lines (`body` **or** `stats`); callout ≤ ~88 |
+| `figure_full` | `title`, `subtitle`, `image`, `caption`/`{lead,body}`, `callout` | title ≤ ~34 (1 line!); caption lead ≤ ~40 + body ≤ ~130; callout ≤ ~88 |
+| `code` | `title`, `subtitle`, `language`, `code`, `size`, `side{...}`, `caption`/`{lead,body}` | ≤ ~9 lines; ≤ ~60 chars/line (≤ ~46 with a `side`); caption ≤ ~60 |
+| `cards_dense` | `title`, `subtitle`, `columns`, `style`, `cards[]`, `callout` | 3–5 cards; card `title` ≤ ~22 (3-up) → ~12 (5-up); optional `metric` (1 short line); `desc` ≤ ~70; `eyebrow` ≤ ~4; callout ≤ ~88 |
 | `title_photo` | `title`, `subtitle`, `image` | title ≤ ~30 (left half); subtitle ≤ ~46; no image → renders `title` |
 
 ### card object (`icon_cards`)
@@ -75,20 +75,50 @@ List of `{ row, col, color }` — `row` 0 = first **body** row (header excluded)
 `color` is a palette name (e.g. `card_red`, `card_green`).
 
 ### figure / code `side` (right rail)
-`{ heading, body, accent }` — bold takeaway `heading` + short `body` (string or list of
-short lines) beside the plot/code, under a small accent tick. Omit `side` for a
-full-width plot/panel.
+`{ heading, body, points, stats, accent }` — stacks (all optional, in this order):
+bold takeaway `heading`; `body` (string or list of short lines); `points` (a bullet
+list of short supporting lines); `stats` (a list of `{ value, label, color }` rendered
+as a compact stat stack — the "numbers beside the plot" element). The rail is narrow
+(~2.85"), so use `body` **or** `stats`, not both maxed — keep the combined rail to
+~10 short lines. Omit `side` for a full-width plot/panel.
+
+### two-part caption (`figure` / `figure_full` / `code`)
+`caption` is either a plain string (grey italic label) **or** a mapping
+`{ lead, body }` → a **bold lead** + a full descriptive sentence under it (reference
+style). The two-part form reserves more height (the image shrinks to fit), so a figure
+slide can carry a real sentence of explanation, not just a label. Keep `lead` ≤ ~40,
+`body` ≤ ~110.
 
 ### cards_dense card object
-`{ eyebrow, title, desc, items: [...], accent }` — `eyebrow` is a small number/label
-(e.g. "01"); `desc` and optional `items` flow under the title. `style: filled` makes the
-whole card `accent`-colored with white text (use for 2–3 cards); `style: outline` (default)
-is a white card with a colored top bar + colored eyebrow.
+`{ eyebrow, title, metric, desc, items: [...], accent }` — `eyebrow` is a small
+number/label (e.g. "01"); optional `metric` is a prominent stat/punch line (bold,
+accent-colored) between title and desc; `desc` and optional `items` flow under it.
+`style: filled` makes the whole card `accent`-colored with white text (use for 2–3
+cards); `style: outline` (default) is a white card with a colored top bar.
 
 ### image paths (`figure` / `figure_full` / `title_photo`)
 `image:` is resolved **relative to the deck YAML file** (or absolute). A missing image
 renders a labelled placeholder rather than failing the build. Generate plots as PNGs —
 see `learn-days/assets/plotting/` for a brand-styled, real-data pipeline.
+
+## Speaker notes (`notes:`) — any layout
+
+Every slide accepts an optional top-level `notes:` string. It is written to the
+PowerPoint **notes pane** (not shown on the slide), so the deck travels as a
+self-contained offline study document — the narration rides along with the visuals.
+
+```yaml
+- layout: figure
+  title: What the agent found
+  image: ...
+  notes: |
+    Full speaker narration for this slide. Multi-paragraph is fine — the notes
+    pane scrolls. Pull this from content.md; it is NOT budget-limited or
+    overflow-checked (it never renders on the slide face).
+```
+
+No length budget, no overflow check (notes are a separate package part). Keep the
+slide face within its layout budgets as usual; put the long-form teaching in `notes`.
 
 ## Behaviors that are automatic (don't set these)
 

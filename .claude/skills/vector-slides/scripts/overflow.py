@@ -41,12 +41,23 @@ def _lines_needed(tf, cpl: int) -> int:
     return max(total, 1)
 
 
+# A single line of text needs at least ~0.9·em of box height (cap height + the
+# descender) or its glyphs spill past the box's bottom edge. Below this the box is
+# simply too short for even one line — a border/edge overlap the line-count check
+# misses because it floors capacity to "1 line fits".
+GLYPH_FRAC = 0.9
+
+
 def _flag(w_in, h_in, tf, *, font_pt) -> tuple[int, int] | None:
     usable_w = max(0.2, w_in - MARGIN_W)
     usable_h = max(0.1, h_in - MARGIN_H)
     cpl = max(1, int(usable_w * 72 / (font_pt * _advance(font_pt))))
     fit = max(1, int(usable_h * 72 / (font_pt * LINE_HEIGHT)))
     need = _lines_needed(tf, cpl)
+    # Box too short to contain even one line of its own text → glyphs spill past
+    # the bottom edge (flagged regardless of line count).
+    if need >= 1 and usable_h < (font_pt / 72) * GLYPH_FRAC:
+        return need, 0
     if need > fit and (need - fit) >= 1 and need >= 2:
         return need, fit
     return None

@@ -1,0 +1,369 @@
+deck:
+  title: The Adaptive Agent
+  subtitle: An agent that rewrites its own strategy
+  author: { name: "Ethan Jackson", org: "Vector Institute", date: "July 2026" }
+  footer: true
+  include_title: false   # slide 1 is an explicit title_photo
+
+slides:
+  # 1 — Title
+  - layout: title_photo
+    title: The Adaptive Agent
+    subtitle: "Energy markets, part 2 — an agent that rewrites its strategy"
+    notes: |
+      Ali just showed you what it looks like to evaluate an agent's reasoning from
+      the outside — using an LLM-as-a-judge to ask whether the agent's thinking
+      matches the way the Bank of Canada actually frames its decisions. I want to
+      show you the natural extension of that idea: what happens when the agent uses
+      its own performance as a signal to improve itself? Not us evaluating it — but
+      the agent studying its own forecasting errors, finding patterns, and updating
+      its strategy based on what it finds. That's the Adaptive Agent, and it's the
+      second part of the energy use case. I'm going to start with something you
+      already know.
+
+  # 2 — Agenda
+  - layout: icon_cards
+    title: What we'll cover
+    cards:
+      - { icon: arrow, title: "From analyst to learner", accent: pink,
+          body: "Yesterday's Analyst Agent with exactly one new box — a mutable strategy file it reads before every forecast and rewrites after." }
+      - { icon: gear, title: "The mechanism", accent: purple,
+          body: "Four evidence layers, five typed write-tools, and an in-code gate that decides when a finding is allowed to change the forecast." }
+      - { icon: chart, title: "What it discovered", accent: blue,
+          body: "A real finding from its 2025 curriculum, then a +5% before/after on a protected 2026 window — the Strait of Hormuz shock." }
+    callout: "One architectural addition turns a capable forecaster into a learner."
+    notes: |
+      Three beats. First, the conceptual bridge: what makes a forecaster adaptive,
+      and how the Adaptive Agent differs from the Analyst Agent you saw yesterday —
+      which is actually just one architectural addition. Second, the mechanism: the
+      mutable strategy state, the typed tools, the evidence bars. And third, what it
+      actually discovered: a concrete finding from the curriculum session, and a
+      before/after on a protected 2026 eval window — the window covering the
+      geopolitical shock period that made 2026 one of the harder forecasting
+      environments we could have tested on. I'll close honestly on what we still
+      don't have — and hand to the next session where the research landscape takes
+      these ideas much further.
+
+  # 3 — One addition, not a new agent
+  - layout: compare
+    title: One addition, not a new agent
+    left:
+      label: Analyst Agent
+      lines:
+        - "Strategy fixed at config time"
+        - "Instructions never change between runs"
+        - "Same capable analyst, every single run"
+    right:
+      label: Adaptive Agent
+      lines:
+        - "Strategy is a mutable skill file"
+        - "Updates from its own forecasting experience"
+        - "Same analyst — now carrying a memory"
+    callout: "Identity, tools, output schema, Predictor interface — all identical. One box changes."
+    notes: |
+      Let me start with the bridge from yesterday. The Analyst Agent is a capable
+      forecaster — news search, code execution, skills for statistical analysis and
+      trend projection. Its strategy — how it weights signals at different horizons,
+      when it trusts the trend versus the news — is fixed at config time. I told you
+      yesterday there was a dashed box in the architecture diagram labeled
+      'extensible.' The Adaptive Agent fills that box. Everything else — the agent
+      identity, the tools, the output schema, the Predictor interface — is identical.
+      The one addition: the strategy is now a mutable file the agent reads at the
+      start of every prediction and can update across sessions. Same analyst. Now it
+      carries a memory that evolves.
+
+  # 4 — The architecture, filled in
+  - layout: figure_full
+    title: The architecture, filled in
+    image: ../../assets/figures/d2-02/agent_architecture_adaptive.png
+    caption: "The dashed slot from d1-04, now solid: five typed tools, the only write path."
+    notes: |
+      Here's the architecture diagram from yesterday — same layout, same
+      AgentPredictor wrapper. The dashed box is now solid. Inside: a WtiStrategyState
+      Pydantic model persisted to disk as YAML and rendered to a SKILL.md that the
+      agent reads. The agent updates it through five narrow typed tools —
+      record_observation, open_hypothesis, and so on. The critical architectural
+      point: those mutation tools run in the host process, not inside the E2B
+      sandbox. The agent can call them like any other function tool, but they read
+      and write the skill directory on the local filesystem. That's what makes this
+      safe and auditable — the agent has five specific operations and nothing else.
+      It cannot write arbitrary content to its own strategy.
+
+  # 5 — The conceptual shift
+  - layout: statement
+    statement: "It accumulates experience, not just context."
+    support: "Observations, hypotheses, and corrections carry from session to session — a living document the agent reads at every prediction."
+    callout: "The strategy is the memory."
+    notes: |
+      The conceptual shift in one sentence. The Analyst Agent has context — the news,
+      the price history, the statistical analysis. Every run starts fresh; nothing
+      carries forward between invocations. The Adaptive Agent accumulates experience.
+      Its strategy file is a living document that carries observations, hypotheses,
+      and calibration corrections from one session to the next. When it forecasts
+      today, it is drawing on what it learned from the last year of forecasting
+      history — not just what it sees right now.
+
+  # 6 — Section break
+  - layout: section
+    eyebrow: The mechanism
+    title: Structured memory, governed
+    subtitle: "What the agent can update — and the evidence each layer demands"
+    notes: |
+      Let's look at the implementation — the four-layer evidence hierarchy, the
+      typed tools that are the only write path, and the in-code gate that decides
+      when a finding is allowed to change how the agent forecasts.
+
+  # 7 — Four layers, four evidence bars
+  - layout: table
+    title: Four layers, four evidence bars
+    headers: ["Layer", "Mutation tool", "Evidence bar to update it"]
+    rows:
+      - ["Observations", "record_observation", "A pattern that holds across ≥2 forecasts"]
+      - ["Hypotheses", "open_hypothesis", "One strong, durable-looking observation"]
+      - ["Calibrations", "graduate_hypothesis", "Confirmations ≥ threshold (enforced in code)"]
+      - ["Approach narrative", "update_approach_narrative", "A structural shift, not a single result"]
+    highlights:
+      - { row: 2, col: 1, color: card_green }
+    callout: "Bottom-up: you can't reach a calibration without the observation and hypothesis that earn it."
+    notes: |
+      The strategy file has four layers, and each has its own evidence bar.
+      Observations are the cheapest: record any finding that holds across at least
+      two forecasts — not a single miss, which is just noise. Hypotheses are
+      candidate corrections under testing — open one when observations suggest a
+      durable pattern. Calibrations are the actionable layer: a hypothesis becomes a
+      calibration correction only when it has accumulated enough confirming outcomes,
+      and the tool enforces this in code — we'll see that in a moment. And the
+      approach narrative — the overall forecasting philosophy — only updates when the
+      calibration record reveals something structural that the description no longer
+      captures. The governance rule is bottom-up: you cannot jump to a calibration
+      without the observation and hypothesis record that earns it. The meta-learning
+      skill spells all of this out and the agent reads it before making any update.
+
+  # 8 — The in-code accept/reject gate
+  - layout: code
+    title: The in-code accept/reject gate
+    language: python
+    code: |
+      # graduate_hypothesis enforces the gate
+      if confirms < threshold:
+          short = threshold - confirms
+          return (
+              f"Cannot graduate {hyp_id}: "
+              f"have {confirms}, "
+              f"need {threshold}. "
+              f"Record {short} more."
+          )
+    side:
+      heading: "The gate is in code."
+      body: "The agent can't talk its way past the threshold (set to 2)."
+      points:
+        - "Returns the exact shortfall"
+        - "Forces more evidence first"
+        - "Not a prompt — a hard rule"
+    caption: "adaptive_agent/skill_tools.py:313"
+    notes: |
+      Here's the gate. graduate_hypothesis — the tool that would promote a hypothesis
+      to a calibration correction — checks the confirmation count against the
+      threshold, which we set to 2. If the hypothesis doesn't have enough confirming
+      outcomes yet, the tool returns this message: the current count, the required
+      count, and the shortfall. The agent reads this; it cannot graduate the
+      hypothesis. It has to go back and accumulate more evidence. This is the key
+      design discipline — not just a prompt that says 'be conservative,' but a
+      code-enforced rule the agent simply cannot work around. It's a lightweight
+      version of the same principle you'll see in the research papers in the next
+      session, where they call it an empirical accept/reject gate. We built a version
+      of it from first principles.
+
+  # 9 — Section break
+  - layout: section
+    eyebrow: Curriculum
+    title: What it discovered
+    subtitle: "NB05 self-directed study on 2025 → NB06 protected 2026 eval"
+    notes: |
+      With the architecture clear — let's see what the agent actually learned, and
+      then test whether that learning held up on a hard, protected 2026 window it
+      never saw during study.
+
+  # 10 — The curriculum flow
+  - layout: numbered_list
+    title: The curriculum — NB05
+    items:
+      - { title: "Load 2025 context", desc: "52 weekly news summaries (OPEC+, geopolitics) + WTI price history up to each week" }
+      - { title: "Self-directed study", desc: "Runs its own backtests via the vol-regime and trend-projection skills; hunts systematic error" }
+      - { title: "Record findings", desc: "Logs observations linked to evidence and opens hypotheses — through the typed tools only" }
+      - { title: "Attempt to graduate", desc: "Calls graduate_hypothesis; the in-code confirmation threshold accepts or rejects the update" }
+      - { title: "Protected eval (NB06)", desc: "Strategy is frozen, then scored on 8 unseen 2026 origins from Feb–Mar" }
+    notes: |
+      The curriculum is implemented in notebook 5. We give the agent a year of 2025
+      context — 52 weekly news summaries covering OPEC+ decisions, geopolitical
+      events, and market commentary, plus the WTI price history up to each week. Then
+      we let it study. It runs code: backtests its own statistical methods, compares
+      trend projection to flat-trend across vol regimes, looks for systematic
+      patterns in the errors. When it finds something, it records an observation.
+      When observations suggest a durable pattern, it opens a hypothesis. When the
+      hypothesis accumulates evidence, it attempts to graduate — and the tool either
+      accepts or rejects based on the code-enforced threshold. At the end, we freeze
+      the strategy and run notebook 6: a protected eval on 8 origins from early 2026
+      that neither the agent nor we designed the curriculum around.
+
+  # 11 — The finding (real plot)
+  - layout: figure
+    title: What the agent found
+    image: ../../assets/figures/d2-02/wti_flat_vs_trend_mae.png
+    caption: "The agent's own 2025 WTI backtest — logged as hyp-001."
+    side:
+      heading: "Trend breaks in high vol."
+      body: "In elevated vol the linear trend blows out — 3× worse than simply holding the last price."
+      stats:
+        - { value: "$11.95", label: "trend MAE · 21bd", color: red }
+        - { value: "$3.91", label: "flat-trend MAE · 21bd", color: green }
+    notes: |
+      Here's what the agent discovered. In a full-year 2025 backtest it ran itself,
+      it compared its statistical trend-projection method — fit a linear trend to
+      recent price history, extrapolate to each horizon — against a simple flat-trend
+      forecast that just holds the current price. In normal vol, trend projection is
+      fine. But in elevated and extreme vol regimes — the kind of market 2026
+      delivered — trend projection consistently blows out. At the 21-day horizon in
+      elevated vol, trend MAE is 11.95 dollars versus the flat forecast's 3.91. More
+      than three times the error. The agent recorded this finding with the actual
+      numbers in its observations table, linked it to hypothesis hyp-001 — 'trend
+      projection underperforms flat-trend in elevated vol regimes.' In the committed
+      trained strategy, hyp-001 is open and the calibration correction is pending
+      graduation — the in-code gate is holding it below the confirmation threshold,
+      exactly as designed. The agent still reads the open hypothesis and its
+      observations at prediction time, which is how the finding reaches the live 2026
+      rationale we'll see in a moment.
+
+  # 12 — Seed vs trained strategy
+  - layout: compare
+    title: Before and after the curriculum
+    style: emphasis
+    left:
+      label: Seed strategy
+      lines:
+        - "Horizon-based approach priors"
+        - "No observations recorded"
+        - "No hypotheses, no corrections"
+    right:
+      label: Trained strategy
+      lines:
+        - "Approach narrative: unchanged"
+        - "Obs: flat-trend MAE 3× lower at 21bd"
+        - "hyp-001: open, linked to the evidence"
+    callout: "One session, one concrete finding — recorded with the actual backtest numbers."
+    notes: |
+      The before and after are readable as files in the repo. The seed strategy —
+      what the agent starts with — contains the approach narrative: short horizons
+      trust momentum, long horizons trust analyst consensus and news. Sensible domain
+      priors. No observations; no hypotheses; no calibration corrections. After one
+      curriculum session, the observations table is populated with the actual MAE
+      numbers from the backtest the agent ran. Hypothesis hyp-001 is open and linked
+      to those observations, with confirmation and refutation counts. The approach
+      narrative is unchanged — the agent correctly identified that it doesn't yet have
+      enough evidence for a structural narrative update. This is exactly what the
+      evidence hierarchy is supposed to produce: disciplined, incremental
+      accumulation of findings.
+
+  # 13 — Protected eval result (now a composite figure + stat rail)
+  - layout: figure
+    title: Before/after on the 2026 eval
+    image: ../../assets/figures/d2-02/eval_crps_comparison.png
+    caption: "Lower CRPS is better — 8 protected 2026 origins it never saw."
+    side:
+      heading: "Better on the hardest window."
+      body: "On 8 unseen 2026 origins, training beats the untrained agent and both baselines."
+      stats:
+        - { value: "9.12", label: "trained mean CRPS", color: green }
+        - { value: "−5%", label: "vs untrained (9.60)", color: ink }
+    notes: |
+      We scored both agents on the same 8 protected origins from early 2026. This
+      window covers a geopolitical shock: in late February, the Strait of Hormuz was
+      effectively closed following conflict in the Middle East. WTI went from the
+      mid-60s to near 100 dollars and back in the span of a few weeks. That's about
+      the hardest possible window to forecast on — extreme vol, structural regime
+      breaks, news that renders any statistical baseline obsolete almost as soon as
+      it's computed. The trained agent improved mean CRPS from 9.60 to 9.12 — about
+      5%. Both adaptive variants clear the AutoARIMA (11.00) and Naive (13.64)
+      baselines. Not a dramatic headline number. But it's genuine: the window was
+      locked before training, the agent never saw it, and the improvement tracks a
+      mechanism we can see in the rationale. Let me show you that.
+
+  # 14 — The mechanism, visible in the rationale
+  - layout: code
+    title: Visible in the live rationale
+    language: text
+    code: |
+      "To prevent extrapolation error (which
+      would project $68.76 via a linear model),
+      we anchor our point forecast on the
+      AutoARIMA baseline of $62.99 — a flat,
+      stable trend with much lower MAE in
+      backtesting. The 80% interval [$55.66,
+      $70.99] uses split-normal interpolation
+      for the elevated volatility regime."
+    side:
+      heading: "Not a rule we gave it."
+      body: "It cites the curriculum finding in its live Feb-9-2026 rationale."
+      points:
+        - "Anchors by strategy, not instruction"
+        - "Traceable to the 2025 backtest"
+        - "Real numbers, this origin"
+    caption: "eval_Agent__trained.json · as_of 2026-02-09"
+    notes: |
+      This is the most important slide. This is the trained agent's rationale on one
+      of the 2026 origins — February 9th, elevated vol. It explains: a linear model
+      would project $68.76, so to prevent that extrapolation error it anchors its
+      point forecast to the AutoARIMA baseline of $62.99 — the flat, stable trend
+      that had much lower MAE in backtesting — and builds the 80% interval with a
+      split-normal calibration for the elevated-vol regime. That's the finding from
+      the curriculum, applied with real numbers. We did not write that into the
+      agent's instructions. The agent learned it during curriculum study, encoded it
+      in its strategy file, and applied it here because its wti-strategy skill says
+      to. The mechanism is not just working — it's visible and readable. You can trace
+      from the 2025 backtest data, through the observation record, through the
+      hypothesis, to the calibration that produced this rationale on this specific
+      origin in 2026. That's what auditable adaptation looks like.
+
+  # 15 — What we still don't have
+  - layout: cards_dense
+    title: What we still haven't done
+    columns: 3
+    style: outline
+    cards:
+      - { eyebrow: "01", title: "No validation gate", metric: "unproven", accent: pink,
+          desc: "Updates commit without checking held-out improvement." }
+      - { eyebrow: "02", title: "No archive", metric: "single point", accent: purple,
+          desc: "One live strategy — nothing to fall back on if a turn goes wrong." }
+      - { eyebrow: "03", title: "No learned schema", metric: "our design", accent: blue,
+          desc: "The four layers are ours — the agent works within them, didn't discover them." }
+    callout: "The change is visible. But is 'change' the same as 'improve'?"
+    notes: |
+      Let me be honest about three things we don't have. First: no validation gate.
+      When the agent committed the flat-trend calibration correction, we didn't
+      independently verify that the update would improve held-out CRPS. We saw a 5%
+      improvement — but we can't be certain the update caused it, or that the update
+      was the best possible one, because we never validated it against data the agent
+      hadn't already used for study. Second: no archive. There's one live strategy. If
+      the curriculum took a wrong turn and encoded a bad pattern, there's no
+      collection of alternative strategies to fall back on. And third: the schema
+      itself — observations, hypotheses, calibrations, narrative — that was our
+      design. The agent works within it beautifully, but it didn't discover that
+      structure. The question of whether a different structure would work better is
+      one we haven't asked. The research papers in the next session are about what
+      happens when you take each of these constraints seriously.
+
+  # 16 — Handoff
+  - layout: statement
+    statement: "It changes. Does it improve?"
+    support: "The change is visible and auditable. Whether it's improvement — not drift, not overfitting — is the question the next session answers."
+    callout: "Next: d2-03 — Self-improving Agentic Systems"
+    notes: |
+      The Adaptive Agent changes over time. Its strategy evolves, the mechanism is
+      auditable, and the 5% improvement on a very hard window is encouraging. But
+      'change' and 'improve' are not the same thing. An agent without a held-out
+      validation gate could be drifting — encoding noise as signal, overfitting to the
+      recent surprises of a curriculum window. We can't tell the difference from the
+      outside, and the agent can't tell the difference from the inside. The next
+      session looks at the research that formalises this distinction — and at the
+      single most impactful thing you could add to this implementation to go from 'an
+      agent that changes' to 'an agent that has a good shot at genuinely improving.'

@@ -39,6 +39,10 @@ slides:
   - { layout: <name>, ... }
 ```
 
+Any slide also accepts an optional `notes:` string, written to the PowerPoint
+**notes pane** (off-slide) so the deck doubles as a self-contained offline study
+doc. Not budget-limited or overflow-checked — see patterns.md for details.
+
 ## Quick picker
 
 | Content you have | Layout |
@@ -219,16 +223,22 @@ pipeline (brand palette + canonical sizes for the slots below).
 - layout: figure
   title: A forecast — and where it breaks
   image: ../../assets/figures/d1-01/cpi_forecast_fanchart.png   # relative to THIS spec file
-  caption: "CPI Gasoline · 1-month AutoARIMA · 90% interval"     # optional, under the plot
+  caption:                                                       # plain string OR {lead, body}
+    lead: "CPI Gasoline · 1-month AutoARIMA."
+    body: "90% interval; the band misses every shock it didn't see coming."
   side:                                                          # optional right rail
     heading: "It can't see the news."
     body: "AutoARIMA lags every turn; the biggest misses are the 2020 and 2022 shocks."
+    points: ["Lagged turns", "Widest band at shocks"]   # optional bullets
+    stats:                                              # optional stat stack ("leaderboard")
+      - { value: "2.1×", label: "worse at shocks", color: red }
     accent: pink            # optional tick color
   callout: "Optional black callout bar under everything."
 ```
-Plot occupies the left ~62%; the rail is for the one takeaway. `image:` is resolved
-relative to the deck YAML's directory (or absolute). A missing image renders a labelled
-placeholder, so the deck still builds. Keep the rail `body` ≤ ~200 chars.
+Plot occupies the left ~62%; the rail carries the takeaway. Use `body` **or** `stats`
+(the rail is narrow ~10 lines). `caption` may be a string or a `{lead, body}` two-part
+caption (bold lead + sentence). `image:` resolves relative to the deck YAML (or
+absolute); a missing image renders a labelled placeholder so the deck still builds.
 
 ### figure_full — a full-width plot
 ```yaml
@@ -264,7 +274,7 @@ Dark panel, monospace. **Keep it short** — ≤ ~9 lines, and ≤ ~46 chars/lin
   columns: 4                # 3–5; cards beyond `columns` wrap to a second row
   style: outline            # outline (white card, colored top + eyebrow) | filled (solid color, white text)
   cards:
-    - { eyebrow: "01", title: "Unstructured signals", desc: "Reason over news, not just numbers.", accent: pink }
+    - { eyebrow: "01", title: "Unstructured signals", metric: "news + numbers", desc: "Reason over news, not just numbers.", accent: pink }
     - { eyebrow: "02", title: "Objective ground truth", desc: "Scored against what happened.", accent: purple }
     - { eyebrow: "03", title: "Accumulating expertise", desc: "Experience over many episodes.", accent: blue }
     - { eyebrow: "04", title: "Unsaturable benchmark", desc: "The future is hard to game.", accent: cyan }
