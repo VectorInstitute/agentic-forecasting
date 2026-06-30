@@ -42,7 +42,7 @@ sys.path.insert(0, str(REPO_ROOT / "aieng-forecasting"))
 from dotenv import load_dotenv  # noqa: E402
 
 
-load_dotenv(REPO_ROOT / ".env")
+load_dotenv(REPO_ROOT / ".env", override=False)
 
 OPENAI_BASE_URL = "https://proxy.vectorinstitute.ai/v1"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
