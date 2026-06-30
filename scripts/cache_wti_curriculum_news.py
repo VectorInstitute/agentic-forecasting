@@ -53,7 +53,7 @@ sys.path.insert(0, str(_REPO_ROOT / "aieng-forecasting"))
 try:
     from dotenv import load_dotenv
 
-    load_dotenv(_REPO_ROOT / ".env")
+    load_dotenv(_REPO_ROOT / ".env", override=False)
 except ImportError:
     pass
 

@@ -75,7 +75,7 @@ def main() -> None:
 
     # Load .env from repo root (two levels up from this file).
     repo_root_env = Path(__file__).resolve().parents[2] / ".env"
-    load_dotenv(repo_root_env, verbose=False)
+    load_dotenv(repo_root_env, override=False, verbose=False)
 
     config = _load_config(args.config, args.max_dates, args.stride)
 

@@ -37,7 +37,7 @@ from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
 from dotenv import load_dotenv
 
 
-load_dotenv(REPO_ROOT / ".env")
+load_dotenv(REPO_ROOT / ".env", override=False)
 
 # Bootstrap LiteLLM + Langfuse callbacks so each proxy call gets a span in the UI.
 bootstrap_litellm()
