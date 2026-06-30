@@ -13,9 +13,9 @@ once the content is agreed.
 | Session | Slot | Status |
 |--------|------|--------|
 | [`d1-01-forecasting-foundations`](sessions/d1-01-forecasting-foundations/) | Day 1, 10:00–10:20 (20 min) | **built** → `deck.pptx` (12 slides) |
-| [`d1-04-analyst-agent`](sessions/d1-04-analyst-agent/) | Day 1, 11:30–12:00 (30 min) | not started |
-| [`d2-02-adaptive-agent`](sessions/d2-02-adaptive-agent/) | Day 2, 10:00–10:30 (30 min) | not started |
-| [`d2-03-self-improving-systems`](sessions/d2-03-self-improving-systems/) | Day 2, 10:35–10:55 (20 min) | not started |
+| [`d1-04-analyst-agent`](sessions/d1-04-analyst-agent/) | Day 1, 11:30–12:00 (30 min) | **built** → `deck.pptx` (16 slides) |
+| [`d2-02-adaptive-agent`](sessions/d2-02-adaptive-agent/) | Day 2, 10:00–10:30 (30 min) | **built** → `deck.pptx` (16 slides) |
+| [`d2-03-self-improving-systems`](sessions/d2-03-self-improving-systems/) | Day 2, 10:35–10:55 (20 min) | **built** → `deck.pptx` (12 slides) |
 | [`d1-00-intro`](sessions/d1-00-intro/) | Day 1, 9:30–10:00 (greeting/intro) | **build last** |
 
 Other presenters' sessions (Behnoosh — conventional methods/S&P 500; Ali — LLMP/CFPR

@@ -7,3 +7,9 @@ ignored. Sources + arXiv links: [`../SOURCES.md`](../SOURCES.md) (richer context
 
 Expected here: ADAS (arXiv:2408.08435), Darwin Gödel Machine (arXiv:2505.22954),
 ALMA / agentic memory (arXiv:2602.07755), SkillOpt (arXiv:2605.23904).
+
+## Distillation for this bootcamp
+
+- [`distillation.md`](distillation.md): practical summary of the four papers,
+  scoped to what is already implemented in this repository (up to the adaptive
+  agent), plus simple extension project ideas for participants.
