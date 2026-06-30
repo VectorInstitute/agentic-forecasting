@@ -1,0 +1,193 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    payload_type: continuous
+    categories: null
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2026-02-02T00:00:00'
+  end: '2026-02-09T00:00:00'
+  stride: 5
+  origin_dates: null
+  warmup: 250
+  description: Two-origin smoke evaluation for local and CI testing of the NB04 pipeline.
+    Uses the same tasks, horizons, warmup, and geopolitical period as energy_oil_eval
+    but with only 2 origins to keep cost negligible.
+predictor_id: llmp_sampled_trajectories_cov[gemini-3.5-flash]
+predictions:
+- predictor_id: llmp_sampled_trajectories_cov[gemini-3.5-flash]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:48:33.301748'
+  as_of: '2026-02-02T00:00:00'
+  forecast_date: '2026-02-09T00:00:00'
+  payload:
+    point_forecast: 61.95
+    quantiles:
+      '0.05': 61.95
+      '0.1': 61.95
+      '0.2': 61.95
+      '0.3': 61.95
+      '0.4': 61.95
+      '0.5': 61.95
+      '0.6': 61.95
+      '0.7': 61.95
+      '0.8': 61.95
+      '0.9': 61.95
+      '0.95': 61.95
+  metadata:
+    model: gemini-3.5-flash
+    n_samples: 1
+    n_report_docs: 0
+    covariate_series_ids:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+    temperature: 1.0
+    reasoning_effort: null
+    cost_usd: 0.0
+    input_tokens: 737447
+    output_tokens: 150
+    parse_failures: 0
+    variant_tag: cov
+    langfuse_trace_id: 7b6ad61faaeacc51d38bca9265139aa0
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7b6ad61faaeacc51d38bca9265139aa0
+- predictor_id: llmp_sampled_trajectories_cov[gemini-3.5-flash]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:48:33.301748'
+  as_of: '2026-02-02T00:00:00'
+  forecast_date: '2026-03-03T00:00:00'
+  payload:
+    point_forecast: 59.2
+    quantiles:
+      '0.05': 59.2
+      '0.1': 59.2
+      '0.2': 59.2
+      '0.3': 59.2
+      '0.4': 59.2
+      '0.5': 59.2
+      '0.6': 59.2
+      '0.7': 59.2
+      '0.8': 59.2
+      '0.9': 59.2
+      '0.95': 59.2
+  metadata:
+    model: gemini-3.5-flash
+    n_samples: 1
+    n_report_docs: 0
+    covariate_series_ids:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+    temperature: 1.0
+    reasoning_effort: null
+    cost_usd: 0.0
+    input_tokens: 737447
+    output_tokens: 150
+    parse_failures: 0
+    variant_tag: cov
+    langfuse_trace_id: 7b6ad61faaeacc51d38bca9265139aa0
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/7b6ad61faaeacc51d38bca9265139aa0
+- predictor_id: llmp_sampled_trajectories_cov[gemini-3.5-flash]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:48:44.374880'
+  as_of: '2026-02-09T00:00:00'
+  forecast_date: '2026-02-23T00:00:00'
+  payload:
+    point_forecast: 62.2
+    quantiles:
+      '0.05': 62.2
+      '0.1': 62.2
+      '0.2': 62.2
+      '0.3': 62.2
+      '0.4': 62.2
+      '0.5': 62.2
+      '0.6': 62.2
+      '0.7': 62.2
+      '0.8': 62.2
+      '0.9': 62.2
+      '0.95': 62.2
+  metadata:
+    model: gemini-3.5-flash
+    n_samples: 1
+    n_report_docs: 0
+    covariate_series_ids:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+    temperature: 1.0
+    reasoning_effort: null
+    cost_usd: 0.0
+    input_tokens: 738137
+    output_tokens: 179
+    parse_failures: 0
+    variant_tag: cov
+    langfuse_trace_id: 28d117b662157dd09926dc73753d7d19
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/28d117b662157dd09926dc73753d7d19
+- predictor_id: llmp_sampled_trajectories_cov[gemini-3.5-flash]
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:48:44.374880'
+  as_of: '2026-02-09T00:00:00'
+  forecast_date: '2026-03-10T00:00:00'
+  payload:
+    point_forecast: 65.25
+    quantiles:
+      '0.05': 65.25
+      '0.1': 65.25
+      '0.2': 65.25
+      '0.3': 65.25
+      '0.4': 65.25
+      '0.5': 65.25
+      '0.6': 65.25
+      '0.7': 65.25
+      '0.8': 65.25
+      '0.9': 65.25
+      '0.95': 65.25
+  metadata:
+    model: gemini-3.5-flash
+    n_samples: 1
+    n_report_docs: 0
+    covariate_series_ids:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+    temperature: 1.0
+    reasoning_effort: null
+    cost_usd: 0.0
+    input_tokens: 738137
+    output_tokens: 179
+    parse_failures: 0
+    variant_tag: cov
+    langfuse_trace_id: 28d117b662157dd09926dc73753d7d19
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/28d117b662157dd09926dc73753d7d19
+scores:
+- 2.4100006103515597
+- 15.359997558593747
+- 4.109997558593747
+- 18.199996948242188
+metric: crps
+mean_score: 10.01999816894531
+ran_at: '2026-06-30T15:48:44.754860'
+skipped_origins: 0
