@@ -53,7 +53,7 @@ from IPython.display import Markdown, display  # noqa: A004
 
 warnings.filterwarnings("ignore")
 ROOT = Path.cwd().resolve().parents[1]
-load_dotenv(ROOT / ".env")
+load_dotenv(ROOT / ".env", override=False)
 
 from aieng.forecasting.evaluation import EvalSpec, evaluate
 from boc_rate_decisions.data import DIRECTION_SERIES_ID, build_boc_service

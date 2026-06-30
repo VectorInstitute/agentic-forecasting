@@ -60,7 +60,7 @@ template = _builder.set_workdir("/home/user/workspace").set_start_cmd(
 
 async def main() -> None:
     # load E2B_API_KEY
-    dotenv.load_dotenv()
+    dotenv.load_dotenv(override=False)
     # Fail hard if E2B_API_KEY is not set
     if not dotenv.get_key(".env", "E2B_API_KEY"):
         raise ValueError("E2B_API_KEY is not set")

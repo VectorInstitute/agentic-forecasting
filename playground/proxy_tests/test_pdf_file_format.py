@@ -31,7 +31,7 @@ sys.path.insert(0, str(REPO_ROOT / "aieng-forecasting"))
 from dotenv import load_dotenv
 
 
-load_dotenv(REPO_ROOT / ".env")
+load_dotenv(REPO_ROOT / ".env", override=False)
 
 from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
 

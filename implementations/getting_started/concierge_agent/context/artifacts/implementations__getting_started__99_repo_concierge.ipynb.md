@@ -34,6 +34,8 @@ to call the model.
 import warnings
 from pathlib import Path
 
+from IPython.display import Markdown, display  # noqa: A004
+
 
 warnings.filterwarnings("ignore")
 
@@ -57,7 +59,7 @@ load_dotenv(ROOT / ".env", override=False)
 AGENT_MODEL = "gemini-3.1-flash-lite-preview"
 
 # ── Run guard ──────────────────────────────────────
-RUN_AGENT = False
+RUN_AGENT = True
 
 from getting_started.concierge_agent import build_concierge_config
 
@@ -70,19 +72,16 @@ print("RUN_AGENT =", RUN_AGENT, "| model =", AGENT_MODEL)
 ---
 ## 1. Meet the concierge
 
-The agent uses a **catalog + artifacts** knowledge pack under `concierge_agent/context/`:
+The agent uses a **catalog + artifacts** knowledge pack shipped under `concierge_agent/context/` — no build step for participants.
 
 1. **`search_repo_catalog`** — search metadata (paths, summaries, domains); cheap, run first.
 2. **`fetch_repo_artifact`** — fetch full content for a catalog path (Python modules, READMEs, notebooks with **markdown + code cells**).
 
-The pack is built from public `main` via `scripts/build_concierge_context.py` and indexes the full `aieng/forecasting` tree plus reference implementations. The `repo-navigation` skill has reference guides (no scripts).
+Maintainers regenerate the pack from public `main` with `scripts/build_concierge_context.py` when library code or notebooks change. The `repo-navigation` skill has reference guides (no scripts).
 
 ## Cell 4 (code)
 
 ```python
-from getting_started.concierge_agent import build_concierge_config
-
-
 config = build_concierge_config(model=AGENT_MODEL)
 
 print("Agent:", config.name)
@@ -90,8 +89,8 @@ print("Search enabled:    ", config.context_retrieval.enabled)
 print("Code-exec enabled: ", config.code_execution.enabled)
 print("Skills loaded:     ", [p.name for p in config.skills_dirs])
 print("Extra tools:       ", [getattr(t, "__name__", repr(t)) for t in config.extra_tools])
-print("\n── System instruction (edit in concierge_agent/agent.py) ──\n")
-print(config.instruction[:900], "...")
+display(Markdown("### System instruction\n\n*Edit in `concierge_agent/agent.py`*"))
+display(Markdown(config.instruction))
 ```
 
 ## Cell 5 (markdown)
@@ -114,7 +113,7 @@ if RUN_AGENT:
     chat_agent = build_adk_agent(config)
     runner = AdkTextRunner(chat_agent, config=AdkTextRunnerConfig(app_name="repo_concierge_chat"))
     reply = await runner.run_text_async(QUESTION)  # noqa: F704, PLE1142
-    print(reply)
+    display(Markdown(reply))
 else:
     print("RUN_AGENT is False — set it to True in the setup cell to ask the concierge.")
 ```
@@ -126,7 +125,7 @@ QUESTION = "How do I customize the way context is presented to an LLMP?"
 
 if RUN_AGENT:
     reply = await runner.run_text_async(QUESTION)  # noqa: F704, F821, PLE1142
-    print(reply)
+    display(Markdown(reply))
 else:
     print("RUN_AGENT is False — set it to True to run this cell.")
 ```
@@ -138,7 +137,7 @@ QUESTION = "What's the difference between backtest() and evaluate()?"
 
 if RUN_AGENT:
     reply = await runner.run_text_async(QUESTION)  # noqa: F704, F821, PLE1142
-    print(reply)
+    display(Markdown(reply))
 else:
     print("RUN_AGENT is False — set it to True to run this cell.")
 ```
@@ -150,7 +149,7 @@ QUESTION = "Where should I go after getting_started if I want to build agents?"
 
 if RUN_AGENT:
     reply = await runner.run_text_async(QUESTION)  # noqa: F704, F821, PLE1142
-    print(reply)
+    display(Markdown(reply))
 else:
     print("RUN_AGENT is False — set it to True to run this cell.")
 ```
@@ -160,21 +159,21 @@ else:
 ---
 ## 3. Terminal mode — multi-turn conversations
 
-For extended back-and-forth, use the ADK CLI in the integrated terminal. From this
-directory (`implementations/getting_started/`):
+For extended back-and-forth, use the ADK CLI from the **repository root**:
 
 ```bash
-cd implementations/getting_started
-uv run adk run concierge_agent
+uv run adk run implementations/getting_started/concierge_agent
 ```
 
 That loads the same `repo_concierge` agent (`gemini-3.1-flash-lite-preview`) with
-`search_repo_knowledge` and the repo-navigation skill.
+`search_repo_catalog`, `fetch_repo_artifact`, and the repo-navigation skill.
 
-**Alternative:** `uv run adk web concierge_agent` opens a browser UI (same agent).
+**Alternative:** `uv run adk web implementations/getting_started/concierge_agent`
+opens a browser UI (same agent). From `implementations/getting_started/`, you can
+also use the shorter `uv run adk run concierge_agent`.
 
 ---
 
 **Where next?** Forecasting starter agents live in each domain implementation's
-`99_starter_agent.ipynb` (food, energy, BoC, S&P 500). This concierge only explains
-the repo — open one of those when you're ready to build and score a forecaster.
+`99_starter_agent.ipynb` (food, energy, BoC, S&P 500). This concierge helps you
+navigate the repo — open one of those when you're ready to build and score a forecaster.

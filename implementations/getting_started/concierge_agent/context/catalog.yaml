@@ -1,9 +1,9 @@
 source_url: https://github.com/VectorInstitute/agentic-forecasting
-git_ref: d4a22d05c7a9e86763a8d9b5e2891bcc24eda429
+git_ref: 0ac6b3098bdb529c08f2445895d82490de2404fd
 branch: main
-built_at: '2026-06-25T15:12:49+00:00'
+built_at: '2026-06-30T15:09:29+00:00'
 ingest_source: /home/coder/agentic-forecasting
-entry_count: 195
+entry_count: 196
 entries:
 - path: AGENTS.md
   kind: markdown
@@ -46,7 +46,7 @@ entries:
   - Extending the foundation
   - Code quality
   - Documentation
-  chars: 14710
+  chars: 14796
   artifact: artifacts/README.md.md
 - path: aieng-forecasting/aieng/forecasting/__init__.py
   kind: python
@@ -62,14 +62,24 @@ entries:
 - path: aieng-forecasting/aieng/forecasting/data/__init__.py
   kind: python
   domain: core.data
-  summary: 'Data service: adapters, series store, and cutoff enforcement.'
+  summary: 'Data service: adapters, series store, cutoff enforcement, and feature
+    builders.'
   symbols:
   - DataService
   - ForecastContext
   - SeriesMetadata
   - SeriesRecord
+  - StaticFrameAdapter
+  - apply_one_business_day_feature_lag
+  - business_daily_expand_from_releases
+  - business_daily_ffill
+  - canonical_three_col
+  - drop_weekend_timestamp_rows
+  - log_ratio_level_feature
+  - to_level_feature_from_daily
+  - to_log_return_feature
   sections: []
-  chars: 427
+  chars: 1086
   artifact: artifacts/aieng-forecasting__aieng__forecasting__data____init__.py.md
 - path: aieng-forecasting/aieng/forecasting/data/adapters/__init__.py
   kind: python
@@ -142,6 +152,32 @@ entries:
   sections: []
   chars: 2581
   artifact: artifacts/aieng-forecasting__aieng__forecasting__data__cutoff.py.md
+- path: aieng-forecasting/aieng/forecasting/data/features.py
+  kind: python
+  domain: core.data
+  summary: Reusable, leak-safe covariate feature builders.
+  symbols:
+  - StaticFrameAdapter
+  - canonical_three_col
+  - drop_weekend_timestamp_rows
+  - to_log_return_feature
+  - to_level_feature_from_daily
+  - business_daily_expand_from_releases
+  - apply_one_business_day_feature_lag
+  - business_daily_ffill
+  - log_ratio_level_feature
+  - StaticFrameAdapter
+  - apply_one_business_day_feature_lag
+  - business_daily_expand_from_releases
+  - business_daily_ffill
+  - canonical_three_col
+  - drop_weekend_timestamp_rows
+  - log_ratio_level_feature
+  - to_level_feature_from_daily
+  - to_log_return_feature
+  sections: []
+  chars: 8565
+  artifact: artifacts/aieng-forecasting__aieng__forecasting__data__features.py.md
 - path: aieng-forecasting/aieng/forecasting/data/models.py
   kind: python
   domain: core.data
@@ -519,7 +555,7 @@ entries:
   - ForecastPromptBuilder
   - AgentPredictor
   sections: []
-  chars: 13655
+  chars: 14369
   artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__predictor.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/baselines/__init__.py
   kind: python
@@ -765,7 +801,7 @@ entries:
   - Directory layout
   - Relationship to `aieng-forecasting`
   - Adding a new use case
-  chars: 3644
+  chars: 3778
   artifact: artifacts/implementations__README.md.md
 - path: implementations/__init__.py
   kind: python
@@ -792,7 +828,7 @@ entries:
   sections:
   - "BoC Rate Decisions \u2014 3-Way Direction Prediction Experiment"
   - Viewing other meetings
-  chars: 27955
+  chars: 27971
   artifact: artifacts/implementations__boc_rate_decisions__02_boc_rate_direction_experiment.ipynb.md
 - path: implementations/boc_rate_decisions/03_rationale_alignment.ipynb
   kind: notebook
@@ -801,7 +837,7 @@ entries:
   symbols: []
   sections:
   - "BoC \u2014 Rationale-alignment evaluation (LLM-as-a-judge, on the side)"
-  chars: 11377
+  chars: 11393
   artifact: artifacts/implementations__boc_rate_decisions__03_rationale_alignment.ipynb.md
 - path: implementations/boc_rate_decisions/99_starter_agent.ipynb
   kind: notebook
@@ -810,7 +846,7 @@ entries:
   symbols: []
   sections:
   - "Bank of Canada Rate Decisions \u2014 Your Starter Agent"
-  chars: 8070
+  chars: 8086
   artifact: artifacts/implementations__boc_rate_decisions__99_starter_agent.ipynb.md
 - path: implementations/boc_rate_decisions/README.md
   kind: markdown
@@ -1245,7 +1281,7 @@ entries:
   sections:
   - "WTI Crude Oil Price Forecasting \u2014 Stateless Methods: Systematic Backtest\
     \ (Notebook 4 of 7)"
-  chars: 13343
+  chars: 18735
   artifact: artifacts/implementations__energy_oil_forecasting__04_systematic_backtest_eval.ipynb.md
 - path: implementations/energy_oil_forecasting/05_adaptive_agent_training.ipynb
   kind: notebook
@@ -1285,7 +1321,7 @@ entries:
   symbols: []
   sections:
   - "WTI Crude Oil \u2014 Your Starter Agent"
-  chars: 7557
+  chars: 7573
   artifact: artifacts/implementations__energy_oil_forecasting__99_starter_agent.ipynb.md
 - path: implementations/energy_oil_forecasting/README.md
   kind: markdown
@@ -1535,7 +1571,7 @@ entries:
   - select_top_predictors
   - trajectory_mae_table
   sections: []
-  chars: 6287
+  chars: 6984
   artifact: artifacts/implementations__energy_oil_forecasting__analysis.py.md
 - path: implementations/energy_oil_forecasting/analyst_agent/__init__.py
   kind: python
@@ -1651,12 +1687,22 @@ entries:
   symbols:
   - naive_utc_now
   - build_wti_service
+  - build_wti_multivariate_service
   - DEFAULT_CACHE_DIR
+  - DEFAULT_WTI_COVARIATE_SERIES_IDS
+  - SERIES_ID_BRENT_RETURN
+  - SERIES_ID_DOLLAR_INDEX_RETURN
+  - SERIES_ID_GASOLINE_RETURN
+  - SERIES_ID_GOLD_RETURN
+  - SERIES_ID_NATGAS_RETURN
+  - SERIES_ID_OIL_CURVE_CONTANGO
+  - SERIES_ID_VIX_LEVEL
   - WTI_SERIES_ID
+  - build_wti_multivariate_service
   - build_wti_service
   - naive_utc_now
   sections: []
-  chars: 3494
+  chars: 13040
   artifact: artifacts/implementations__energy_oil_forecasting__data.py.md
 - path: implementations/energy_oil_forecasting/paths.py
   kind: python
@@ -1897,7 +1943,7 @@ entries:
   sections:
   - "Canada Food CPI \u2014 CFPR Replica Experiment"
   - 8.2 MAPE per category
-  chars: 26434
+  chars: 26450
   artifact: artifacts/implementations__food_price_forecasting__02_food_cpi_experiment.ipynb.md
 - path: implementations/food_price_forecasting/99_starter_agent.ipynb
   kind: notebook
@@ -1906,7 +1952,7 @@ entries:
   symbols: []
   sections:
   - "Food Price (CPI) \u2014 Your Starter Agent"
-  chars: 7733
+  chars: 7749
   artifact: artifacts/implementations__food_price_forecasting__99_starter_agent.ipynb.md
 - path: implementations/food_price_forecasting/README.md
   kind: markdown
@@ -2259,7 +2305,7 @@ entries:
   symbols: []
   sections:
   - "Repo Concierge \u2014 ask questions about this codebase"
-  chars: 5634
+  chars: 5804
   artifact: artifacts/implementations__getting_started__99_repo_concierge.ipynb.md
 - path: implementations/getting_started/README.md
   kind: markdown
@@ -2282,7 +2328,7 @@ entries:
   - Where to go next
   - Directory layout
   - Key interfaces (from `aieng-forecasting`)
-  chars: 9228
+  chars: 9367
   artifact: artifacts/implementations__getting_started__README.md.md
 - path: implementations/getting_started/__init__.py
   kind: python
@@ -2303,7 +2349,7 @@ entries:
   - search_repo_catalog
   - search_repo_knowledge
   sections: []
-  chars: 713
+  chars: 770
   artifact: artifacts/implementations__getting_started__concierge_agent____init__.py.md
 - path: implementations/getting_started/concierge_agent/agent.py
   kind: python
@@ -2313,7 +2359,7 @@ entries:
   symbols:
   - build_concierge_config
   sections: []
-  chars: 4534
+  chars: 4591
   artifact: artifacts/implementations__getting_started__concierge_agent__agent.py.md
 - path: implementations/getting_started/concierge_agent/catalog.py
   kind: python
@@ -2328,7 +2374,7 @@ entries:
   - fetch_repo_artifact
   - search_repo_catalog
   sections: []
-  chars: 7426
+  chars: 7365
   artifact: artifacts/implementations__getting_started__concierge_agent__catalog.py.md
 - path: implementations/getting_started/concierge_agent/catalog_build.py
   kind: python
@@ -2493,7 +2539,7 @@ entries:
   - "\u26A0\uFE0F Cutoff-aware evaluation \u2014 why the windows are what they are"
   - "Leaderboard \u2014 mean CRPS by method and horizon"
   - "Reading the LLMP \xB1 covariates rows"
-  chars: 20376
+  chars: 20392
   artifact: artifacts/implementations__sp500_forecasting__01_sp500_multivariate_backtest.ipynb.md
 - path: implementations/sp500_forecasting/99_starter_agent.ipynb
   kind: notebook
@@ -2502,7 +2548,7 @@ entries:
   symbols: []
   sections:
   - "S&P 500 \u2014 Your Starter Agent"
-  chars: 7839
+  chars: 7855
   artifact: artifacts/implementations__sp500_forecasting__99_starter_agent.ipynb.md
 - path: implementations/sp500_forecasting/README.md
   kind: markdown
@@ -2572,7 +2618,6 @@ entries:
   symbols:
   - sp500_logret_series_id
   - YahooFinanceDailyAdapter
-  - StaticFrameAdapter
   - build_sp500_log_return_service
   - build_sp500_multivariate_service
   - DEFAULT_COVARIATE_SERIES_IDS
@@ -2600,7 +2645,7 @@ entries:
   - build_sp500_multivariate_service
   - sp500_logret_series_id
   sections: []
-  chars: 35434
+  chars: 31632
   artifact: artifacts/implementations__sp500_forecasting__data.py.md
 - path: implementations/sp500_forecasting/leaderboard.py
   kind: python
@@ -2821,7 +2866,7 @@ entries:
   symbols:
   - main
   sections: []
-  chars: 4192
+  chars: 4208
   artifact: artifacts/scripts__fetch_boc.py.md
 - path: scripts/fetch_boc_press_releases.py
   kind: python
@@ -2861,7 +2906,7 @@ entries:
   - build_data_service
   - main
   sections: []
-  chars: 6004
+  chars: 6020
   artifact: artifacts/scripts__fetch_fred.py.md
 - path: scripts/fetch_sp500_market.py
   kind: python

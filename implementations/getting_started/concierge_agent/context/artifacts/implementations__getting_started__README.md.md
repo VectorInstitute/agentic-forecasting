@@ -151,14 +151,17 @@ concierge** that answers onboarding questions, points you to the right notebooks
 and modules, and can quote snippets from the committed public-`main` catalog.
 
 - Notebook cells are gated by `RUN_AGENT` (safe `Run All`).
-- For longer conversations, use the terminal from this directory:
+- For longer conversations, run the ADK CLI from the **repository root**:
 
   ```bash
-  cd implementations/getting_started
-  uv run adk run concierge_agent
+  uv run adk run implementations/getting_started/concierge_agent
   ```
 
-  (`uv run adk web concierge_agent` opens the same agent in a browser.)
+  (`uv run adk web implementations/getting_started/concierge_agent` opens the same
+  agent in a browser.)
+
+  From `implementations/getting_started/`, the shorter `uv run adk run concierge_agent`
+  works too.
 
 This is different from each domain's `99_starter_agent.ipynb` — those are
 hackable **forecasting** agents; the concierge only explains the repo.

@@ -120,10 +120,7 @@ def search_repo_catalog(
     """
     terms = _tokenize(query)
     if not terms:
-        return (
-            "No search terms found. Try e.g. "
-            "'DataService register' or 'energy notebook 02 agentic'."
-        )
+        return "No search terms found. Try e.g. 'DataService register' or 'energy notebook 02 agentic'."
 
     domain_filter = _normalize_domain(domain)
     kind_filter = _normalize_kind(kind)
@@ -226,9 +223,7 @@ def fetch_repo_artifact(
     body = artifact_path.read_text(encoding="utf-8")
     if section:
         extracted = _extract_section(body, section)
-        body = extracted or (
-            f"(Section {section!r} not found in artifact; showing beginning.)\n\n" + body[:max_chars]
-        )
+        body = extracted or (f"(Section {section!r} not found in artifact; showing beginning.)\n\n" + body[:max_chars])
 
     if len(body) > max_chars:
         body = body[:max_chars] + "\n…\n"

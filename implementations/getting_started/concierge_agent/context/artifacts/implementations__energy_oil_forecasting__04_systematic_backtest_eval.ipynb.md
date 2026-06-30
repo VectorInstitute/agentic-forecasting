@@ -17,8 +17,12 @@ This notebook simulates a rigorous production forecasting workflow:
    (`energy_oil_eval.yaml`) during the geopolitical price shock —
    measuring adaptive real-time responsiveness and calibration.
 
-All predictors use the same `Predictor` interface introduced in Notebooks 1–2.
-Agent configs are imported from `energy_oil_forecasting.analyst_agent`.
+The line-up spans three families behind one `Predictor` interface: **baselines**
+(Naive, AutoARIMA), **numerical ML** (LightGBM ± a leak-safe covariate panel),
+and **LLM/agent** methods (LLM-process forecasters and a news-reading analyst
+agent) — the last run on *both* project models, `gemini-3.1-flash-lite-preview`
+and `gemini-3.5-flash`. Every predictor is one toggle line in the registry in
+Section 2. Agent configs come from `energy_oil_forecasting.analyst_agent`.
 
 ## Cell 2 (markdown)
 
@@ -39,7 +43,11 @@ from aieng.forecasting.evaluation import (
     cached_multi_backtest,
     describe_spec,
 )
-from energy_oil_forecasting.data import build_wti_service
+from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
+from energy_oil_forecasting.data import (
+    DEFAULT_WTI_COVARIATE_SERIES_IDS,
+    build_wti_multivariate_service,
+)
 
 
 warnings.filterwarnings("ignore")
@@ -50,17 +58,27 @@ warnings.filterwarnings("ignore")
 # 51 backtest + 8 eval origins; smoke runs 2 + 2.
 SMOKE_TEST = True
 
-# ── Model selection ───────────────────────────────────────────────────────────
-# Two project models: "gemini-3.1-flash-lite-preview" (lite/default) and
-# "gemini-3.5-flash" (advanced). Change these two lines to swap models for the
-# whole notebook (bare proxy names — no "gemini/" prefix).
-AGENT_MODEL = "gemini-3.1-flash-lite-preview"
-LLMP_MODEL = "gemini-3.1-flash-lite-preview"
+# ── Models ────────────────────────────────────────────────────────────────────
+# The project standardises on two Vector-proxy models. Every LLM and agent
+# predictor below is run once per model so we can compare them head-to-head.
+# (bare proxy names — no "gemini/" prefix)
+MODELS = [LITE_MODEL, ADVANCED_MODEL]  # "gemini-3.1-flash-lite-preview", "gemini-3.5-flash"
 
 # ── Derived settings (do not edit below) ─────────────────────────────────────
-N_SAMPLES = 1 if SMOKE_TEST else 3  # trajectories per LLMP call
+N_SAMPLES = 1 if SMOKE_TEST else 3  # trajectories per LLMP-Sampled call
 
-data_service = build_wti_service()
+# LightGBM hyperparameters (shared by the univariate and +covariate variants).
+LAGS = 21  # one trading month of lagged target/covariate history
+NUM_SAMPLES_LGBM = 100 if SMOKE_TEST else 200  # Monte-Carlo draws for quantiles
+LGBM_KWARGS = {"num_threads": 1, "n_jobs": 1, "verbosity": -1}  # deterministic, quiet
+
+# Data service: WTI target + a leak-safe covariate panel (all Yahoo Finance —
+# Brent, natural gas, gasoline, gold, USD index, the USL/USO futures-curve
+# contango proxy, and VIX). Non-covariate predictors simply ignore the extras,
+# so one service feeds the whole leaderboard. Unavailable tickers are skipped
+# with a warning, so this still runs offline / under partial connectivity.
+data_service = build_wti_multivariate_service()
+COVARIATES = [c for c in DEFAULT_WTI_COVARIATE_SERIES_IDS if c in set(data_service.series_ids)]
 
 spec_dir = Path(energy_oil_forecasting.__file__).parent / "specs"
 if SMOKE_TEST:
@@ -73,9 +91,8 @@ with open(spec_dir / backtest_file) as f:
 with open(spec_dir / eval_file) as f:
     eval_spec = MultiTargetBacktestSpec.model_validate(yaml.safe_load(f))
 
-print(
-    f"{'⚡ SMOKE MODE' if SMOKE_TEST else '📊 FULL MODE'} — AGENT_MODEL={AGENT_MODEL!r}  LLMP_MODEL={LLMP_MODEL!r}  N_SAMPLES={N_SAMPLES}"
-)
+print(f"{'⚡ SMOKE MODE' if SMOKE_TEST else '📊 FULL MODE'} — MODELS={MODELS}  N_SAMPLES={N_SAMPLES}")
+print(f"Covariates registered ({len(COVARIATES)}): {', '.join(COVARIATES) or '(none)'}")
 print()
 print("━" * 72)
 print("LOADED SPECIFICATIONS:")
@@ -87,64 +104,125 @@ print(describe_spec(eval_spec, data_service))
 ## Cell 4 (markdown)
 
 ---
-## 2. Statistical Baseline
+## 2. Candidate Predictors
 
-This reference implementation uses **AutoARIMA** as its chosen statistical
-method.  The purpose of this notebook is to characterise AutoARIMA's
-performance thoroughly — understanding where it succeeds, where it fails, and
-in which regimes — so that the adaptive agent in Notebook 5 has a concrete
-foundation to learn from.
+This experiment puts a full slate of methods on the same `Predictor` interface and
+the same rolling backtest, spanning three families:
 
-The `Naive (Last Value)` predictor provides the floor: AutoARIMA should beat
-it, and the margin tells us how much structure AutoARIMA extracts from the data.
+| Family | Predictors | Role |
+|---|---|---|
+| **Baselines** | `Naive (Last Value)`, `AutoARIMA` | Carry-forward floor + the classical statistical anchor |
+| **Numerical ML** | `LightGBM`, `LightGBM + cov` (+ optional `Prophet`) | Gradient-boosted quantile regression on lagged price (and a leak-safe covariate panel — Brent, gas, gasoline, gold, USD index, the futures-curve contango proxy, and VIX). LightGBM-with-covariates was the strongest method in the S&P 500 study. |
+| **LLM / Agent** | `LLMP-Sampled`, `LLMP-Grid`, `News Agent` — each on **both** project models | LLM-process forecasters and a news-reading analyst agent, run on `gemini-3.1-flash-lite-preview` *and* `gemini-3.5-flash` |
 
-> Other statistical and LLM-based methods are explored in separate reference
-> implementations.  You can uncomment the commented-out predictors below to
-> compare, but they are not the focus of this experiment.
-
-| Predictor | Role |
-|---|---|
-| `LastValuePredictor` | Lower bound — carry-forward baseline |
-| `DartsAutoARIMAPredictor` | **Primary statistical method** — the anchor for adaptive agent training |
+The predictor cell below is a **registry**: every method is one line with an
+`enabled` flag. Flip a flag to add or drop a predictor — the rest of the
+notebook (backtest, scoring, eval, scorecard) iterates over whatever is active.
+The two baselines are flagged `baseline=True` and are the only results written to
+`adaptive_agent/curriculum/` for Notebooks 5–6, so toggling the others never
+disturbs the downstream training data.
 
 ## Cell 5 (code)
 
 ```python
+from dataclasses import dataclass
+from typing import Callable
+
 from aieng.forecasting.methods import (
     LastValuePredictor,
-    QuantileGridLLMPredictor,  # noqa: F401
-    QuantileGridLLMPredictorConfig,  # noqa: F401
-    SampledTrajectoryLLMPredictor,  # noqa: F401
-    SampledTrajectoryLLMPredictorConfig,  # noqa: F401
+    QuantileGridLLMPredictor,
+    QuantileGridLLMPredictorConfig,
+    SampledTrajectoryLLMPredictor,
+    SampledTrajectoryLLMPredictorConfig,
 )
 from aieng.forecasting.methods.numerical.darts_arima import DartsAutoARIMAPredictor
-from energy_oil_forecasting.analyst_agent import build_wti_agent_predictor, build_wti_news_config  # noqa: F401
-from energy_oil_forecasting.prophet_baseline import ProphetPredictor  # noqa: F401
+from aieng.forecasting.methods.numerical.darts_regression import DartsLightGBMPredictor
+from energy_oil_forecasting.analyst_agent import build_wti_agent_predictor, build_wti_news_config
+from energy_oil_forecasting.prophet_baseline import ProphetPredictor
 
 
-# ── Predictors ────────────────────────────────────────────────────────────────
-# AutoARIMA is the primary method; Naive is the lower-bound baseline.
-# Both are evaluated in every section — no contender selection needed.
-# NOTE: AutoARIMA re-fits at every origin (slow on first run; cached after).
-PREDICTORS = {
-    "Naive (Last Value)": LastValuePredictor(),
-    "AutoARIMA": DartsAutoARIMAPredictor(),
-    # ── Optional comparisons (not the focus of this experiment) ──────────────
-    # "Prophet": ProphetPredictor(),
-    # f"LLMP-Sampled ({LLMP_MODEL})": SampledTrajectoryLLMPredictor(
-    #     SampledTrajectoryLLMPredictorConfig(model=LLMP_MODEL, n_samples=N_SAMPLES)
-    # ),
-    # f"LLMP-Grid ({LLMP_MODEL})": QuantileGridLLMPredictor(
-    #     QuantileGridLLMPredictorConfig(model=LLMP_MODEL)
-    # ),
-    # f"News Agent ({AGENT_MODEL})": build_wti_agent_predictor(
-    #     build_wti_news_config(model=AGENT_MODEL)
-    # ),
-}
+@dataclass
+class PredictorEntry:
+    """One row in the experiment. Flip ``enabled`` to switch a predictor on/off."""
+
+    name: str
+    factory: Callable[[], object]  # lazy — built only when enabled
+    enabled: bool = True
+    baseline: bool = False  # baselines are saved to curriculum/ for NB05–06
+
+
+# LLM / agent factories — each takes a model so the same recipe runs on both.
+# LLMP-Sampled optionally serializes the covariate panel into the prompt
+# (labeled exogenous-series blocks); the others are target-only. A distinct
+# variant_tag keeps the +cov run separate in the cache and on the leaderboard.
+def _llmp_sampled(model, covariates=None):
+    return SampledTrajectoryLLMPredictor(
+        SampledTrajectoryLLMPredictorConfig(
+            model=model,
+            n_samples=N_SAMPLES,
+            covariate_series_ids=covariates,
+            variant_tag="cov" if covariates else None,
+        )
+    )
+
+
+def _llmp_grid(model):
+    return QuantileGridLLMPredictor(QuantileGridLLMPredictorConfig(model=model))
+
+
+def _news_agent(model):
+    return build_wti_agent_predictor(build_wti_news_config(model=model))
+
+
+# ── Experiment registry ───────────────────────────────────────────────────────
+# Toggle `enabled` on any line to include/exclude that predictor. LLM and agent
+# methods are listed once per model so each can be switched on/off individually.
+REGISTRY = [
+    # Baselines — always saved to curriculum/ for the adaptive-agent notebooks.
+    PredictorEntry("Naive (Last Value)", LastValuePredictor, enabled=True, baseline=True),
+    PredictorEntry("AutoARIMA", DartsAutoARIMAPredictor, enabled=True, baseline=True),
+    # Numerical ML — LightGBM was the strongest method in the S&P 500 study.
+    PredictorEntry(
+        "LightGBM",
+        lambda: DartsLightGBMPredictor(lags=LAGS, num_samples=NUM_SAMPLES_LGBM, lgbm_kwargs=LGBM_KWARGS),
+        enabled=True,
+    ),
+    PredictorEntry(
+        "LightGBM + cov",
+        lambda: DartsLightGBMPredictor(
+            lags=LAGS,
+            lags_past_covariates=LAGS,
+            covariate_series_ids=COVARIATES,
+            num_samples=NUM_SAMPLES_LGBM,
+            lgbm_kwargs=LGBM_KWARGS,
+        ),
+        enabled=True,
+    ),
+    PredictorEntry("Prophet", ProphetPredictor, enabled=False),
+    # LLM processes and the news agent — one row per model in MODELS.
+    PredictorEntry(f"LLMP-Sampled ({LITE_MODEL})", lambda: _llmp_sampled(LITE_MODEL), enabled=True),
+    PredictorEntry(f"LLMP-Sampled ({ADVANCED_MODEL})", lambda: _llmp_sampled(ADVANCED_MODEL), enabled=True),
+    # LLMP-Sampled with the covariate panel serialized into the prompt — the one
+    # LLM method that can take covariates with no package change. Compare each of
+    # these against its target-only twin above to see if context helps the LLM.
+    PredictorEntry(f"LLMP-Sampled + cov ({LITE_MODEL})", lambda: _llmp_sampled(LITE_MODEL, COVARIATES), enabled=True),
+    PredictorEntry(
+        f"LLMP-Sampled + cov ({ADVANCED_MODEL})", lambda: _llmp_sampled(ADVANCED_MODEL, COVARIATES), enabled=True
+    ),
+    PredictorEntry(f"LLMP-Grid ({LITE_MODEL})", lambda: _llmp_grid(LITE_MODEL), enabled=True),
+    PredictorEntry(f"LLMP-Grid ({ADVANCED_MODEL})", lambda: _llmp_grid(ADVANCED_MODEL), enabled=True),
+    PredictorEntry(f"News Agent ({LITE_MODEL})", lambda: _news_agent(LITE_MODEL), enabled=True),
+    PredictorEntry(f"News Agent ({ADVANCED_MODEL})", lambda: _news_agent(ADVANCED_MODEL), enabled=True),
+]
+
+# Instantiate only the enabled predictors (lazy factories skip the rest).
+PREDICTORS = {e.name: e.factory() for e in REGISTRY if e.enabled}
+_BASELINE_PREDICTORS = {e.name for e in REGISTRY if e.baseline}
 
 print(f"Active predictors ({len(PREDICTORS)}):")
 for name in PREDICTORS:
-    print(f"  {name}")
+    tag = "  (baseline → curriculum/)" if name in _BASELINE_PREDICTORS else ""
+    print(f"  {name}{tag}")
 ```
 
 ## Cell 6 (markdown)
@@ -175,13 +253,15 @@ print("\nAll 2025 backtests complete.")
 ---
 ## 4. Performance Characterisation
 
-We score both predictors on the 2025 backtest data:
+We score every active predictor on the 2025 backtest data:
 - **CRPS** (Continuous Ranked Probability Score) — sharpness + calibration combined
 - **MAE at h=21d** — point forecast accuracy at the longest horizon
 
-The key question is not which method to pick (we've already chosen AutoARIMA),
-but *where* and *by how much* AutoARIMA beats the naive baseline — and where it
-still struggles. Those gaps are exactly what the adaptive agent will learn to address.
+The leaderboard ranks the families against each other — how much structure the
+numerical methods (AutoARIMA, LightGBM ± covariates) extract over the naive
+floor, whether the covariate panel earns its keep, and how the LLM/agent methods
+compare across the two models. Where each method wins and where it struggles in
+2025 is exactly the material the adaptive agent learns from in Notebook 5.
 
 ## Cell 9 (code)
 
@@ -226,12 +306,11 @@ if not math.isnan(arima_crps):
 
 ```python
 # ── Save backtest results for NB05 / NB06 ────────────────────────────────────
-# Only the two baseline predictors are written to curriculum/ so that
-# uncommenting the optional predictors above does not pollute the files
-# that NB05 and NB06 depend on.
+# Only the baseline predictors (flagged in the registry above) are written to
+# curriculum/ so that toggling the other predictors on/off does not change the
+# files NB05 and NB06 depend on.
 _CURRICULUM_DIR = Path("adaptive_agent/curriculum")
 _CURRICULUM_DIR.mkdir(exist_ok=True)
-_BASELINE_PREDICTORS = {"Naive (Last Value)", "AutoARIMA"}
 for _name, _result_dict in backtest_results.items():
     if _name not in _BASELINE_PREDICTORS:
         continue
@@ -245,16 +324,16 @@ print(f"Saved {sum(n in _BASELINE_PREDICTORS for n in backtest_results)} backtes
 ---
 ## 5. 2026 Evaluation — Held-Out Test Period
 
-We run both predictors on **8 weekly origins in early 2026**
-(`energy_oil_eval.yaml`) — a period of major geopolitical volatility not
-seen during the 2025 backtest.
+We run every active predictor on **8 weekly origins in early 2026**
+(`energy_oil_eval.yaml`) — a period of major geopolitical volatility not seen
+during the 2025 backtest.
 
 This evaluation serves two purposes:
-1. **Measure out-of-sample robustness** — does AutoARIMA's 2025 edge hold
-   under a structural regime shift?
+1. **Measure out-of-sample robustness** — do the 2025 edges (statistical,
+   covariate, or LLM/agent) hold under a structural regime shift?
 2. **Establish the stateless baseline** that the trained adaptive agents in
-   Notebook 6 are compared against. Both results are saved to
-   `adaptive_agent/curriculum/` for Notebooks 5 and 6 to load.
+   Notebook 6 are compared against. The baseline predictors' results are saved
+   to `adaptive_agent/curriculum/` for Notebooks 5 and 6 to load.
 
 ## Cell 12 (code)
 
@@ -287,7 +366,7 @@ print(f"Saved {sum(n in _BASELINE_PREDICTORS for n in eval_results)} eval result
 ---
 ## 6. Scorecard
 
-Out-of-sample performance of both stateless predictors on the 2026 eval period.
+Out-of-sample performance of every active predictor on the 2026 eval period.
 These numbers are the **stateless baseline** the adaptive agent variants must
 beat in Notebook 6 to demonstrate that training added value.
 
@@ -325,43 +404,53 @@ print(df_scorecard.to_string())
 ---
 ## 7. Core Takeaways
 
-1. **AutoARIMA beats the naive baseline** by extracting local autocorrelation
-   structure from the price history. In stable regimes, this translates to
-   noticeably better CRPS and MAE.
+1. **Numerical methods beat the naive baseline** by extracting structure from the
+   price history — AutoARIMA via local autocorrelation, LightGBM via lagged
+   gradient-boosted quantiles. In stable regimes this translates to better CRPS.
 
-2. **AutoARIMA fails under structural regime shifts.** It has no mechanism to
-   incorporate news, OPEC+ decisions, or geopolitical context. During the 2026
-   price shock, it extrapolates past trends and produces systematically biased,
-   under-confident intervals.
+2. **Covariates can sharpen LightGBM.** The `LightGBM + cov` variant adds a
+   leak-safe panel (Brent, natural gas, gasoline, gold, the USD index, the
+   USL/USO futures-curve contango proxy, and VIX). Comparing it to plain
+   `LightGBM` isolates how much the cross-market context is worth — the same
+   lesson that made covariates decisive in the S&P 500 study.
 
-3. **These failure modes are learnable.** The backtest report surfaces exactly
-   which regimes and horizons are problematic — and that is precisely the
-   information we hand to the adaptive agent as training material in Notebook 5.
+3. **Tree models extrapolate poorly through regime shifts.** LightGBM forecasts
+   the price *level*, and gradient-boosted trees cannot predict outside the range
+   seen in training. When the 2026 shock pushes WTI to new levels, expect the
+   tree methods — like AutoARIMA — to lag and produce biased, under-confident
+   intervals. This is a structural limitation, not a tuning problem.
 
-4. **The `Predictor` abstraction makes the comparison clean.** The same harness,
-   scoring functions, and eval spec work for both stateless methods and the
-   adaptive agent variants in Notebook 6.
+4. **LLM/agent methods bring a different prior.** The LLM-process forecasters and
+   the news-reading agent are run on both `gemini-3.1-flash-lite-preview` and
+   `gemini-3.5-flash`, so the scorecard shows both *method* and *model* effects —
+   and whether reading the news helps when the numerical methods are blindsided.
+
+5. **The `Predictor` abstraction makes the comparison clean.** The same harness,
+   scoring functions, covariate panel, and eval spec serve every family, and the
+   registry lets you switch any predictor on or off without touching the pipeline.
 
 ---
 ## 8. What stateless methods can't do
 
-AutoARIMA is calibrated once and never updated. This is intentional here —
-it creates a clean baseline — but it leaves a systematic gap:
+Every method here is calibrated (or prompted) once and never updated between
+rounds. This is intentional — it creates a clean baseline — but it leaves a
+systematic gap:
 
-- **No error feedback.** If AutoARIMA consistently produces intervals that are
-  too narrow in elevated-vol regimes, it will keep making the same mistake.
-  There is no mechanism to update calibration between rounds.
+- **No error feedback.** If a method consistently produces intervals that are too
+  narrow in elevated-vol regimes, it keeps making the same mistake. There is no
+  mechanism to update calibration between rounds.
 
-- **No market context.** AutoARIMA sees only price history. A human analyst
-  reviewing its output would immediately ask: *what's in the news?*
+- **No strategy evolution.** Each prediction starts from the same prior (the same
+  fitted model, or the same prompt). Resolved outcomes disappear without
+  influencing future forecasts.
 
-- **No strategy evolution.** Each prediction starts from the same prior.
-  Resolved outcomes disappear without influencing future forecasts.
+- **Context without memory.** Even the news agent re-reads the world each origin;
+  it does not accumulate what worked.
 
-→ **Notebook 5** introduces adaptive agents that study AutoARIMA's 2025
-performance, record systematic observations, and calibrate their strategies
-accordingly. At inference time, each agent receives the live AutoARIMA estimate
-and decides how to adjust it — applying what it learned from training.
+→ **Notebook 5** introduces adaptive agents that study the 2025 backtest,
+record systematic observations, and calibrate their strategies accordingly. At
+inference time, each agent receives the live stateless estimate and decides how
+to adjust it — applying what it learned from training.
 
 → **Notebook 6** evaluates whether any training approach actually improved
 out-of-sample performance on the held-out 2026 data.

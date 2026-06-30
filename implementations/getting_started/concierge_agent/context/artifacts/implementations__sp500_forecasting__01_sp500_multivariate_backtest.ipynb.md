@@ -132,7 +132,7 @@ def _repo_root() -> Path:
 
 
 ROOT = _repo_root()
-load_dotenv(ROOT / ".env")  # LLMP rows call the Vector proxy — need PROXY_* set
+load_dotenv(ROOT / ".env", override=False)  # LLMP rows call the Vector proxy — need PROXY_* set
 
 from aieng.forecasting.evaluation import (
     MultiTargetBacktestSpec,

@@ -102,7 +102,7 @@ def _load_fred_dotenv() -> None:
     root = _repo_root()
     if root is None:
         return
-    _load_dotenv(root / ".env")
+    _load_dotenv(root / ".env", override=False)
 
 
 def _as_absolute_cache(path: Path | None) -> Path | None:

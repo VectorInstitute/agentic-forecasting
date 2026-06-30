@@ -11,6 +11,7 @@ tables and scoring metrics. Kept separate from notebooks so they can be tested.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
@@ -35,8 +36,19 @@ def score_backtest_results(
     data_service: DataService,
     *,
     mae_horizon: int = 21,
+    actuals_as_of: datetime | None = None,
 ) -> dict[str, float]:
-    """Aggregate CRPS, MAE at a horizon, and 80% CI coverage for backtest results."""
+    """Aggregate CRPS, MAE at a horizon, and 80% CI coverage for backtest results.
+
+    ``actuals_as_of`` is the cutoff used to look up realised target values when
+    scoring MAE and coverage. It defaults to *now* so that every forecast which
+    has already resolved is scored — using ``result.spec.end`` instead would hide
+    every horizon that resolves after the backtest window (which, for a short
+    eval window, is all of them, leaving MAE/coverage ``nan``). This is post-hoc
+    scoring of realised outcomes, not a forecast-time view, so a late cutoff is
+    correct and introduces no leakage.
+    """
+    resolved_as_of = actuals_as_of or datetime.now(tz=timezone.utc).replace(tzinfo=None)
     all_scores: list[float] = []
     mae_errors: list[float] = []
     coverage_hits: list[float] = []
@@ -44,7 +56,7 @@ def score_backtest_results(
     for result in results.values():
         all_scores.extend(result.scores)
         task = result.spec.task
-        actual_df = data_service.get_series(task.target_series_id, as_of=result.spec.end)
+        actual_df = data_service.get_series(task.target_series_id, as_of=resolved_as_of)
         actual_by_date = {
             pd.Timestamp(row["timestamp"]).normalize(): float(row["value"]) for _, row in actual_df.iterrows()
         }

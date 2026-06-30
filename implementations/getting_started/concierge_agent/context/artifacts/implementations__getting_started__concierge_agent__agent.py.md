@@ -9,7 +9,8 @@ A lightweight ADK agent powered by ``LITE_MODEL`` (``gemini-3.1-flash-lite-previ
 It answers questions about the repository using a committed **catalog + artifacts**
 snapshot of public ``main`` — not the participant's local workspace.
 
-Pair with ``99_repo_concierge.ipynb`` or ``adk run concierge_agent``.
+Pair with ``99_repo_concierge.ipynb`` or ``adk run implementations/getting_started/concierge_agent``
+from the repository root.
 """
 
 from __future__ import annotations
