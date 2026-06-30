@@ -235,10 +235,20 @@ class AgentPredictor(Predictor):
     def predictor_id(self) -> str:
         """Stable identifier for this predictor.
 
-        This is used to identify the predictor in the evaluation results.
+        This is used to identify the predictor in the evaluation results — and,
+        via the artefact cache, as a filename component. The model name is folded
+        in so the same agent run on different models yields distinct ids (and
+        distinct cache entries). When the proxy is active the agent's ``model`` is
+        a ``BaseLlm`` wrapper (e.g. ``LiteLlm``) rather than a bare string; in that
+        case we unwrap its nested ``.model`` (e.g. ``"openai/gemini-3.5-flash"``)
+        and keep the bare model name. Non-string models with no usable name are
+        omitted rather than leaking a noisy ``repr`` into the id.
         """
         model = getattr(self._agent, "model", None)
-        model_suffix = f"_{model}" if isinstance(model, str) else ""
+        if not isinstance(model, str):
+            inner = getattr(model, "model", None)
+            model = inner if isinstance(inner, str) else None
+        model_suffix = f"_{model.rsplit('/', 1)[-1]}" if model else ""
         return f"agent_predictor_{self._agent.name}{model_suffix}_{self._forecast_output_modality}"
 
     def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
