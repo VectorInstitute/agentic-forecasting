@@ -115,6 +115,31 @@ This maps 1:1 to deck.yaml in the slide phase.
 ## Notes / open questions
 ```
 
+## Concept-coverage audit (name it → show it)
+
+**The gate that keeps a teaching deck from quietly assuming its own primitives.**
+Before content is locked, list every concept the talk *names and leans on* — every
+metric (CRPS, Brier, RPS), every methodology (cutoff/leakage, backtest-vs-eval), every
+term the [audience](#agreed-defaults) isn't assumed to know (CRPS, cutoff, backtesting,
+ARIMA intuition). For each, mark it **mentioned** or **shown**:
+
+- **mentioned** — it appears in a bullet, a table cell, or a sentence, treated as
+  already understood.
+- **shown** — it has a slide or figure that *teaches* it: a definition figure, a
+  schematic, a worked micro-example.
+
+**For a foundations / teaching deck, every load-bearing primitive must be _shown_, not
+just mentioned.** A metric the whole deck scores by earns a "what the score rewards"
+explainer; a discipline you assert (cutoff safety, protected eval) earns a schematic
+that makes the abstract split concrete. If a smart non-specialist couldn't *define* the
+term from the deck alone, it's mentioned-not-shown — a gap.
+
+Surface the **mentioned-but-not-shown list to the owner during content review** and
+propose candidate explainer slides; don't silently leave the primitives as bullets.
+(This is the lesson from the d1-01 review: CRPS was named 3× and the cutoff discipline
+asserted once, with neither *shown* — both became dedicated figure slides on review.
+The audit would have caught them in the first draft.)
+
 ## vector-slides essentials (lean into it, don't fight it)
 
 The skill is installed at `.claude/skills/vector-slides/`. Its own docs are the
@@ -133,8 +158,14 @@ what bites.
   falls back to `title`).
 - **Lead with visuals.** A plot/diagram/code block beats a bullet list. Default to
   `figure`/`figure_full` for any result, `code` for an interface; reserve pure-text
-  layouts for the thesis. Make plots from **real repo data** via the brand-styled
-  pipeline at `learn-days/assets/plotting/` (→ committed PNGs in `assets/figures/`).
+  layouts for the thesis. Make *result* plots from **real repo data** via the
+  brand-styled pipeline at `learn-days/assets/plotting/` (→ committed PNGs in
+  `assets/figures/`). **Didactic figures are first-class too** — a metric definition
+  (two contrasting cases + the score), a design schematic (a rolling-origin split, a
+  pipeline) — and these are *meant* to be illustrative. The bar is "show the concept,"
+  and some concepts are definitional, not data; they're honest as long as any numbers
+  on them are computed correctly (e.g. closed-form CRPS), not invented. Don't let the
+  "real data" rule talk you out of the explainer a teaching slide needs.
 - **14 named icons only:** arrow book brain bug chart check code flask gear robot
   search shield warning x. Inventing a name fails the build.
 - **Overflow is the #1 defect.** `validate-deck` fails on it. Hard budgets:

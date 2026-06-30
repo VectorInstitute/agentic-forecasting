@@ -1,8 +1,22 @@
 # Learn-day figure pipeline
 
-Brand-styled matplotlib figures for the decks, generated from **real repo data**
-(no hand-typed numbers). Output PNGs land in `learn-days/assets/figures/<session>/`
-and are placed in decks via the `figure` / `figure_full` vector-slides layouts.
+Brand-styled matplotlib figures for the decks. Output PNGs land in
+`learn-days/assets/figures/<session>/` and are placed in decks via the `figure` /
+`figure_full` vector-slides layouts. Two kinds of figure live here, both first-class:
+
+- **Result figures** — generated from **real repo data** (no hand-typed numbers): a
+  backtest, a per-origin score, a horizon comparison.
+- **Didactic / explainer figures** — *teach a concept*: a metric definition, a design
+  schematic. These are meant to be illustrative; they're honest as long as any numbers
+  on them are **computed correctly** (e.g. closed-form CRPS via `_norm_crps`), not
+  invented. A teaching slide often needs one of these — see the "name it → show it"
+  audit in `learn-days/HOW-WE-WORK.md`.
+
+Reusable explainer recipes to copy for other sessions (both in `figures_d1_01.py`):
+`fig_crps_explainer` (metric-comparison panel — two distributions, same point, their
+scores) and `fig_backtest_eval_design` (rolling-origin schematic — backtest vs
+protected post-cutoff eval). Mind `pitfalls.md` → in-figure text/text collisions: keep
+legends out of the data and read every figure at full size.
 
 ## Layout
 
@@ -25,11 +39,13 @@ uv run python3 figures_d1_01.py --refresh  # re-run the slow CPI backtest, then 
 
 ### d1-01 — Forecasting Foundations
 
-| Figure | Source (real data) |
-|--------|--------------------|
-| `cpi_forecast_fanchart.png` | AutoARIMA 1-month backtest of CPI Gasoline (StatCan 18-10-0004-11) — forecast vs realized + 90% interval |
-| `cpi_crps_over_time.png` | Per-origin CRPS, Naive vs AutoARIMA, 2000–2025 (means 10.11 / 8.45, 301 origins) |
-| `sp500_horizon_crps.png` | `data/predictions/sp500_backtest_2025/*.yaml` — LightGBM vs LLM-Process (±cov) at h = 1/5/21 |
+| Figure | Kind | Source |
+|--------|------|--------|
+| `cpi_forecast_fanchart.png` | result | AutoARIMA 1-month backtest of CPI Gasoline (StatCan 18-10-0004-11) — forecast vs realized + 90% interval |
+| `cpi_crps_over_time.png` | result | Per-origin CRPS, Naive vs AutoARIMA, 2000–2025 (means 10.11 / 8.45, 301 origins) |
+| `crps_explainer.png` | didactic | Two Gaussian forecasts, same point (equal MAE); closed-form CRPS — sharp 1.20 < wide 1.67. Illustrative metric definition |
+| `backtest_eval_design.png` | didactic | Rolling-origin schematic — backtest window vs protected post-cutoff eval, ~Jan-2025 cutoff. Illustrative dates |
+| `sp500_horizon_crps.png` | result | `data/predictions/sp500_backtest_2025/*.yaml` — LightGBM vs LLM-Process (±cov) at h = 1/5/21. *(retired from the d1-01 deck on the Jun 2026 methodology rebalance; kept for reuse)* |
 
 The CPI backtest (AutoARIMA, 500 samples × 301 origins) takes a few minutes; its
 per-origin output is cached to `figures/d1-01/_cpi_backtest_cache.json` so the two

@@ -1,0 +1,162 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    payload_type: continuous
+    categories: null
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2025-06-02T00:00:00'
+  end: '2025-06-09T00:00:00'
+  stride: 5
+  origin_dates: null
+  warmup: 250
+  description: "Two-origin smoke backtest for local and CI testing of the NB04 pipeline.\
+    \ Uses the same tasks, horizons, and warmup as energy_oil_backtest but with only\
+    \ 2 weekly origins so the full notebook can be exercised without burning tokens\
+    \ on 51 \xD7 5 predictor evaluations."
+predictor_id: darts_lightgbm
+predictions:
+- predictor_id: darts_lightgbm
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:43:06.463669'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-09T00:00:00'
+  payload:
+    point_forecast: 61.13268325056208
+    quantiles:
+      '0.05': 57.782920474754505
+      '0.1': 57.84796709611353
+      '0.2': 58.552114378106495
+      '0.3': 59.57479026873647
+      '0.4': 59.8772522888102
+      '0.5': 61.13268325056208
+      '0.6': 61.47741324173434
+      '0.7': 61.758749273578175
+      '0.8': 62.982920920577
+      '0.9': 63.56287049739627
+      '0.95': 63.72273275904826
+  metadata:
+    covariates: []
+- predictor_id: darts_lightgbm
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:43:06.463669'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 59.57699660281611
+    quantiles:
+      '0.05': 53.87393823762879
+      '0.1': 54.49838303135908
+      '0.2': 57.48143147755339
+      '0.3': 58.342964190218005
+      '0.4': 58.957930992130386
+      '0.5': 59.57699660281611
+      '0.6': 61.67679026005494
+      '0.7': 62.585337120008724
+      '0.8': 63.43584540848077
+      '0.9': 65.14017081092562
+      '0.95': 65.26794600881145
+  metadata:
+    covariates: []
+- predictor_id: darts_lightgbm
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:43:06.463669'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-07-01T00:00:00'
+  payload:
+    point_forecast: 60.246792467779194
+    quantiles:
+      '0.05': 49.933689604264806
+      '0.1': 50.05853070598236
+      '0.2': 51.454527642663045
+      '0.3': 53.031812461609974
+      '0.4': 59.592997112784545
+      '0.5': 60.246792467779194
+      '0.6': 61.795290798359055
+      '0.7': 62.52902297806002
+      '0.8': 64.10998281674146
+      '0.9': 65.85190807916766
+      '0.95': 67.60247389803102
+  metadata:
+    covariates: []
+- predictor_id: darts_lightgbm
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:43:22.670092'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 63.462577094392934
+    quantiles:
+      '0.05': 60.2109492046679
+      '0.1': 61.81894691601062
+      '0.2': 62.45369187181517
+      '0.3': 62.853169828956155
+      '0.4': 63.401167549509395
+      '0.5': 63.462577094392934
+      '0.6': 63.99835603121276
+      '0.7': 64.8120486742576
+      '0.8': 65.13613975520222
+      '0.9': 65.93876096040427
+      '0.95': 66.62146501553704
+  metadata:
+    covariates: []
+- predictor_id: darts_lightgbm
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:43:22.670092'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-23T00:00:00'
+  payload:
+    point_forecast: 64.68949523259343
+    quantiles:
+      '0.05': 59.61176624897633
+      '0.1': 60.05034781274305
+      '0.2': 60.306512911649406
+      '0.3': 61.798960219896884
+      '0.4': 62.937576820626894
+      '0.5': 64.68949523259343
+      '0.6': 65.43951856659973
+      '0.7': 66.34911278990072
+      '0.8': 67.21870794628657
+      '0.9': 67.50460718504479
+      '0.95': 67.72656794612271
+  metadata:
+    covariates: []
+- predictor_id: darts_lightgbm
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:43:22.670092'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-07-08T00:00:00'
+  payload:
+    point_forecast: 65.13745778404771
+    quantiles:
+      '0.05': 56.33492035689469
+      '0.1': 60.30722580871687
+      '0.2': 62.94231030411888
+      '0.3': 63.63229329255781
+      '0.4': 64.58877487980614
+      '0.5': 65.13745778404771
+      '0.6': 66.08219681084708
+      '0.7': 68.4814318845046
+      '0.8': 70.28085880639257
+      '0.9': 71.58353189582436
+      '0.95': 72.28741977630654
+  metadata:
+    covariates: []
+scores:
+- 3.3508694595204993
+- 9.56815243373752
+- 3.6860151395750465
+- 7.059515221327548
+- 2.8453354716477635
+- 1.805195228733413
+metric: crps
+mean_score: 4.719180492423632
+ran_at: '2026-06-30T14:43:22.685359'
+skipped_origins: 0

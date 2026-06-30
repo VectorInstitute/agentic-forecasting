@@ -277,12 +277,176 @@ def fig_sp500_horizon_crps() -> None:
     print("[fig] sp500_horizon_crps")
 
 
+# --------------------------------------------------------------------------- #
+# Figure 4 — CRPS explainer: two forecasts, same point, CRPS vs MAE             #
+# --------------------------------------------------------------------------- #
+def _norm_pdf(x, mu, sigma):
+    z = (x - mu) / sigma
+    return np.exp(-0.5 * z * z) / (sigma * np.sqrt(2.0 * np.pi))
+
+
+def _norm_crps(mu: float, sigma: float, y: float) -> float:
+    """Closed-form CRPS of a Gaussian forecast N(mu, sigma) against scalar y.
+
+    CRPS = sigma * [ z(2Φ(z) - 1) + 2φ(z) - 1/√π ],  z = (y - mu)/sigma.
+    """
+    import math
+
+    z = (y - mu) / sigma
+    Phi = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+    phi = math.exp(-0.5 * z * z) / math.sqrt(2.0 * math.pi)
+    return sigma * (z * (2.0 * Phi - 1.0) + 2.0 * phi - 1.0 / math.sqrt(math.pi))
+
+
+def fig_crps_explainer() -> None:
+    """Didactic: two forecasts share a point (→ equal MAE); CRPS prefers the sharp one.
+
+    Both predictive distributions are centred on the same median, so a point metric
+    (MAE) cannot tell them apart. CRPS scores the whole distribution, so the sharper,
+    well-placed forecast earns the lower (better) score — Ethan's "accurate at the
+    median, tight on the intervals."
+    """
+    mu = 100.0           # shared point forecast / median of both
+    y_true = 102.0       # realized — same distance from each peak → equal MAE
+    s_sharp, s_wide = 2.8, 6.0
+
+    crps_sharp = _norm_crps(mu, s_sharp, y_true)
+    crps_wide = _norm_crps(mu, s_wide, y_true)
+    mae = abs(y_true - mu)
+    print(f"[crps] sharp={crps_sharp:.3f}  wide={crps_wide:.3f}  mae(both)={mae:.2f}")
+
+    x = np.linspace(mu - 16, mu + 18, 600)
+    fig, ax = vp.figure("side")
+
+    # Wide (worse) first so the sharp curve sits on top.
+    ax.fill_between(x, _norm_pdf(x, mu, s_wide), color=vp.BLUE, alpha=0.15, lw=0)
+    ax.plot(x, _norm_pdf(x, mu, s_wide), color=vp.BLUE, lw=1.9,
+            label=f"Wide   ·   CRPS {crps_wide:.2f}")
+    ax.fill_between(x, _norm_pdf(x, mu, s_sharp), color=vp.PINK, alpha=0.18, lw=0)
+    ax.plot(x, _norm_pdf(x, mu, s_sharp), color=vp.PINK, lw=2.2,
+            label=f"Sharp   ·   CRPS {crps_sharp:.2f}")
+
+    peak = float(_norm_pdf(mu, mu, s_sharp))
+    ymax = peak * 1.20
+    ax.set_ylim(0, ymax)
+
+    # Shared point forecast (same for both → identical MAE) and the realized value.
+    ax.axvline(mu, color=vp.MUTED, ls=(0, (3, 3)), lw=1.1)
+    ax.annotate("point (both)", xy=(mu, peak), xytext=(0, 5),
+                textcoords="offset points", ha="center", va="bottom",
+                fontsize=11, color=vp.BODY)
+    ax.axvline(y_true, color=vp.INK, lw=1.9)
+    ax.annotate("realized", xy=(y_true, ymax * 0.55), xytext=(7, 0),
+                textcoords="offset points", ha="left", va="center",
+                fontsize=11.5, color=vp.INK, fontweight="bold")
+
+    # The point→realized gap *is* the MAE — and it's the same for both forecasts.
+    y0 = peak * 0.32
+    ax.annotate("", xy=(y_true, y0), xytext=(mu, y0),
+                arrowprops=dict(arrowstyle="<->", color=vp.INK, lw=1.4))
+    ax.annotate("= MAE (same)", xy=((mu + y_true) / 2, y0), xytext=(0, -13),
+                textcoords="offset points", ha="center", va="top",
+                fontsize=11, color=vp.INK)
+
+    ax.set_xlabel("Forecast value", fontsize=11.5)
+    ax.set_yticks([])
+    ax.set_ylabel("")
+    ax.tick_params(labelsize=11)
+    ax.legend(loc="upper right", fontsize=11.5, handlelength=1.3,
+              handletextpad=0.5, borderaxespad=0.4, labelspacing=0.35)
+    ax.margins(x=0.0)
+    vp.save(fig, f"{SESSION}/crps_explainer", slot="figure")
+    print("[fig] crps_explainer")
+
+
+# --------------------------------------------------------------------------- #
+# Figure 5 — Backtest vs eval: rolling-origin design, where you draw the line   #
+# --------------------------------------------------------------------------- #
+def fig_backtest_eval_design() -> None:
+    """Schematic: rolling-origin evaluation split into a backtest window (iterate)
+    and a protected, post-training-cutoff eval window (the real scoreboard).
+
+    Step size between origins is deliberately wide so the rows render cleanly
+    (Ethan's note). The bold line is the LLM training cutoff — "where you draw it"
+    decides whether a row measures forecasting or memorized recall.
+    """
+    hist_start = 2023.6
+    cutoff = 2025.0          # ~Jan 2025 LLM training cutoff
+    horizon = 0.30           # forecast reach past each origin (years, for legibility)
+    # Origins, well spaced; three pre-cutoff (backtest), four post-cutoff (eval).
+    backtest = [2024.0, 2024.4, 2024.8]
+    evalset = [2025.2, 2025.6, 2026.0, 2026.4]
+    origins = [(o, "backtest") for o in backtest] + [(o, "eval") for o in evalset]
+
+    fig, ax = vp.figure("side")
+    n = len(origins)
+    # Top row drawn highest; later origins lower so time reads down-and-right.
+    rows = list(range(n))[::-1]
+
+    x_hi = 2026.9
+    # Region bands behind the rows.
+    ax.axvspan(hist_start - 0.15, cutoff, color=vp.MUTED, alpha=0.06, lw=0)
+    ax.axvspan(cutoff, x_hi, color=vp.GREEN, alpha=0.07, lw=0)
+
+    for (origin, kind), y in zip(origins, rows):
+        accent = vp.PINK if kind == "backtest" else vp.GREEN
+        # History the predictor may see: data ≤ origin.
+        ax.hlines(y, hist_start, origin, color=vp.MUTED, lw=3.2, alpha=0.55,
+                  capstyle="round")
+        # Forecast horizon past the origin.
+        ax.hlines(y, origin, origin + horizon, color=accent, lw=3.4,
+                  capstyle="round")
+        ax.plot([origin], [y], "o", color=vp.INK, ms=5.5, zorder=5)       # origin
+        ax.plot([origin + horizon], [y], marker="X", color=accent, ms=8,  # target
+                zorder=5, mew=0)
+
+    # The line that matters.
+    ax.axvline(cutoff, color=vp.INK, lw=2.2, ls=(0, (4, 2)), zorder=6)
+
+    ax.set_ylim(-0.7, n + 0.9)
+    ax.set_xlim(hist_start - 0.2, x_hi)
+    # Region labels along the top, with the cutoff named on the line between them.
+    ax.text(2024.0, n + 0.6, "Backtest — iterate", ha="center", va="bottom",
+            fontsize=12, color=vp.PINK, fontweight="bold")
+    ax.text(2025.95, n + 0.6, "Protected eval — score", ha="center", va="bottom",
+            fontsize=12, color=vp.GREEN, fontweight="bold")
+    ax.text(cutoff, n + 0.05, "LLM training cutoff", ha="center", va="bottom",
+            fontsize=11, color=vp.INK, fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none"), zorder=7)
+
+    ax.set_yticks([])
+    for sp in ("left", "top", "right", "bottom"):
+        ax.spines[sp].set_visible(False)
+    ax.grid(False)
+    ax.set_xticks([2024, 2025, 2026])
+    ax.set_xticklabels(["2024", "2025", "2026"], fontsize=11)
+    ax.tick_params(axis="x", length=0)
+
+    # Row-glyph legend placed *below* the axes so it never crosses a data row.
+    from matplotlib.lines import Line2D
+
+    handles = [
+        Line2D([0], [0], color=vp.MUTED, lw=3.2, alpha=0.55, label="History ≤ origin"),
+        Line2D([0], [0], marker="o", color=vp.INK, lw=0, ms=6, label="Origin"),
+        Line2D([0], [0], marker="X", color=vp.BODY, lw=0, ms=8, label="Forecast target"),
+    ]
+    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.04),
+              ncol=3, fontsize=11, frameon=False, handletextpad=0.5,
+              columnspacing=1.6)
+    vp.save(fig, f"{SESSION}/backtest_eval_design", slot="figure")
+    print("[fig] backtest_eval_design")
+
+
 def main() -> None:
     refresh = "--refresh" in sys.argv
     only = [a for a in sys.argv[1:] if not a.startswith("--")]
 
     if not only or "sp500" in only:
         fig_sp500_horizon_crps()
+    if not only or "crps_explainer" in only:
+        fig_crps_explainer()
+    if not only or any(k in only for k in ("design", "backtest_eval")):
+        fig_backtest_eval_design()
     if not only or any(k in only for k in ("cpi", "fanchart", "crps")):
         cache = build_cpi_cache(refresh=refresh)
         fig_forecast_fanchart(cache)

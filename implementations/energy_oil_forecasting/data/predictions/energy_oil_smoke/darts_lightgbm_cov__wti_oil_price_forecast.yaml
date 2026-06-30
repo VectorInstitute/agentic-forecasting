@@ -1,0 +1,204 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    payload_type: continuous
+    categories: null
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2025-06-02T00:00:00'
+  end: '2025-06-09T00:00:00'
+  stride: 5
+  origin_dates: null
+  warmup: 250
+  description: "Two-origin smoke backtest for local and CI testing of the NB04 pipeline.\
+    \ Uses the same tasks, horizons, and warmup as energy_oil_backtest but with only\
+    \ 2 weekly origins so the full notebook can be exercised without burning tokens\
+    \ on 51 \xD7 5 predictor evaluations."
+predictor_id: darts_lightgbm_cov
+predictions:
+- predictor_id: darts_lightgbm_cov
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:45:38.976159'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-09T00:00:00'
+  payload:
+    point_forecast: 60.31190307700402
+    quantiles:
+      '0.05': 57.44657767319852
+      '0.1': 57.71261930654667
+      '0.2': 58.417451552987906
+      '0.3': 59.710525247780176
+      '0.4': 60.06883380605283
+      '0.5': 60.31190307700402
+      '0.6': 60.95234303458506
+      '0.7': 61.70780707754983
+      '0.8': 62.90939174135802
+      '0.9': 63.595876573247054
+      '0.95': 65.03535603842172
+  metadata:
+    covariates:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+- predictor_id: darts_lightgbm_cov
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:45:38.976159'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 61.60399263106582
+    quantiles:
+      '0.05': 53.4663083373561
+      '0.1': 53.924284331571556
+      '0.2': 54.729617991535676
+      '0.3': 57.33044089646427
+      '0.4': 60.759657834637785
+      '0.5': 61.60399263106582
+      '0.6': 62.29879909740912
+      '0.7': 62.82992433500153
+      '0.8': 63.21288234527872
+      '0.9': 63.40518140359982
+      '0.95': 64.56660154593641
+  metadata:
+    covariates:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+- predictor_id: darts_lightgbm_cov
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:45:38.976159'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-07-01T00:00:00'
+  payload:
+    point_forecast: 59.86977830697167
+    quantiles:
+      '0.05': 52.36244318103788
+      '0.1': 53.575062035967804
+      '0.2': 56.42397882819617
+      '0.3': 57.659057711053194
+      '0.4': 58.859630832911066
+      '0.5': 59.86977830697167
+      '0.6': 60.11324409666977
+      '0.7': 60.649377809038576
+      '0.8': 63.45453917497969
+      '0.9': 65.15417885301254
+      '0.95': 65.76439062309747
+  metadata:
+    covariates:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+- predictor_id: darts_lightgbm_cov
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:47:55.554023'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 63.24018661553161
+    quantiles:
+      '0.05': 59.3123157214189
+      '0.1': 59.54282052800141
+      '0.2': 61.47216572355457
+      '0.3': 62.27553671881452
+      '0.4': 62.89088274373785
+      '0.5': 63.24018661553161
+      '0.6': 64.42358892400138
+      '0.7': 64.91484777191066
+      '0.8': 65.37015505601313
+      '0.9': 65.90061743821131
+      '0.95': 67.49273953785794
+  metadata:
+    covariates:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+- predictor_id: darts_lightgbm_cov
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:47:55.554023'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-23T00:00:00'
+  payload:
+    point_forecast: 62.65947100157509
+    quantiles:
+      '0.05': 56.377147447068054
+      '0.1': 58.81841977183855
+      '0.2': 60.99083086076138
+      '0.3': 61.120168385663725
+      '0.4': 61.297542948884804
+      '0.5': 62.65947100157509
+      '0.6': 63.6764445591871
+      '0.7': 65.06182718717872
+      '0.8': 66.08557021391569
+      '0.9': 66.96396320262804
+      '0.95': 68.05983734189594
+  metadata:
+    covariates:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+- predictor_id: darts_lightgbm_cov
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T14:47:55.554023'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-07-08T00:00:00'
+  payload:
+    point_forecast: 64.32590570639938
+    quantiles:
+      '0.05': 53.75268550820267
+      '0.1': 54.29352355084048
+      '0.2': 57.40092238918654
+      '0.3': 60.25550335069411
+      '0.4': 62.40632448090794
+      '0.5': 64.32590570639938
+      '0.6': 65.619452833898
+      '0.7': 65.78927197689187
+      '0.8': 66.76491910237674
+      '0.9': 67.39344961692366
+      '0.95': 68.47139916087009
+  metadata:
+    covariates:
+    - brent_log_ret_1b_l1b
+    - natgas_log_ret_1b_l1b
+    - gasoline_log_ret_1b_l1b
+    - gold_log_ret_1b_l1b
+    - dollar_index_log_ret_1b_l1b
+    - oil_curve_contango_l1b
+    - vix_level_l1b
+scores:
+- 3.2551483113269413
+- 9.76809160742505
+- 3.7216489061546536
+- 7.018991431634021
+- 3.7553940943564763
+- 3.1661336513983303
+metric: crps
+mean_score: 5.114234667049245
+ran_at: '2026-06-30T14:47:55.567371'
+skipped_origins: 0

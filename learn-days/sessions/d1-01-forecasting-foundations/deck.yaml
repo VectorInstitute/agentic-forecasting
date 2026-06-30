@@ -27,15 +27,16 @@ slides:
       - { eyebrow: "01", title: "Methods", accent: pink,
           desc: "A short lineage — ending at LLMs & agents." }
       - { eyebrow: "02", title: "Honest evaluation", accent: purple,
-          desc: "The shared skeleton, and the cutoff & leakage traps." }
-      - { eyebrow: "03", title: "Head-to-head", accent: blue,
-          desc: "A first result — where LLMs help, or don't." }
+          desc: "The shared skeleton, plus cutoffs, CRPS & leakage." }
+      - { eyebrow: "03", title: "A worked forecast", accent: blue,
+          desc: "Real prices, real score — where numbers-only breaks." }
     notes: |
       Three beats. A quick lineage of forecasting methods, so we share vocabulary
-      and see where LLMs and agents actually enter the story. Then the core: how
-      we measure a forecaster honestly — the evaluation skeleton, and the two
-      subtle traps, cutoffs and leakage. And finally a first head-to-head result,
-      including an honest one that sets expectations for the rest of the bootcamp.
+      and see where LLMs and agents actually enter the story. Then the core, and
+      most of the talk: how we measure a forecaster honestly — the evaluation
+      skeleton, the metric, and the two subtle traps, cutoffs and leakage. And
+      finally a worked forecast on real data that shows where a numbers-only method
+      breaks — and where context could help — setting up the rest of the bootcamp.
 
   # 3 — History of methods
   - layout: table
@@ -64,7 +65,7 @@ slides:
   - layout: statement
     statement: "Same question, same interface, same score."
     support: "A 50-year-old model and an LLM agent, judged the exact same way."
-    callout: "That's what makes a fair head-to-head possible."
+    callout: "That's what makes a fair comparison possible."
     notes: |
       Here's the organizing idea. Whether it's ARIMA or an agent that browses the
       web, every method answers the same underlying question — *what will this
@@ -127,7 +128,57 @@ slides:
       tools, by the way, you can't even enforce this structurally — a tension we
       come back to later in the bootcamp.
 
-  # 8 — One interface, any method (real code)
+  # 8 — Backtest vs. eval design (schematic)
+  - layout: figure
+    title: "Backtest vs. protected eval"
+    image: ../../assets/figures/d1-01/backtest_eval_design.png
+    caption: "Rolling-origin eval · backtest to iterate · post-cutoff to score"
+    side:
+      heading: "The cutoff is the experiment."
+      body: "Each forecast sees only its past — score on a protected post-cutoff window."
+      points:
+        - "Backtest: iterate fast"
+        - "Eval: held out, scored"
+    notes: |
+      This is how the cutoff discipline becomes an actual experiment. We evaluate
+      by *rolling the origin* — stand at a date, forecast forward, score, step
+      forward, repeat — so every forecast is made on only the data that existed at
+      its origin. That gives us two windows. A recent backtest window with lots of
+      origins, where we iterate — fast feedback while we're developing a method.
+      And a protected eval window, held out *after* the LLM's training cutoff,
+      which is the real scoreboard — the number we actually trust and report. The
+      whole game is *where you draw that line*. Draw it too early and you're
+      scoring an LLM on data it memorized; draw it in the protected region and the
+      comparison is honest. For numerical methods the entire timeline is fair, so
+      they can use the backtest window freely; for LLMs, only the right of the line
+      counts.
+
+  # 9 — What the score rewards: CRPS (didactic plot)
+  - layout: figure
+    title: What the score rewards
+    image: ../../assets/figures/d1-01/crps_explainer.png
+    caption: "Two forecasts, same point forecast — CRPS separates them, MAE can't"
+    side:
+      heading: "Right place, tight interval."
+      body: "CRPS scores the whole distribution, not just the point — sharper, well-placed wins."
+      points:
+        - "MAE sees only the point"
+        - "CRPS rewards sharpness"
+    notes: |
+      One slide on the metric, because every number in this bootcamp is a CRPS.
+      CRPS — the continuous ranked probability score — is the proper generalization
+      of absolute error to *distributions*; in fact if your forecast is a single
+      point, CRPS is exactly MAE. Here's why we use it. Both of these forecasts
+      have the *same* point forecast, so a point metric like MAE scores them
+      identically — the gap to the realized value is the same for both. But they
+      are clearly not equally good: the sharp pink forecast put its probability
+      mass right where the truth landed, and CRPS rewards that — 1.20 versus 1.67,
+      lower is better. CRPS rewards being accurate at the median *and* tight on the
+      intervals — and, crucially, it punishes the opposite: confidently sharp and
+      *wrong* scores worse than honestly wide. That calibration-and-sharpness
+      tradeoff is exactly what we want a forecast score to enforce.
+
+  # 10 — One interface, any method (real code)
   - layout: code
     title: One interface, any method
     language: python
@@ -154,7 +205,7 @@ slides:
       all return the same `Prediction`. That's the surface anyone implements to add
       a new method.
 
-  # 9 — A forecast, and where it fails
+  # 11 — A forecast, and where it fails
   - layout: figure
     title: A forecast — and where it breaks
     image: ../../assets/figures/d1-01/cpi_forecast_fanchart.png
@@ -174,7 +225,7 @@ slides:
       they're the 2020 COVID crash and the 2022 surge. The model can't see the news
       driving those moves. That's the gap context-aware methods are supposed to fill.
 
-  # 10 — The error isn't random
+  # 12 — The error isn't random
   - layout: figure
     title: The error clusters at the shocks
     image: ../../assets/figures/d1-01/cpi_crps_over_time.png
@@ -194,25 +245,7 @@ slides:
       failure mode is shared — both are blind at exactly the moments that matter.
       So… can a method that reads the news do better?
 
-  # 11 — The honest head-to-head
-  - layout: figure_full
-    title: An honest head-to-head
-    image: ../../assets/figures/d1-01/sp500_horizon_crps.png
-    caption: "S&P 500 daily log-returns · mean CRPS by horizon · same covariate panel for both"
-    callout: "Same covariates — LightGBM still won every horizon. Established methods are the bar."
-    notes: |
-      Here's the honest result, and I think it's the most useful slide in the talk.
-      On the S&P 500 — one of the hardest, most efficient forecasting problems
-      there is — we gave an LLM-Process the *same* covariate panel the
-      gradient-boosting models get. It did *not* beat them: LightGBM has the lower
-      CRPS at every horizon — one day, one week, one month. That's exactly the
-      right expectation to set. Bolting an LLM onto a hard problem is not an
-      automatic win; established methods with good covariates are the benchmark to
-      beat. That doesn't mean don't explore — exploration is warranted, and the
-      rest of the bootcamp is about doing it well — it means explore with honest
-      evaluation, not hype.
-
-  # 12 — What to take forward
+  # 13 — What to take forward
   - layout: cards_dense
     title: What to take forward
     columns: 3
@@ -220,17 +253,18 @@ slides:
     cards:
       - { eyebrow: "01", title: "Honest evaluation, always", accent: pink,
           desc: "One interface, strict cutoffs, protected evals — for every method." }
-      - { eyebrow: "02", title: "Established methods are strong", accent: purple,
-          desc: "Especially with good covariates on hard markets." }
+      - { eyebrow: "02", title: "Established methods set the bar", accent: purple,
+          desc: "A real classical model clearly beats the naive floor — tough to top." }
       - { eyebrow: "03", title: "Agents earn their place", accent: blue,
-          desc: "By bringing new context and reasoning — tested, not assumed." }
+          desc: "By bringing context and reasoning at the shocks — tested, not assumed." }
     callout: "Up next: the conventional methods that set the bar — over to Behnoosh."
     notes: |
       Three things to carry forward. First, honest evaluation is the through-line
       of everything we'll do — one interface, strict cutoffs, protected evals, no
-      exceptions. Second, the established methods are strong, especially when good
-      covariates are available, so they're the bar every new idea has to clear.
-      Third, agents earn their place by bringing something the classical methods
-      can't — new context, reasoning — and we'll hold them to the same honest
-      standard. To start, Behnoosh is going to take us deep on those conventional
-      methods that set the bar. Over to you.
+      exceptions. Second, the established methods set the bar: even a plain
+      AutoARIMA clearly beats the naive floor, so a classical method is the
+      benchmark every new idea has to clear. Third, agents earn their place by
+      bringing something the classical methods can't — context and reasoning,
+      exactly at the shocks where the numbers-only models went blind — and we hold
+      them to the same honest standard. To start, Behnoosh is going to take us deep
+      on those conventional methods that set the bar. Over to you.

@@ -49,6 +49,16 @@ defects therefore have to be caught where the figure is *built*, not at deck-bui
    enough to clear **~9pt on the slide**.
 2. **Labels straddling a box border.** A diagram label that crosses the edge of its
    box can't be nudged in a PowerPoint editor — it ships broken.
+3. **Text colliding with other text *inside* the figure.** The guard checks font size
+   and box borders, but it **cannot see a legend sitting on top of an annotation, a
+   label crossing a data row, or a reference-line label struck through by its own
+   line** — to it those are just dark pixels. So author defensively: place legends in
+   an empty band or *outside* the axes (`bbox_to_anchor` below the plot) rather than
+   over the data; keep annotations out of the legend's quadrant; mask a vertical-line
+   label with a white `bbox` so the line doesn't run through it. Then **read every
+   figure at full size** — these collisions only show up by eye. (Three of these bit
+   the d1-01 rebuild: a legend over the bottom data rows, a legend overlapping the
+   cutoff label, and an annotation overlapping the legend.)
 
 Use the skill's guard from your figure script (it raises, listing offenders):
 

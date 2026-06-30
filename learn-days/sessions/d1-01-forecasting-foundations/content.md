@@ -11,28 +11,32 @@ status: built — visual rebuild (real plots + code) passing validate-deck; pend
 > **Speaker-ready content for iteration.** Concept → code, full talk track, and a
 > storyboard that maps 1:1 to `deck.yaml`. Audience: technical, mixed forecasting
 > background — explain forecasting concepts (CRPS, cutoff, backtesting); assume
-> Python/LLM/agent fluency. ≈12 slides / 20 min.
+> Python/LLM/agent fluency. ≈13 slides / 20 min.
 >
-> **Spine (confirmed):** the honest **numerical-vs-LLM/agent head-to-head** and the
-> evaluation discipline that makes it fair. The grand "agents as forecasters / agents
-> as prediction analysts" (Track 1/Track 2) duality and the domain menu belong to the
-> **intro** (built last) — foundations stays narrow. Closes on the S&P 500 finding
-> (LLM-Process didn't beat gradient boosting + covariates) as the segue into Behnoosh's
-> conventional-methods session.
+> **Spine (confirmed):** **honest evaluation is the foundation** — the discipline that
+> makes a 50-year-old model and an LLM agent comparable at all. Foundations stays a
+> *methodology* talk: the five-part eval skeleton, the metric (CRPS), the cutoff /
+> backtest-vs-eval discipline, and the one interface — then a worked forecast that shows
+> where numbers-only methods break. The numerical-vs-LLM **head-to-head results** move
+> to later sessions; the "agents as forecasters / agents as prediction analysts" duality
+> and the domain menu belong to the **intro** (built last). Closes on the gasoline
+> AutoARIMA forecast (strong, but blind at the shocks where context could help) as the
+> segue into Behnoosh's conventional-methods session.
 
 ## Thesis
 
 To know whether LLMs and agents can actually forecast, you have to compare them
-*honestly* against established methods. This session is how: one interface, strict
-cutoffs, protected evals — and an honest first result that says exploration is
-warranted but the established methods are still the bar.
+*honestly* against established methods — same task, same interface, same score, strict
+cutoffs, protected evals. This session is that discipline, end to end, closing on a
+worked forecast that shows exactly where a numbers-only method runs out of road.
 
 ## Narrative arc
 
 A brief lineage of methods (ending at LLMs/agents) → to compare them fairly they must
-answer the same question the same way → the evaluation skeleton + the one interface →
-the honesty crux (cutoff discipline + the LLM training-cutoff leakage trap) → a first
-head-to-head + the honest S&P 500 priming → hand to conventional methods.
+answer the same question the same way → the evaluation skeleton → the honesty crux
+(cutoff discipline + the LLM training-cutoff leakage trap) → the backtest-vs-eval split
+that operationalizes it → the metric that scores it (CRPS) → the one interface → a
+worked forecast where numbers-only breaks at the shocks → hand to conventional methods.
 
 ## Code grounding (quick reference)
 
@@ -67,14 +71,15 @@ something."
 ### 2 — Agenda · `icon_cards`
 **On slide:** title "What we'll cover". Cards:
 - `chart` — **Methods** · items: ["A short lineage", "…ending at LLMs & agents"]
-- `flask` — **Honest evaluation** · items: ["The shared skeleton", "Cutoffs & leakage"]
-- `search` — **Head-to-head** · items: ["A first result", "Where LLMs help — or don't"]
+- `flask` — **Honest evaluation** · items: ["The shared skeleton", "Cutoffs, CRPS & leakage"]
+- `search` — **A worked forecast** · items: ["Real prices, real score", "Where numbers-only breaks"]
 
 **Speaker notes:** "Three beats. A quick lineage of forecasting methods, so we share
-vocabulary and see where LLMs and agents actually enter the story. Then the core: how
-we measure a forecaster honestly — the evaluation skeleton, and the two subtle traps,
-cutoffs and leakage. And finally a first head-to-head result, including an honest one
-that sets expectations for the rest of the bootcamp."
+vocabulary and see where LLMs and agents actually enter the story. Then the core, and
+most of the talk: how we measure a forecaster honestly — the evaluation skeleton, the
+metric, and the two subtle traps, cutoffs and leakage. And finally a worked forecast on
+real data that shows where a numbers-only method breaks — and where context could help —
+which sets up the rest of the bootcamp."
 
 ### 3 — History of methods · `table`
 **On slide:** title "A short history of methods".
@@ -99,7 +104,7 @@ to compare them fairly."
 ### 4 — Thesis · `statement`
 **On slide:** statement '"To compare them, they must answer the same way."' support:
 "A 50-year-old model and an LLM agent — one shared interface, one shared task." callout:
-"That's what makes a fair head-to-head possible."
+"That's what makes a fair comparison possible."
 
 **Speaker notes:** "Here's the organizing idea. Whether it's ARIMA or an agent that
 browses the web, every method answers the same underlying question — *what will this
@@ -151,7 +156,52 @@ iterate, and a protected, held-out window as the real scoreboard. For agents wit
 web tools, by the way, you can't even enforce this structurally — a tension we come back
 to later in the bootcamp."
 
-### 8 — One interface, any method · `code` (real code block + side rail)
+### 8 — Backtest vs. eval: where you draw the line · `figure` (schematic + rail)
+**On slide:** title "Backtest vs. eval: where you draw the line". Schematic
+(`backtest_eval_design.png`): rolling-origin evaluation — seven origins stepped forward,
+each seeing only data ≤ its origin, with a forecast horizon past it; a bold dashed line
+at the ~Jan-2025 LLM training cutoff splits a *backtest* window (iterate) from a
+*protected eval* window (score). caption "Rolling-origin evaluation · backtest window
+(iterate) vs protected post-cutoff eval (score)". Side rail: "The cutoff is the
+experiment." · "Roll the origin forward; each forecast sees only its own past. Iterate on
+a recent backtest — but the score that counts comes from a window held out *after* the
+LLM's training cutoff." · points: ["Backtest: many origins, fast feedback", "Eval: held
+out, post-cutoff — the real scoreboard"].
+
+**Speaker notes:** "This is how the cutoff discipline becomes an actual experiment. We
+evaluate by *rolling the origin* — stand at a date, forecast forward, score, step
+forward, repeat — so every forecast is made on only the data that existed at its origin.
+That gives us two windows. A recent **backtest** window with lots of origins, which is
+where we iterate — fast feedback while we're developing a method. And a **protected eval**
+window, held out *after* the LLM's training cutoff, which is the real scoreboard — the
+number we actually trust and report. The whole game is *where you draw that line*. Draw it
+too early and you're scoring an LLM on data it memorized; draw it in the protected region
+and the comparison is honest. For numerical methods the entire timeline is fair, so they
+can use the backtest window freely; for LLMs, only the right of the line counts."
+
+### 9 — What the score rewards: CRPS · `figure` (didactic plot + rail)
+**On slide:** title "What the score rewards". Didactic plot (`crps_explainer.png`): two
+predictive distributions over the same outcome axis with the *same* point forecast (so
+identical MAE) — one sharp, one wide — the realized value marked, and each labeled with
+its CRPS. caption "Two forecasts, same point forecast — CRPS separates them, MAE can't".
+Side rail: "Right place, tight interval." · "CRPS scores the whole predictive
+distribution, not just the point. Same median → same MAE; the sharper, well-placed
+forecast earns the lower CRPS." · points: ["MAE sees only the point", "CRPS rewards
+calibration *and* sharpness"].
+
+**Speaker notes:** "One slide on the metric, because every number in this bootcamp is a
+CRPS. CRPS — the continuous ranked probability score — is the proper generalization of
+absolute error to *distributions*; in fact if your forecast is a single point, CRPS is
+exactly MAE. Here's why we use it. Both of these forecasts have the *same* point forecast,
+so a point metric like MAE scores them identically — the gap to the realized value is the
+same for both. But they are clearly not equally good: the sharp pink forecast put its
+probability mass right where the truth landed, and CRPS rewards that — 1.20 versus 1.67,
+lower is better. CRPS rewards being accurate at the median *and* tight on the intervals —
+and, crucially, it punishes the opposite: confidently sharp and *wrong* scores worse than
+honestly wide. That calibration-and-sharpness tradeoff is exactly what we want a forecast
+score to enforce."
+
+### 10 — One interface, any method · `code` (real code block + side rail)
 **On slide:** dark syntax-highlighted panel showing the `Predictor` ABC
 (`class Predictor(ABC)` / `@abstractmethod def predict(self, task, context): ...  ->
 list[Prediction]`); caption `aieng/forecasting/evaluation/predictor.py`. Side rail:
@@ -166,7 +216,7 @@ series into a prompt; an agent runs a multi-step tool loop — and to the evalua
 harness they're indistinguishable, because they all return the same `Prediction`. That's
 the surface anyone implements to add a new method."
 
-### 9 — A forecast, and where it breaks · `figure` (plot + rail)
+### 11 — A forecast, and where it breaks · `figure` (plot + rail)
 **On slide:** title "A forecast — and where it breaks". Real plot
 (`cpi_forecast_fanchart.png`): rolling 1-month AutoARIMA forecast of CPI Gasoline vs the
 realized series, 90% interval, ✕ on the biggest misses. caption "CPI Gasoline · 1-month
@@ -182,7 +232,7 @@ the biggest misses, the ✕'s, aren't random: they're the 2020 COVID crash and t
 surge. The model can't see the news driving those moves. That's the gap context-aware
 methods are supposed to fill."
 
-### 10 — The error clusters at the shocks · `figure` (plot + rail)
+### 12 — The error clusters at the shocks · `figure` (plot + rail)
 **On slide:** title "The error clusters at the shocks". Real plot
 (`cpi_crps_over_time.png`): per-origin CRPS for Naive vs AutoARIMA, 2000–2025, with
 2008/2020/2022 marked. caption "Per-origin CRPS · Naive vs AutoARIMA · 301 origins,
@@ -197,39 +247,23 @@ But look *when* the error lives: both models spike together at 2008, 2020, 2022.
 average improvement is real, and the failure mode is shared — both are blind at exactly
 the moments that matter. So… can a method that reads the news do better?"
 
-### 11 — An honest head-to-head · `figure_full` (plot + callout)
-**On slide:** title "An honest head-to-head". Real plot (`sp500_horizon_crps.png`):
-per-horizon mean CRPS, LightGBM vs LLM-Process (each ±covariates), h = 1/5/21 business
-days. caption "S&P 500 daily log-returns · mean CRPS by horizon · same covariate panel
-for both". callout: "Same covariates — LightGBM still won every horizon. Established
-methods are the bar."
-
-**Speaker notes:** "Here's the honest result, and I think it's the most useful slide in
-the talk. On the S&P 500 — one of the hardest, most efficient forecasting problems there
-is — we gave an LLM-Process the *same* covariate panel the gradient-boosting models get.
-It did *not* beat them: LightGBM has the lower CRPS at every horizon — one day, one week,
-one month. That's exactly the right expectation to set. Bolting an LLM onto a hard
-problem is not an automatic win; established methods with good covariates are the
-benchmark to beat. That doesn't mean don't explore — exploration is warranted, and the
-rest of the bootcamp is about doing it well — it means explore with honest evaluation,
-not hype."
-
-### 12 — What to take forward · `cards_dense` (3-up, outline)
+### 13 — What to take forward · `cards_dense` (3-up, outline)
 **On slide:** title "What to take forward".
 - `check` — **Honest evaluation is the through-line** · "One interface, strict cutoffs,
   protected evals — for every method."
-- `chart` — **Established methods are strong** · "Especially with good covariates on
-  hard markets."
-- `search` — **Agents earn their place** · "By bringing new context and reasoning —
-  tested, not assumed."
+- `chart` — **Established methods set the bar** · "A real classical model clearly beats
+  the naive floor — strong, and tough to top."
+- `search` — **Agents earn their place** · "By bringing context and reasoning at the
+  shocks — tested, not assumed."
 callout: "Up next: the conventional methods that set the bar — over to Behnoosh."
 
 **Speaker notes:** "Three things to carry forward. First, honest evaluation is the
 through-line of everything we'll do — one interface, strict cutoffs, protected evals, no
-exceptions. Second, the established methods are strong, especially when good covariates
-are available, so they're the bar every new idea has to clear. Third, agents earn their
-place by bringing something the classical methods can't — new context, reasoning — and
-we'll hold them to the same honest standard. To start, Behnoosh is going to take us deep
+exceptions. Second, the established methods set the bar: even a plain AutoARIMA clearly
+beats the naive floor, so a classical method is the benchmark every new idea has to
+clear. Third, agents earn their place by bringing something the classical methods can't —
+context and reasoning, exactly at the shocks where the numbers-only models went blind —
+and we hold them to the same honest standard. To start, Behnoosh is going to take us deep
 on those conventional methods that set the bar. Over to you."
 
 ---
@@ -240,20 +274,25 @@ on those conventional methods that set the bar. Over to you."
   the style of the bootcamp Call-for-Participation reference deck. New `vector-slides`
   layouts (`figure`, `figure_full`, `code`, `cards_dense`, `title_photo`) were added to
   support it — see `SKILL-NOTES.md`.
-- **All three figures are real, from repo data**, regenerable via
+- **Methodology rebalance (Jun 2026, Ethan review).** Foundations is now a pure
+  *methodology* talk. Two slides added in the eval section — a **backtest-vs-eval design**
+  schematic (slide 8) and a **CRPS metric explainer** (slide 9) — to fill the two biggest
+  gaps for a mixed audience: the deck named CRPS and the cutoff discipline but never
+  *showed* either. The **S&P 500 head-to-head was dropped** (it now belongs to the later
+  results sessions); foundations closes on the gasoline forecast where numbers-only breaks.
+- **Figures — real or honest schematic**, regenerable via
   `learn-days/assets/plotting/figures_d1_01.py`:
-  - Gasoline forecast + CRPS-over-time: AutoARIMA/Naive backtest of CPI Gasoline (StatCan
-    18-10-0004-11), means **10.11 / 8.45** over **301** origins (matches the committed
-    `02_cpi_backtest_demo.ipynb` numbers).
-  - S&P 500 head-to-head: cached `data/predictions/sp500_backtest_2025/*.yaml`. Real
-    per-horizon mean CRPS — **LightGBM beat LLM-Process at every horizon** even with the
-    same covariates (e.g. h=1: 0.0044 vs 0.0057). Note this is *stronger* than the earlier
-    "matched but didn't beat" framing — the slide now says, accurately, that the LLM
-    *didn't beat* gradient boosting.
-- **Cut from the earlier draft:** the "Two ways to run it" (backtest vs evaluate) compare
-  slide, to make room for the three figures. The backtest/evaluate discipline still lands
-  via slide 7's cutoff/leakage crux; re-add a slide if 20 min has room.
-- Dropped the "4 domains / use cases" slide — the **intro** owns the domain menu.
+  - Gasoline forecast + CRPS-over-time (slides 11–12): AutoARIMA/Naive backtest of CPI
+    Gasoline (StatCan 18-10-0004-11), means **10.11 / 8.45** over **301** origins (matches
+    `02_cpi_backtest_demo.ipynb`).
+  - CRPS explainer (slide 9): a didactic two-distribution panel with **closed-form CRPS**
+    (Gaussian) computed in-script — same point forecast → equal MAE (2.0), sharp **1.20**
+    vs wide **1.67**. Illustrative by design (it's a metric definition), not repo data.
+  - Backtest-vs-eval design (slide 8): a rolling-origin schematic with the ~Jan-2025 LLM
+    training cutoff splitting backtest from protected eval. Dates illustrative; consistent
+    with slide 7's "~Jan 2025" claim.
+- **Cut earlier:** the "Two ways to run it" compare slide — its content is now the slide-8
+  schematic. The "4 domains / use cases" slide — the **intro** owns the domain menu.
 - No `end` slide — foundations hands directly to Behnoosh on the takeaways callout.
 - Title slide is `title_photo` with no photo → renders the gradient hero. Drop an
   `image:` path in `deck.yaml` slide 1 to use a photo (reference slide 1 style).
