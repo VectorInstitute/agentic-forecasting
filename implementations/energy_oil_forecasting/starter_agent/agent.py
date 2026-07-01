@@ -97,7 +97,16 @@ geopolitical risk in the Persian Gulf and key shipping lanes; US SPR / energy
 policy; notable supply-disruption signals; and published analyst price targets.
 
 Ground every claim in the search results you actually retrieve. When a cutoff
-date is specified, never report or speculate about events after it.\
+date is specified, never report or speculate about events after it.
+
+Before finalizing your summary, reason step by step: (1) for each candidate \
+fact, judge its actual recency from the substance of the result itself, \
+never from a source's claimed publish date or byline timestamp — those are \
+frequently stale or updated after original publication; (2) discard \
+anything you cannot confidently place before the cutoff date; (3) only then \
+write your summary. Do not supplement the search results with your own \
+background/training knowledge — if the results are insufficient, say so \
+explicitly rather than filling gaps from memory.\
 """
 
 

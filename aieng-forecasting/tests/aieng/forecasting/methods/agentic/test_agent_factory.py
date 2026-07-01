@@ -390,9 +390,7 @@ class TestSearchToolLeakageVerification:
     async def test_immediate_accept_on_first_attempt(self) -> None:
         """A clean, confident verdict on the first attempt is accepted without retry."""
         config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
-        tool = _build_search_tool(
-            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
-        )
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
         calls: list[dict] = []
 
         async def _fake_acompletion(**kwargs):  # type: ignore[override]
@@ -411,9 +409,7 @@ class TestSearchToolLeakageVerification:
     async def test_retry_then_accept(self) -> None:
         """A flagged first attempt retries with feedback and succeeds on the second."""
         config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
-        tool = _build_search_tool(
-            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
-        )
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
         calls: list[dict] = []
         verify_call_count = 0
 
@@ -441,9 +437,7 @@ class TestSearchToolLeakageVerification:
     async def test_exhaustion_returns_sentinel(self) -> None:
         """Never-clean verdicts return the failure sentinel, not risky content."""
         config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
-        tool = _build_search_tool(
-            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
-        )
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
         calls: list[dict] = []
 
         async def _fake_acompletion(**kwargs):  # type: ignore[override]
@@ -463,9 +457,7 @@ class TestSearchToolLeakageVerification:
     async def test_verifier_skipped_when_no_cutoff_date(self) -> None:
         """No cutoff_date means nothing to verify against — single search call only."""
         config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
-        tool = _build_search_tool(
-            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
-        )
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
         calls: list[dict] = []
 
         async def _fake_acompletion(**kwargs):  # type: ignore[override]
@@ -482,9 +474,7 @@ class TestSearchToolLeakageVerification:
     async def test_verifier_skipped_when_enforce_cutoff_false(self) -> None:
         """enforce_cutoff=False skips the verifier even when cutoff_date is passed."""
         config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.", enforce_cutoff=False)
-        tool = _build_search_tool(
-            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
-        )
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
         calls: list[dict] = []
 
         async def _fake_acompletion(**kwargs):  # type: ignore[override]
@@ -501,9 +491,7 @@ class TestSearchToolLeakageVerification:
     async def test_verifier_uses_configured_model_default(self) -> None:
         """The verifier call defaults to ADVANCED_MODEL, distinct from search_model."""
         config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
-        tool = _build_search_tool(
-            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
-        )
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
         calls: list[dict] = []
 
         async def _fake_acompletion(**kwargs):  # type: ignore[override]
@@ -529,9 +517,7 @@ class TestSearchToolLeakageVerification:
                 instruction="Search assistant.",
                 verifier_confidence_threshold=threshold,
             )
-            tool = _build_search_tool(
-                config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
-            )
+            tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
             calls: list[dict] = []
 
             async def _fake_acompletion(**kwargs):  # type: ignore[override]
@@ -556,9 +542,7 @@ class TestSearchToolLeakageVerification:
     async def test_verifier_parse_failure_is_treated_as_non_clean(self) -> None:
         """A malformed verifier response consumes a retry attempt instead of raising."""
         config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
-        tool = _build_search_tool(
-            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
-        )
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
         calls: list[dict] = []
 
         async def _fake_acompletion(**kwargs):  # type: ignore[override]
