@@ -434,9 +434,7 @@ def _build_search_tool(
             )
             if verdict.clean and verdict.confidence >= config.verifier_confidence_threshold:
                 return _format_result(verdict.filtered_text, sources)
-            logger.warning(
-                "search_web attempt %d flagged %d claim(s); retrying.", attempt, len(verdict.flagged_claims)
-            )
+            logger.warning("search_web attempt %d flagged %d claim(s); retrying.", attempt, len(verdict.flagged_claims))
             negative_guidance = (
                 f"Your previous search result may have included information published on or after "
                 f"{cutoff_date}. Do not repeat or rely on these claims:\n- "
