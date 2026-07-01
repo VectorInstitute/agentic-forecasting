@@ -1,6 +1,7 @@
 """Tests for generic ADK agent configuration helpers."""
 
 import inspect
+import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -13,6 +14,7 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     build_adk_agent,
 )
 from aieng.forecasting.methods.agentic.outputs import ContinuousAgentForecastOutput
+from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
 from google.adk.models.lite_llm import LiteLlm
 from pydantic import ValidationError
 
@@ -353,3 +355,223 @@ class TestBuildSearchTool:
 
         assert "https://example.com/wti" in result
         assert "https://example.com/opec" in result
+
+
+class TestSearchToolLeakageVerification:
+    """search_web wraps grounded results in an independent leakage verifier."""
+
+    @staticmethod
+    def _search_response(content: str) -> MagicMock:
+        resp = MagicMock()
+        resp.choices[0].message.content = content
+        resp.choices[0].provider_specific_fields = {}
+        return resp
+
+    @staticmethod
+    def _verify_response(
+        *,
+        clean: bool,
+        confidence: int,
+        filtered_text: str = "clean summary",
+        flagged_claims: list[str] | None = None,
+    ) -> MagicMock:
+        payload = {
+            "flagged_claims": flagged_claims or [],
+            "filtered_text": filtered_text,
+            "confidence": confidence,
+            "clean": clean,
+        }
+        resp = MagicMock()
+        resp.choices[0].message.content = json.dumps(payload)
+        resp.choices[0].provider_specific_fields = {}
+        return resp
+
+    @pytest.mark.asyncio
+    async def test_immediate_accept_on_first_attempt(self) -> None:
+        """A clean, confident verdict on the first attempt is accepted without retry."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(
+            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
+        )
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            if kwargs["model"] == f"openai/{config.verifier_model}":
+                return self._verify_response(clean=True, confidence=9, filtered_text="Clean summary.")
+            return self._search_response("Raw summary with a source.")
+
+        with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+            result = await tool(query="WTI price", cutoff_date="2024-01-15")
+
+        assert len(calls) == 2
+        assert result == "Clean summary."
+
+    @pytest.mark.asyncio
+    async def test_retry_then_accept(self) -> None:
+        """A flagged first attempt retries with feedback and succeeds on the second."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(
+            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
+        )
+        calls: list[dict] = []
+        verify_call_count = 0
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            nonlocal verify_call_count
+            calls.append(kwargs)
+            if kwargs["model"] == f"openai/{config.verifier_model}":
+                verify_call_count += 1
+                if verify_call_count == 1:
+                    return self._verify_response(
+                        clean=False, confidence=3, flagged_claims=["OPEC+ raised output in March 2025"]
+                    )
+                return self._verify_response(clean=True, confidence=9, filtered_text="Clean summary.")
+            return self._search_response("Raw summary with a source.")
+
+        with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+            result = await tool(query="WTI price", cutoff_date="2024-01-15")
+
+        assert len(calls) == 4
+        assert result == "Clean summary."
+        second_search_user_msg = next(m for m in calls[2]["messages"] if m["role"] == "user")
+        assert "OPEC+ raised output in March 2025" in second_search_user_msg["content"]
+
+    @pytest.mark.asyncio
+    async def test_exhaustion_returns_sentinel(self) -> None:
+        """Never-clean verdicts return the failure sentinel, not risky content."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(
+            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
+        )
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            if kwargs["model"] == f"openai/{config.verifier_model}":
+                return self._verify_response(clean=False, confidence=2, flagged_claims=["still leaking"])
+            return self._search_response("Raw summary with a source.")
+
+        with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+            result = await tool(query="WTI price", cutoff_date="2024-01-15")
+
+        assert len(calls) == config.verifier_max_attempts * 2
+        assert result.startswith("[SEARCH_VERIFICATION_FAILED]")
+        assert "2024-01-15" in result
+
+    @pytest.mark.asyncio
+    async def test_verifier_skipped_when_no_cutoff_date(self) -> None:
+        """No cutoff_date means nothing to verify against — single search call only."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(
+            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
+        )
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            return self._search_response("Raw summary.")
+
+        with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+            result = await tool(query="WTI price")
+
+        assert len(calls) == 1
+        assert result == "Raw summary."
+
+    @pytest.mark.asyncio
+    async def test_verifier_skipped_when_enforce_cutoff_false(self) -> None:
+        """enforce_cutoff=False skips the verifier even when cutoff_date is passed."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.", enforce_cutoff=False)
+        tool = _build_search_tool(
+            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
+        )
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            return self._search_response("Raw summary.")
+
+        with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+            result = await tool(query="WTI price", cutoff_date="2024-01-15")
+
+        assert len(calls) == 1
+        assert result == "Raw summary."
+
+    @pytest.mark.asyncio
+    async def test_verifier_uses_configured_model_default(self) -> None:
+        """The verifier call defaults to ADVANCED_MODEL, distinct from search_model."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(
+            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
+        )
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            if kwargs["model"] == f"openai/{config.verifier_model}":
+                return self._verify_response(clean=True, confidence=9, filtered_text="Clean.")
+            return self._search_response("Raw.")
+
+        with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+            await tool(query="WTI price", cutoff_date="2024-01-15")
+
+        models_used = {c["model"] for c in calls}
+        assert f"openai/{ADVANCED_MODEL}" in models_used
+        assert f"openai/{LITE_MODEL}" in models_used
+
+    @pytest.mark.asyncio
+    async def test_verifier_confidence_threshold_is_configurable(self) -> None:
+        """Confidence 6 is rejected at threshold=8, accepted at threshold=5."""
+
+        async def _run(threshold: int) -> tuple[str, int]:
+            config = ContextRetrievalConfig(
+                enabled=True,
+                instruction="Search assistant.",
+                verifier_confidence_threshold=threshold,
+            )
+            tool = _build_search_tool(
+                config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
+            )
+            calls: list[dict] = []
+
+            async def _fake_acompletion(**kwargs):  # type: ignore[override]
+                calls.append(kwargs)
+                if kwargs["model"] == f"openai/{config.verifier_model}":
+                    return self._verify_response(clean=True, confidence=6, filtered_text="Borderline.")
+                return self._search_response("Raw.")
+
+            with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+                result = await tool(query="WTI price", cutoff_date="2024-01-15")
+            return result, len(calls)
+
+        rejected_result, rejected_calls = await _run(threshold=8)
+        accepted_result, accepted_calls = await _run(threshold=5)
+
+        assert rejected_result.startswith("[SEARCH_VERIFICATION_FAILED]")
+        assert rejected_calls == 6  # exhausted the default 3 attempts
+        assert accepted_result == "Borderline."
+        assert accepted_calls == 2  # accepted on the first attempt
+
+    @pytest.mark.asyncio
+    async def test_verifier_parse_failure_is_treated_as_non_clean(self) -> None:
+        """A malformed verifier response consumes a retry attempt instead of raising."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(
+            config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key"
+        )
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            if kwargs["model"] == f"openai/{config.verifier_model}":
+                resp = MagicMock()
+                resp.choices[0].message.content = "not json at all"
+                resp.choices[0].provider_specific_fields = {}
+                return resp
+            return self._search_response("Raw.")
+
+        with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+            result = await tool(query="WTI price", cutoff_date="2024-01-15")
+
+        assert len(calls) == config.verifier_max_attempts * 2
+        assert result.startswith("[SEARCH_VERIFICATION_FAILED]")
