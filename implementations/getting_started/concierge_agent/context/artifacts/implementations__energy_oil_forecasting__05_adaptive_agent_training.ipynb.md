@@ -8,12 +8,12 @@ kind: notebook
 
 > **Part 5 of 7.** Builds on the stateless backtest in [`04_systematic_backtest_eval.ipynb`](04_systematic_backtest_eval.ipynb).
 
-Every method in Notebook 4 was **stateless** — configured once, run the same way each time.  
+Every method in Notebook 4 was **stateless** — configured once, run the same way each time.
 This notebook introduces an agent that is different: it can **learn from experience**.
 
-The paradigm shift: instead of configuring a model, we onboard an analyst.  
-We give the analyst a task, historical data, and a set of tools.  
-The analyst explores the data, draws conclusions, and decides whether to update  
+The paradigm shift: instead of configuring a model, we onboard an analyst.
+We give the analyst a task, historical data, and a set of tools.
+The analyst explores the data, draws conclusions, and decides whether to update
 its own forecasting strategy — governed by evidence rules in its `meta-learning` skill.
 
 **What this notebook produces:**
@@ -73,11 +73,11 @@ print(f"  Trained: {TRAINED_STRATEGY_DIR}")
 ---
 ## 1. Before — The Agent's Starting State
 
-The seed strategy (`wti-strategy/`) contains domain priors: a sensible initial  
-approach, but no evidence-backed calibration corrections.  
+The seed strategy (`wti-strategy/`) contains domain priors: a sensible initial
+approach, but no evidence-backed calibration corrections.
 It is the same strategy the **untrained agent** uses in Notebook 6.
 
-The trained variant starts from an identical copy of this seed.  
+The trained variant starts from an identical copy of this seed.
 Set `RESEED = True` in Setup if you want to reset it before a fresh study run.
 
 ## Cell 5 (code)
@@ -108,7 +108,7 @@ print((SEED_STRATEGY_DIR / "SKILL.md").read_text())
 ---
 ## 2. Self-Directed Study
 
-We give the agent one open-ended analytical task: explore 2025 WTI price data  
+We give the agent one open-ended analytical task: explore 2025 WTI price data
 and assess whether its current forecasting approach is well-calibrated.
 
 The agent has access to:
@@ -118,10 +118,10 @@ The agent has access to:
 - `meta-learning` — evidence governance rules for updating strategy
 - Strategy mutation tools — to record observations, open hypotheses, and apply corrections
 
-The agent decides what to compute, what conclusions to draw, and whether any  
+The agent decides what to compute, what conclusions to draw, and whether any
 finding clears the evidence bar for updating its `wti-strategy-trained/` skill.
 
-> **Run guard:** `RUN_STUDY = False` by default — the trained strategy state  
+> **Run guard:** `RUN_STUDY = False` by default — the trained strategy state
 > is committed so this notebook runs reproducibly without live API calls.
 
 ## Cell 7 (code)
@@ -175,7 +175,7 @@ else:
 ---
 ## 3. After — What the Agent Learned
 
-The cell below shows the trained strategy state.  
+The cell below shows the trained strategy state.
 Look at what changed relative to the clean seed:
 
 - **Observations**: patterns the agent noticed during analysis
@@ -183,7 +183,7 @@ Look at what changed relative to the clean seed:
 - **Calibration corrections**: confirmed adjustments now applied at inference
 - **Approach narrative**: how the agent describes its own strategy in its own words
 
-These are the changes that will be active when the agent makes predictions  
+These are the changes that will be active when the agent makes predictions
 in Notebook 6.
 
 ## Cell 9 (code)
@@ -228,9 +228,9 @@ print((TRAINED_STRATEGY_DIR / "SKILL.md").read_text())
 ---
 ## 4. Optional: Robustness Testing
 
-In the self-directed study, the agent examined 2025 WTI data and recorded at  
-least one open hypothesis. The two cells below run follow-up tasks to test  
-whether those findings are robust — the standard scientific check before  
+In the self-directed study, the agent examined 2025 WTI data and recorded at
+least one open hypothesis. The two cells below run follow-up tasks to test
+whether those findings are robust — the standard scientific check before
 promoting any pattern to an active calibration correction.
 
 | Task | Structure | Goal |
@@ -238,7 +238,7 @@ promoting any pattern to an active calibration correction.
 | A — Cross-period | Re-run the same analysis on 2023-2024 data | `record_hypothesis_outcome` for each open hypothesis |
 | B — Scope check | Identify untested boundary conditions and fill the gap | Second confirmation → attempt `graduate_hypothesis` |
 
-> **Run guard:** `RUN_FOLLOWUP = False` by default. Both tasks use the same  
+> **Run guard:** `RUN_FOLLOWUP = False` by default. Both tasks use the same
 > agent session and must run together — outputs are committed after first run.
 
 ## Cell 12 (code)
@@ -254,8 +254,8 @@ RUN_FOLLOWUP = False
 
 ### Task A — Cross-Period Robustness (2023–2024)
 
-Ask the agent to review its open hypotheses and replicate the relevant  
-analysis on 2023-2024 WTI data, recording whether the earlier data confirms  
+Ask the agent to review its open hypotheses and replicate the relevant
+analysis on 2023-2024 WTI data, recording whether the earlier data confirms
 or contradicts each finding.
 
 ## Cell 14 (code)
@@ -304,9 +304,9 @@ else:
 
 ### Task B — Scope Check and Graduation Attempt
 
-Ask the agent to identify the untested boundary conditions of its open  
-hypotheses — horizons, regimes, or market conditions not yet examined —  
-run a targeted analysis to fill the most important gap, and then attempt  
+Ask the agent to identify the untested boundary conditions of its open
+hypotheses — horizons, regimes, or market conditions not yet examined —
+run a targeted analysis to fill the most important gap, and then attempt
 graduation if the confirmation threshold is met.
 
 ## Cell 16 (code)
@@ -369,8 +369,8 @@ print((TRAINED_STRATEGY_DIR / "SKILL.md").read_text())
 ---
 ## 5. Continue Interactively
 
-The notebook has walked the agent through a structured study session. But the  
-best way to understand what the agent has learned — and to push it further —  
+The notebook has walked the agent through a structured study session. But the
+best way to understand what the agent has learned — and to push it further —
 is to have a direct conversation.
 
 Launch the ADK web interface from the repo root:
@@ -386,7 +386,7 @@ WTI_STRATEGY_DIR=adaptive_agent/skills/wti-strategy-trained \\
     uv run adk web adaptive_agent/
 ```
 
-Open `http://localhost:8000` in your browser. The agent has its full skill  
+Open `http://localhost:8000` in your browser. The agent has its full skill
 set available: code execution, web search, and mutation tools.
 
 **Suggested conversation starters:**
@@ -400,10 +400,10 @@ set available: code execution, web search, and mutation tools.
 ---
 ## Next: Protected Evaluation
 
-Notebook 6 evaluates both the **untrained agent** (uses `wti-strategy/`)  
-and the **trained agent** (uses `wti-strategy-trained/`) on the 2026 eval spec —  
+Notebook 6 evaluates both the **untrained agent** (uses `wti-strategy/`)
+and the **trained agent** (uses `wti-strategy-trained/`) on the 2026 eval spec —
 a period of significant market volatility the agent has never seen.
 
-The eval is deliberately **frozen**: the agent cannot update its strategy  
-during evaluation, so the comparison is a clean before/after of what  
+The eval is deliberately **frozen**: the agent cannot update its strategy
+during evaluation, so the comparison is a clean before/after of what
 the self-directed study session contributed.

@@ -1228,8 +1228,18 @@ def conf_bar(conf: str) -> str:
 # colours are assigned by sorted predictor name so a method keeps its colour
 # across the heatmap, leaderboard, and trajectory charts within one notebook run.
 _PREDICTOR_PALETTE = [
-    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b",
-    "#e377c2", "#7f7f7f", "#bcbd22", "#17becf", "#393b79", "#b5651d",
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
+    "#393b79",
+    "#b5651d",
 ]
 
 
@@ -1343,7 +1353,9 @@ def make_eval_forecast_chart(
         spot = f"${float(rows.iloc[0]['price']):.0f}" if not rows.empty else ""
         titles.append(f"{o.strftime('%b %d, %Y')}  WTI {spot}")
 
-    fig = psp.make_subplots(rows=1, cols=len(origins), subplot_titles=titles, shared_yaxes=True, horizontal_spacing=0.03)
+    fig = psp.make_subplots(
+        rows=1, cols=len(origins), subplot_titles=titles, shared_yaxes=True, horizontal_spacing=0.03
+    )
 
     for col, origin_raw in enumerate(origins, start=1):
         origin = pd.Timestamp(origin_raw)
@@ -1356,19 +1368,30 @@ def make_eval_forecast_chart(
         future = price_df[(price_df.index > origin.normalize()) & (price_df.index <= last_fdate)]
         fig.add_trace(
             go.Scatter(
-                x=hist.index.tolist(), y=hist["price"].tolist(), mode="lines",
-                line={"color": CLR_HISTORY, "width": 1.5}, name="WTI history",
-                showlegend=show_legend, legendgroup="hist",
+                x=hist.index.tolist(),
+                y=hist["price"].tolist(),
+                mode="lines",
+                line={"color": CLR_HISTORY, "width": 1.5},
+                name="WTI history",
+                showlegend=show_legend,
+                legendgroup="hist",
             ),
-            row=1, col=col,
+            row=1,
+            col=col,
         )
         fig.add_trace(
             go.Scatter(
-                x=future.index.tolist(), y=future["price"].tolist(), mode="lines+markers",
-                line={"color": CLR_ACTUAL, "width": 2.5}, marker={"size": 5}, name="Realised price",
-                showlegend=show_legend, legendgroup="actual",
+                x=future.index.tolist(),
+                y=future["price"].tolist(),
+                mode="lines+markers",
+                line={"color": CLR_ACTUAL, "width": 2.5},
+                marker={"size": 5},
+                name="Realised price",
+                showlegend=show_legend,
+                legendgroup="actual",
             ),
-            row=1, col=col,
+            row=1,
+            col=col,
         )
 
         # Each predictor's median + 80% interval at every horizon.
@@ -1380,18 +1403,31 @@ def make_eval_forecast_chart(
             err_lo = (pr["point"] - pr["q20"]).clip(lower=0).fillna(0.0)
             fig.add_trace(
                 go.Scatter(
-                    x=pr["forecast_date"].tolist(), y=pr["point"].tolist(), mode="lines+markers",
-                    line={"color": colors[name], "width": 1.4, "dash": "dot"}, marker={"size": 8, "symbol": "diamond"},
+                    x=pr["forecast_date"].tolist(),
+                    y=pr["point"].tolist(),
+                    mode="lines+markers",
+                    line={"color": colors[name], "width": 1.4, "dash": "dot"},
+                    marker={"size": 8, "symbol": "diamond"},
                     error_y={
-                        "type": "data", "symmetric": False, "array": err_hi.tolist(),
-                        "arrayminus": err_lo.tolist(), "color": colors[name], "thickness": 1.4, "width": 4,
+                        "type": "data",
+                        "symmetric": False,
+                        "array": err_hi.tolist(),
+                        "arrayminus": err_lo.tolist(),
+                        "color": colors[name],
+                        "thickness": 1.4,
+                        "width": 4,
                     },
-                    name=name, showlegend=show_legend, legendgroup=name,
+                    name=name,
+                    showlegend=show_legend,
+                    legendgroup=name,
                 ),
-                row=1, col=col,
+                row=1,
+                col=col,
             )
 
-        fig.add_vline(x=origin.timestamp() * 1000, line={"color": "#aaaaaa", "dash": "dash", "width": 1}, row=1, col=col)
+        fig.add_vline(
+            x=origin.timestamp() * 1000, line={"color": "#aaaaaa", "dash": "dash", "width": 1}, row=1, col=col
+        )
 
     fig.update_layout(
         title={"text": "Eval Forecasts vs Reality — Median + 80% Interval by Origin", "font": {"size": 16}},
