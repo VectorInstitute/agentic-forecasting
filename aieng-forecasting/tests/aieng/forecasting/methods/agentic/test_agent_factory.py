@@ -2,11 +2,14 @@
 
 import inspect
 import json
+import logging
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aieng.forecasting.methods.agentic.agent_factory import (
+    AS_OF_STATE_KEY,
     AgentConfig,
     CodeExecutionConfig,
     ContextRetrievalConfig,
@@ -264,6 +267,8 @@ class TestBuildSearchTool:
         assert "query" in sig.parameters
         assert "cutoff_date" in sig.parameters
         assert sig.parameters["cutoff_date"].default is None
+        assert "tool_context" in sig.parameters
+        assert sig.parameters["tool_context"].default is None
 
     @pytest.mark.asyncio
     async def test_cutoff_date_appended_when_enforce_cutoff_true(self) -> None:
@@ -559,3 +564,73 @@ class TestSearchToolLeakageVerification:
 
         assert len(calls) == config.verifier_max_attempts * 2
         assert result.startswith("[SEARCH_VERIFICATION_FAILED]")
+
+    @pytest.mark.asyncio
+    async def test_harness_as_of_triggers_verification_even_without_cutoff_date(self) -> None:
+        """Verification runs from harness as_of alone when the LLM omits cutoff_date.
+
+        This is the production bypass this fix closes: 11 of 14 search_web
+        calls in a real trace omitted cutoff_date, silently skipping the guard.
+        """
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
+        fake_tool_context = SimpleNamespace(state={AS_OF_STATE_KEY: "2024-01-15"})
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            if kwargs["model"] == f"openai/{config.verifier_model}":
+                return self._verify_response(clean=True, confidence=9, filtered_text="Clean summary.")
+            return self._search_response("Raw summary with a source.")
+
+        with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+            result = await tool(query="WTI price", cutoff_date=None, tool_context=fake_tool_context)
+
+        assert len(calls) == 2
+        assert result == "Clean summary."
+        search_user_msg = next(m for m in calls[0]["messages"] if m["role"] == "user")
+        assert "2024-01-15" in search_user_msg["content"]
+
+    @pytest.mark.asyncio
+    async def test_harness_as_of_overrides_disagreeing_cutoff_date(self, caplog: pytest.LogCaptureFixture) -> None:
+        """The harness as_of wins over a disagreeing cutoff_date, and logs a warning."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
+        fake_tool_context = SimpleNamespace(state={AS_OF_STATE_KEY: "2024-01-15"})
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            if kwargs["model"] == f"openai/{config.verifier_model}":
+                return self._verify_response(clean=True, confidence=9, filtered_text="Clean summary.")
+            return self._search_response("Raw summary with a source.")
+
+        with (
+            caplog.at_level(logging.WARNING),
+            patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)),
+        ):
+            await tool(query="WTI price", cutoff_date="2026-06-01", tool_context=fake_tool_context)
+
+        search_user_msg = next(m for m in calls[0]["messages"] if m["role"] == "user")
+        assert "2024-01-15" in search_user_msg["content"]
+        assert "2026-06-01" not in search_user_msg["content"]
+        assert any("disagrees with harness as_of" in r.message for r in caplog.records)
+
+    @pytest.mark.asyncio
+    async def test_no_tool_context_falls_back_to_cutoff_date(self) -> None:
+        """With no tool_context (e.g. interactive use), cutoff_date still works."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            if kwargs["model"] == f"openai/{config.verifier_model}":
+                return self._verify_response(clean=True, confidence=9, filtered_text="Clean summary.")
+            return self._search_response("Raw summary with a source.")
+
+        with patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)):
+            result = await tool(query="WTI price", cutoff_date="2024-01-15")
+
+        assert len(calls) == 2
+        assert result == "Clean summary."

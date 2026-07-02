@@ -29,7 +29,7 @@ from aieng.forecasting.evaluation.prediction import Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig
-from aieng.forecasting.methods.agentic.agent_factory import AgentConfig, build_adk_agent
+from aieng.forecasting.methods.agentic.agent_factory import AS_OF_STATE_KEY, AgentConfig, build_adk_agent
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
 from aieng.forecasting.methods.llm_processes._client import strip_markdown_fence, trace_url_for
 from google.adk.agents.base_agent import BaseAgent
@@ -277,7 +277,11 @@ class AgentPredictor(Predictor):
             validation errors on the agent's JSON are not swallowed.
         """
         prompt = self.prompt_builder(task=task, context=context)
-        output_str = _run_coroutine_sync(self._runner.run_text_async(prompt))
+        # Seed the harness-controlled as_of into the ADK session before the run,
+        # so search_web can enforce it via ToolContext.state regardless of
+        # whether the LLM remembers to pass a matching cutoff_date argument.
+        initial_state = {AS_OF_STATE_KEY: str(context.as_of)[:10]}
+        output_str = _run_coroutine_sync(self._runner.run_text_async(prompt, initial_state=initial_state))
 
         # Normalise: strip markdown fences before validation so any model can
         # be swapped in without breaking the parse layer.

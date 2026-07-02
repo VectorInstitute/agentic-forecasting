@@ -79,6 +79,13 @@ except ModuleNotFoundError as exc:
 # final text, giving the predictor the structured JSON it expects.
 SMR_STATE_KEY = "__smr_output__"
 
+# Session-state key AgentPredictor seeds with the current prediction's as_of
+# date before each run (see AdkTextRunner.run_text_async's initial_state).
+# search_web reads this via its ADK-injected ToolContext as the authoritative
+# cutoff — unlike the LLM-supplied cutoff_date argument, the model can never
+# see or influence this key, so it can't be silently omitted or spoofed.
+AS_OF_STATE_KEY = "__as_of__"
+
 
 def _build_set_model_response_tool() -> FunctionTool:
     """Return a proxy-compatible ``set_model_response`` shim.
@@ -390,7 +397,7 @@ def _build_search_tool(
         ]
         return content, sources
 
-    async def search_web(query: str, cutoff_date: str | None = None) -> str:
+    async def search_web(query: str, cutoff_date: str | None = None, tool_context: ToolContext | None = None) -> str:
         """Search the web and return a grounded summary with source URLs.
 
         Args:
@@ -404,22 +411,45 @@ def _build_search_tool(
             When cutoff verification is enabled and cannot be satisfied
             within the attempt budget, returns a ``[SEARCH_VERIFICATION_FAILED]``
             sentinel instead of unverified content.
+
+        Notes
+        -----
+        ``tool_context`` is not part of the LLM-visible tool schema — ADK
+        injects it automatically because of its type annotation. When
+        :class:`AgentPredictor` runs this tool, it has already seeded the
+        session with the current prediction's ``as_of`` date under
+        :data:`AS_OF_STATE_KEY`; that harness-controlled value is the
+        authoritative cutoff whenever present, since (unlike ``cutoff_date``)
+        the calling LLM cannot see, omit, or alter it. This closes a bypass
+        where the model simply didn't pass ``cutoff_date`` and both the soft
+        cutoff instruction and the verifier below were silently skipped.
         """
-        needs_verification = bool(cutoff_date and config.enforce_cutoff)
+        harness_as_of = tool_context.state.get(AS_OF_STATE_KEY) if tool_context is not None else None
+        if harness_as_of and cutoff_date and harness_as_of != cutoff_date:
+            logger.warning(
+                "search_web: cutoff_date=%r disagrees with harness as_of=%r; using the harness value.",
+                cutoff_date,
+                harness_as_of,
+            )
+        effective_cutoff = harness_as_of or cutoff_date
+
+        needs_verification = bool(effective_cutoff and config.enforce_cutoff)
         if not needs_verification:
             content, sources = await _do_search(query)
             return _format_result(content, sources)
 
         negative_guidance = ""
         for attempt in range(1, config.verifier_max_attempts + 1):
-            user_content = query + f"\n\nOnly include and cite information published strictly before {cutoff_date}."
+            user_content = (
+                query + f"\n\nOnly include and cite information published strictly before {effective_cutoff}."
+            )
             if negative_guidance:
                 user_content += f"\n\n{negative_guidance}"
             content, sources = await _do_search(user_content)
             verdict = await _verify_no_leakage(
                 text=content,
                 query=query,
-                cutoff_date=cutoff_date,  # type: ignore[arg-type]
+                cutoff_date=effective_cutoff,  # type: ignore[arg-type]
                 verifier_model=config.verifier_model,
                 openai_base_url=openai_base_url,
                 openai_api_key=openai_api_key,
@@ -437,14 +467,14 @@ def _build_search_tool(
             logger.warning("search_web attempt %d flagged %d claim(s); retrying.", attempt, len(verdict.flagged_claims))
             negative_guidance = (
                 f"Your previous search result may have included information published on or after "
-                f"{cutoff_date}. Do not repeat or rely on these claims:\n- "
+                f"{effective_cutoff}. Do not repeat or rely on these claims:\n- "
                 + "\n- ".join(verdict.flagged_claims or ["(unspecified — be more conservative)"])
             )
 
         logger.error("search_web exhausted %d attempts without a verified clean result.", config.verifier_max_attempts)
         return (
             f"[SEARCH_VERIFICATION_FAILED] Could not verify search results as free of information "
-            f"published on or after {cutoff_date} after {config.verifier_max_attempts} attempts. "
+            f"published on or after {effective_cutoff} after {config.verifier_max_attempts} attempts. "
             "Treat this as no verified news context being available for this query."
         )
 

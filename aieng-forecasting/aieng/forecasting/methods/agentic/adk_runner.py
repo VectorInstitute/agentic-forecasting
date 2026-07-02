@@ -182,7 +182,13 @@ class AdkTextRunner:
         """Underlying ADK runner (session, artifact, memory services)."""
         return self._runner
 
-    async def _resolve_session_id(self, user_id: str | None, session_id: str | None) -> str:
+    async def _resolve_session_id(
+        self,
+        user_id: str | None,
+        session_id: str | None,
+        *,
+        initial_state: dict[str, Any] | None = None,
+    ) -> str:
         """Return the ADK session id to use for a single turn.
 
         Parameters
@@ -192,6 +198,11 @@ class AdkTextRunner:
         session_id : str or None
             Explicit session id from the caller.  ``None`` triggers sticky-session
             lookup or new-session creation depending on ``fresh_session_per_message``.
+        initial_state : dict[str, Any] or None
+            Seeded into a newly-created session's state. Only takes effect when
+            this call actually creates a session — has no effect when an
+            existing sticky session (``fresh_session_per_message=False``) is
+            reused, since session state can only be seeded at creation.
 
         Returns
         -------
@@ -205,6 +216,7 @@ class AdkTextRunner:
             new_session = await self._runner.session_service.create_session(
                 app_name=self.config.app_name,
                 user_id=user_id,
+                state=initial_state,
             )
             sid = new_session.id
         elif session_id is not None:
@@ -216,6 +228,7 @@ class AdkTextRunner:
             new_session = await self._runner.session_service.create_session(
                 app_name=self.config.app_name,
                 user_id=user_id,
+                state=initial_state,
             )
             sid = new_session.id
             self._conversation_session_by_user[user_id] = sid
@@ -229,6 +242,7 @@ class AdkTextRunner:
         user_id: str | None = None,
         session_id: str | None = None,
         run_config: RunConfig | None = None,
+        initial_state: dict[str, Any] | None = None,
     ) -> str:
         """Run one user turn; return the first final model text or an empty string.
 
@@ -247,6 +261,12 @@ class AdkTextRunner:
         run_config : RunConfig | None, optional
             The run configuration to use for the run. If not provided, the default
             run configuration is used.
+        initial_state : dict[str, Any] | None, optional
+            Seeded into the session's state when this call creates a new
+            session (see :meth:`_resolve_session_id`). Use this to pass
+            harness-controlled values (e.g. a forecast's ``as_of`` date) that
+            tools can read via ``ToolContext.state`` without the LLM being
+            able to see or influence them.
 
         Returns
         -------
@@ -270,7 +290,7 @@ class AdkTextRunner:
 
         user_id = user_id or self.config.default_user_id
 
-        session_id = await self._resolve_session_id(user_id, session_id)
+        session_id = await self._resolve_session_id(user_id, session_id, initial_state=initial_state)
 
         content = genai_types.Content(role="user", parts=[genai_types.Part(text=prompt)])
 
