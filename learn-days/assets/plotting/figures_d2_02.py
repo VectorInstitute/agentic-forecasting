@@ -1,7 +1,10 @@
 """Generate the d2-02 (The Adaptive Agent) figures.
 
-Two figures:
+Four figures:
 
+0. ``eval_crps_comparison`` — the protected-2026 before/after with ±1 SE whiskers,
+   and ``shock_window`` — the real WTI shock path with the agent's forecasts
+   overlaid. See the two functions near the bottom of this file.
 1. ``agent_architecture_adaptive`` — the d1-04 Analyst-Agent components diagram
    with one change: the dashed "strategy state" slot from yesterday is now a
    *solid, filled* box containing ``WtiStrategyState`` (YAML / SKILL.md) and the
@@ -261,68 +264,160 @@ _EVAL_FILES = [
 ]
 
 
-def _read_mean_crps(fname: str) -> float:
+def _read_crps_stats(fname: str) -> tuple[float, float, int]:
+    """Return (mean CRPS, standard error, n) for one committed eval JSON.
+
+    Computes mean/SE from the per-prediction ``scores`` array so the figure can
+    show honest uncertainty. Falls back to the stored ``mean_crps`` / ``mean_score``
+    key for the mean if ``scores`` is absent (older/summary files).
+    """
     import json
-    return float(json.loads((CURRICULUM / fname).read_text())["mean_crps"])
+
+    d = json.loads((CURRICULUM / fname).read_text())
+    scores = [float(s) for s in d.get("scores", []) if s is not None]
+    if scores:
+        arr = np.asarray(scores)
+        n = arr.size
+        se = float(arr.std(ddof=1) / np.sqrt(n)) if n > 1 else 0.0
+        return float(arr.mean()), se, n
+    mean = float(d.get("mean_crps", d.get("mean_score")))
+    return mean, 0.0, 0
 
 
 def fig_eval_crps() -> None:
-    """Horizontal CRPS bars for the four predictors on the protected 2026 window,
-    parsed from the committed eval_*.json. The two adaptive variants are
-    highlighted and the trained→untrained improvement is annotated — turning the
-    bare results table into a figure that reads on its own."""
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import FancyArrowPatch
+    """Horizontal CRPS bars for the four comparable predictors (all scored on the
+    same protected 2026 window, n=22), parsed from the committed eval_*.json.
 
-    rows = [(label, _read_mean_crps(f), color) for label, f, color in _EVAL_FILES]
+    Bars carry **±1 SE** whiskers computed from each file's per-prediction score
+    array. The trained→untrained gap is annotated together with the combined SE so
+    the honest reading is unmistakable: the agent *changed*, but on 8 origins the
+    gain is not distinguishable from noise — the setup for d2-03's held-out gate.
+    """
+    import matplotlib.pyplot as plt
+
+    rows = [(label, *_read_crps_stats(f), color) for label, f, color in _EVAL_FILES]
     labels = [r[0] for r in rows]
     vals = [r[1] for r in rows]
-    colors = [r[2] for r in rows]
+    ses = [r[2] for r in rows]
+    ns = [r[3] for r in rows]
+    colors = [r[4] for r in rows]
 
     vp.use_brand_style()
-    # Sized to the figure slot; the title/subtitle and provenance live on the
-    # slide (title + two-part caption), so the figure is just the bars + callouts.
     fig, ax = plt.subplots(figsize=(6.2, 3.3))
     fig.subplots_adjust(left=0.265, right=0.965, top=0.95, bottom=0.155)
 
     y = np.arange(len(rows))[::-1]  # first row on top
     ax.barh(y, vals, height=0.62, color=colors, edgecolor="white",
-            linewidth=0.8, zorder=3)
-    for yi, v in zip(y, vals):
-        ax.text(v + 0.18, yi, f"{v:.2f}", va="center", ha="left",
+            linewidth=0.8, zorder=3,
+            xerr=ses, error_kw=dict(ecolor=vp.INK, elinewidth=1.3, capsize=4,
+                                    capthick=1.3, zorder=4))
+    for yi, v, se in zip(y, vals, ses):
+        ax.text(v + se + 0.28, yi, f"{v:.2f}", va="center", ha="left",
                 fontsize=12, color=vp.INK, fontweight="bold")
 
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=11.5)
-    ax.set_xlabel("Mean CRPS  (lower is better)", fontsize=11.5)
-    ax.set_xlim(0, max(vals) * 1.34)
+    ax.set_xlabel("Mean CRPS  (lower is better)   ·   whiskers = ±1 SE",
+                  fontsize=11)
+    ax.set_xlim(0, max(vals) * 1.42)
     ax.tick_params(axis="y", length=0)
     ax.tick_params(axis="x", labelsize=12)
     vp.despine(ax)
     ax.grid(axis="x", color=vp.MUTED, alpha=0.18, zorder=0)
 
-    # Improvement bracket aligned to the two agent rows (bottom: trained y=0,
-    # untrained y=1). vals index 3 = trained, 2 = untrained.
+    # Trained vs untrained: show the gap AND the combined SE (the honesty point).
     trained, untrained = vals[3], vals[2]
+    se_t, se_u = ses[3], ses[2]
     delta = untrained - trained
     pct = 100 * delta / untrained
-    xb = max(vals) * 1.13
+    combined_se = float(np.sqrt(se_t**2 + se_u**2))
+    xb = max(vals) * 1.16
     ax.annotate("", xy=(xb, 0), xytext=(xb, 1),
                 arrowprops=dict(arrowstyle="<|-|>", color=vp.GREEN, lw=1.6))
-    ax.annotate(f"−{delta:.2f}\n(−{pct:.0f}%)",
-                xy=(xb + 0.2, 0.5), va="center", ha="left",
-                fontsize=11.5, color=vp.GREEN, fontweight="bold")
-
-    # Baseline divider: both agents clear the statistical baselines.
-    ax.axhline(1.5, color=vp.RED, lw=1.0, ls=(0, (4, 3)), alpha=0.55, zorder=1)
-    ax.text(max(vals) * 1.32, 1.74, "baselines", va="center",
-            ha="right", fontsize=12, color=vp.MUTED, style="italic")
-    ax.text(max(vals) * 1.32, 1.26, "agents", va="center",
-            ha="right", fontsize=12, color=vp.MUTED, style="italic")
+    ax.annotate(f"−{pct:.0f}%\nwithin noise", xy=(xb + 0.2, 0.5),
+                va="center", ha="left", fontsize=11.5, color=vp.INK,
+                fontweight="bold")
 
     vp.save(fig, f"{SESSION}/eval_crps_comparison", slot="figure")
     print(f"[fig] eval_crps_comparison  (trained {trained:.2f} vs untrained "
-          f"{untrained:.2f}, −{pct:.0f}%)")
+          f"{untrained:.2f}, −{pct:.0f}%; combined SE {combined_se:.2f}, n={ns[3]})")
+
+
+# --------------------------------------------------------------------------- #
+# Figure 4 — the protected window we forecast through (real price + forecasts)   #
+# --------------------------------------------------------------------------- #
+WTI_PARQUET = (
+    REPO / "implementations/energy_oil_forecasting/data/yfinance/cl_f_adj_close_1d.parquet"
+)
+TRAINED_EVAL = CURRICULUM / "eval_Agent__trained.json"
+HIGHLIGHT_ORIGIN = "2026-03-02"  # the Strait-of-Hormuz structural break
+
+
+def fig_shock_window() -> None:
+    """The real WTI shock the agent forecast through, with its **rolling 21-day-
+    ahead** forecast (one median + 80% band per weekly origin) vs realized.
+
+    A single clean pink series — the agent's 3-weeks-out call over time — instead
+    of eight overlapping multi-horizon paths. It lags the spike and the band misses
+    it, which is the honest picture: nobody forecasts a geopolitical closure from
+    price history."""
+    import json
+
+    import matplotlib.dates as mdates
+    import pandas as pd
+
+    px_df = pd.read_parquet(WTI_PARQUET)
+    px_df["timestamp"] = pd.to_datetime(px_df["timestamp"])
+    px = px_df.set_index("timestamp").sort_index()["value"]
+
+    preds = json.loads(TRAINED_EVAL.read_text())["predictions"]
+    by_origin: dict[str, list[dict]] = {}
+    for p in preds:
+        by_origin.setdefault(str(p["as_of"])[:10], []).append(p)
+    origins = sorted(by_origin)
+
+    # One point per origin: the longest-horizon (21bd) forecast, plotted at its
+    # resolution date — the agent's rolling "3-weeks-out" call.
+    rows = []
+    for og in origins:
+        far = max(by_origin[og], key=lambda r: r["forecast_date"])
+        q = far["payload"]["quantiles"]
+        rows.append((pd.Timestamp(str(far["forecast_date"])[:10]),
+                     float(q["0.5"]), float(q["0.1"]), float(q["0.9"])))
+    rows.sort()
+    fx = [r[0] for r in rows]
+    fmed = [r[1] for r in rows]
+    flo = [r[2] for r in rows]
+    fhi = [r[3] for r in rows]
+
+    o0 = pd.Timestamp(origins[0])
+    hist = px[(px.index >= o0 - pd.Timedelta(weeks=4))
+              & (px.index <= fx[-1] + pd.Timedelta(weeks=1))]
+
+    fig, ax = vp.figure("side")
+    ax.fill_between(fx, flo, fhi, color=vp.PINK, alpha=0.16, lw=0, zorder=3,
+                    label="Agent 80% band")
+    ax.plot(hist.index, hist.values, color=vp.INK, lw=1.9, zorder=5,
+            label="Realized WTI")
+    ax.plot(fx, fmed, color=vp.PINK, lw=2.2, marker="o", ms=4, zorder=6,
+            label="Agent · 21-day-ahead")
+
+    # Mark the Hormuz break on the realized path.
+    o = pd.Timestamp(HIGHLIGHT_ORIGIN)
+    ax.annotate("Strait-of-Hormuz\nstructural break", xy=(o, float(px.asof(o))),
+                xytext=(8, -40), textcoords="offset points", fontsize=10,
+                color=vp.RED, fontweight="bold",
+                arrowprops=dict(arrowstyle="-|>", color=vp.RED, lw=1.2))
+
+    ax.set_ylabel("WTI crude  ($ / bbl)", fontsize=11.5)
+    ax.tick_params(axis="both", labelsize=11)
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b '%y"))
+    ax.legend(loc="upper left", fontsize=10, framealpha=0.9, facecolor="white",
+              edgecolor="none")
+    ax.margins(x=0.01)
+    vp.save(fig, f"{SESSION}/shock_window", slot="figure")
+    print(f"[fig] shock_window  ({len(origins)} origins, rolling 21bd forecast)")
 
 
 def main() -> None:
@@ -333,6 +428,8 @@ def main() -> None:
         fig_flat_vs_trend_mae()
     if not args or "eval" in args:
         fig_eval_crps()
+    if not args or "shock" in args:
+        fig_shock_window()
     print("done.")
 
 

@@ -18,7 +18,29 @@ slides:
       with one concrete thing you could build in the next few days that directly
       addresses the gap.
 
-  # 2 — Three papers, one arc (lead visual)
+  # 2 — The result we're here to explain (real data)
+  - layout: figure
+    title: Did it actually improve?
+    image: ../../assets/figures/d2-03/before_after_crps.png
+    caption: "Adaptive agent · before vs after curriculum · ±1 SE · 8 origins"
+    side:
+      heading: "Change ≠ improvement."
+      body: "The −5% gap sits far inside ±1 SE. On 8 origins it isn't distinguishable from noise."
+      points:
+        - "The mechanism is real"
+        - "The gain is not proven"
+    notes: |
+      Before we survey the research, let me put the question on the board with our own
+      number. Five minutes ago, the adaptive agent improved mean CRPS from 9.60 to 9.12
+      on the protected 2026 window — about 5%. Here it is with error bars. Those whiskers
+      are ±1 standard error and they overlap almost entirely: the gap is a fifth of the
+      combined error. On 8 origins we cannot distinguish this "improvement" from noise.
+      The mechanism is real and auditable; the improvement is not established. That's not
+      a failure — it's the exact question the last two years of research have been
+      answering: how do you tell change from improvement? Every paper I'm about to show
+      you converges on the same answer.
+
+  # 3 — Three papers, one arc (lead visual)
   - layout: figure_full
     title: Three papers, one arc
     image: ../../assets/figures/d2-03/research_arc.png
@@ -34,7 +56,7 @@ slides:
       are the constraint, and that the schema, retrieval policy, and update rules
       should all be meta-learned. Let me walk through each quickly.
 
-  # 3 — ADAS and DGM: what transfers
+  # 4 — ADAS and DGM: what transfers
   - layout: compare
     title: "ADAS → DGM: two ideas that transfer"
     left:
@@ -63,7 +85,7 @@ slides:
       population of interestingly-different solutions, not just the current best, so a
       dead end still leaves stepping stones. We have no archive — one live strategy.
 
-  # 4 — ALMA: the destination
+  # 5 — ALMA: the destination
   - layout: statement
     statement: "ALMA learns the memory design itself."
     support: "Statelessness is the bottleneck. Schema, retrieval, and update rules — meta-learned from task performance, not hand-crafted."
@@ -81,7 +103,7 @@ slides:
       threshold. We made good choices. ALMA's claim is that those choices shouldn't be
       made by us.
 
-  # 5 — What ALMA's vision means for forecasting
+  # 6 — What ALMA's vision means for forecasting
   - layout: table
     title: What ALMA means for forecasting
     subtitle: "Three memory components we hand-designed — and where the frontier takes each"
@@ -106,7 +128,7 @@ slides:
       demonstrate improvement on a held-out window before being committed. That last one
       is the most actionable gap — and it's what brings us to the second track.
 
-  # 6 — The hand-designed schema
+  # 7 — The hand-designed schema
   - layout: code
     title: The hand-designed schema
     language: python
@@ -134,7 +156,7 @@ slides:
       regime-indexed findings outperforms a four-layer hierarchy for this domain — or
       it might validate our design. We don't know, and that's ALMA's point.
 
-  # 7 — Where we stand
+  # 8 — Where we stand
   - layout: table
     title: The honest lineage
     subtitle: "What we have from each paper — and the gap that remains"
@@ -157,7 +179,7 @@ slides:
       that makes those edits demonstrably improvements rather than just changes. That
       last gap is the most actionable.
 
-  # 8 — Section break
+  # 9 — Section break
   - layout: section
     eyebrow: A second track
     title: Skills as trainable state
@@ -167,7 +189,7 @@ slides:
       meta-learning the memory architecture, but optimising a specific skill artifact
       as a trainable parameter.
 
-  # 9 — SkillOpt
+  # 10 — SkillOpt
   - layout: icon_cards
     title: "SkillOpt: skill as trainable state"
     cards:
@@ -191,7 +213,19 @@ slides:
       idea for prompts and pipelines — SkillOpt applies it to the artifact we already
       have. The part that makes it work: the held-out gate.
 
-  # 10 — The shared principle
+  # 11 — The numbers behind the ideas (cited)
+  - layout: figure_full
+    title: The ideas actually work
+    image: ../../assets/figures/d2-03/paper_deltas.png
+    caption: "Cited results — DGM lifts SWE-bench 20%→50%; SkillOpt adds +23.5 pt avg. Both held-out gated."
+    notes: |
+      Quick evidence this isn't just theory. DGM's self-improvement loop takes one agent
+      from 20% to 50% on SWE-bench — a software-engineering benchmark — over its
+      iterations. SkillOpt's text-space optimization adds 23.5 points on average over a
+      no-skill baseline across six benchmarks. Two different mechanisms, both
+      substantial — and the common ingredient, in both, is a held-out gate.
+
+  # 12 — The shared principle
   - layout: cards_dense
     title: The shared principle
     columns: 3
@@ -214,7 +248,32 @@ slides:
       be sure the trained agent 'improved' rather than just 'changed.' Here's how to
       close that gap.
 
-  # 11 — The project idea (lead visual)
+  # 13 — The gate we already have (code)
+  - layout: code
+    title: The gate we already have
+    language: python
+    code: |
+      # graduate_hypothesis gate
+      if confirms < threshold:
+          return "need N more"
+      # confirmed ≠ improves held-out
+    side:
+      heading: "A gate — wrong axis."
+      body: "It counts confirmations, not held-out improvement. That's the one piece missing."
+      points:
+        - "Real, in code today"
+        - "Not validated out-of-sample"
+    caption: "adaptive_agent/skill_tools.py"
+    notes: |
+      One thing before the project, because it sharpens exactly what's missing. We DO
+      already have a gate — graduate_hypothesis, from yesterday. But look at what it
+      gates on: a confirmation count. It asks "have we seen this pattern enough times?"
+      — not "does committing this change actually improve performance on data we held
+      out?" That's the difference between the gate we have and the gate every paper says
+      we need: the same accept/reject barrier, but on the wrong axis. So here's the
+      concrete project.
+
+  # 14 — The project idea (lead visual)
   - layout: figure_full
     title: "Validation-gated curriculum"
     image: ../../assets/figures/d2-03/validation_gate_loop.png
@@ -234,7 +293,7 @@ slides:
       the gated agent against the ungated one on the protected 2026 eval — a clean
       before/after with a clear hypothesis.
 
-  # 12 — Close
+  # 15 — Close
   - layout: statement
     statement: "Add one held-out gate."
     support: "That's the principle ADAS, DGM, ALMA, and SkillOpt share — applied to the curriculum you already have."
@@ -252,3 +311,16 @@ slides:
       one thing the literature says you need, you don't yet have. That's the question I'm
       leaving you with: what happens when you add it? The build phase is where you find
       out.
+
+  # 16 — References
+  - layout: numbered_list
+    title: References
+    items:
+      - { title: "ADAS — Automated Design of Agentic Systems", desc: "arXiv:2408.08435" }
+      - { title: "DGM — Darwin Gödel Machine", desc: "arXiv:2505.22954" }
+      - { title: "ALMA — meta-learned agentic memory", desc: "arXiv:2602.07755" }
+      - { title: "SkillOpt", desc: "arXiv:2605.23904 · github.com/microsoft/SkillOpt" }
+    notes: |
+      References for everything in this session, all on arXiv — ADAS, the Darwin Gödel
+      Machine, ALMA, and SkillOpt, plus the SkillOpt code on GitHub. The full manifest
+      with links is in SOURCES.md in the repo.

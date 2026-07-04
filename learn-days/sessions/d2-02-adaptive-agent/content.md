@@ -3,23 +3,38 @@ session: d2-02-adaptive-agent
 owner: Ethan
 slot: Day 2, 10:00–10:30
 duration: 30 min
-status: built
+status: revised — evidence-layer strengthening pass (deck.yaml is authoritative for reworked slides)
 ---
 
 # The Adaptive Agent
 
 > **Speaker-ready content for iteration.** Concept → code, full talk track, and a
 > slide-by-slide storyboard. Audience: technical, mixed forecasting background.
-> **≈16 slides / 30 min. No live demo — the mechanism is shown through code and
+> **≈18 slides / ~35 min. No live demo — the mechanism is shown through code and
 > committed eval artifacts.**
 >
 > **Spine:** the Adaptive Agent is the analyst agent from d1-04 with one addition:
 > the dashed box in yesterday's architecture diagram, filled in. The strategy is
 > now a mutable file the agent reads and updates from its own experience. We show
-> the mechanism (four-layer evidence hierarchy, typed mutation tools, the in-code
-> accept/reject gate), what the agent concretely learned from curriculum, and a
-> before/after on a protected 2026 eval. We close honestly on what we don't have
-> yet — no validation gate, no archive, no learned schema — and hand to d2-03.
+> the mechanism (four-layer evidence hierarchy, the **five typed write-tools**, the
+> in-code accept/reject gate), the agent **studying itself** (a real curriculum
+> trace), the **real seed→trained strategy diff** it wrote, the brutal **shock
+> window** it forecast through, and a before/after on the protected 2026 eval that
+> is honest about uncertainty — the ~5% gain sits **inside ±1 SE** on 8 origins. We
+> close honestly on what we don't have (no validation gate, no archive, no learned
+> schema) and hand to d2-03 on that within-noise note: change ≠ demonstrated
+> improvement.
+>
+> **Revision note (evidence pass, 2026-07-04).** This pass strengthened the deck's
+> evidence layer to the d1-04 bar. Deck changes (see `deck.yaml`): added a typed
+> write-tool API `code` slide (name-it→show-it for the 5 tools); replaced the
+> curriculum bullet list with a real `study_response.txt` trace; replaced the
+> seed-vs-trained bullet `compare` with the real `skill_state.yaml` diff; added a
+> `shock_window.png` figure (WTI Feb–Mar 2026 + the agent's weekly forecasts); and
+> reworked the before/after figure to carry ±1 SE whiskers with an explicit
+> within-noise reading. Figures live in `figures_d2_02.py`. The slide-by-slide
+> below predates this pass in places — `deck.yaml` is the current source of truth
+> for the reworked slides (8, 11, 13, 14, 15).
 >
 > **Position in the arc:** follows Ali's agentic-eval / BoC session (which covers
 > external evaluation of agent reasoning). Bridge: "We just saw how to evaluate

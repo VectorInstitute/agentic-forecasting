@@ -1,26 +1,40 @@
 """Generate the d2-03 (Self-improving Agentic Systems) figures.
 
-This session is conceptual (no data), so the figures are *diagrams* that let the
-deck lead with a visual instead of bullet lists:
+Mostly conceptual *diagrams* that let the deck lead with a visual, plus two
+data-backed charts so the session's own result and the field's results are
+*shown*, not asserted:
 
 1. ``research_arc`` — the ADAS → DGM → ALMA lineage as a left-to-right arc, with the
    shared principle (a held-out validation gate) called out underneath. Full-width.
 2. ``validation_gate_loop`` — the proposed "validation-gated curriculum": a 5-step
    pipeline (partition → snapshot → propose → held-out eval *gate* → commit) with a
    revert/feedback arrow. Full-width; this is the session's climactic project idea.
+3. ``before_after_crps`` — the adaptive agent's OWN protected-2026 result
+   (untrained 9.60 vs trained 9.12) with ±1 SE whiskers from the committed eval
+   JSONs. The gap is far inside the noise on 8 origins — the empirical motivation
+   for a held-out gate. Real repo data.
+4. ``paper_deltas`` — the two headline *cited* results (DGM 20%→50% on SWE-bench;
+   SkillOpt +23.5 pt avg) as small labeled bars, attributed on-figure. External
+   paper numbers, not repo data.
 
-Both are sized to the ``figure_full`` slot and pass the skill's figure_qa guard
-(legibility ≥ 9pt on the slide; no label straddling a box border).
+All are sized to their slot and pass the skill's figure_qa guard (legibility ≥ 9pt;
+no label straddling a box border).
 
-Run:  ``uv run python3 figures_d2_03.py``   ·  one:  ``... arc`` / ``loop``
+Run:  ``uv run python3 figures_d2_03.py``   ·  one:  ``... arc`` / ``loop`` /
+``before_after`` / ``papers``
 """
 from __future__ import annotations
 
 import sys
+from pathlib import Path
+
+import numpy as np
 
 import vectorplot as vp
 
 SESSION = "d2-03"
+REPO = Path(__file__).resolve().parents[3]
+CURRICULUM = REPO / "implementations/energy_oil_forecasting/adaptive_agent/curriculum"
 
 
 # --------------------------------------------------------------------------- #
@@ -140,12 +154,126 @@ def fig_validation_gate_loop() -> None:
     print("[fig] validation_gate_loop")
 
 
+# --------------------------------------------------------------------------- #
+# Figure 3 — the session's own result: does change = improvement? (real data)   #
+# --------------------------------------------------------------------------- #
+def _crps_stats(fname: str) -> tuple[float, float, int]:
+    """(mean, ±1 SE, n) from a committed eval JSON's per-prediction ``scores``."""
+    import json
+
+    d = json.loads((CURRICULUM / fname).read_text())
+    arr = np.asarray([float(s) for s in d.get("scores", []) if s is not None])
+    if arr.size:
+        se = float(arr.std(ddof=1) / np.sqrt(arr.size)) if arr.size > 1 else 0.0
+        return float(arr.mean()), se, int(arr.size)
+    return float(d.get("mean_crps", d.get("mean_score"))), 0.0, 0
+
+
+def fig_before_after_crps() -> None:
+    """Two bars — the adaptive agent before vs after its curriculum — with ±1 SE
+    whiskers from the committed eval scores. The whiskers overlap heavily: the
+    ~5% change is not distinguishable from noise on 8 origins. This is the honest
+    answer to 'is change the same as improvement?' and the motivation for a gate."""
+    import matplotlib.pyplot as plt
+
+    u_mean, u_se, n = _crps_stats("eval_Agent__untrained.json")
+    t_mean, t_se, _ = _crps_stats("eval_Agent__trained.json")
+    pct = 100 * (u_mean - t_mean) / u_mean
+    combined_se = float(np.sqrt(u_se**2 + t_se**2))
+
+    vp.use_brand_style()
+    fig, ax = vp.figure("side")
+    x = [0, 1]
+    means = [u_mean, t_mean]
+    ses = [u_se, t_se]
+    colors = [vp.CYAN, vp.GREEN]
+    ax.bar(x, means, width=0.55, color=colors, edgecolor="white", linewidth=0.8,
+           zorder=3, yerr=ses,
+           error_kw=dict(ecolor=vp.INK, elinewidth=1.4, capsize=6, capthick=1.4,
+                         zorder=4))
+    for xi, m, se in zip(x, means, ses):
+        ax.text(xi, m + se + 0.35, f"{m:.2f}", ha="center", va="bottom",
+                fontsize=13, color=vp.INK, fontweight="bold")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(["Untrained\n(seed strategy)", "Trained\n(after curriculum)"],
+                       fontsize=11.5)
+    ax.set_ylabel("Mean CRPS  (lower is better)", fontsize=11.5)
+    ax.set_ylim(0, max(means) * 1.35)
+    ax.tick_params(axis="y", labelsize=11)
+    vp.despine(ax)
+    ax.grid(axis="y", color=vp.MUTED, alpha=0.18, zorder=0)
+    ax.text(0.5, max(means) * 1.28,
+            f"−{pct:.0f}%, but the gap ({u_mean - t_mean:.2f}) is far inside\n"
+            f"±1 SE ({combined_se:.2f}) on {n} scored points",
+            ha="center", va="top", fontsize=11, color=vp.RED, fontweight="bold")
+
+    vp.save(fig, f"{SESSION}/before_after_crps", slot="figure")
+    print(f"[fig] before_after_crps  (untrained {u_mean:.2f} vs trained {t_mean:.2f}, "
+          f"−{pct:.0f}%; combined SE {combined_se:.2f}, n={n})")
+
+
+# --------------------------------------------------------------------------- #
+# Figure 4 — the field's headline results (CITED paper numbers, attributed)      #
+# --------------------------------------------------------------------------- #
+def fig_paper_deltas() -> None:
+    """The two headline results the survey leans on, shown as small labeled bars.
+    These are CITED external paper numbers (not repo data) — attributed on-figure."""
+    import matplotlib.pyplot as plt
+
+    vp.use_brand_style()
+    fig, axes = plt.subplots(1, 2, figsize=(9.4, 3.0))
+    fig.subplots_adjust(left=0.08, right=0.975, top=0.80, bottom=0.14, wspace=0.32)
+
+    # DGM — self-improvement lifts SWE-bench from 20% to 50%.
+    ax = axes[0]
+    bars = ax.bar([0, 1], [20, 50], width=0.6, color=[vp.MUTED, vp.PURPLE],
+                  edgecolor="white", linewidth=0.8, zorder=3)
+    for rect, v in zip(bars, [20, 50]):
+        ax.text(rect.get_x() + rect.get_width() / 2, v + 1.5, f"{v}%",
+                ha="center", va="bottom", fontsize=13, color=vp.INK,
+                fontweight="bold")
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(["initial", "self-improved"], fontsize=11.5)
+    ax.set_ylim(0, 62)
+    ax.set_title("DGM · SWE-bench", fontsize=13, color=vp.INK, fontweight="bold",
+                 pad=6)
+    ax.tick_params(axis="y", labelsize=10.5)
+    vp.despine(ax)
+
+    # SkillOpt — +23.5 pt average gain over no-skill.
+    ax = axes[1]
+    bars = ax.bar([0, 1], [0, 23.5], width=0.6, color=[vp.MUTED, vp.GREEN],
+                  edgecolor="white", linewidth=0.8, zorder=3)
+    for rect, v, lab in zip(bars, [0, 23.5], ["0", "+23.5"]):
+        ax.text(rect.get_x() + rect.get_width() / 2, v + 0.8, lab,
+                ha="center", va="bottom", fontsize=13, color=vp.INK,
+                fontweight="bold")
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(["no-skill", "SkillOpt"], fontsize=11.5)
+    ax.set_ylim(0, 30)
+    ax.set_title("SkillOpt · avg gain (pts, 6 benchmarks)", fontsize=12.5,
+                 color=vp.INK, fontweight="bold", pad=6)
+    ax.tick_params(axis="y", labelsize=10.5)
+    vp.despine(ax)
+
+    fig.text(0.5, 0.965, "Cited paper results — see references", ha="center",
+             va="top", fontsize=10.5, color=vp.MUTED, style="italic")
+
+    vp.save(fig, f"{SESSION}/paper_deltas", slot="figure_full")
+    print("[fig] paper_deltas")
+
+
 def main() -> None:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     if not args or "arc" in args:
         fig_research_arc()
     if not args or "loop" in args:
         fig_validation_gate_loop()
+    if not args or "before_after" in args:
+        fig_before_after_crps()
+    if not args or "papers" in args:
+        fig_paper_deltas()
     print("done.")
 
 

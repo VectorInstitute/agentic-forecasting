@@ -3,22 +3,35 @@ session: d2-03-self-improving-systems
 owner: Ethan
 slot: Day 2, 10:35–10:55
 duration: 20 min
-status: built
+status: revised — evidence-layer strengthening pass (deck.yaml is authoritative for reworked slides)
 ---
 
 # Self-improving Agentic Systems
 
-> **Speaker-ready content for iteration.** Mostly conceptual — d2-02 did the code
-> grounding. This session contextualises the adaptive agent in the research landscape
-> and lands the single most impactful thing participants could build. **≈12 slides /
-> 20 min.**
+> **Speaker-ready content for iteration.** Conceptual survey — d2-02 did the code
+> grounding — now opened and closed on **real evidence**: the session's own within-noise
+> result and the field's cited results are *shown*, not asserted. Contextualises the
+> adaptive agent in the research landscape and lands the single most impactful thing
+> participants could build. **≈16 slides / ~26 min.**
 >
 > **Spine:** one question opened d2-02 — "is change the same as improve?" — and this
-> session answers it. Two research tracks push toward self-improving forecasting agents:
-> meta-learning the memory architecture (ADAS → DGM → ALMA) and optimising skill
-> artifacts as trainable state (SkillOpt). ALMA is where the frontier is going. The
-> shared principle across all four papers is a held-out validation gate — and that's
-> the single project idea we leave participants with.
+> session answers it, starting from **our own number**: the −5% before/after sits inside
+> ±1 SE (shown with error bars, slide 2), so on 8 origins we can't call it improvement.
+> Two research tracks then push toward self-improving forecasting agents: meta-learning
+> the memory architecture (ADAS → DGM → ALMA) and optimising skill artifacts as trainable
+> state (SkillOpt) — with their headline results shown as cited micro-visuals. The shared
+> principle across all four papers is a held-out validation gate; we show the gate we
+> already have (`graduate_hypothesis`, on the wrong axis) and land the one project idea
+> that adds the held-out gate. Closes with an arXiv references slide.
+>
+> **Revision note (evidence pass, 2026-07-04).** Strengthened the evidence layer to the
+> d1-04/d2-02 bar. Deck changes (see `deck.yaml`): added the real before/after figure
+> (`before_after_crps.png`, ±1 SE) as slide 2 — the session's own result, finally shown;
+> added a cited paper-results figure (`paper_deltas.png` — DGM 20→50, SkillOpt +23.5);
+> added a `code` slide showing the real confirmation-count gate (`graduate_hypothesis`)
+> to sharpen the held-out contrast; and added an arXiv references slide. Figures live in
+> `figures_d2_03.py`. The slide-by-slide below predates this pass — `deck.yaml` is the
+> current source of truth for the reworked slides.
 >
 > **Target audience experience at the end:** "I now understand that what we built is a
 > deliberate, controlled step in a direction the research frontier is taking much

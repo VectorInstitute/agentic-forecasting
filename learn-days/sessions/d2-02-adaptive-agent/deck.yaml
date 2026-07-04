@@ -139,7 +139,37 @@ slides:
       without the observation and hypothesis record that earns it. The meta-learning
       skill spells all of this out and the agent reads it before making any update.
 
-  # 8 — The in-code accept/reject gate
+  # 8 — The five write-tools (the only write path)
+  - layout: code
+    title: The only way it can write to itself
+    language: python
+    code: |
+      # the agent's only write path
+      record_observation(...)
+      open_hypothesis(...)
+      record_hypothesis_outcome(...)
+      graduate_hypothesis(...)  # gate
+      update_approach_narrative(...)
+    side:
+      heading: "Five verbs, nothing else."
+      body: "No free-form writes — every change to its memory goes through one typed tool."
+      points:
+        - "Each maps to one evidence layer"
+        - "graduate_ carries the gate"
+    caption: "adaptive_agent/skill_tools.py"
+    notes: |
+      Before the gate, the tools themselves. This is the agent's entire write API to
+      its own strategy — five typed functions, nothing else. It cannot open the
+      SKILL.md and type whatever it wants; every change to its memory goes through one
+      of these five verbs, each tied to one layer of the evidence hierarchy you just
+      saw. record_observation logs a finding; open_hypothesis proposes a pattern;
+      record_hypothesis_outcome tallies a confirmation or refutation;
+      graduate_hypothesis tries to promote a hypothesis into an actionable calibration
+      — and carries the gate we're about to look at; update_approach_narrative rewrites
+      the top-level philosophy. Narrow, typed, auditable. That constraint is the whole
+      reason this is safe to let run.
+
+  # 9 — The in-code accept/reject gate
   - layout: code
     title: The in-code accept/reject gate
     language: python
@@ -174,7 +204,7 @@ slides:
       session, where they call it an empirical accept/reject gate. We built a version
       of it from first principles.
 
-  # 9 — Section break
+  # 10 — Section break
   - layout: section
     eyebrow: Curriculum
     title: What it discovered
@@ -184,29 +214,40 @@ slides:
       then test whether that learning held up on a hard, protected 2026 window it
       never saw during study.
 
-  # 10 — The curriculum flow
-  - layout: numbered_list
-    title: The curriculum — NB05
-    items:
-      - { title: "Load 2025 context", desc: "52 weekly news summaries (OPEC+, geopolitics) + WTI price history up to each week" }
-      - { title: "Self-directed study", desc: "Runs its own backtests via the vol-regime and trend-projection skills; hunts systematic error" }
-      - { title: "Record findings", desc: "Logs observations linked to evidence and opens hypotheses — through the typed tools only" }
-      - { title: "Attempt to graduate", desc: "Calls graduate_hypothesis; the in-code confirmation threshold accepts or rejects the update" }
-      - { title: "Protected eval (NB06)", desc: "Strategy is frozen, then scored on 8 unseen 2026 origins from Feb–Mar" }
+  # 11 — The curriculum: the agent studies itself (real trace)
+  - layout: code
+    title: It ran its own 2025 study
+    language: python
+    code: |
+      # the agent wrote and ran this (excerpt)
+      raw = yf.Ticker("CL=F").history(
+          start="2024-09-01", end="2026-02-15")
+      d["ret"] = np.log(d.close / d.close.shift(1))
+      d["vol21"] = (d.ret.rolling(21).std()
+                    * np.sqrt(252) * 100)
+      # regimes -> trend vs flat MAE per horizon
+    side:
+      heading: "Self-directed study."
+      body: "52 weekly 2025 summaries + price history — it hunts its own systematic error."
+      points:
+        - "Study → record → try to graduate"
+        - "Then freeze → protected 2026 eval"
+    caption: "curriculum/study_response.txt (NB05)"
     notes: |
-      The curriculum is implemented in notebook 5. We give the agent a year of 2025
-      context — 52 weekly news summaries covering OPEC+ decisions, geopolitical
-      events, and market commentary, plus the WTI price history up to each week. Then
-      we let it study. It runs code: backtests its own statistical methods, compares
-      trend projection to flat-trend across vol regimes, looks for systematic
-      patterns in the errors. When it finds something, it records an observation.
-      When observations suggest a durable pattern, it opens a hypothesis. When the
-      hypothesis accumulates evidence, it attempts to graduate — and the tool either
-      accepts or rejects based on the code-enforced threshold. At the end, we freeze
-      the strategy and run notebook 6: a protected eval on 8 origins from early 2026
-      that neither the agent nor we designed the curriculum around.
+      This is the curriculum — notebook 5 — and the key thing is the agent runs it
+      itself. We give it a year of 2025 context: 52 weekly news summaries covering
+      OPEC+ decisions and geopolitics, plus WTI price history up to each week. Then we
+      let it study, and it writes and runs real code — this is a verbatim excerpt: it
+      pulls the price series, computes log returns and a 21-day rolling annualised
+      volatility, classifies regimes, and backtests its trend-projection method against
+      a flat-trend baseline at each horizon. When it finds a systematic error it records
+      an observation; when observations suggest a durable pattern it opens a hypothesis;
+      when a hypothesis accumulates enough confirmations it tries to graduate — and the
+      in-code gate accepts or rejects. Then we freeze the strategy and score it on a
+      protected 2026 window it never saw. This isn't us running an analysis for the
+      agent — it's the agent doing the analysis on itself.
 
-  # 11 — The finding (real plot)
+  # 12 — The finding (real plot)
   - layout: figure
     title: What the agent found
     image: ../../assets/figures/d2-02/wti_flat_vs_trend_mae.png
@@ -234,61 +275,87 @@ slides:
       observations at prediction time, which is how the finding reaches the live 2026
       rationale we'll see in a moment.
 
-  # 12 — Seed vs trained strategy
-  - layout: compare
-    title: Before and after the curriculum
-    style: emphasis
-    left:
-      label: Seed strategy
-      lines:
-        - "Horizon-based approach priors"
-        - "No observations recorded"
-        - "No hypotheses, no corrections"
-    right:
-      label: Trained strategy
-      lines:
-        - "Approach narrative: unchanged"
-        - "Obs: flat-trend MAE 3× lower at 21bd"
-        - "hyp-001: open, linked to the evidence"
-    callout: "One session, one concrete finding — recorded with the actual backtest numbers."
+  # 13 — Seed vs trained strategy (the real self-rewritten state)
+  - layout: code
+    title: The state it rewrote
+    language: yaml
+    code: |
+      # seed: lists empty → after study:
+      hypotheses:
+      - id: hyp-001     # open, gate 0/2
+        claim: trend < flat, high vol
+      observations:
+      - finding: 21bd MAE 11.95 vs 3.91
+    side:
+      heading: "It earned every line."
+      body: "Same approach narrative — but a hypothesis and three observations it didn't have before."
+      points:
+        - "Calibrations still empty"
+        - "The gate is holding hyp-001"
+    caption: "wti-strategy{,-trained}/skill_state.yaml"
     notes: |
-      The before and after are readable as files in the repo. The seed strategy —
-      what the agent starts with — contains the approach narrative: short horizons
-      trust momentum, long horizons trust analyst consensus and news. Sensible domain
-      priors. No observations; no hypotheses; no calibration corrections. After one
-      curriculum session, the observations table is populated with the actual MAE
-      numbers from the backtest the agent ran. Hypothesis hyp-001 is open and linked
-      to those observations, with confirmation and refutation counts. The approach
-      narrative is unchanged — the agent correctly identified that it doesn't yet have
-      enough evidence for a structural narrative update. This is exactly what the
-      evidence hierarchy is supposed to produce: disciplined, incremental
-      accumulation of findings.
+      The before and after are just files in the repo — you can diff them. The seed
+      strategy the agent starts with has a sensible approach narrative (short horizons
+      trust momentum, long horizons trust news and consensus) and three empty lists:
+      no observations, no hypotheses, no calibration corrections. After one curriculum
+      session, this is what it wrote: the observations table now holds the actual MAE
+      numbers from the backtest it ran, and hypothesis hyp-001 is open, linked to that
+      evidence. Two things it did NOT do, both correct: the approach narrative is
+      unchanged — it judged it didn't yet have enough evidence for a structural rewrite
+      — and the calibration-corrections list is still empty, because the gate is holding
+      hyp-001 below the confirmation threshold. This is the evidence hierarchy working
+      exactly as designed: disciplined, incremental, and every line earned.
 
-  # 13 — Protected eval result (now a composite figure + stat rail)
+  # 14 — The window we forecast through (the shock)
+  - layout: figure
+    title: The window we forecast through
+    image: ../../assets/figures/d2-02/shock_window.png
+    caption: "WTI · the agent's rolling 21-day-ahead forecast · 8 origins"
+    side:
+      heading: "The hardest window we could pick."
+      body: "Mid-60s to ~110 and back as the Strait of Hormuz closed."
+      points:
+        - "Its 21-day call lags the shock"
+        - "The band misses it — honest"
+    notes: |
+      Before the score, look at what it had to forecast. The black line is the real WTI
+      path over the protected window; the pink line is the trained agent's rolling
+      21-day-ahead forecast — its three-weeks-out call from each of the 8 weekly origins,
+      with the 80% band. This is about the hardest window we could have picked: a
+      structural regime break when the Strait of Hormuz effectively closed, WTI running
+      from the mid-60s to near 110 dollars and back in weeks. Watch the lag: the pink
+      call stays flat and low while the black price spikes — because those forecasts were
+      made three weeks earlier, before the news, and nobody forecasts a geopolitical
+      closure from price history. Then it catches up as the shock enters its information,
+      and the band misses the spike entirely. That's the honest picture. Now — did the
+      curriculum actually help on this?
+
+  # 15 — Protected eval result (before/after with ±1 SE)
   - layout: figure
     title: Before/after on the 2026 eval
     image: ../../assets/figures/d2-02/eval_crps_comparison.png
-    caption: "Lower CRPS is better — 8 protected 2026 origins it never saw."
+    caption: "Lower CRPS is better · ±1 SE whiskers · 8 protected origins"
     side:
-      heading: "Better on the hardest window."
-      body: "On 8 unseen 2026 origins, training beats the untrained agent and both baselines."
+      heading: "It changed — within noise."
+      body: "−5% vs untrained, but far inside ±1 SE. Change isn't demonstrated improvement."
       stats:
-        - { value: "9.12", label: "trained mean CRPS", color: green }
-        - { value: "−5%", label: "vs untrained (9.60)", color: ink }
+        - { value: "−5%", label: "trained vs untrained", color: ink }
+        - { value: "≪ 1 SE", label: "gap vs noise (n=8)", color: red }
     notes: |
-      We scored both agents on the same 8 protected origins from early 2026. This
-      window covers a geopolitical shock: in late February, the Strait of Hormuz was
-      effectively closed following conflict in the Middle East. WTI went from the
-      mid-60s to near 100 dollars and back in the span of a few weeks. That's about
-      the hardest possible window to forecast on — extreme vol, structural regime
-      breaks, news that renders any statistical baseline obsolete almost as soon as
-      it's computed. The trained agent improved mean CRPS from 9.60 to 9.12 — about
-      5%. Both adaptive variants clear the AutoARIMA (11.00) and Naive (13.64)
-      baselines. Not a dramatic headline number. But it's genuine: the window was
-      locked before training, the agent never saw it, and the improvement tracks a
-      mechanism we can see in the rationale. Let me show you that.
+      Now the score, and I'm going to be straight with you. Both adaptive variants
+      clear the AutoARIMA (11.00) and Naive (13.64) baselines, and the trained agent
+      improved mean CRPS from 9.60 to 9.12 — about 5%. But look at the whiskers: those
+      are ±1 standard error, and the trained and untrained bars overlap almost
+      completely. The gap between them is 0.49; the combined standard error is 2.45.
+      On 8 origins, this ~5% "improvement" is not statistically distinguishable from
+      noise. I could show you the number without the error bars and it would look like
+      a win — but that would be exactly the dishonesty we spent yesterday's session
+      warning about. The mechanism is real and auditable, which I'll show you next in
+      the live rationale. But whether the *change* is genuine *improvement* — that we
+      cannot claim from this. Hold that thought; it's the whole reason the next session
+      exists.
 
-  # 14 — The mechanism, visible in the rationale
+  # 16 — The mechanism, visible in the rationale
   - layout: code
     title: Visible in the live rationale
     language: text
@@ -324,7 +391,7 @@ slides:
       hypothesis, to the calibration that produced this rationale on this specific
       origin in 2026. That's what auditable adaptation looks like.
 
-  # 15 — What we still don't have
+  # 17 — What we still don't have
   - layout: cards_dense
     title: What we still haven't done
     columns: 3
@@ -352,10 +419,10 @@ slides:
       one we haven't asked. The research papers in the next session are about what
       happens when you take each of these constraints seriously.
 
-  # 16 — Handoff
+  # 18 — Handoff
   - layout: statement
     statement: "It changes. Does it improve?"
-    support: "The change is visible and auditable. Whether it's improvement — not drift, not overfitting — is the question the next session answers."
+    support: "Auditable, yes — but a 5% gain inside the noise isn't proof. Improvement vs drift is what the next session answers."
     callout: "Next: d2-03 — Self-improving Agentic Systems"
     notes: |
       The Adaptive Agent changes over time. Its strategy evolves, the mechanism is
