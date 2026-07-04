@@ -3,7 +3,7 @@ session: d1-04-analyst-agent
 owner: Ethan
 slot: Day 1, 11:30–12:00
 duration: 30 min
-status: complete — deck built, figures committed, QA passed
+status: revising — adding the data-leakage war-story act (content phase)
 ---
 
 # The Analyst Agent
@@ -11,16 +11,20 @@ status: complete — deck built, figures committed, QA passed
 > **Speaker-ready content for iteration.** Concept → code, full talk track, and a
 > storyboard that maps 1:1 to `deck.yaml`. Audience: technical, mixed forecasting
 > background — explain forecasting concepts (cutoff, CRPS/Brier, calibration); assume
-> Python / LLM / agent fluency. **≈16 slides + a ~5-min live demo / 30 min.**
+> Python / LLM / agent fluency. **≈23 slides + a ~5-min live demo / ~39 min** (see the
+> trim notes at the end if the slot must hold 30).
 >
 > **Spine:** an agent is the natural extension of an LLM Process — instead of packing
 > context *into* a prompt, it *goes and gets* context and can *compute*. We show the
 > **full Analyst Agent architecture** (its core components), then climb a capability
 > staircase that's really just *which components are live* — all on the **same
-> `Predictor` interface** from foundations. We **run it live with news search**,
-> confront the live-data leakage tension honestly, and end on one agent identity doing
-> three jobs — where **Track 2 (analysis, not scored)** first appears concretely. Hands
-> to Day 2's adaptive agent.
+> `Predictor` interface** from foundations. We **run it live with news search**, then
+> pay off the live-data leakage tension with a **real war story from this repo**: the
+> agent that looked brilliant because it was cheating, how we caught it (a flat CRPS
+> curve), the three-try fix, and the honest landing — you can't fully un-leak a live
+> backtest, which is exactly why the real next step is *live evaluation*. We close on
+> one agent identity doing three jobs — where **Track 2 (analysis, not scored)** first
+> appears concretely. Hands to Day 2's adaptive agent.
 >
 > **Position in the arc:** follows Ali's LLMP / Food-CPI session (so we open *from*
 > LLMP) and is **energy part 1**. The systematic scoreboard (NB04) and the adaptive
@@ -34,7 +38,9 @@ An agent is an LLM that can *act* — search for context and run code — wired 
 exact same `Predictor` interface as ARIMA. Each new capability is a config toggle, not
 a new method; the same agent identity can forecast a trajectory, price a binary shock,
 or write a scenario analysis. The one thing you *can't* toggle away is the leakage
-tension: you can fence the data, but you can't fence the web.
+tension: you can fence the data, but you can't fence the web — and we prove it with a
+real leak we shipped and fixed. The honest conclusion isn't "don't use these agents";
+it's "you can't fully un-leak a live backtest, so take the good ones to *live* eval."
 
 ## Narrative arc
 
@@ -42,8 +48,11 @@ From LLMP, an agent is one step away — give the model the ability to fetch and
 → it's still a `Predictor` (same `predict()` from foundations) → here's the full agent's
 anatomy → a staircase of capabilities is just which of those components are live, each a
 config preset on one identity → **watch the full agent react to the news live** → that
-forces the honest leakage question (hard cutoff vs soft cutoff) → zoom into the code
-rung: skills + sandboxed Python → one identity, three tasks, which is where Track 2
+forces the honest leakage question (hard cutoff vs soft cutoff) → **war story: a leak we
+shipped** — the smoking-gun flat CRPS, how we diagnosed it, the three-try architectural
+fix, one polluted vs one self-corrected run, and why a live backtest can never be fully
+clean (so the payoff is *live* eval, where these agents are worth taking) → zoom into the
+code rung: skills + sandboxed Python → one identity, three tasks, which is where Track 2
 enters → hand to Day 2's agent that rewrites its own strategy.
 
 ## Code grounding (quick reference)
@@ -65,11 +74,33 @@ enters → hand to Day 2's agent that rewrites its own strategy.
 - Hard cutoff (structural) — `aieng/forecasting/data/cutoff.py` (`CutoffEnforcer`)
 - Soft cutoff (live tools) — `ContextRetrievalConfig(enforce_cutoff=...)` docstring;
   search-discipline lines in `analyst_agent/agent.py`
+- **The leak & the fix (war story)** — `search_web` leakage caught in backtest/eval;
+  fixed in two PRs on `main`: **#161** (`e516a8d`, independent temporal-leakage
+  verifier — a *different* model audits each claim, strips post-cutoff ones, retries ×3,
+  else emits `[SEARCH_VERIFICATION_FAILED]`; `methods/agentic/agent_factory.py`
+  `_verify_no_leakage`) and **#162** (`95a9a37`, harness-enforced cutoff — `as_of` seeded
+  into ADK session state by `AgentPredictor.predict()` as `AS_OF_STATE_KEY`, read via an
+  LLM-invisible `ToolContext`; `predictor.py`, `adk_runner.py`). Polluted trace evidence
+  quoted in the #162 message (`3ca3e806…`: 11 of 14 `search_web` calls omitted the
+  cutoff; raw results dated ~6 weeks past the origin).
+- **Smoking-gun data** — pre-fix eval scorecard lives only in the NB04 git blob at
+  `d068737` (`04_systematic_backtest_eval.ipynb`, §6–7); post-fix results in the current
+  notebook + committed eval YAMLs under `energy_oil_forecasting/data/predictions/`.
+- **Self-corrected run (real, committed)** — post-fix eval YAML
+  `…/energy_oil_eval/agent_predictor_wti_analyst_news_gemini-3.5-flash_continuous__…yaml`,
+  the `as_of 2026-02-02` entry (cites only ≤-cutoff facts, then projects; carries a live
+  `langfuse_trace_url`). Pre-fix file (`…gemini-3.1-flash-lite_continuous…`) uses the old
+  `agent_rationale` key and has **no trace link** — unauditable.
+- **Positive close (ForecastBench)** — `learn-days/lms-resources.md:18-23`,
+  `SOURCES.md:20` (arXiv:2409.19839): a leakage-free benchmark of *unresolved future*
+  questions; LLMs are the automated frontier, expert humans still ahead.
 - Skills + E2B — `docs/adk-skills-guide.md` (three extension mechanisms); skills at
   `analyst_agent/skills/{statistical-analysis,trend-projection}/SKILL.md`
-- Slide figures — to add as `learn-days/assets/plotting/figures_d1_04.py`
+- Slide figures — `learn-days/assets/plotting/figures_d1_04.py`
   (→ `learn-days/assets/figures/d1-04/*.png`): architecture diagram (conceptual,
-  reusable), demo-fallback forecast from NB02, Track-2 scenarios from NB03
+  reusable), demo-fallback forecast from NB02, **and the new `leakage_crps_by_horizon`
+  smoking-gun figure** (news-agent CRPS by horizon, pre-fix flat vs post-fix fanning,
+  with AutoARIMA/Naive references)
 
 ---
 
@@ -96,16 +127,20 @@ be honest about the one problem agents create that ARIMA never had."
   Predictor interface"]
 - `robot` — **Anatomy + capabilities** · items: ["The agent's components", "We'll run it
   live"]
+- `bug` — **A leak we shipped** · items: ["Caught, diagnosed, fixed", "And what it means"]
 - `chart` — **One agent, three jobs** · items: ["Forecast, shock, scenario", "Where
   Track 2 begins"]
 
-**Speaker notes:** "Three beats. First, the conceptual bridge: how an agent is the
+**Speaker notes:** "Four beats. First, the conceptual bridge: how an agent is the
 natural next move from an LLM Process, and why it still drops into the same evaluation
 harness I showed you this morning. Second, the anatomy of the Analyst Agent — its core
 components — and the capabilities those components unlock, which we'll run live so you
-can watch it search. And third, the payoff: a single agent identity doing three
-different jobs, one of which isn't a scored forecast at all. Threaded through all of it
-is one honest tension we won't paper over."
+can watch it search. Third — and this is the part I most want you to remember — a real
+war story from this repo: this agent once looked *brilliant*, and it turned out it was
+cheating. I'll show you how we caught it, how we fixed it, and the uncomfortable lesson
+underneath. And fourth, the payoff: a single agent identity doing three different jobs,
+one of which isn't a scored forecast at all. The honest tension in beat three isn't a
+footnote — it's the whole reason this work is worth doing carefully."
 
 ### 3 — From a process to an agent · `compare`
 **On slide:** title "From a process to an agent".
@@ -255,19 +290,167 @@ training cutoff of its own, and a live search can always surface something stamp
 the date. So for any agent with live tools, the cutoff is a *discipline we enforce by
 governance and disclosure*, not a property we can prove."
 
-### 11 — Leakage punchline · `statement`
-**On slide:** statement '"You can fence the data. You can\'t fence the web."' support:
-"So we separate cutoff-fenced backtests from live runs — and say which is which."
-callout: "Honest disclosure beats a false guarantee."
+### 11 — A leak we shipped · `section`
+**On slide:** eyebrow "A true story from this repo" · title "A leak we shipped" ·
+subtitle "The agent that looked brilliant — because it was cheating".
 
-**Speaker notes:** "One line to remember. You can fence the data; you can't fence the
-web. That's not a reason to avoid live-tool agents — their whole value is reacting to new
-information, which you just saw. It's a reason to be disciplined and transparent about it:
-keep the cutoff-fenced backtest cohort separate from the live cohort, and never quietly
-mix them into one number. With that honesty in place, let's zoom into the code rung — and
-what we actually feed it."
+**Speaker notes:** "So we've said the web can't be structurally fenced. Let me stop
+saying it and *show* you, because we didn't catch this in theory — we caught it in our
+own numbers. For a stretch, this exact news agent was our best forecaster on the energy
+use case. Beat ARIMA, beat LightGBM, beat the LLM-process baselines. We were, briefly,
+delighted. Then we looked closer, and it turned out the agent was the best in the room
+because it had seen the answer sheet. Here's how that unravelled."
 
-### 12 — Skills: competence by configuration · `icon_cards`
+### 12 — The smoking gun · `figure` (HERO — `leakage_crps_by_horizon.png`)
+**On slide:** title "The smoking gun". Real plot (`leakage_crps_by_horizon.png`): the WTI
+news agent's **CRPS by horizon** (5/10/21 business days) on the 2026 eval —
+**pre-fix (flat)** vs **post-fix (fans out)** — with AutoARIMA and Naive as unchanged
+honest references. An on-figure label carries the headline: eval CRPS **5.64 → 8.03
+(+42%)** once the leak is plugged. caption "Lower is better. Uncertainty *must* compound
+with horizon — every honest method roughly triples from 5 to 21 days." Side rail heading
+"Too good to be true" · lines: ["Pre-fix CRPS ~5.6 at 5, 10 **and** 21 days", "A forecast
+whose error won't grow with time", "…is a forecast that already knows the answer"].
+
+**Speaker notes:** "This is the whole tell on one chart. CRPS is our forecast score,
+lower is better, and I've broken it out by how far ahead we're forecasting: five days, ten
+days, twenty-one days. Look at the honest methods first — AutoARIMA, Naive. Their error
+roughly triples as the horizon grows, because of course it does: predicting three weeks
+out is much harder than predicting a few days out. Now look at the pre-fix agent, the red
+line. It's *flat*. Five days, ten days, twenty-one days — about 5.6 the whole way. That is
+not skill. A forecaster whose uncertainty doesn't grow with the horizon is a forecaster
+who already knows how it ends. When we plugged the leak, the same agent's curve springs
+back to the normal shape — and its overall score gets *worse* by forty-two percent. That
+gap, 5.6 to 8.0, is the exact size of the cheating."
+
+### 13 — How we caught it · `compare`
+**On slide:** title "How we caught it".
+- left — label "The fingerprint" · lines: ["Flat CRPS across 5 / 10 / 21 days", "Beat
+  every baseline at 21 days", "Bands too tight to be honest"]
+- right — label "The confession" · lines: ["We read the agent's search trace", "11 of 14
+  searches skipped the cutoff", "A result dated ~6 weeks past origin"]
+callout: "The score raised the suspicion; the trace proved it."
+
+**Speaker notes:** "Two steps, and this is a repeatable way to smell leakage. Step one,
+the *fingerprint* — the score pattern I just showed you, plus the fact that a
+newcomer was suddenly beating a fifty-year-old statistical model at the *longest*
+horizon, which is exactly where a legitimate edge is hardest to get. Suspicious, not yet
+proof. Step two, the *confession*: because every run is traced, we opened the actual tool
+calls in Langfuse. In one production trace, eleven of the agent's fourteen web searches
+had dropped the cutoff argument entirely — and one came back with prices dated roughly six
+weeks *after* the forecast origin. The agent was reading July's prices to forecast May.
+There it is, in black and white. The lesson: a scoreboard tells you *something's* wrong;
+your traces tell you *what*."
+
+### 14 — Three tries to plug a leak · `numbered_list`
+**On slide:** title "Three tries to plug a leak".
+1. **Stronger prompt** — "Tell it the cutoff, harder." *Failed* — a model can't police
+   where its own words came from.
+2. **Independent verifier** *(#161)* — a *different* model audits each claim, strips
+   post-cutoff ones, retries, or fails loud.
+3. **Harness-enforced cutoff** *(#162)* — the origin is injected by the harness,
+   invisible to the LLM. It can't be omitted or spoofed.
+
+callout: "The fix that worked was architectural — not another paragraph of prompt."
+
+**Speaker notes:** "Fixing it took three tries, and the arc is the real lesson. First we
+did the obvious thing — wrote a sterner instruction: 'only use sources before the cutoff,
+this is critical.' It didn't hold. And here's why, which is the deep point: a single model
+genuinely cannot tell you whether a fact it just wrote down came from the search result in
+front of it or from its own training. It has no reliable access to its own sources. No
+prompt fixes that. So the second fix was architectural — a *separate* verifier model whose
+only job is to read the search results, judge each claim on its substance against the
+cutoff date, and strip anything that fails, retrying or failing loudly rather than
+returning contaminated text. Better — but it only ran when the agent remembered to pass
+the cutoff, and it often didn't. So the third fix took the cutoff away from the model
+entirely: the harness now injects the forecast origin into the search tool through a
+channel the LLM can't see, can't omit, and can't spoof. Belt, then suspenders, then a
+lock the prisoner doesn't hold the key to."
+
+### 15 — How the pieces work together · `figure_full` (agentic-system diagram)
+**On slide:** title "How the pieces work together". Real diagram
+(`agentic_system.png` — conceptual, brand-styled, reusable): the root **Analyst agent**
+delegates to a **News sub-agent**, which queries the **`search_web`** grounded-search tool;
+an independent **Verifier** (a *different* model) audits every result against the
+**harness-injected cutoff** before *verified context returns* to the analyst — which then
+emits the **Prediction**. Annotated with the reject / retry-×3 / else-fail-loud loop and the
+cutoff feeding both the tool (enforced) and the verifier (checked against).
+callout: "No single model is trusted to police itself — and the cutoff comes from the harness, not the LLM."
+
+**Speaker notes:** "Step back and look at what that fix actually built, because this shape
+is worth recognizing — it's what a lot of real agent systems look like under the hood, and
+it is decidedly more than one model. The analyst you've been watching is really an
+*orchestrator*. For news, it delegates to a sub-agent whose whole job is retrieval; that
+sub-agent calls the search tool. And here's the crucial part — the raw hits don't go
+straight back. They pass through a *separate* verifier, a different model whose only job is
+to check each claim against the cutoff and throw out anything from after it, retrying up to
+three times or failing loudly rather than passing contaminated text. Only verified context
+flows back to the analyst, which turns it into the forecast. Two design choices make this
+robust rather than hopeful. First, no single model is trusted to police itself — the checker
+is independent of the thing it checks. Second, the cutoff those components enforce isn't
+something the LLM types; it's injected by the harness, in a channel the model can't see or
+change. That's the difference between a system that *asks* to be honest and one that's
+*built* to be — and it's a pattern you'll reuse far beyond forecasting."
+
+### 16 — One polluted, one honest · `compare` (emphasis)
+**On slide:** title "One polluted, one honest". style emphasis.
+- left — label "Polluted (pre-fix)" · lines: ["Cited prices weeks past the origin", "The
+  search had skipped the cutoff", "No trace link — unauditable"]
+- right — label "Self-corrected (post-fix)" · lines: ["Cites only facts *at* the cutoff",
+  "*As of Feb 2: WTI settled $62.14*", "Then projects — one click to the trace"]
+callout: "Same agent, same question — one had seen the future, one hadn't."
+
+**Speaker notes:** "Concretely, here's the same agent before and after. On the left, the
+polluted behaviour: a rationale leaning on prices that hadn't happened yet at the forecast
+date, from a search that skipped the cutoff — and, tellingly, the pre-fix predictions
+don't even carry a trace link, so you couldn't audit them if you wanted to. On the right,
+a real post-fix run from the committed results, forecasting from February 2nd, 2026. Every
+fact it cites sits at or before that date — 'as of February 2nd, WTI retreated three
+dollars to settle at $62.14' — and *then* it projects forward from there. That's what
+honest reasoning looks like: it anchors on what was knowable, and it's fully auditable —
+every one of these carries a Langfuse link you can open. Same brain, same question. The
+only difference is whether it was allowed to peek."
+
+### 17 — The hard truth · `statement`
+**On slide:** statement '"You can\'t un-leak a live backtest."' support: "A live web
+index always knows how the story ends." callout: "So separate fenced backtests from live
+runs — and say which is which."
+
+**Speaker notes:** "Now the uncomfortable part, and I want to be straight with you rather
+than sell you something. We fixed *this* leak. But step back: we are backtesting an agent
+whose whole value is live web access, over a period the live web has already fully
+indexed and written up. Even with a perfect cutoff on the search tool, the model's own
+training has a cutoff of its own, and the internet is saturated with hindsight about 2025
+and early 2026. You can reduce the leakage — we did, a lot — but you cannot *prove* it's
+gone. A live backtest can never be as clean as a genuine forecast into an unknown future.
+So the discipline is: keep your fenced backtests and your live runs in separate cohorts,
+and always say which number is which. Honesty about the limitation beats a false
+guarantee."
+
+### 18 — So why keep going? · `icon_cards`
+**On slide:** title "So why keep going?". Cards:
+- `chart` — **Still the frontier** · items: ["LLMs lead automated forecasting",
+  "(ForecastBench — humans still ahead)"]
+- `search` — **Live eval is the answer** · items: ["Forecast a truly un-indexed future",
+  "No cutoff to fence, nothing to filter"]
+- `arrow` — **Beyond the bootcamp** · items: ["Take the good agents to live eval",
+  "Where the score finally means it"]
+callout: "The leak is a backtesting artifact — not a verdict on the agents."
+
+**Speaker notes:** "So if backtests are structurally suspect, why are we here? Two
+reasons. One: even accounting for all of this, agentic LLM forecasters are the frontier of
+*automated* forecasting right now — ForecastBench, the leakage-free benchmark of genuinely
+unresolved future questions, has expert humans still ahead of the models, but the models
+are the best automated forecasters we've got, and they're improving fast. Two, and this is
+the punchline of the whole session: the honest way to evaluate a live-data agent isn't a
+cleaner backtest — it's a *live* evaluation. Point it at questions whose answers don't
+exist yet, and wait. In that world there's no cutoff to enforce and nothing to filter,
+because there's no future to leak. That's the natural next step past a bootcamp: take the
+agents that look good here and put them in front of a real, unresolved future. The leak
+we just walked through is an artifact of *backtesting* — not a verdict on the agents.
+With that honestly on the table, let me show you the rest of what this one identity can
+do."
+
+### 19 — Skills: competence by configuration · `icon_cards`
 **On slide:** title "Competence by configuration". Cards:
 - `flask` — **statistical-analysis** · items: ["Vol regime, anomalies", "`wti_benchmarks`
   2020–25"]
@@ -286,7 +469,7 @@ runs the real Python in an isolated E2B sandbox. The point: we upgraded the agen
 analytical competence by adding two folders to a list — no fine-tuning, no redeploy.
 Configuration, not code, one more time."
 
-### 13 — Section break · `section`
+### 20 — Section break · `section`
 **On slide:** eyebrow "Configuration, not code" · title "One agent, three jobs" ·
 subtitle "Same identity — different question".
 
@@ -294,7 +477,7 @@ subtitle "Same identity — different question".
 three completely different jobs — and watch one of them stop being a scored forecast at
 all."
 
-### 14 — One identity, three tasks · `table`
+### 21 — One identity, three tasks · `table`
 **On slide:** title "One identity, three tasks".
 Headers: Task · Output schema · Track · Score
 - Trajectory · ContinuousAgentForecastOutput · 1 · CRPS
@@ -310,7 +493,7 @@ scored by Brier; still Track 1. Or ask it for a *scenario analysis*, and it retu
 something structured but *unscored* — that's Track 2. Same brain, three jobs, picked by
 which output schema you hand it. That last row is the interesting one."
 
-### 15 — Track 2: the agent as analyst · `code` (real schema + side rail)
+### 22 — Track 2: the agent as analyst · `code` (real schema + side rail)
 **On slide:** title "Track 2: the agent as analyst". Dark panel — the real Track-2
 output contract from `tasks.py`:
 ```python
@@ -339,26 +522,28 @@ framed this morning, made concrete — and it falls out of the *same* agent just
 swapping the output schema. One capable identity spans both the scored forecaster and the
 interactive analyst."
 
-### 16 — What to take forward · `cards_dense` (3-up, outline)
+### 23 — What to take forward · `cards_dense` (3-up, outline)
 **On slide:** title "What to take forward".
-- `arrow` — **Agents extend LLMP** · "By fetching context and running code — same
-  forecasting goal, new abilities."
 - `gear` — **Capabilities are configuration** · "News, code, skills, tools — toggles on
   one identity, one `Predictor` interface."
-- `warning` — **The web can't be fenced** · "Hard cutoff for data, soft for live tools —
-  be disciplined and disclose."
+- `bug` — **A great score can be a leak** · "Flat CRPS was the fingerprint; the fix was
+  architectural, not a better prompt."
+- `arrow` — **A live backtest can't be clean** · "So the honest next step is *live* eval —
+  where nothing's left to leak."
 callout: "Tomorrow: an agent that rewrites its own forecasting strategy."
 
-**Speaker notes:** "Three things to carry forward. One: an agent is the natural
-extension of an LLM Process — same goal, a calibrated forecast, but now it can fetch
-context and run code, which you saw it do. Two: every capability we added was
-*configuration* on a single identity that never stopped being a `Predictor` — which is
-what keeps agents on the same honest scoreboard as everything else. Three: the leakage
-tension is real and specific — data has a hard cutoff, live tools only a soft one, so we
-stay disciplined and we disclose. Hold onto that architecture diagram, because tomorrow
-in part two I'll fill its empty slot with a strategy the agent *rewrites itself* — and
-we'll measure whether that self-improvement actually helps on a protected 2026 window.
-Thanks — and after lunch we'll get hands-on."
+**Speaker notes:** "Three things to carry forward. One: every capability we added — news,
+code, skills, tools — was *configuration* on a single identity that never stopped being a
+`Predictor`, which is what keeps agents on the same honest scoreboard as everything else.
+Two, and this is the one I most want to stick: a suspiciously good score can be a leak. Our
+best forecaster was cheating, and the tell was a CRPS curve that refused to grow with the
+horizon — you now know that smell, and you know the fix is architectural, an independent
+check the model can't talk its way around, not a sterner prompt. Three: you cannot fully
+un-leak a backtest of a live-data agent, so the real evaluation is a live one — point it at
+a future that hasn't happened and wait. That's the honest frontier past this bootcamp. Hold
+onto the architecture diagram, because tomorrow I fill its empty slot with a strategy the
+agent *rewrites itself*, and we measure whether that actually helps on a protected 2026
+window. Thanks — and after lunch we'll get hands-on."
 
 ---
 
@@ -378,7 +563,7 @@ Thanks — and after lunch we'll get hands-on."
   stalls. *Prep (slide phase):* pre-warm the notebook kernel + WTI cache; confirm
   `GEMINI_API_KEY`; pick a newsy origin so the trace is interesting; have cached output
   ready to show instantly if a live call is slow. (Code-agent live run was considered and
-  dropped to protect the clock — code/skills are covered by the diagram + slide 12.)
+  dropped to protect the clock — code/skills are covered by the diagram + slide 19.)
 - **Data reality (no Gemini key in this env).** There's **no `GEMINI_API_KEY`**
   available, so we cannot run agents to generate fresh figures — everything is built from
   **cached real data**. What we have: the **2025 news-agent backtest** (99 origins, full
@@ -395,14 +580,30 @@ Thanks — and after lunch we'll get hands-on."
     fallback shows the agent we run.) Pick a representative origin where realized sits
     inside the band; *don't* cherry-pick a hero hit — on big moves the agent often misses
     direction, which is the honest reality and consistent with d1-01.
-  - *slide 15* — **resolved: schema-as-code.** No cached scenario + no key, so we render
+  - *slide 15* — `agentic_system.png`: a conceptual, brand-styled diagram of how the
+    LLM-based components fit together post-fix (root analyst → news sub-agent → search_web
+    → independent verifier; harness-injected cutoff; verified-context return + retry loop).
+    Documented exception like the arch diagram — every box maps to a real component. Built
+    with `fig_agentic_system()`; run `uv run python3 figures_d1_04.py system`.
+  - *slide 12 (HERO)* — `leakage_crps_by_horizon.png`: the news agent's **CRPS by
+    horizon** pre-fix (flat) vs post-fix (fanning), AutoARIMA + Naive as unchanged honest
+    references, with an on-figure "5.64 → 8.03 (+42%)" headline. **Sourcing (documented
+    exception, like the arch diagram):** post-fix news + references are recomputed from the
+    committed eval YAMLs (pinball CRPS vs the WTI parquet — verified to reproduce the NB04
+    numbers within ~0.1–0.3); the **pre-fix eval line exists only** in the NB04 git blob at
+    `d068737` (§6–7 scorecards), so the figure reads those printed values from the blob.
+    All numbers are real committed run outputs — none hand-typed. A fully-recomputable 2025
+    *backtest* pre/post pair (committed YAMLs on both sides) is available as corroboration.
+  - *slide 21* — **resolved: schema-as-code.** No cached scenario + no key, so we render
     the real `ScenarioCard` / `ScenarioAgentForecastOutput` contract from `tasks.py` (no
     fabricated numbers) on a `code` slide. A real rendered example can replace it later
     when NB03 is run with a key.
-- **No CRPS leaderboard here, on purpose.** The `curriculum/*.json` in the tree right
-  now are the **2-origin smoke eval** (`energy_oil_eval_smoke`), not the full 8-origin
-  run — don't quote those as results. The real scoreboard (NB04) + adaptive before/after
-  (NB06) live in **d2-02**; d1-04 stays on architecture + capability + tension.
+- **The leakage CRPS exhibit is deliberate, and it is NOT the d2-02 scoreboard.** d1-04
+  originally deferred all CRPS to d2-02; we now show a *single, focused* pre/post-fix
+  horizon curve because the honesty war story is d1-04's job. It's a leakage exhibit, not a
+  method leaderboard — keep the full systematic comparison (NB04) + adaptive before/after
+  (NB06) in **d2-02**. Don't quote the `energy_oil_eval_smoke` 2-origin `curriculum/*.json`
+  as results; the real eval numbers come from the NB04 blobs / committed eval YAMLs.
 - **Track 2 first appears here.** The intro (built last) owns the abstract Track 1/Track
   2 framing; this session is where Track 2 becomes concrete (scenario analysis). Keep the
   language consistent with whatever the intro lands on.
@@ -411,7 +612,25 @@ Thanks — and after lunch we'll get hands-on."
   light unless Ethan wants a beat on auditability.
 - **Title slide** is `title_photo` with no photo → renders the gradient hero, matching
   d1-01. Drop an `image:` path in `deck.yaml` slide 1 for a photo.
-- **Layout rhythm check (for the slide phase):** 11 distinct layouts; none used >2×
-  (`code` twice — slides 5 & 15; `figure` once — demo; `figure_full` once — diagram);
-  `statement` lands at the two turning points (4 thesis, 11 leakage); the live demo sits
-  on a `figure` so there's always a fallback on screen. 16 slides + demo ≈ 30 min.
+- **Runtime / trim options.** The war-story act adds ~7 slides → **23 slides ≈ 39 min**,
+  over the nominal 30-min slot (11:30–12:00). Either flex the slot to ~35–40, or trim:
+  best candidates are slide 19 (skills `icon_cards` — can compress or fold a card) and
+  slide 22 (Track-2 schema — can shorten). The war-story act (11–18) and the live demo (9)
+  are load-bearing; don't cut those. The two diagrams (6, 15) each earn their minute. Owner
+  call in the content phase.
+- **Act ordering note.** The war story sits right after the two-cutoffs setup (slide 10)
+  and climaxes on slide 18 ("live eval"), then the deck drops back to skills/three-jobs
+  (19–22). Slide 18's closing line bridges that intentionally ("let me show you the rest of
+  what this identity can do"). If the tonal drop bothers the owner, the alternative is to
+  move the whole act to just before the takeaways — flagged, not done.
+- **Two diagrams, complementary.** Slide 6 (`agent_architecture`) shows *inside one agent*;
+  slide 15 (`agentic_system`) shows *many models collaborating and policing each other*
+  (analyst + sub-agent + verifier + harness). Both are conceptual boxes-and-arrows where
+  every box maps to a real component. Slide 15 is the "name it → show it" payoff for the
+  verifier/sub-agent/cutoff the war story introduces.
+- **Layout rhythm check (updated):** 12 distinct layouts. `statement` lands at three beats
+  (4 thesis, 17 the hard truth). The act uses `figure` (12 hero), `figure_full` (15
+  system), `compare` at 13 & 16 (emphasis on 16), `icon_cards` at 2, 18. `compare` at 10,
+  13, 16 never adjacent (separated by section/figure/numbered_list). `figure_full` twice (6,
+  15); `figure` twice (9 demo, 12 hero); `code` twice (5, 22). Live demo still sits on a
+  `figure` fallback. **23 slides + demo ≈ 39 min.**

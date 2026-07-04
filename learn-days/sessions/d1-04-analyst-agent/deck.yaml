@@ -24,20 +24,22 @@ slides:
     title: What we'll cover
     cards:
       - { icon: arrow, title: "From LLMP to agents", accent: pink,
-          body: "The natural next step from a process: instead of packing context in, the agent goes and gets it — on the same Predictor interface." }
+          body: "The agent goes and gets its context — on the same Predictor interface." }
       - { icon: robot, title: "Anatomy + capabilities", accent: purple,
-          body: "The agent's components, and the capability staircase that's really just which of them are switched on. We'll run it live." }
-      - { icon: chart, title: "One agent, three jobs", accent: blue,
-          body: "One identity forecasts a trajectory, prices a shock, or writes a scenario — where Track 2 first appears." }
-    callout: "Threaded through all of it: one honest tension we won't paper over."
+          body: "Its components, and the staircase of which ones are live. We run it live." }
+      - { icon: bug, title: "A leak we shipped", accent: blue,
+          body: "Our best forecaster was cheating. How we caught it, fixed it, what it means." }
+      - { icon: chart, title: "One agent, three jobs", accent: cyan,
+          body: "Trajectory, shock, or scenario — where Track 2 first appears." }
+    callout: "The honest tension in beat three is the whole reason to do this carefully."
     notes: |
-      Three beats. First, the conceptual bridge: how an agent is the natural next move
-      from an LLM Process, and why it still drops into the same evaluation harness from
-      this morning. Second, the anatomy of the Analyst Agent and the capabilities its
-      components unlock — which we'll run live so you can watch it search. And third,
-      the payoff: a single agent identity doing three different jobs, one of which
-      isn't a scored forecast at all. Threaded through all of it is one honest tension
-      we won't paper over.
+      Four beats. First, the conceptual bridge from an LLM Process, and why an agent
+      still drops into this morning's evaluation harness. Second, the anatomy of the
+      Analyst Agent and the capabilities its components unlock — which we run live.
+      Third — the part I most want you to remember — a real war story: this agent once
+      looked brilliant, and it was cheating. I'll show how we caught it, fixed it, and
+      the uncomfortable lesson underneath. And fourth, the payoff: one identity doing
+      three jobs, one of which isn't a scored forecast at all.
 
   # 3 — From a process to an agent
   - layout: compare
@@ -202,20 +204,180 @@ slides:
       date. So for any agent with live tools, the cutoff is a discipline we enforce by
       governance and disclosure, not a property we can prove.
 
-  # 11 — Leakage punchline
-  - layout: statement
-    statement: "You can fence the data. You can't fence the web."
-    support: "So we separate cutoff-fenced backtests from live runs — and say which is which."
-    callout: "Honest disclosure beats a false guarantee."
+  # 11 — War story: a leak we shipped (section)
+  - layout: section
+    eyebrow: A true story from this repo
+    title: A leak we shipped
+    subtitle: "The agent that looked brilliant — because it was cheating"
     notes: |
-      One line to remember. You can fence the data; you can't fence the web. That's not a
-      reason to avoid live-tool agents — their whole value is reacting to new information,
-      which you just saw. It's a reason to be disciplined and transparent: keep the
-      cutoff-fenced backtest cohort separate from the live cohort, and never quietly mix
-      them into one number. With that honesty in place, let's zoom into the code rung — and
-      what we actually feed it.
+      We've said the web can't be structurally fenced. Let me stop saying it and show
+      you — because we didn't catch this in theory, we caught it in our own numbers. For a
+      stretch, this exact news agent was our best forecaster on the energy use case: beat
+      ARIMA, beat LightGBM, beat the LLM-process baselines. We were, briefly, delighted.
+      Then we looked closer, and it turned out the agent was best in the room because it
+      had seen the answer sheet. Here's how that unravelled.
 
-  # 12 — Skills: competence by configuration
+  # 12 — The smoking gun (HERO figure)
+  - layout: figure
+    title: The smoking gun
+    image: ../../assets/figures/d1-04/leakage_crps_by_horizon.png
+    caption:
+      lead: "WTI news agent · CRPS by horizon · 2026 eval."
+      body: "Uncertainty must compound with horizon — the leaked agent's didn't."
+    side:
+      heading: "Too good to be true."
+      points:
+        - "Flat CRPS across every horizon"
+        - "Honest methods ~triple by 21d"
+        - "Flat = it already knew the answer"
+    notes: |
+      This is the whole tell on one chart. CRPS is our forecast score, lower is better,
+      broken out by how far ahead we forecast: 5, 10, 21 days. Look at the honest methods
+      first — AutoARIMA, Naive. Their error roughly triples as the horizon grows, because
+      of course it does: three weeks out is much harder than a few days out. Now the pre-fix
+      agent, the flat line: about 5.6 the whole way. That is not skill. A forecaster whose
+      uncertainty doesn't grow with the horizon already knows how it ends. Plug the leak and
+      the same agent's curve springs back to the normal shape — and its overall score gets
+      worse by forty-two percent. That gap, 5.6 to 8.0, is the exact size of the cheating.
+
+  # 13 — How we caught it
+  - layout: compare
+    title: How we caught it
+    left:
+      label: The fingerprint
+      lines:
+        - "Flat CRPS across 5 / 10 / 21d"
+        - "Beat every baseline at 21 days"
+        - "Bands too tight to be honest"
+    right:
+      label: The confession
+      lines:
+        - "We read the agent's search trace"
+        - "11 of 14 searches skipped the cutoff"
+        - "A result dated ~6 weeks past origin"
+    callout: "The score raised the suspicion; the trace proved it."
+    notes: |
+      Two steps, and this is a repeatable way to smell leakage. Step one, the fingerprint:
+      the score pattern, plus a newcomer suddenly beating a fifty-year-old model at the
+      longest horizon — exactly where a real edge is hardest to get. Suspicious, not proof.
+      Step two, the confession: because every run is traced, we opened the actual tool calls
+      in Langfuse. In one production trace, 11 of the agent's 14 web searches had dropped
+      the cutoff argument, and one came back with prices dated roughly six weeks after the
+      forecast origin. The agent was reading July's prices to forecast May. There it is. A
+      scoreboard tells you something's wrong; your traces tell you what.
+
+  # 14 — Three tries to plug a leak
+  - layout: numbered_list
+    title: Three tries to plug a leak
+    items:
+      - { title: "Stronger prompt — it failed",
+          desc: "'Only use pre-cutoff sources.' A model can't police where its words came from." }
+      - { title: "Independent verifier (#161)",
+          desc: "A different model audits each claim vs the cutoff, strips it, or fails loud." }
+      - { title: "Harness-enforced cutoff (#162)",
+          desc: "The origin is injected by the harness — the LLM can't see, omit, or spoof it." }
+    notes: |
+      Fixing it took three tries, and the arc is the real lesson. First, the obvious thing:
+      a sterner instruction — 'only use sources before the cutoff, this is critical.' It
+      didn't hold, and here's the deep point: a single model genuinely cannot tell whether a
+      fact it wrote down came from the search in front of it or from its own training. No
+      prompt fixes that. So the second fix was architectural — a separate verifier model
+      whose only job is to judge each claim against the cutoff and strip what fails, retrying
+      or failing loudly rather than returning contaminated text. Better — but it only ran
+      when the agent remembered to pass the cutoff, and it often didn't. So the third fix
+      took the cutoff away from the model entirely: the harness injects the forecast origin
+      through a channel the LLM can't see, omit, or spoof. Belt, then suspenders, then a lock
+      the prisoner doesn't hold the key to. The fix that worked was architectural — not
+      another paragraph of prompt.
+
+  # 15 — How the pieces work together (agentic-system diagram)
+  - layout: figure_full
+    title: How the pieces work together
+    image: ../../assets/figures/d1-04/agentic_system.png
+    callout: "No single model polices itself — and the cutoff comes from the harness, not the LLM."
+    notes: |
+      Step back and look at what that fix actually built — this shape is worth recognizing,
+      because it's what a lot of real agent systems look like under the hood, and it's more
+      than one model. The analyst is really an orchestrator: for news it delegates to a
+      sub-agent whose whole job is retrieval, and that sub-agent calls the search tool. The
+      crucial part: raw hits don't go straight back. They pass through a separate verifier —
+      a different model whose only job is to check each claim against the cutoff and throw out
+      anything after it, retrying up to three times or failing loudly rather than passing
+      contaminated text. Only verified context flows back to the analyst, which turns it into
+      the forecast. Two choices make this robust rather than hopeful: no single model polices
+      itself — the checker is independent of what it checks — and the cutoff isn't something
+      the LLM types, it's injected by the harness in a channel the model can't see or change.
+      That's the difference between a system that asks to be honest and one that's built to be.
+
+  # 16 — One polluted, one honest
+  - layout: compare
+    title: One polluted, one honest
+    style: emphasis
+    left:
+      label: Polluted (pre-fix)
+      lines:
+        - "Cited prices past the origin"
+        - "The search skipped the cutoff"
+        - "No trace link — unauditable"
+    right:
+      label: Self-corrected (post-fix)
+      lines:
+        - "Cites only facts at the cutoff"
+        - "Feb 2: WTI settled $62.14"
+        - "Then projects — one click to the trace"
+    callout: "Same agent, same question — one had seen the future, one hadn't."
+    notes: |
+      Concretely, the same agent before and after. On the left, the polluted behaviour: a
+      rationale leaning on prices that hadn't happened yet, from a search that skipped the
+      cutoff — and tellingly, the pre-fix predictions don't even carry a trace link, so you
+      couldn't audit them if you wanted to. On the right, a real post-fix run from the
+      committed results, forecasting from February 2nd, 2026. Every fact it cites sits at or
+      before that date — 'as of February 2nd, WTI retreated three dollars to settle at
+      $62.14' — and then it projects forward. That's honest reasoning: it anchors on what
+      was knowable, and it's fully auditable — every one carries a Langfuse link you can
+      open. Same brain, same question. The only difference is whether it was allowed to peek.
+
+  # 17 — The hard truth
+  - layout: statement
+    statement: "You can't un-leak a live backtest."
+    support: "A live web index always knows how the story ends."
+    callout: "Separate fenced backtests from live runs — and say which is which."
+    notes: |
+      Now the uncomfortable part — straight with you, rather than selling something. We
+      fixed this leak. But step back: we're backtesting an agent whose whole value is live
+      web access, over a period the live web has already fully indexed and written up. Even
+      with a perfect cutoff on the search tool, the model's own training has a cutoff, and
+      the internet is saturated with hindsight about 2025 and early 2026. You can reduce the
+      leakage — we did, a lot — but you cannot prove it's gone. A live backtest can never be
+      as clean as a genuine forecast into an unknown future. So the discipline is: keep
+      fenced backtests and live runs in separate cohorts, and always say which is which.
+      Honesty about the limitation beats a false guarantee.
+
+  # 18 — So why keep going? (positive close of the act)
+  - layout: icon_cards
+    title: So why keep going?
+    cards:
+      - { icon: chart, title: "Still the frontier", accent: pink,
+          body: "LLMs lead automated forecasting — ForecastBench has humans still ahead, but not for lack of trying." }
+      - { icon: search, title: "Live eval is the answer", accent: purple,
+          body: "Forecast a truly un-indexed future: no cutoff to fence, nothing to filter, nothing to leak." }
+      - { icon: arrow, title: "Beyond the bootcamp", accent: blue,
+          body: "Take the agents that look good here to real live eval — where the score finally means it." }
+    callout: "The leak is a backtesting artifact — not a verdict on the agents."
+    notes: |
+      So if backtests are structurally suspect, why are we here? Two reasons. One: even
+      accounting for all of this, agentic LLM forecasters are the frontier of automated
+      forecasting right now — ForecastBench, the leakage-free benchmark of genuinely
+      unresolved future questions, still has expert humans ahead of the models, but the
+      models are the best automated forecasters we've got and they're improving fast. Two,
+      the punchline of the session: the honest way to evaluate a live-data agent isn't a
+      cleaner backtest — it's a live evaluation. Point it at questions whose answers don't
+      exist yet, and wait. No cutoff to enforce, nothing to filter, because there's no
+      future to leak. That's the natural next step past a bootcamp. The leak we walked
+      through is an artifact of backtesting — not a verdict on the agents. With that honestly
+      on the table, let me show you the rest of what this one identity can do.
+
+  # 19 — Skills: competence by configuration
   - layout: icon_cards
     title: Competence by configuration
     cards:
@@ -238,7 +400,7 @@ slides:
       we upgraded the agent's analytical competence by adding two folders to a list — no
       fine-tuning, no redeploy. Configuration, not code, one more time.
 
-  # 13 — Section break
+  # 20 — Section break
   - layout: section
     eyebrow: Configuration, not code
     title: One agent, three jobs
@@ -247,7 +409,7 @@ slides:
       We've seen one capable agent. Now watch the same identity do three completely
       different jobs — and watch one of them stop being a scored forecast at all.
 
-  # 14 — One identity, three tasks
+  # 21 — One identity, three tasks
   - layout: table
     title: One identity, three tasks
     subtitle: "One AgentConfig, paired with three (prompt, output schema) combinations"
@@ -266,7 +428,7 @@ slides:
       structured but unscored — that's Track 2. Same brain, three jobs, picked by which
       output schema you hand it. That last row is the interesting one.
 
-  # 15 — Track 2: the agent as analyst (real schema)
+  # 22 — Track 2: the agent as analyst (real schema)
   - layout: code
     title: "Track 2: the agent as analyst"
     language: python
@@ -296,27 +458,29 @@ slides:
       swapping the output schema. One capable identity spans both the scored forecaster and
       the interactive analyst.
 
-  # 16 — What to take forward
+  # 23 — What to take forward
   - layout: cards_dense
     title: What to take forward
     columns: 3
     style: outline
     cards:
-      - { eyebrow: "01", title: "Agents extend LLMP", metric: "same goal", accent: pink,
-          desc: "By fetching context and running code — a calibrated forecast, new abilities." }
-      - { eyebrow: "02", title: "Capabilities are config", metric: "one interface", accent: purple,
+      - { eyebrow: "01", title: "Capabilities are config", metric: "one interface", accent: pink,
           desc: "News, code, skills, tools — toggles on one Predictor identity." }
-      - { eyebrow: "03", title: "The web can't be fenced", metric: "disclose it", accent: blue,
-          desc: "Hard cutoff for data, soft for live tools — disclose which." }
+      - { eyebrow: "02", title: "A great score can be a leak", metric: "flat CRPS", accent: purple,
+          desc: "The tell was a curve that wouldn't grow; the fix was architectural." }
+      - { eyebrow: "03", title: "Live backtests can't be clean", metric: "go live", accent: blue,
+          desc: "The honest next step is live eval — where nothing's left to leak." }
     callout: "Tomorrow: an agent that rewrites its own forecasting strategy."
     notes: |
-      Three things to carry forward. One: an agent is the natural extension of an LLM
-      Process — same goal, a calibrated forecast, but now it can fetch context and run
-      code, which you saw it do. Two: every capability we added was configuration on a
-      single identity that never stopped being a Predictor — which is what keeps agents on
-      the same honest scoreboard as everything else. Three: the leakage tension is real and
-      specific — data has a hard cutoff, live tools only a soft one, so we stay disciplined
-      and we disclose. Hold onto that architecture diagram, because tomorrow in part two I'll
-      fill its empty slot with a strategy the agent rewrites itself — and we'll measure
-      whether that self-improvement actually helps on a protected 2026 window. Thanks — and
-      after lunch we'll get hands-on.
+      Three things to carry forward. One: every capability we added — news, code, skills,
+      tools — was configuration on a single identity that never stopped being a Predictor,
+      which keeps agents on the same honest scoreboard as everything else. Two, the one I
+      most want to stick: a suspiciously good score can be a leak. Our best forecaster was
+      cheating, and the tell was a CRPS curve that refused to grow with the horizon — you
+      now know that smell, and you know the fix is architectural, a check the model can't
+      talk its way around, not a sterner prompt. Three: you cannot fully un-leak a backtest
+      of a live-data agent, so the real evaluation is a live one — point it at a future that
+      hasn't happened and wait. That's the honest frontier past this bootcamp. Hold onto the
+      architecture diagram, because tomorrow I fill its empty slot with a strategy the agent
+      rewrites itself, and we measure whether that actually helps on a protected 2026 window.
+      Thanks — and after lunch we'll get hands-on.
