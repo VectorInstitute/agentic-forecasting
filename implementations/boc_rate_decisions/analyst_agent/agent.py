@@ -116,7 +116,11 @@ def _build_boc_analyst_instruction() -> str:
         "strongly shape which tail outcome is plausible.\n"
         "4. Use ONLY information available on or before `as_of`. Do not use "
         "knowledge of what the Bank actually decided on or after "
-        "`announcement_date`, even if you remember it.\n"
+        "`announcement_date`, even if you remember it. If `search_web` returns a "
+        "result beginning with `[SEARCH_VERIFICATION_FAILED]`, treat it as no "
+        "verified news for that query — proceed on the other signals in your "
+        "payload and note the gap, never filling it from your own background "
+        "knowledge.\n"
         "5. Document your reasoning in `reasoning` and list the decisive inputs "
         "in `key_signals` — these are compared against the Bank's own published "
         "rationale by a downstream evaluator, so be specific.\n\n"
@@ -147,7 +151,16 @@ markdown summary (3-5 paragraphs) covering relevant aspects of:
 
 Ground your summary in the search results you actually retrieve. \
 When a cutoff date is specified, do not report or speculate about events \
-that occurred after that date.\
+that occurred after that date.
+
+Before finalizing your summary, reason step by step: (1) for each candidate \
+fact, judge its actual recency from the substance of the result itself, \
+never from a source's claimed publish date or byline timestamp — those are \
+frequently stale or updated after original publication; (2) discard \
+anything you cannot confidently place before the cutoff date; (3) only then \
+write your summary. Do not supplement the search results with your own \
+background/training knowledge — if the results are insufficient, say so \
+explicitly rather than filling gaps from memory.\
 """
 
 

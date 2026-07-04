@@ -31,7 +31,7 @@ from dotenv import load_dotenv
 
 # Repo root holds the .env with PROXY_* creds the agent needs.
 ROOT = Path.cwd().resolve().parents[1]
-load_dotenv(ROOT / ".env")
+load_dotenv(ROOT / ".env", override=False)
 
 # ── Model selection ───────────────────────────────────
 # Two project models: "gemini-3.1-flash-lite-preview" (lite/default) and

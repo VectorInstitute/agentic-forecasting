@@ -147,6 +147,37 @@ class TestFreshSessionMode:
 
         assert patch_runner_cls.run_async.call_args.kwargs["session_id"] == "fresh-sid"
 
+    async def test_initial_state_passed_through_to_create_session(self, patch_runner_cls, mock_agent) -> None:
+        """initial_state reaches session_service.create_session's state kwarg.
+
+        This is what lets AgentPredictor seed a harness-controlled as_of value
+        that search_web can enforce via ToolContext.state, regardless of
+        whether the LLM remembers to pass a matching cutoff_date argument.
+        """
+        patch_runner_cls.session_service.create_session.return_value = _session("s1")
+        patch_runner_cls.run_async.return_value = _stream(_final_event("ok"))
+        runner = AdkTextRunner(
+            mock_agent,
+            config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=True),
+        )
+
+        await runner.run_text_async("hello", user_id="alice", initial_state={"__as_of__": "2024-01-15"})
+
+        assert patch_runner_cls.session_service.create_session.call_args.kwargs["state"] == {"__as_of__": "2024-01-15"}
+
+    async def test_no_initial_state_passes_none_to_create_session(self, patch_runner_cls, mock_agent) -> None:
+        """Omitting initial_state passes state=None (unchanged default behavior)."""
+        patch_runner_cls.session_service.create_session.return_value = _session("s1")
+        patch_runner_cls.run_async.return_value = _stream(_final_event("ok"))
+        runner = AdkTextRunner(
+            mock_agent,
+            config=AdkTextRunnerConfig(app_name="app", fresh_session_per_message=True),
+        )
+
+        await runner.run_text_async("hello", user_id="alice")
+
+        assert patch_runner_cls.session_service.create_session.call_args.kwargs["state"] is None
+
 
 # ---------------------------------------------------------------------------
 # Session resolution — fresh_session_per_message=False (sticky)

@@ -6,7 +6,8 @@ kind: python
 """Repo concierge agent — onboarding helper for the agentic-forecasting codebase.
 
 Exports the :class:`AgentConfig` factory and the knowledge-search tool. Pair
-with ``99_repo_concierge.ipynb`` or ``adk run concierge_agent``.
+with ``99_repo_concierge.ipynb`` or ``adk run implementations/getting_started/concierge_agent``
+from the repository root.
 """
 
 from getting_started.concierge_agent.agent import build_concierge_config

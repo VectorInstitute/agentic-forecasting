@@ -54,6 +54,30 @@ import pandas as pd
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.adapters import FREDAdapter, YFinanceDailyAdapter
 from aieng.forecasting.data.adapters.base import BaseAdapter
+from aieng.forecasting.data.features import (
+    StaticFrameAdapter,
+)
+from aieng.forecasting.data.features import (
+    apply_one_business_day_feature_lag as _apply_one_business_day_feature_lag,
+)
+from aieng.forecasting.data.features import (
+    business_daily_expand_from_releases as _business_daily_expand_from_releases,
+)
+from aieng.forecasting.data.features import (
+    business_daily_ffill as _business_daily_ffill,
+)
+from aieng.forecasting.data.features import (
+    canonical_three_col as _canonical_three_col,
+)
+from aieng.forecasting.data.features import (
+    drop_weekend_timestamp_rows as _drop_weekend_timestamp_rows,
+)
+from aieng.forecasting.data.features import (
+    to_level_feature_from_daily as _to_level_feature_from_daily,
+)
+from aieng.forecasting.data.features import (
+    to_log_return_feature as _to_log_return_feature,
+)
 
 
 _load_dotenv: Callable[..., Any] | None
@@ -215,16 +239,6 @@ class YahooFinanceDailyAdapter(BaseAdapter):
         return out
 
 
-class StaticFrameAdapter(BaseAdapter):
-    """Adapter that returns a precomputed canonical DataFrame."""
-
-    def __init__(self, frame: pd.DataFrame) -> None:
-        self._frame = frame.copy()
-
-    def fetch(self) -> pd.DataFrame:
-        return self._frame.copy()
-
-
 def _build_cumulative_log_return_frame(price_df: pd.DataFrame, window: int) -> pd.DataFrame:
     """One row per session: value = log(adj_close[t] / adj_close[t-window]).
 
@@ -357,31 +371,6 @@ DEFAULT_COVARIATE_SERIES_IDS: list[str] = [
 ]
 
 
-def _canonical_three_col(df: pd.DataFrame) -> pd.DataFrame:
-    out = df.copy()
-    out["timestamp"] = pd.to_datetime(out["timestamp"]).dt.tz_localize(None)
-    out["released_at"] = pd.to_datetime(out["released_at"]).dt.tz_localize(None)
-    out["value"] = pd.to_numeric(out["value"], errors="coerce")
-    out = out.dropna(subset=["timestamp", "released_at", "value"]).sort_values("timestamp")
-    return out[["timestamp", "value", "released_at"]].reset_index(drop=True)
-
-
-def _drop_weekend_timestamp_rows(df: pd.DataFrame) -> pd.DataFrame:
-    r"""Remove rows whose ``timestamp`` is Saturday or Sunday.
-
-    Some FRED daily series (notably effective fed funds ``DFF``) include
-    weekend dates in early vintages. Forecast tasks and Darts regression models
-    use ``freq="B"`` (pandas Mon--Fri business days); ``TimeSeries.from_dataframe``
-    with ``fill_missing_dates=True`` then raises if any input stamp is not on
-    that grid.
-    """
-    if df.empty:
-        return df
-    x = df.copy()
-    ts = pd.to_datetime(x["timestamp"])
-    return x.loc[ts.dt.dayofweek < 5].reset_index(drop=True)
-
-
 def _load_yahoo_close_frame(
     ticker: str,
     *,
@@ -404,22 +393,6 @@ def _load_yahoo_close_frame(
     return frame.dropna(subset=["value"]).reset_index(drop=True)
 
 
-def _to_log_return_feature(close_df: pd.DataFrame) -> pd.DataFrame:
-    out = close_df.copy()
-    out = out[out["value"] > 0].reset_index(drop=True)
-    out["value"] = np.log(out["value"] / out["value"].shift(1))
-    out = out.dropna(subset=["value"]).reset_index(drop=True)
-    # Daily closes are known after market close; model sees them from next business day.
-    out["released_at"] = pd.to_datetime(out["timestamp"]) + pd.offsets.BDay(1)
-    return _canonical_three_col(out[["timestamp", "value", "released_at"]])
-
-
-def _to_level_feature_from_daily(close_df: pd.DataFrame) -> pd.DataFrame:
-    out = close_df.copy()
-    out["released_at"] = pd.to_datetime(out["timestamp"]) + pd.offsets.BDay(1)
-    return _canonical_three_col(out[["timestamp", "value", "released_at"]])
-
-
 def _fred_frame(
     fred_id: str,
     *,
@@ -428,62 +401,6 @@ def _fred_frame(
 ) -> pd.DataFrame:
     adapter = FREDAdapter(fred_id, cache_dir=cache_dir, refresh=refresh)
     return _canonical_three_col(adapter.fetch())
-
-
-def _business_daily_expand_from_releases(
-    monthly_df: pd.DataFrame,
-    *,
-    start: str,
-    end: str | None,
-) -> pd.DataFrame:
-    x = monthly_df.copy().sort_values("released_at").reset_index(drop=True)
-    lo = pd.Timestamp(start)
-    hi = pd.Timestamp(end) if end is not None else x["released_at"].max() + pd.offsets.BDay(1)
-    if hi < lo:
-        return pd.DataFrame(columns=["timestamp", "value", "released_at"])
-    daily_idx = pd.bdate_range(lo, hi)
-    rel = x.set_index("released_at")["value"].reindex(daily_idx).ffill()
-    out = rel.reset_index()
-    out.columns = ["timestamp", "value"]
-    out = out.dropna(subset=["value"]).reset_index(drop=True)
-    out["released_at"] = out["timestamp"]
-    return _canonical_three_col(out)
-
-
-def _apply_one_business_day_feature_lag(df: pd.DataFrame) -> pd.DataFrame:
-    """Shift values so the feature at *t* only uses information through *t-1*."""
-    x = df.copy().sort_values("timestamp").reset_index(drop=True)
-    x["value"] = x["value"].shift(1)
-    x = x.dropna(subset=["value"]).reset_index(drop=True)
-    # After lagging, the shifted value is available at row timestamp.
-    x["released_at"] = x["timestamp"]
-    return _canonical_three_col(x)
-
-
-def _business_daily_ffill(df: pd.DataFrame) -> pd.DataFrame:
-    """Reindex a daily feature onto a complete business-day calendar, forward-filling.
-
-    FRED bond / commodity series follow a different holiday calendar than the
-    NYSE-traded target — e.g. Columbus Day and Veterans Day, when the bond market
-    is closed but equities trade. Without this, such a covariate ends a few days
-    short of a target origin and Darts raises ``past_covariates are not long
-    enough``, silently skipping those origins for the covariate-using models.
-
-    Forward-filling carries the last observed value across those gaps (and onto
-    every Mon–Fri business day), so the covariate is defined wherever the target
-    is. It is leak-safe: it only repeats already-known past information, and the
-    one-business-day feature lag is still applied afterwards.
-    """
-    if df.empty:
-        return df
-    x = df.copy().sort_values("timestamp").reset_index(drop=True)
-    idx = pd.bdate_range(x["timestamp"].min(), x["timestamp"].max())
-    filled = x.set_index("timestamp")["value"].reindex(idx).ffill()
-    out = filled.reset_index()
-    out.columns = ["timestamp", "value"]
-    out = out.dropna(subset=["value"]).reset_index(drop=True)
-    out["released_at"] = out["timestamp"]
-    return _canonical_three_col(out)
 
 
 def _build_monthly_cpi_mom_feature(

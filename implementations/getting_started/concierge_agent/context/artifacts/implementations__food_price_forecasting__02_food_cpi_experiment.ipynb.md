@@ -74,7 +74,7 @@ from dotenv import load_dotenv
 warnings.filterwarnings("ignore")
 
 ROOT = Path.cwd().resolve().parents[1]
-load_dotenv(ROOT / ".env")
+load_dotenv(ROOT / ".env", override=False)
 
 import importlib
 

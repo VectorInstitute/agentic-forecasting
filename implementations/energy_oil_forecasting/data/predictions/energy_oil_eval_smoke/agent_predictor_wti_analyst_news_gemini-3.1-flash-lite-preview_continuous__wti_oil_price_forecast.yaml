@@ -1,0 +1,165 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    payload_type: continuous
+    categories: null
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2026-02-02T00:00:00'
+  end: '2026-02-09T00:00:00'
+  stride: 5
+  origin_dates: null
+  warmup: 250
+  description: Two-origin smoke evaluation for local and CI testing of the NB04 pipeline.
+    Uses the same tasks, horizons, warmup, and geopolitical period as energy_oil_eval
+    but with only 2 origins to keep cost negligible.
+predictor_id: agent_predictor_wti_analyst_news_gemini-3.1-flash-lite-preview_continuous
+predictions:
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.1-flash-lite-preview_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:49:25.917497'
+  as_of: '2026-02-02T00:00:00'
+  forecast_date: '2026-02-09T00:00:00'
+  payload:
+    point_forecast: 65.15
+    quantiles:
+      '0.05': 62.5
+      '0.1': 63.2
+      '0.2': 64.0
+      '0.3': 64.6
+      '0.4': 64.9
+      '0.5': 65.15
+      '0.6': 65.4
+      '0.7': 65.8
+      '0.8': 66.3
+      '0.9': 67.2
+      '0.95': 67.8
+  metadata:
+    rationale: 'The outlook as of February 2026 is defined by a tense balance: current
+      prices near $65 are supported by geopolitical risk premiums (Middle East, Ukraine),
+      but these are countered by structural market concerns regarding global oversupply
+      and muted demand. OPEC+ is maintaining production limits to stabilize prices,
+      which provides a floor. My forecast reflects a consolidation in the short term,
+      with a potential for mild downward mean-reversion over the 21-day horizon as
+      market participants look past transitory geopolitical news toward structural
+      realities.'
+    horizon_rationale: Over the next 5 days, prices are expected to consolidate near
+      the $65.21 close. Short-term support remains from geopolitical risk premiums,
+      though the market is balancing these against global oversupply expectations.
+    langfuse_trace_id: 904ac4d35927a97e4fc1c78fc98c37dd
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/904ac4d35927a97e4fc1c78fc98c37dd
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.1-flash-lite-preview_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:49:25.917497'
+  as_of: '2026-02-02T00:00:00'
+  forecast_date: '2026-03-03T00:00:00'
+  payload:
+    point_forecast: 64.0
+    quantiles:
+      '0.05': 59.0
+      '0.1': 60.5
+      '0.2': 61.8
+      '0.3': 62.8
+      '0.4': 63.5
+      '0.5': 64.0
+      '0.6': 64.6
+      '0.7': 65.5
+      '0.8': 66.8
+      '0.9': 68.5
+      '0.95': 69.8
+  metadata:
+    rationale: 'The outlook as of February 2026 is defined by a tense balance: current
+      prices near $65 are supported by geopolitical risk premiums (Middle East, Ukraine),
+      but these are countered by structural market concerns regarding global oversupply
+      and muted demand. OPEC+ is maintaining production limits to stabilize prices,
+      which provides a floor. My forecast reflects a consolidation in the short term,
+      with a potential for mild downward mean-reversion over the 21-day horizon as
+      market participants look past transitory geopolitical news toward structural
+      realities.'
+    horizon_rationale: Looking 21 days out, we anticipate a gradual shift towards
+      fundamentals. Without significant supply-side shocks, structural oversupply
+      concerns are expected to exert downward pressure on prices, tempered by OPEC+'s
+      production management.
+    langfuse_trace_id: 904ac4d35927a97e4fc1c78fc98c37dd
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/904ac4d35927a97e4fc1c78fc98c37dd
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.1-flash-lite-preview_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:49:34.873507'
+  as_of: '2026-02-09T00:00:00'
+  forecast_date: '2026-02-23T00:00:00'
+  payload:
+    point_forecast: 65.0
+    quantiles:
+      '0.05': 59.5
+      '0.1': 60.5
+      '0.2': 62.0
+      '0.3': 63.2
+      '0.4': 64.2
+      '0.5': 65.0
+      '0.6': 65.8
+      '0.7': 66.9
+      '0.8': 68.1
+      '0.9': 69.5
+      '0.95': 70.5
+  metadata:
+    rationale: The WTI forecast is driven primarily by the acute geopolitical risk
+      premium stemming from US-Iran tensions in early February 2026. Fundamental support
+      remains via OPEC+ production restraint and seasonal supply constraints (winter
+      weather). Forecasts assume no imminent resolution to the Strait of Hormuz situation,
+      leading to a biased upside until mid-to-late February, at which point potential
+      de-escalation or seasonal demand shifts begin to introduce a two-way risk profile.
+    horizon_rationale: Over 10 days, the market continues to price in geopolitical
+      uncertainty. Unless a major de-escalation occurs in the Strait of Hormuz, the
+      supply risk premium is expected to sustain current levels or push slightly higher
+      as physical market tightness persists through the end of the winter season.
+    langfuse_trace_id: 898cbbe15c0c32a15d096873986f59aa
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/898cbbe15c0c32a15d096873986f59aa
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.1-flash-lite-preview_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:49:34.873507'
+  as_of: '2026-02-09T00:00:00'
+  forecast_date: '2026-03-10T00:00:00'
+  payload:
+    point_forecast: 64.8
+    quantiles:
+      '0.05': 57.5
+      '0.1': 59.0
+      '0.2': 60.5
+      '0.3': 62.2
+      '0.4': 63.8
+      '0.5': 64.8
+      '0.6': 66.0
+      '0.7': 67.5
+      '0.8': 69.2
+      '0.9': 71.0
+      '0.95': 72.5
+  metadata:
+    rationale: The WTI forecast is driven primarily by the acute geopolitical risk
+      premium stemming from US-Iran tensions in early February 2026. Fundamental support
+      remains via OPEC+ production restraint and seasonal supply constraints (winter
+      weather). Forecasts assume no imminent resolution to the Strait of Hormuz situation,
+      leading to a biased upside until mid-to-late February, at which point potential
+      de-escalation or seasonal demand shifts begin to introduce a two-way risk profile.
+    horizon_rationale: By 21 days, we begin to account for the possibility of either
+      a diplomatic resolution or a market realization of the long-term surplus risks
+      as winter concludes. The point forecast leans slightly lower than the 10-day
+      outlook to reflect typical mean reversion, but the wider distribution accounts
+      for the binary nature of the ongoing geopolitical risk.
+    langfuse_trace_id: 898cbbe15c0c32a15d096873986f59aa
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/898cbbe15c0c32a15d096873986f59aa
+scores:
+- 0.5582641853773893
+- 8.528592599916067
+- 1.1109910696991219
+- 15.86487298130004
+metric: crps
+mean_score: 6.515680209073155
+ran_at: '2026-06-30T15:49:35.119918'
+skipped_origins: 0

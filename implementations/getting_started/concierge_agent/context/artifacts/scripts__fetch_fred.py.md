@@ -38,7 +38,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from dotenv import load_dotenv
 
 
-load_dotenv(REPO_ROOT / ".env")
+load_dotenv(REPO_ROOT / ".env", override=False)
 
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.adapters import FREDAdapter
