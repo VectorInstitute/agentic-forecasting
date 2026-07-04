@@ -60,3 +60,5 @@ data/yfinance/
 # The skill's own .gitignore keeps its .venv / caches out.
 .claude/*
 !.claude/skills/
+.agents/
+learn-days/review-inbox/
