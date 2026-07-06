@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.evaluation.task import ForecastingTask
@@ -46,13 +46,13 @@ from aieng.forecasting.models import LITE_MODEL
 # Reuse the existing WTI prompt builder + history compression — these serialise
 # the task/context into the agent's JSON payload and are not worth duplicating.
 from energy_oil_forecasting.analyst_agent import WtiPriceForecastPromptBuilder
+from energy_oil_forecasting.starter_agent.tools import ToolSpec, news_search
 
 
-# Skills live next to this module.
+# Skills live next to this module. The forecasting contract is always loaded;
+# each tool loads its own playbook via its ToolSpec (see tools.py).
 _SKILLS_ROOT = Path(__file__).parent / "skills"
 _FORECASTING_SKILL = _SKILLS_ROOT / "forecasting"
-_RESEARCH_SKILL = _SKILLS_ROOT / "research-playbook"
-_CODE_ANALYSIS_SKILL = _SKILLS_ROOT / "code-analysis-playbook"
 
 
 # ---------------------------------------------------------------------------
@@ -88,28 +88,6 @@ def _build_starter_instruction() -> str:
 _STARTER_INSTRUCTION = _build_starter_instruction()
 
 
-_CONTEXT_RETRIEVAL_INSTRUCTION = """\
-You are an oil-market intelligence specialist with web search.
-
-Return a concise structured markdown summary (3-5 paragraphs) covering, as the
-query warrants: WTI/Brent price level and trend; OPEC+ supply decisions;
-geopolitical risk in the Persian Gulf and key shipping lanes; US SPR / energy
-policy; notable supply-disruption signals; and published analyst price targets.
-
-Ground every claim in the search results you actually retrieve. When a cutoff
-date is specified, never report or speculate about events after it.
-
-Before finalizing your summary, reason step by step: (1) for each candidate \
-fact, judge its actual recency from the substance of the result itself, \
-never from a source's claimed publish date or byline timestamp — those are \
-frequently stale or updated after original publication; (2) discard \
-anything you cannot confidently place before the cutoff date; (3) only then \
-write your summary. Do not supplement the search results with your own \
-background/training knowledge — if the results are insufficient, say so \
-explicitly rather than filling gaps from memory.\
-"""
-
-
 # ---------------------------------------------------------------------------
 # Config factory
 # ---------------------------------------------------------------------------
@@ -117,59 +95,75 @@ explicitly rather than filling gaps from memory.\
 
 def build_starter_agent_config(
     model: str = LITE_MODEL,
-    search_model: str = LITE_MODEL,
     *,
-    enable_search: bool = True,
-    enable_code_exec: bool = False,
+    tools: Sequence[ToolSpec] = (),
 ) -> AgentConfig:
-    """Build the WTI starter :class:`AgentConfig`.
+    """Build the WTI starter :class:`AgentConfig` from a toolbelt.
+
+    An agent is a persona plus a list of tools. The persona is fixed here (edit
+    ``_build_starter_instruction``); the *toolbelt* is what you compose in the
+    notebook — a list of :class:`~energy_oil_forecasting.starter_agent.tools.ToolSpec`
+    from the factories in :mod:`energy_oil_forecasting.starter_agent.tools`::
+
+        from energy_oil_forecasting.starter_agent import tools, build_starter_agent_config
+
+        config = build_starter_agent_config(
+            model=AGENT_MODEL,
+            tools=[tools.news_search(), tools.arima_forecast()],
+        )
+
+    Each spec lands in a different ``AgentConfig`` field; this function folds the
+    list, routing every fragment to the right place — search sub-agent, code
+    sandbox, function tools — and loading each tool's playbook skill and prompt
+    supplement. Adding or removing a tool is one line in the notebook.
 
     Parameters
     ----------
     model : str
         Model for the analyst agent (default: lite). Pass the advanced model
         (``"gemini-3.5-flash"``) for higher-quality runs.
-    search_model : str
-        Model for the bounded web-search sub-tool.
-    enable_search : bool, default=True
-        Wire a cutoff-aware ``search_web`` tool and load the
-        ``research-playbook`` skill. Proxy-only — no extra API key.
-    enable_code_exec : bool, default=False
-        Wire an E2B Python sandbox and load the ``code-analysis-playbook``
-        skill. Needs ``E2B_API_KEY`` and is slower, so it is off by default —
-        flip it on to let the agent compute its own diagnostics.
+    tools : Sequence[ToolSpec], default=()
+        The agent's toolbelt. Build entries with the factories in ``tools.py``
+        (``news_search()``, ``code_sandbox()``, ``arima_forecast()``), or write
+        your own factory that returns a ``ToolSpec``.
 
     Returns
     -------
     AgentConfig
     """
-    # Every attached skill is loaded on demand: ADK injects each skill's name +
-    # description into the system prompt, and the agent reads the full SKILL.md
-    # only when relevant — so toggling a tool just adds its skill, no persona edits.
+    # The forecasting contract is always loaded. Each tool's own playbook is
+    # loaded on demand: ADK injects each skill's name + description into the
+    # system prompt, and the agent reads the full SKILL.md only when relevant —
+    # so adding a tool just adds its skill, no persona edits.
     skills_dirs: list[Path] = [_FORECASTING_SKILL]
-    if enable_search:
-        skills_dirs.append(_RESEARCH_SKILL)
-    if enable_code_exec:
-        skills_dirs.append(_CODE_ANALYSIS_SKILL)
+    instruction = _STARTER_INSTRUCTION
+    context_retrieval = ContextRetrievalConfig()
+    code_execution = CodeExecutionConfig()
+    function_tools: list[Any] = []
+    max_output_tokens: int | None = None
 
-    context_retrieval = (
-        ContextRetrievalConfig(
-            enabled=True,
-            instruction=_CONTEXT_RETRIEVAL_INSTRUCTION,
-            search_model=search_model,
-        )
-        if enable_search
-        else ContextRetrievalConfig()
-    )
+    for spec in tools:
+        if spec.skill_dir is not None:
+            skills_dirs.append(spec.skill_dir)
+        if spec.instruction_supplement:
+            instruction += spec.instruction_supplement
+        if spec.context_retrieval is not None:
+            context_retrieval = spec.context_retrieval
+        if spec.code_execution is not None:
+            code_execution = spec.code_execution
+        if spec.function_tool is not None:
+            function_tools.append(spec.function_tool)
+        if spec.max_output_tokens is not None:
+            max_output_tokens = max(max_output_tokens or 0, spec.max_output_tokens)
 
     return AgentConfig(
         name="wti_starter_agent",
         model=model,
-        instruction=_STARTER_INSTRUCTION,
-        # 16k headroom: enough for a complete run_code script + structured output.
-        max_output_tokens=16_384 if enable_code_exec else None,
+        instruction=instruction,
+        max_output_tokens=max_output_tokens,
         context_retrieval=context_retrieval,
-        code_execution=CodeExecutionConfig(enabled=enable_code_exec),
+        code_execution=code_execution,
+        function_tools=function_tools,
         skills_dirs=skills_dirs,
     )
 
@@ -232,5 +226,6 @@ def build_starter_agent_predictor(config: AgentConfig) -> AgentPredictor:
 def __getattr__(name: str) -> Any:
     """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``."""
     if name == "root_agent":
-        return build_adk_agent(build_starter_agent_config())
+        # Interactive default: news search on (proxy-only, no extra key).
+        return build_adk_agent(build_starter_agent_config(tools=[news_search()]))
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
