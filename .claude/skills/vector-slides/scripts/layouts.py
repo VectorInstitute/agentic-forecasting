@@ -147,7 +147,7 @@ def render_icon_cards(slide, spec, ctx):
         C.card(slide, x, top, cw, height, accent=accent, accent_side="top")
         iy = top + 0.25
         if c.get("icon"):
-            C.icon(slide, c["icon"], x + 0.22, iy, 0.34)
+            C.icon(slide, c["icon"], x + 0.22, iy, 0.34, color=accent)
         if c.get("tag"):
             C.add_text(slide, x + 0.66, iy + 0.02, cw - 0.7, 0.3, c["tag"].upper(),
                        size=T["label"], color="pink", bold=True, space_after=0)
@@ -188,7 +188,7 @@ def render_icon_rows(slide, spec, ctx):
         accent = r.get("accent", "pink")
         C.card(slide, MX, y, CW, rh, accent=accent, accent_side="left", shadow=False)
         if r.get("icon"):
-            C.icon(slide, r["icon"], MX + 0.32, y + (rh - 0.36) / 2, 0.36)
+            C.icon(slide, r["icon"], MX + 0.32, y + (rh - 0.36) / 2, 0.36, color=accent)
         tx = MX + 0.95
         sub = r.get("sub")
         # compact offsets so title+desc fit even with 4 rows + callout (rh ≈ 0.46)
@@ -296,10 +296,15 @@ def render_numbered_list(slide, spec, ctx):
     top = 1.45 if has_sub else 1.20
     bottom = brand.CONTENT_BOTTOM
     gap = 0.14
-    rh = (bottom - top - gap * (n - 1)) / n
+    # Cap the row height so a short list (2–3 items) gets tight boxes instead of
+    # stretching to fill the band; then vertically center the stack so it stays
+    # well aligned. Dense lists (rh already below the cap) are unaffected.
+    rh = min(1.05, (bottom - top - gap * (n - 1)) / n)
+    total = n * rh + gap * (n - 1)
+    start = top + max(0.0, (bottom - top - total) / 2)
     d = min(0.46, rh - 0.20)
     for i, it in enumerate(items):
-        y = top + i * (rh + gap)
+        y = start + i * (rh + gap)
         C.card(slide, MX, y, CW, rh, accent="pink", accent_side="left", shadow=False)
         C.number_circle(slide, MX + 0.20, y + (rh - d) / 2, d, i + 1)
         tx = MX + 0.30 + d
@@ -592,7 +597,9 @@ def render_figure_full(slide, spec, ctx):
     caption = spec.get("caption")
     callout = spec.get("callout")
     top = _content_top(spec)
-    bottom = brand.CALLOUT_Y - 0.10 if callout else brand.CONTENT_BOTTOM
+    # A full-width figure with no callout may use the full content band down to
+    # just above the footer rule — gives a hero plot as much height as possible.
+    bottom = brand.CALLOUT_Y - 0.10 if callout else 4.85
     img_h = (bottom - top) - _caption_h(caption)
     img = _resolve_image(ctx, spec.get("image"))
     if img and img.exists():
@@ -668,6 +675,8 @@ def render_cards_dense(slide, spec, ctx):
     ch = (bottom - top - gy * (rows - 1)) / rows
     # tighter titles as columns narrow, so long words don't break mid-word
     ct_size = {1: 18, 2: 18, 3: 16}.get(cols, 13 if cols == 4 else 12)
+    # smaller body copy in narrow (4–5 col) cards → fewer awkward line wraps
+    desc_size = {5: 10, 4: 11}.get(cols, T["body"])
     accents = ["pink", "purple", "blue", "cyan", "amber"]
     pad = 0.24
     for i, c in enumerate(cards):
@@ -702,10 +711,10 @@ def render_cards_dense(slide, spec, ctx):
                           "color": ("white" if filled else accent),
                           "space_after": 5})
         if c.get("desc"):
-            paras.append({"text": c["desc"], "size": T["body"], "color": desc_color,
+            paras.append({"text": c["desc"], "size": desc_size, "color": desc_color,
                           "space_after": 4})
         for it in c.get("items", []):
-            paras.append({"text": "•  " + it, "size": T["body"], "color": desc_color,
+            paras.append({"text": "•  " + it, "size": desc_size, "color": desc_color,
                           "space_after": 3})
         C.add_text(slide, x + pad, y + (0.20 if not filled else 0.22),
                    cw - 2 * pad, ch - 0.34, paras, line_spacing=1.12, space_after=4)

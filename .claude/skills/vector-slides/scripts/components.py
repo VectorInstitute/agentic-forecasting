@@ -369,8 +369,44 @@ def _normalize_content(content) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Composite primitives
 # ---------------------------------------------------------------------------
-def icon(slide, name: str, x, y, size=0.34):
-    return image(slide, brand.icon_path(name), x, y, w=size, h=size)
+import tempfile
+
+_ICON_TINT_DIR = Path(tempfile.gettempdir()) / "vslides_icon_tint"
+
+
+def _tinted_icon_path(name: str, accent: str) -> Path:
+    """Return a recolored copy of the ``name`` icon in the ``accent`` color.
+
+    The brand icons are single-color glyphs on a transparent background, so a
+    tint is just: keep the alpha channel, replace RGB with the accent. Result is
+    cached on disk (keyed by name + hex) so repeat builds are cheap. Falls back
+    to the original icon if Pillow is unavailable.
+    """
+    hexv = brand.PALETTE.get(accent, accent).lstrip("#").upper()
+    src = brand.icon_path(name)
+    if len(hexv) != 6:
+        return src
+    out = _ICON_TINT_DIR / f"{name}_{hexv}.png"
+    if out.exists():
+        return out
+    try:
+        from PIL import Image
+    except ImportError:
+        return src
+    base = Image.open(src).convert("RGBA")
+    rgb = (int(hexv[0:2], 16), int(hexv[2:4], 16), int(hexv[4:6], 16))
+    tinted = Image.new("RGBA", base.size, rgb + (0,))
+    tinted.putalpha(base.getchannel("A"))
+    _ICON_TINT_DIR.mkdir(parents=True, exist_ok=True)
+    tinted.save(out)
+    return out
+
+
+def icon(slide, name: str, x, y, size=0.34, color=None):
+    """Place a brand icon. When ``color`` (a palette name or hex) is given, the
+    glyph is tinted to match — so a card's icon and its accent bar share a color."""
+    path = _tinted_icon_path(name, color) if color else brand.icon_path(name)
+    return image(slide, path, x, y, w=size, h=size)
 
 
 def number_circle(slide, x, y, d, n, *, fill="pink", text_color="white",
