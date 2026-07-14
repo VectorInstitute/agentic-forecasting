@@ -330,6 +330,12 @@ FRED_PREFETCH_REGISTRY: dict[str, tuple[str, str, str]] = {
     ),
     "UNRATE": ("Unemployment Rate", "Percent", "MS"),
     "DCOILWTICO": ("Crude Oil Prices: West Texas Intermediate (WTI)", "Dollars per Barrel", "D"),
+    # NOTE: both London gold fixing series were discontinued by FRED and no
+    # longer resolve (HTTP 400 "series does not exist"); there is no equivalent
+    # daily USD gold price on FRED. The gold covariate therefore degrades to
+    # absent at runtime (see the first-available fallback below and
+    # ``strict_covariates=False``). ``scripts/fetch_fred.py`` skips them via
+    # ``KNOWN_UNAVAILABLE_FRED_IDS`` so a clean run reports no spurious failure.
     "GOLDAMGBD228NLBM": (
         "Gold Fixing Price 10:30 A.M. (London time) in London Bullion Market",
         "U.S. Dollars per Troy Ounce",
