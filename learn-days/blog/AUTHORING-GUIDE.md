@@ -67,9 +67,9 @@ lecture carry a review banner until that author signs off:
 - **Concept (general)** — the idea from first principles or the cited paper.
 - **Grounding (our code / result)** — the specific module, notebook, spec, or number in
   this repo. Concept → code, every post.
-- **Honest takeaway** — what we actually learned, limitations included; a one-line bridge
+- **Takeaway** — what we actually learned, limitations included; a one-or-two-line bridge
   to the next post.
-- **Length:** ~1,200–1,800 words. Cross-link sibling posts (e.g. "we introduced CRPS in
+- **Length:** ~1,500–2,000 words. Cross-link sibling posts (e.g. "we introduced CRPS in
   [Post 1]"). End with a short "next in the series" line.
 
 ## Figure conventions

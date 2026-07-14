@@ -71,11 +71,11 @@ runs something and screenshots it (tracked in `CAPTURE-LIST.md`).
   apply?) → Track 1 (agents as scored forecasters) vs Track 2 (agents as analysts) → the
   metric family (CRPS/RPS/Brier) → the four reference implementations as the tour → the
   honest-evaluation throughline (cutoff/leakage) → what each post covers.
-- **Colour:** Ethan — "a very unique and rich testbed to push the frontier of agentic AI."
+- **Colour:** Ethan — "a unique and rich testbed to push the frontier of agentic AI."
 
 | Visual | Source |
 |--------|--------|
-| ForecastBench: models climbing toward superforecasters | **[LIFT]** `assets/figures/d1-00/forecastbench_performance.png` (flagged placeholder — extracted from CfP deck; consider regenerating or keep with clear citation) |
+| ForecastBench: models climbing toward superforecasters | **[LIFT]** `assets/figures/d1-00/forecastbench_performance.png` (I just updated this file with good quality, but we need to make sure we attribute to https://www.forecastbench.org/explore/ and include a relevant caption that also includes the attribution) |
 | Reference-implementations table (5 use cases → modality → what it teaches) | **[LIFT]** root `README.md` + `HOW-WE-WORK.md` table |
 | Track 1 / Track 2 schematic | **[LIFT]** d1-00 deck slide PNG `sessions/d1-00-intro/qa/slide_*.png`, or create-from-scratch |
 
@@ -98,7 +98,7 @@ runs something and screenshots it (tracked in `CAPTURE-LIST.md`).
 
 ## Post 2 — *Conventional methods are hard to beat (S&P 500)* (Behnoosh — review)
 
-- **Arc:** why the S&P 500 ("encouraged a subfield of math called math finance"; retirements,
+- **Arc:** why the S&P 500 ("encouraged a subfield of math called math finance (we don't have to use Behnoosh's literal wording here -- if there is a better way to describe these concepts and field of study, let's do that)"; retirements,
   banks) → the problem (overnight/cumulative returns at 1/5/21 business days) → the method
   ladder (naive → ARIMA → ETS → Kalman → **LightGBM** gradient boosting) → the covariate panel
   (VIX, 2s/10s, fed funds, unemployment, oil, gold, dollar index, NASDAQ) → interpretability as
@@ -151,6 +151,13 @@ runs something and screenshots it (tracked in `CAPTURE-LIST.md`).
   if you see something like this, I want you to recognize it immediately too"; "We strongly
   disagree with the ARIMA baseline forecast" (agent output); "the situation in the Persian Gulf
   is super volatile every single day"; "I tried passing them cutoff dates — they just don't work."
+  (I think we can probably tone this down a bit and contextualize it. Later in the lectures I found a moment
+  to question the entire evaluation paradigm. Evaluating an agent that can read the news is hard. Trying to ask
+  an agent to try to pretend it doesn't know something or to try to prevent it from rerieving context past
+  a cutoff date is really hard, and we wrestled with this tension during the construction of this repo. 
+  For all the effort we go through to try to filter-out post-cutoff news from reaching our agents, it's a bit of 
+  a data leakage whack-a-mole that can never be perfect. But, we think it's worthwhile to try to get slightly better
+  optimistic forecasts as a complement to also pushing forward to getting live evals in place as early as possible.)
 
 | Visual | Source |
 |--------|--------|
@@ -228,7 +235,17 @@ runs something and screenshots it (tracked in `CAPTURE-LIST.md`).
 - **Colour:** Ethan — "Jeff Clune is one of the heavy hitters of evolutionary algorithms; I've
   followed his work since I was a grad student in 2014"; "improvement really should require a
   held-out gate"; "memory using a RAG database can be overkill — the file system alone can be
-  just as effective." **Verify the name is Clune** (transcript shows "Klune").
+  just as effective." **Verify the name is Clune (yes, it is Clune)** (transcript shows "Klune").
+
+  (Since this is a research-heavy blog post, we should run something like deep research agent with 
+  each of the papers and projects mentioned in-context to ensure that we are faithfully presenting 
+  their works as well as how they potentially connect to this topic. I think there's an opportunity to go
+  full circle and suggest that learning/adaptation/optimization mechanisms and ongoing forecasting challenges 
+  such as forecastbench are interesting for studying both agent systems/harness designs and forecasting/prediction proper.
+  We could end this blog with something of a stay tuned message. We're quite interested in turning the attention to live evaluation
+  of in-production forecasting agents, especially those that are built to learn from experience over time, and those that might themselves
+  be ensembles of diverse expert forecasters. These are topics that AI Engineering is considering exploring in the future. Let's make a nod without
+  making a firm committment!)
 
 | Visual | Source |
 |--------|--------|
