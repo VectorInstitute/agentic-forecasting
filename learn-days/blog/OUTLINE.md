@@ -57,9 +57,39 @@ The Day-2 admin slot (`Day2_01_Opening_Admin_Logistics.md`) and the Unilever
 industry-spotlight talk are **out of scope** — no repo content, external speaker.
 
 Every post follows the same skeleton: **hook → concept (general) → grounding (our code /
-result) → honest takeaway**, mirroring the "concept → code" discipline of the talks. In
-each Visuals table, **[LIFT]** = already in the repo (path given); **[CAPTURE]** = Ethan
-runs something and screenshots it (tracked in `CAPTURE-LIST.md`).
+result) → takeaway**, mirroring the "concept → code" discipline of the talks. In each
+Visuals table, **[LIFT]** = already in the repo (path given); **[CAPTURE]** = Ethan runs
+something and screenshots it (tracked in `CAPTURE-LIST.md`).
+
+## Series through-lines (this is one argument in eight parts)
+
+The series is not eight standalone recaps — it's a single argument, told in order. Three
+threads are seeded early and paid off late. Every post should consciously advance the
+threads it touches, using **consistent language** so the callbacks land. Honesty about
+what we did and didn't achieve is *ambient* in every post, not quarantined in a closing
+section.
+
+1. **Honest evaluation, and its limits.** The cutoff / training-leakage discipline is
+   introduced in **Post 1**, sharpened in **Post 4** into the core tension — you can't
+   fence the open web, so filtering post-cutoff information out of a news-reading agent is
+   *leakage whack-a-mole that can never be perfect* — revisited in **Post 5** (judge the
+   reasoning, not just the answer), and resolved *forward* in **Post 7** as the case for
+   **live evaluation of in-production agents**. Canonical framing: offline cutoff-safe
+   scoring is a useful but leaky approximation that buys slightly-better *optimistic*
+   forecasts; the honest destination is live eval. **Never present a leakage fix as
+   "solved."**
+2. **The ForecastBench bookend.** Open the series with ForecastBench (**Post 0**) as "how
+   are models doing against humans," and return to it in **Post 7**, reframed: a *living*
+   forecasting challenge is a testbed for agent/harness design as much as for forecasting
+   itself (the full circle). Always attributed to <https://www.forecastbench.org/explore/>.
+3. **Ensembles of diverse forecasters.** Behnoosh's **Post 2** segue — LLMs may be good at
+   the bagging / blending that quants used to do by hand — is nodded to again in **Post 7**'s
+   forward look ("ensembles of diverse expert forecasters").
+
+The series **closes** (end of Post 7) on a soft "stay tuned": AI Engineering is interested
+in live evaluation of in-production forecasting agents — especially ones that learn from
+experience over time, and ones that are themselves ensembles of diverse expert forecasters.
+A genuine nod to where we're headed, **without a firm commitment**.
 
 ---
 
@@ -75,7 +105,7 @@ runs something and screenshots it (tracked in `CAPTURE-LIST.md`).
 
 | Visual | Source |
 |--------|--------|
-| ForecastBench: models climbing toward superforecasters | **[LIFT]** `assets/figures/d1-00/forecastbench_performance.png` (I just updated this file with good quality, but we need to make sure we attribute to https://www.forecastbench.org/explore/ and include a relevant caption that also includes the attribution) |
+| ForecastBench: models climbing toward superforecasters | **[LIFT]** `assets/figures/d1-00/forecastbench_performance.png` — good-quality version committed. **Attribution required:** caption must credit ForecastBench (<https://www.forecastbench.org/explore/>) as the data source. Opens through-line #2 (bookend). |
 | Reference-implementations table (5 use cases → modality → what it teaches) | **[LIFT]** root `README.md` + `HOW-WE-WORK.md` table |
 | Track 1 / Track 2 schematic | **[LIFT]** d1-00 deck slide PNG `sessions/d1-00-intro/qa/slide_*.png`, or create-from-scratch |
 
@@ -98,16 +128,21 @@ runs something and screenshots it (tracked in `CAPTURE-LIST.md`).
 
 ## Post 2 — *Conventional methods are hard to beat (S&P 500)* (Behnoosh — review)
 
-- **Arc:** why the S&P 500 ("encouraged a subfield of math called math finance (we don't have to use Behnoosh's literal wording here -- if there is a better way to describe these concepts and field of study, let's do that)"; retirements,
-  banks) → the problem (overnight/cumulative returns at 1/5/21 business days) → the method
+- **Arc:** why the S&P 500 — modeling markets motivated an entire mathematical discipline
+  (**mathematical / quantitative finance**), and retirements and banks ride on it (name the
+  field properly; Behnoosh's "math finance" phrasing is an anchor for the idea, not a quote
+  to reproduce verbatim) → the problem (overnight/cumulative returns at 1/5/21 business days)
+  → the method
   ladder (naive → ARIMA → ETS → Kalman → **LightGBM** gradient boosting) → the covariate panel
   (VIX, 2s/10s, fed funds, unemployment, oil, gold, dollar index, NASDAQ) → interpretability as
   a virtue → CRPS + directional AUC → the finding: covariates help at 1 day, degrade at longer
   horizons, sometimes **below 0.5 = worse than random** → classical models are "not something
   to discard" → segue: LLMs might be good at the bagging/ensembling humans used to do by hand.
-- **Colour:** Behnoosh — "math finance," "one good thing I like… they're pretty interpretable,"
-  "if you're below 0.5 you're performing worse than random guessing," "sometimes hard to beat."
-  (Transcript is verbal/unpolished — heavy editorial rewrite, preserve the arc + these lines.)
+- **Colour:** Behnoosh — interpretability as a virtue ("one good thing I like… they're
+  pretty interpretable"), "sometimes hard to beat," and the vivid "below 0.5 is worse than
+  random guessing." Transcript is verbal/unpolished, so **rewrite heavily**: these quotes
+  are anchors for the ideas, not lines to reproduce verbatim — prefer the clearest accurate
+  phrasing (e.g. name the field mathematical/quantitative finance).
 
 | Visual | Source |
 |--------|--------|
@@ -136,35 +171,37 @@ runs something and screenshots it (tracked in `CAPTURE-LIST.md`).
 | PDF-extraction / document-ingestion snippet | **[LIFT]** code from `aieng-forecasting/aieng/forecasting/documents/` |
 | Dual training-cutoff illustration | **[CAPTURE]**/create — small didactic figure; note if create-from-scratch |
 
-## Post 4 — *The Analyst Agent, and the day I found a smoking gun* (Ethan — flagship)
+## Post 4 — *The Analyst Agent: forecasting with tools, and a leakage problem you can't fully solve* (Ethan — flagship)
 
 - **Arc:** LLMP → **agent** leap (a static context-machine becomes one that *sources, fetches,
   computes*) → agent anatomy (Google ADK ReAct core, news **sub-agent** grounded with Google
   Search, **E2B** code sandbox, agent **skills**, Pydantic output schema, a local "run ARIMA"
   tool) → the **capability staircase** (no-tools ≈ LLMP, up through search + code + skills) →
-  **THE LEAKAGE SMOKING GUN**: 2026 backtest CRPS "dead on at every horizon… too good to be
-  true" because web search returned the ground truth → the three escalating fixes (ask nicely →
-  independent verifier LLM → **inject the cutoff at the harness level**) → the unfenceable-web
-  tension → why agents point toward **live evaluation** → one identity, three tasks (trajectory
-  / binary shock / **Track-2 scenario**).
-- **Colour:** Ethan — "This is a smoking gun, and I'm unashamedly sharing this with you, because
-  if you see something like this, I want you to recognize it immediately too"; "We strongly
-  disagree with the ARIMA baseline forecast" (agent output); "the situation in the Persian Gulf
-  is super volatile every single day"; "I tried passing them cutoff dates — they just don't work."
-  (I think we can probably tone this down a bit and contextualize it. Later in the lectures I found a moment
-  to question the entire evaluation paradigm. Evaluating an agent that can read the news is hard. Trying to ask
-  an agent to try to pretend it doesn't know something or to try to prevent it from rerieving context past
-  a cutoff date is really hard, and we wrestled with this tension during the construction of this repo. 
-  For all the effort we go through to try to filter-out post-cutoff news from reaching our agents, it's a bit of 
-  a data leakage whack-a-mole that can never be perfect. But, we think it's worthwhile to try to get slightly better
-  optimistic forecasts as a complement to also pushing forward to getting live evals in place as early as possible.)
+  the discovery that the 2026 news-agent backtest looked too good — CRPS "dead on at every
+  horizon" because web search kept returning the ground truth → the escalating mitigations
+  (firmer instructions → an independent verifier LLM → **injecting the cutoff at the harness
+  level**) → the honest tension: none of it is airtight → why this points toward **live
+  evaluation** → one identity, three tasks (trajectory / binary shock / **Track-2 scenario**).
+- **Colour & framing (important — dial the drama down).** This is the emotional centre of the
+  series, but the flat-CRPS discovery is the *entry point to a real tension*, not a gotcha.
+  Frame it the way Ethan reframed it later: evaluating an agent that can *read the news* is
+  fundamentally hard; asking it to un-know the future, or fencing off post-cutoff retrieval,
+  is **leakage whack-a-mole that can never be perfect** — we wrestled with this while building
+  the repo. Our mitigations make offline scores *less* leaky, not clean, so they buy
+  slightly-better **optimistic** offline forecasts as a **complement to** standing up live
+  evaluation as early as possible. **This seeds through-line #1** — do not present the fix as
+  "solved," and set up the Post 7 payoff. Retire the "smoking gun / unashamedly sharing"
+  theatrics and the first-person framing (this is the unified team voice). Usable, lightly:
+  the agent's own output "we strongly disagree with the ARIMA baseline forecast" (flagging
+  unmodeled supply risk); the live WTI / Persian-Gulf topicality; the blunt "I tried passing
+  them cutoff dates — they just don't work."
 
 | Visual | Source |
 |--------|--------|
 | Analyst Agent anatomy diagram | **[LIFT]** `assets/figures/d1-04/agent_architecture.png` |
 | Post-fix multi-model system (analyst → news sub-agent → verifier, harness cutoff) | **[LIFT]** `assets/figures/d1-04/agentic_system.png` |
-| **Hero: smoking-gun CRPS by horizon** (flat pre-fix → fanning post-fix, +42%) | **[LIFT]** `assets/figures/d1-04/leakage_crps_by_horizon.png` |
-| Pre-fix leakage artifacts (error heatmap, too-good forecasts) | **[LIFT]** `review-inbox/NB04 pre-fix content/forecast errors heatmap.png`, `forecast errors.png`, `forecast plots.png` |
+| **Hero: leakage CRPS by horizon** (suspiciously flat pre-fix → realistic fanning post-fix, +42%) | **[LIFT]** `assets/figures/d1-04/leakage_crps_by_horizon.png` |
+| Pre-fix artifacts (error heatmap, too-good forecasts) | **[LIFT]** `review-inbox/NB04 pre-fix content/forecast errors heatmap.png`, `forecast errors.png`, `forecast plots.png` |
 | News-agent forecast fan vs Prophet vs realized | **[LIFT]** `assets/figures/d1-04/news_agent_forecast.png` |
 | **Langfuse trace walkthrough** (system prompt → data packing → quantiles) | **[CAPTURE]** live Langfuse UI on a WTI analyst run |
 | **ADK Web live demo** (ask capabilities; 2-week WTI forecast; opinionated adjusted view) | **[CAPTURE]** ADK Web viewer screenshots/recording |
@@ -231,21 +268,23 @@ runs something and screenshots it (tracked in `CAPTURE-LIST.md`).
   evolutionary search is out of reach ⇒ our simpler "linear search over a hard-coded structure")
   → emerging tools (**SkillOpt**, **SIA** = optimize harness *and* weights) → the tractable
   build-phase path: **add a held-out gate** (propose change → rerun part of backtest → commit
-  only if CRPS improves).
+  only if CRPS improves) → **full circle:** learning / adaptation / optimization mechanisms
+  and *living* forecasting challenges like ForecastBench are each a testbed for the other —
+  agent & harness design ⇄ forecasting proper (pays off through-line #2) → **series close:** a
+  soft "stay tuned" — AI Engineering is interested in **live evaluation of in-production
+  forecasting agents**, especially ones that **learn from experience over time** and ones that
+  are **ensembles of diverse expert forecasters** (pays off through-lines #1 and #3). A genuine
+  nod, **no firm commitment**.
 - **Colour:** Ethan — "Jeff Clune is one of the heavy hitters of evolutionary algorithms; I've
   followed his work since I was a grad student in 2014"; "improvement really should require a
   held-out gate"; "memory using a RAG database can be overkill — the file system alone can be
-  just as effective." **Verify the name is Clune (yes, it is Clune)** (transcript shows "Klune").
-
-  (Since this is a research-heavy blog post, we should run something like deep research agent with 
-  each of the papers and projects mentioned in-context to ensure that we are faithfully presenting 
-  their works as well as how they potentially connect to this topic. I think there's an opportunity to go
-  full circle and suggest that learning/adaptation/optimization mechanisms and ongoing forecasting challenges 
-  such as forecastbench are interesting for studying both agent systems/harness designs and forecasting/prediction proper.
-  We could end this blog with something of a stay tuned message. We're quite interested in turning the attention to live evaluation
-  of in-production forecasting agents, especially those that are built to learn from experience over time, and those that might themselves
-  be ensembles of diverse expert forecasters. These are topics that AI Engineering is considering exploring in the future. Let's make a nod without
-  making a firm committment!)
+  just as effective." Name is **Clune** (confirmed; transcript shows "Klune").
+- **Research rigor (required for this post).** It characterizes other people's work, so verify
+  every claim about **ADAS, Darwin Gödel Machine, ALMA, SkillOpt, and SIA** against the actual
+  papers via deep research before drafting (arXiv links in `SOURCES.md`). Represent each
+  faithfully — its actual contribution and how it *legitimately* connects to our adaptive agent
+  and to the full-circle thesis. **SIA is not yet in `SOURCES.md`** — locate/verify it or drop
+  it. Flag any claim you can't source for Ethan's expert check; do not overstate a connection.
 
 | Visual | Source |
 |--------|--------|

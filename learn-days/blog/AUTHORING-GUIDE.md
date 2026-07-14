@@ -20,31 +20,45 @@ supporting sources you draw evidence and figures from.
    one if unsure.
 2. Read its anchors: the transcript, the matching `content.md` (Ethan's posts), and the
    README/notebook the arc grounds to.
-3. Draft `NN-slug/post.md` following the structure below.
-4. Wire in every **[LIFT]** figure by **relative path** (e.g.
+3. **Research-heavy posts (0, 3, 7):** before drafting, verify every claim about an
+   external paper/project via deep research against the actual source (arXiv links in
+   `../SOURCES.md`). Represent each work faithfully — its real contribution and how it
+   *legitimately* connects. Flag anything you can't source for Ethan's expert check; never
+   overstate a connection.
+4. Draft `NN-slug/post.md` following the structure below.
+5. Wire in every **[LIFT]** figure by **relative path** (e.g.
    `../../assets/figures/d1-04/leakage_crps_by_horizon.png`); confirm the file exists.
-5. For every **[CAPTURE]** visual: insert a visible placeholder with descriptive
+6. For every **[CAPTURE]** visual: insert a visible placeholder with descriptive
    alt-text and a one-line caption of what it will show, and make sure the item is listed
    in `CAPTURE-LIST.md` (add it if missing). Do **not** invent a screenshot.
-6. Run the pre-publish checklist (below). Stop and hand back for review.
+7. Run the pre-publish checklist (below). Stop and hand back for review.
 
 ## Voice
 
 - **One unified editorial series voice** — informed, candid, technical-but-warm; the
   register of the talks, not marketing copy. Third person / team "we"; not per-presenter
   first person.
-- **Colour comes from short quoted lines**, attributed inline: *"as Behnoosh put it, the
-  S&P 500 'encouraged the building of a subfield of mathematics called math finance.'"*
-  Each post's outline entry lists the specific lines to work in.
+- **Colour comes from short quoted lines**, attributed inline: *"as Behnoosh put it, …"*.
+  Each post's outline entry lists candidate lines.
+- **Quotes are anchors, not scripture.** The lines in the outline mark the *idea* to land,
+  not text to reproduce verbatim. Where a concept has a clearer, more accurate phrasing than
+  the spoken one, use it — and name things properly (e.g. "mathematical / quantitative
+  finance," not a rough paraphrase). This matters most for the non-Ethan posts (Behnoosh,
+  Ali), where the transcript is casual speech; paraphrase or drop a quote rather than force
+  an awkward one. Avoid intensifier crutches ("very unique," "really really").
 - **Rewrite the transcript heavily.** It is verbatim speech (VTT) — full of "like," "I
   don't know," false starts, and mis-transcriptions. Preserve the *arc* and the
   *memorable lines*; discard the filler. The substance and sequencing are what carry over,
   not the phrasing.
-- **Honesty over hype** (this is the throughline of the whole project). Keep: cutoff /
-  leakage discipline, LLM scores as *upper bounds* not benchmarks, results reported with
-  their noise (±1 SE), "a change is not an improvement." Do **not** inflate the
-  adaptive-agent result or the agent-vs-classical comparison — the honest framing is the
-  point and the audience is technical.
+- **Honesty is ambient, not a section** (it's the throughline of the whole project). Keep it
+  woven throughout — cutoff / leakage discipline, LLM scores as *upper bounds* not
+  benchmarks, results reported with their noise (±1 SE), "a change is not an improvement,"
+  leakage fixes that are *less leaky, not solved.* Do **not** inflate the adaptive-agent
+  result or the agent-vs-classical comparison — the honest framing is the point and the
+  audience is technical.
+- **Advance the series through-lines.** See the "Series through-lines" section of
+  `OUTLINE.md`. Each post must consciously seed or pay off the threads it touches, in
+  consistent language, so the callbacks land. Cross-link the sibling post explicitly.
 
 ## Byline block (every post)
 
@@ -76,6 +90,9 @@ lecture carry a review banner until that author signs off:
 
 - Reference committed figures by relative path; **captions state the data source** ("real
   1-month CPI-gasoline backtest," "didactic — closed-form CRPS on two Gaussians").
+- **External-source attribution is mandatory.** Any figure or dataset that originates
+  outside our repo must credit the source in its caption, with a link (e.g. the
+  ForecastBench figure → "Source: ForecastBench, https://www.forecastbench.org/explore/").
 - Fresh captures go in the post's own `images/` as PNG. Screenshots should be legible and
   cropped; scrub any secrets/keys from Langfuse/ADK captures before committing.
 - To restyle or regenerate a brand figure, use `../assets/plotting/figures_*.py` (see
