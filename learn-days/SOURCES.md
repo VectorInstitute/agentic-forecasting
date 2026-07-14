@@ -25,6 +25,7 @@ public sources:
 | `agentic-papers/` | Darwin Gödel Machine — Zhang, Hu et al. 2025 | [arXiv:2505.22954](https://arxiv.org/abs/2505.22954) |
 | `agentic-papers/` | ALMA: Learning to Continually Learn (agentic memory) — Xiong, Hu, Clune 2026 | [arXiv:2602.07755](https://arxiv.org/abs/2602.07755) |
 | `agentic-papers/` | SkillOpt | [arXiv:2605.23904](https://arxiv.org/abs/2605.23904) · [code](https://github.com/microsoft/SkillOpt) |
+| `agentic-papers/` | SIA: Self-Improving AI (harness + weight updates) — Hebbar et al. 2026 | [arXiv:2605.27276](https://arxiv.org/abs/2605.27276) · [code](https://github.com/hexo-ai/sia) |
 
 ## Presentations
 

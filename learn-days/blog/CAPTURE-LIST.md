@@ -42,9 +42,22 @@ SSH tunnel. **Scrub keys/secrets from any screenshot before committing.**
 ## Clean leaderboard / verdict renders
 
 - [ ] **[Post 2]** S&P 500 leaderboard (CRPS + directional AUC per method) from
-  `implementations/sp500_forecasting/01_sp500_multivariate_backtest.ipynb`.
+  `implementations/sp500_forecasting/01_sp500_multivariate_backtest.ipynb`. The post
+  currently uses the committed **smoke-window** notebook charts (6 weekly late-2025
+  origins) extracted to `02-conventional-methods-sp500/images/`; this capture is the
+  upgrade to a clean **full 2025 backtest** render (`EXPERIMENT_CONFIG="backtest_2025"`,
+  ~51 origins) so the directional-AUC numbers are no longer small-sample.
 - [ ] **[Post 5]** BoC rationale-alignment verdicts + the 2×2 reasoning-vs-correctness
   confusion matrix from `implementations/boc_rate_decisions/03_rationale_alignment.ipynb`.
+  Render the 2×2 (right-for-right-reasons / right-for-wrong / wrong-but-aligned /
+  wrong-and-misaligned) over the protected 2025–26 window; regenerate the counts from the
+  notebook at capture time (the LLM judge is stochastic — the lecture's 6/2/2/2 split and
+  the committed nb03 run differ slightly).
+- [ ] **[Post 5]** Cut-probability-per-meeting vs. actual over the protected 2025–26 eval
+  window — the agent's P(cut) at each meeting against the realised outcome, showing the
+  agent stuck at 65–85% on *cut* through mid-2025 while the Bank held. Source:
+  `02_boc_rate_direction_experiment.ipynb` decision-timeline plot run on
+  `boc_rate_direction_eval.yaml` (the committed embedded chart is the 2024 smoke slice).
 
 ## Didactic figures to create (optional — could be lifted or drawn)
 
