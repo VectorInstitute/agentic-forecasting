@@ -1,0 +1,2 @@
+# Rendered HTML is a build artifact — regenerate with ./render.sh
+*.html
