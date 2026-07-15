@@ -2,20 +2,9 @@
 
 **By Ethan Jackson, Behnoosh Zamanlooy, Ali Kore, and Shayaan Mehdi**
 
-Forecasting has an unusual property for an AI problem: there is an objective ground
-truth, and it arrives on a schedule. Every prediction is eventually scored against what
-actually happened, and — as Ethan put it in the opening lecture — that makes it "a
-unique and rich testbed to push the frontier of agentic AI," one that is very hard to
-pollute. The future can't be memorized, and short of an AI powerful enough to move
-markets, it can't be gamed. That is exactly why it is a good place to ask whether large
-language models and agents can really forecast.
+Forecasting has an unusual property for an AI problem: there is an objective ground truth, and it arrives on a schedule. Every prediction is eventually scored against what actually happened, and — as Ethan put it in the opening lecture (nope, this is kind of breaking the wall of what is supposed to be a standalone semi-technical blog post) — that makes it "a unique and rich testbed to push the frontier of agentic AI," one that is very hard to pollute. The future can't be memorized, and short of an AI powerful enough to move markets, it can't be gamed. That is exactly why it is a good place (what is?) to ask whether large language models and agents can really forecast.
 
-But "there is a ground truth" is not the same as "evaluation is easy." The moment you
-put a fifty-year-old statistical model next to an LLM agent that can read the news, the
-hard question is not which one wins — it is whether the comparison means anything at
-all. This post is about the discipline that makes it mean something: the evaluation
-skeleton, the score, and the cutoff rule that keeps an LLM from quietly cheating. It is
-the foundation the rest of the series stands on.
+But "there is a ground truth" is not the same as "evaluation is easy." The moment you put a fifty-year-old (I don't really like labelling the method by age, it feels like we're kind of negging it) statistical model next to an LLM agent that can read the news, the hard question is not which one wins — it is whether the comparison means anything at all. This post is about the discipline that makes it mean something: the evaluation skeleton, the score, and the cutoff rule that keeps an LLM from quietly cheating. It is the foundation the rest of the series stands on.
 
 ## A short lineage of methods
 
@@ -23,22 +12,15 @@ It helps to see where LLMs enter the story. Forecasting's history reads less lik
 series of replacements than a stack of added capabilities:
 
 - **Statistical models** — ARIMA, ETS, Kalman filters — gave us parsimony and honest,
-  calibrated uncertainty bands from a handful of parameters.
-- **Machine learning** — gradient boosting like XGBoost and LightGBM — brought
-  nonlinearity and the ability to exploit many covariates at once.
-- **Deep learning** — DeepAR, N-BEATS, TFT — added representation learning across many
-  series.
+calibrated uncertainty bands from a handful of parameters.
+- **Machine learning** — gradient boosting like XGBoost and LightGBM — brought nonlinearity and the ability to exploit many covariates at once (and potential to learn from larger datasets, too!).
+- **Deep learning** — DeepAR, N-BEATS, TFT — added representation learning across many series. Also introducing the concept of global models.
 - **Time-series foundation models** — TimesFM, Chronos, Moirai — brought pretraining and
-  zero-shot transfer, the sequence-model paradigm carried into time series.
+zero-shot transfer, the sequence-model paradigm carried into time series.
 - **LLMs and agents** — LLM Processes and tool-using agents — add something genuinely
-  different: they can read *language* — a headline, a policy report — and reason over it.
+different: they can read *language* — a headline, a policy report — and reason over it.
 
-The older families are still the right tool most of the time. Our own bootcamp
-environment leans on the Darts library for the statistical and ML methods and tops out
-around gradient boosting; deep learning and foundation models are out of reach on our
-compute. The point of the lineage is not to crown a winner. It is to notice that each
-family answers the same underlying question — *what will this series be, and how sure are
-you?* — and that the only way to find where the newest entrants actually help is to make
+The older families are still (may be?) the right tool most of the time. Our own bootcamp environment leans on the Darts library for the statistical and ML methods and tops out around gradient boosting; deep learning and foundation models are out of reach on our compute (this is too bootcamp-specific. Darts actually supports all of them and fundamentally, so does our codebase. We just chose to emphasize the cheaper models, but we don't have to discuss that here). The point of the lineage is not to crown a winner. It is to notice that each family answers the same underlying question — *what will this series be, and how sure are you?* — and that the only way to find where the newest entrants actually help is to make
 every method answer it the same way, and judge them by the same rule.
 
 ## The five-part evaluation skeleton
@@ -48,16 +30,12 @@ lets a naive baseline and a multi-step agent sit in the same experiment:
 
 1. **Task** — *what* to forecast: the target series, the horizon, the frequency.
 2. **Origin and cutoff** — *when* you stand. You see only the information that existed at
-   that moment; the cutoff controls what the method is allowed to know.
+  that moment; the cutoff controls what the method is allowed to know.
 3. **Predictor** — *how* you answer. This is the only part that varies between methods.
 4. **Resolution** — the ground truth at the target date, once it arrives.
 5. **Score** — how close the *probabilistic* answer was.
 
-Almost everything in the bootcamp is probabilistic. Every method emits a distribution
-over a fixed set of quantiles, not a single number, so that a naive forecast and an agent
-are represented the same way and scored the same way. For continuous targets that score
-is CRPS; for binary events, the Brier score; for ordered categories, the ranked
-probability score. They are one family, and this post focuses on CRPS.
+Almost everything in the bootcamp (again, bootcamp) is probabilistic. Every method emits a distribution over a fixed set of quantiles, not a single number, so that a naive forecast and an agent are represented the same way and scored the same way. For continuous targets that score is CRPS; for binary events, the Brier score; for ordered categories, the ranked probability score. They are one family, and this post focuses on CRPS.
 
 ## What the score rewards: CRPS
 
@@ -66,8 +44,8 @@ distributions — and if a forecast collapses to a single point, CRPS is exactly
 absolute error. Its whole value is that it scores the *shape* of a forecast, not just the
 middle.
 
-![Two Gaussian forecasts with the same median (so identical MAE) over the same realized
-value; the sharp forecast scores CRPS 1.20, the wide one 1.67.](../../assets/figures/d1-01/crps_explainer.png)
+Two Gaussian forecasts with the same median (so identical MAE) over the same realized
+value; the sharp forecast scores CRPS 1.20, the wide one 1.67.
 
 *Didactic — closed-form CRPS on two Gaussian forecasts (generated in-script, not repo
 data). Both distributions share the same point forecast, so their MAE is identical (2.0).
@@ -103,9 +81,9 @@ seen the surrounding context, and there is no clean way to prove otherwise. So t
 discipline is to score LLM and agent rows only on **post-cutoff** windows — which forces
 us to work with the most recent data we can get.
 
-![Rolling-origin schematic: origins step forward through time, each seeing only data up to
+Rolling-origin schematic: origins step forward through time, each seeing only data up to
 itself; a dashed line at a January-2025 cutoff splits an earlier backtest window from a
-later protected-eval window.](../../assets/figures/d1-01/backtest_eval_design.png)
+later protected-eval window.
 
 *Schematic (illustrative dates, ~Jan-2025 cutoff). Rolling-origin evaluation: stand at a
 date, forecast forward, score, step forward. The backtest window (left) is where you
@@ -147,16 +125,13 @@ class Predictor(ABC):
         """One Prediction per horizon; context is scoped to context.as_of."""
 ```
 
-*Adapted from `aieng/forecasting/evaluation/predictor.py`.*
+*Adapted from* `aieng/forecasting/evaluation/predictor.py`*.*
 
 The `task` says *what* to forecast; the `context` is the information state, scoped to an
 `as_of` date so that a call for history can never accidentally return future data. An
 AutoARIMA predictor wraps a classical model in a few lines; an LLM-Process packs the
 series into a prompt; an agent runs a multi-step tool loop. To the evaluation harness they
-are indistinguishable, because each returns the same `list[Prediction]` — one entry per
-horizon. That single surface is what makes "ARIMA versus an agent" a mechanical, honest
-comparison rather than an apples-to-oranges argument. (The one asterisk is the one above:
-the context can enforce the cutoff for stored series, but not for an agent's live tools.)
+are indistinguishable, because each returns the same `list[Prediction]` — one entry per horizon. That single surface is what makes "ARIMA versus an agent" a mechanical, honest comparison rather than an apples-to-oranges argument. (The one asterisk is the one above: the context can enforce the cutoff for stored series, but not for an agent's live tools.) (Id just make sure we're clear that we're skeptical about knowledge cutoffs for LLMs being reliable. We just don't know so we have to assume that our results when using flagship commercial models are always optimistic or potentially polluted.)
 
 ## A forecast, and where it breaks
 
@@ -164,8 +139,8 @@ So let's run one honestly and look at it. The getting-started implementation for
 Canadian gasoline CPI one month ahead, rolling the origin forward month by month — a real
 probabilistic AutoARIMA forecast, the same shape every method returns.
 
-![AutoARIMA one-month forecast of CPI gasoline against the realized series, with a 90%
-interval and the largest misses marked at the 2020 crash and 2022 surge.](../../assets/figures/d1-01/cpi_forecast_fanchart.png)
+AutoARIMA one-month forecast of CPI gasoline against the realized series, with a 90%
+interval and the largest misses marked at the 2020 crash and 2022 surge.
 
 *Real backtest — 1-month AutoARIMA forecast of CPI Gasoline (Statistics Canada
 18-10-0004-11), 90% interval. The largest misses cluster at the 2020 COVID crash and the
@@ -179,8 +154,8 @@ driven by news a numbers-only model never sees.
 
 Now score it against the naive floor across the whole history.
 
-![Per-origin CRPS for Naive versus AutoARIMA from 2000 to 2025, with both models spiking
-together at 2008, 2020, and 2022.](../../assets/figures/d1-01/cpi_crps_over_time.png)
+Per-origin CRPS for Naive versus AutoARIMA from 2000 to 2025, with both models spiking
+together at 2008, 2020, and 2022.
 
 *Real backtest — per-origin CRPS, Naive vs AutoARIMA, 301 monthly origins (2000–2025).
 Mean CRPS 10.11 (Naive) vs 8.45 (AutoARIMA), roughly a 16% improvement. Both spike
@@ -194,6 +169,8 @@ a genuinely good bar, and as Ethan warned, new methods "have to earn their place
 error lives: both models blow up together at 2008, 2020, and 2022. The average improvement
 is real, and the failure mode is shared — both are blind at exactly the moments that
 matter, because neither can read what is driving the shock.
+
+(Given the whole narrative we're building about LLMs and cutoffs, isn't this kind of pointless? Sure ARIMA fails here, but there's no way we can go back in time and test an LLM or an agent on this problem. I'd say we either need to completely reframe the content and arguments here OR we think of something else to present. We don't need a gotcha here. Maybe the story to tell is more about what you CAN do with conventional methods. There are some rich stories to tell in backtesting. Such as these misses. Maybe we actually can tell the whole story here around COVID. It illustrates the problem. Sure you can backtest ARIMA, but it misses. You could test other ML models with proper cutoff enforcement. But you can't test the things that, according to ForecastBench, are SOTA -- LLMs and agents. That's why in a lot of the remaining content, we try to bring things up to more present data.) 
 
 ## What to take forward
 

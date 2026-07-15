@@ -6,17 +6,15 @@
 
 Few forecasting problems have a longer paper trail than the stock market. Trying to
 model the prices of a basket of companies — the S&P 500 and indices like it — helped
-motivate an entire branch of applied mathematics: **mathematical / quantitative
-finance**, decades of research aimed squarely at the returns of instruments like this
-one. And the stakes are not academic. Retirements are invested in these indices; large
-banks spend real money trying to forecast how their returns will move. As Behnoosh
-framed it in the lecture, this is a problem serious enough to have grown its own field
-of math around it — which makes it a good place to ask a blunt question: with modern
-methods and a rich panel of market data, can we actually forecast it?
+motivate an entire branch of applied mathematics: **mathematical / quantitative finance**, decades of research aimed squarely at the returns of instruments like this one. And the stakes are not academic. Retirements are invested in these indices; large banks spend real money trying to forecast how their returns will move. As Behnoosh framed it in the lecture (Again, breaking the wall here), this is a problem serious enough to have grown its own field of math around it — which makes it a good place to ask a blunt question: with modern methods and a rich panel of market data, can we actually forecast it?
 
-![Observed next-session log returns of the S&P 500 over the last ~504 trading sessions; blue bars mark sessions where the index rose over the window, red where it fell, with a large negative spike in April 2025.](images/sp500_returns_recent.png)
+Observed next-session log returns of the S&P 500 over the last ~504 trading sessions; blue bars mark sessions where the index rose over the window, red where it fell, with a large negative spike in April 2025.
 
-*Real data — observed next-session (`h=1`) log returns of `^GSPC`, last 504 sessions, from `01_sp500_multivariate_backtest.ipynb`. Blue = up over the window, red = down. This is the target: a near-zero-mean, heavy-tailed series with the occasional violent day.*
+*Real data — observed next-session (*`h=1`*) log returns of* `^GSPC`*, last 504 sessions, from* `01_sp500_multivariate_backtest.ipynb`*. Blue = up over the window, red = down. This is the target: a near-zero-mean, heavy-tailed series with the occasional violent day.*
+
+
+
+(Hmm. I have to think we'd be better off showing conventional candle charts using conventional colours? I think it's worth the effort to re-render here.)
 
 That chart is the honest starting point. Day-to-day index returns are close to a
 martingale — the level of tomorrow's return is nearly unforecastable, and any
@@ -43,26 +41,22 @@ same task, reading *exactly* the same data, and score them the same way. Behnoos
 up a ladder of them, from the humblest to the strongest.
 
 - **Naive.** Predict zero return at every step. It is the floor every other method has
-  to clear — the equivalent of "assume nothing changes."
+to clear — the equivalent of "assume nothing changes."
 - **AutoARIMA.** The classical autoregressive workhorse: model the next return as a
-  function of recent lagged returns and the model's own recent forecast errors. Choosing
-  how many lags to keep used to be a hands-on ritual of reading autocorrelation and
-  partial-autocorrelation plots; the Darts `AutoARIMA` we wrap does that search
-  automatically. (Because returns are already close to stationary, we skip the
-  differencing the "I" in ARIMA usually handles.)
+function of recent lagged returns and the model's own recent forecast errors. Choosing
+how many lags to keep used to be a hands-on ritual of reading autocorrelation and
+partial-autocorrelation plots; the Darts `AutoARIMA` we wrap does that search
+automatically. (Because returns are already close to stationary, we skip the
+differencing the "I" in ARIMA usually handles.)
 - **ETS (exponential smoothing).** Track a slowly moving *level* and forecast the next
-  value as an interpolation between that level and the last observation, optionally with
-  trend and seasonality.
+value as an interpolation between that level and the last observation, optionally with
+trend and seasonality.
 - **Kalman filter.** Treat the observed price as the surface of an unobserved latent
-  state — bull, steady, bear, on a continuum — infer that hidden state from the past, and
-  read anything it can't explain as noise.
-- **LightGBM (gradient-boosted trees).** The machine-learning entrant. Fit a tree, look
-  at where it did badly, fit another tree to those residuals, and repeat. Its great
-  virtue is that it eats a mixed bag of covariates with almost no preprocessing — but, as
-  Behnoosh was careful to add, *only if you choose the covariates well*.
+state — bull, steady, bear, on a continuum — infer that hidden state from the past, and
+read anything it can't explain as noise.
+- **LightGBM (gradient-boosted trees).** The machine-learning entrant. Fit a tree, look at where it did badly, fit another tree to those residuals, and repeat. Its great virtue is that it eats a mixed bag of covariates with almost no preprocessing — but, as Behnoosh was careful to add (wall breaking again), *only if you choose the covariates well*.
 
-One theme runs through the first four rungs, and it is one Behnoosh clearly values: the
-classical methods are **interpretable**. You can see the lags a model leaned on, the
+One theme runs through the first four rungs, and it is one Behnoosh (again) clearly values: the classical methods are **interpretable**. You can see the lags a model leaned on, the
 level it tracked, the state it inferred — and that understanding tells you how to model
 better next time. It is easy to treat interpretability as a consolation prize behind
 accuracy. On a problem where every method's accuracy is fragile, being able to *see why*
@@ -77,32 +71,36 @@ LLM-Process (more on that below). Every covariate is lagged by one business day 
 carries a conservative release timestamp, so a forecast at a given origin can only ever
 see information that genuinely existed then.
 
-| Covariate | What it carries |
-|---|---|
-| VIX level + VIX log-return | Market-implied volatility (the "fear gauge") |
-| 10Y Treasury yield | Long-rate level |
-| 2Y–10Y spread | Yield-curve slope (a recession bellwether) |
-| Fed funds rate | The policy-rate stance |
-| CPI (MoM log-diff) | Inflation surprises |
-| Unemployment rate | Labour-market slack |
-| Oil log-return | Energy / commodity shocks |
-| Gold log-return | Safe-haven demand (skipped if the FRED series is unavailable) |
-| Broad dollar index | The currency backdrop |
-| NASDAQ log-return | Tech-heavy equity co-movement |
 
-*Source: `implementations/sp500_forecasting/README.md` and the notebook's predictor
-config. Exact adapters and transforms live in `data.py`.*
+| Covariate                  | What it carries                                               |
+| -------------------------- | ------------------------------------------------------------- |
+| VIX level + VIX log-return | Market-implied volatility (the "fear gauge")                  |
+| 10Y Treasury yield         | Long-rate level                                               |
+| 2Y–10Y spread              | Yield-curve slope (a recession bellwether)                    |
+| Fed funds rate             | The policy-rate stance                                        |
+| CPI (MoM log-diff)         | Inflation surprises                                           |
+| Unemployment rate          | Labour-market slack                                           |
+| Oil log-return             | Energy / commodity shocks                                     |
+| Gold log-return            | Safe-haven demand (skipped if the FRED series is unavailable) |
+| Broad dollar index         | The currency backdrop                                         |
+| NASDAQ log-return          | Tech-heavy equity co-movement                                 |
+
+
+*Source:* `implementations/sp500_forecasting/README.md` *and the notebook's predictor
+config. Exact adapters and transforms live in* `data.py`*.*
 
 The whole design pairs one method family with one question:
 
-| Family | Predictors | Reads covariates? |
-|---|---|---|
-| Naive floor | `LastValuePredictor` | — |
-| Classical | ETS, Kalman, AutoARIMA | — (univariate) |
-| ML regression | Linear regression, **LightGBM** | ✅ optional |
-| LLM-Process | Sampled-trajectory LLM forecaster | ✅ optional (covariates serialized into the prompt) |
 
-*Source: `aieng/forecasting/methods/README.md` + the S&P 500 README.*
+| Family        | Predictors                        | Reads covariates?                                  |
+| ------------- | --------------------------------- | -------------------------------------------------- |
+| Naive floor   | `LastValuePredictor`              | —                                                  |
+| Classical     | ETS, Kalman, AutoARIMA            | — (univariate)                                     |
+| ML regression | Linear regression, **LightGBM**   | ✅ optional                                         |
+| LLM-Process   | Sampled-trajectory LLM forecaster | ✅ optional (covariates serialized into the prompt) |
+
+
+*Source:* `aieng/forecasting/methods/README.md` *+ the S&P 500 README.*
 
 ## How we score it
 
@@ -128,9 +126,9 @@ backtest to iterate on, a protected 2026 window as the real scoreboard.
 
 ## What the bake-off says
 
-![Horizontal bar charts of mean CRPS by method for h=1, 5, and 21 business days; at every horizon the Naive floor is far worst, covariate-fed and classical models cluster near the best, and the spread between methods narrows as the horizon grows.](images/sp500_crps_leaderboard.png)
+Horizontal bar charts of mean CRPS by method for h=1, 5, and 21 business days; at every horizon the Naive floor is far worst, covariate-fed and classical models cluster near the best, and the spread between methods narrows as the horizon grows.
 
-*Real backtest — mean CRPS by method and horizon, smoke window (6 weekly post-cutoff origins, late 2025), from `01_sp500_multivariate_backtest.ipynb`. Lower is better. The naive floor is comfortably worst everywhere; the useful spread between the real methods is widest at `h=1` and compresses by `h=21`.*
+*Real backtest — mean CRPS by method and horizon, smoke window (6 weekly post-cutoff origins, late 2025), from* `01_sp500_multivariate_backtest.ipynb`*. Lower is better. The naive floor is comfortably worst everywhere; the useful spread between the real methods is widest at* `h=1` *and compresses by* `h=21`*.*
 
 Three things come through, and they match Behnoosh's read of it.
 
@@ -154,21 +152,20 @@ point. A full-window leaderboard render is on our capture list.) The lesson is n
 covariates are useless; it is that more inputs, badly matched to the horizon, can point a
 model confidently the wrong way.
 
-![Median next-session forecasts from Naive, ETS, and LightGBM+cov against the realised return over ~8 October–November 2025 origins; the realised series swings by more than a percent while the model forecasts stay close to zero.](images/sp500_forecast_vs_realised.png)
+Median next-session forecasts from Naive, ETS, and LightGBM+cov against the realised return over ~8 October–November 2025 origins; the realised series swings by more than a percent while the model forecasts stay close to zero.
 
-*Real backtest — median `h=1` forecasts vs realised next-session return (percent), smoke window. The realised series is loud; the model forecasts are quiet and near zero. That gap is daily market efficiency made visual — and why the honest object to forecast is the distribution's width, not its center.*
+*Real backtest — median* `h=1` *forecasts vs realised next-session return (percent), smoke window. The realised series is loud; the model forecasts are quiet and near zero. That gap is daily market efficiency made visual — and why the honest object to forecast is the distribution's width, not its center.*
 
 ## The headline: a frozen LLM did not beat gradient boosting
 
 The sharpest comparison in this reference is the one that matters most for the rest of
 the series. We handed a frozen general-purpose LLM the **same covariate panel** the ML
 methods use — serialized as labeled history blocks in its prompt — and ran it as an
-LLM-Process forecaster (the method we unpack in [Post 3](../03-llm-processes-cfpr/post.md)),
-head-to-head against LightGBM on the full 2025 backtest.
+LLM-Process forecaster (the method we unpack in [Post 3](../03-llm-processes-cfpr/post.md)), head-to-head against LightGBM on the full 2025 backtest. (We should say here at least which LLM was used to power the LLMP we tested.)
 
-![Grouped bar chart of mean CRPS at h=1, 5, and 21 days for LightGBM, LightGBM+cov, LLM-Process, and LLM-Process+cov; at every horizon a LightGBM variant is lowest, with the LLM-Process bars higher and the gap widening from h=1 to h=21.](../../assets/figures/d1-01/sp500_horizon_crps.png)
+Grouped bar chart of mean CRPS at h=1, 5, and 21 days for LightGBM, LightGBM+cov, LLM-Process, and LLM-Process+cov; at every horizon a LightGBM variant is lowest, with the LLM-Process bars higher and the gap widening from h=1 to h=21.
 
-*Real backtest — mean CRPS at each horizon, LightGBM vs LLM-Process (± covariates), across 51 weekly 2025 origins (`data/predictions/sp500_backtest_2025/`). Lower is better; the green marker flags the best per panel. A LightGBM variant wins at every horizon.*
+*Real backtest — mean CRPS at each horizon, LightGBM vs LLM-Process (± covariates), across 51 weekly 2025 origins (*`data/predictions/sp500_backtest_2025/`*). Lower is better; the green marker flags the best per panel. A LightGBM variant wins at every horizon.*
 
 The verdict is honest and it is not the flashy one: **the LLM-Process did not beat
 gradient boosting.** At every horizon a LightGBM variant posts the lowest CRPS, and the
@@ -187,11 +184,7 @@ policy statement, a report. That is the agent story, and it is where the series 
 
 ## Classical methods are not something to discard
 
-The takeaway Behnoosh landed on is the one worth carrying forward: the classical models
-are "not something to discard." AutoARIMA tracks LightGBM more closely than you'd expect,
-the univariate Kalman filter wins outright at the longest horizon, and every one of them
-is interpretable, cutoff-safe, and cheap. On a problem this efficient, a simple honest
-model is often the right answer.
+The takeaway Behnoosh landed on (wall breaking again) is the one worth carrying forward: the classical models are "not something to discard." AutoARIMA tracks LightGBM more closely than you'd expect, the univariate Kalman filter wins outright at the longest horizon, and every one of them is interpretable, cutoff-safe, and cheap. On a problem this efficient, a simple honest model is often the right answer.
 
 And that points at the one genuinely open opportunity. The traditional way to squeeze
 more out of a shelf of decent-but-imperfect models is to **combine** them — the bagging
@@ -200,7 +193,7 @@ diverse forecasters into something steadier than any single one. Behnoosh's clos
 observation was that this may be precisely the kind of judgment LLMs are good at: reading
 a set of diverse expert forecasts and blending them well. We don't settle that here —
 but it is a thread we pick up again at the very end of the series, when we look at
-self-improving systems and **ensembles of diverse expert forecasters**.
+self-improving systems and **ensembles of diverse expert forecasters**. (Wellll we don't actually ever get to that in this bootcamp or series, so let's not mention it here -- that's like the absolute last thing we might mention in the series as we discuss potential next directions inspired by the literature.)
 
 For now the bar is set, twice over. Next in the series, Ali takes up the LLM-Process
 properly — a frozen model used as a forecaster, grounded on historical documents — and

@@ -4,22 +4,11 @@
 
 **By Ethan Jackson, Behnoosh Zamanlooy, Ali Kore, and Shayaan Mehdi**
 
-Behnoosh's post left us with a bar: conventional methods, from a naive last-value
-baseline up through gradient boosting, are genuinely hard to beat, and any new idea has
-to clear them on an honest evaluation. So here is a deliberately strange contender. Take
-a large language model that was never trained on Canadian food prices — never fine-tuned
-on anything of ours — write the price history into a prompt as plain text, and ask it for
-next year's numbers. No task-specific training, no gradient step. A frozen model, used
-directly as a probabilistic time-series forecaster.
+Behnoosh's post left us with a bar: (wall breaking) conventional methods, from a naive last-value baseline up through gradient boosting, are genuinely hard to beat, and any new idea has to clear them on an honest evaluation. So here is a deliberately strange contender. Take a large language model that was never trained on Canadian food prices — never fine-tuned on anything of ours — write the price history into a prompt as plain text, and ask it for next year's numbers. No task-specific training, no gradient step. A frozen model, used directly as a probabilistic time-series forecaster.
 
 The question this post asks is narrow and testable. Not "can a language model *talk* about
 inflation" — obviously it can — but, as Ali framed it in the lecture, whether it can take
-a column of numbers and return a *real predictive distribution* with calibrated
-uncertainty, the same object a fifty-year-old statistical model returns, and be scored
-head-to-head against ARIMA by the same rule. The answer, on Canada's Food Price Report
-task, turns out to be yes. The more interesting part is what that "yes" is worth once you
-take the training cutoff seriously — which is where the honesty discipline from
-[Post 1](../01-forecasting-foundations/post.md) does real work.
+a column of numbers and return a *real predictive distribution* with calibrated uncertainty, the same object a fifty-year-old (avoid age-negging language) statistical model returns, and be scored head-to-head against ARIMA by the same rule. The answer, on Canada's Food Price Report task, turns out to be yes. The more interesting part is what that "yes" is worth once you take the training cutoff seriously — which is where the honesty discipline from [Post 1](../01-forecasting-foundations/post.md) does real work.
 
 ## What an LLM Process is
 
@@ -87,14 +76,16 @@ and text out.*
 There are two honest ways to get a distribution out of an LLM, and we implemented both
 behind the same `Predictor` interface:
 
-| Method | Module | How the distribution is formed | Score |
-|---|---|---|---|
-| **Sampled trajectory** | `sampled_trajectory.py` | Ask for a whole path several times; read empirical quantiles off the samples. Closer to true sampling, but *n* calls per origin — token-heavy. Supports labeled covariate blocks (CiK §5.4). | CRPS |
-| **Quantile grid** | `quantile_grid.py` | Ask for the full quantile grid in one structured completion. Much cheaper — you pay for the context once, which matters when you prepend long reports. | CRPS |
-| **Binary probability** | `binary_probability.py` | Elicit one calibrated event probability directly. | Brier |
-| **Categorical probability** | `categorical_probability.py` | Elicit a calibrated distribution over ordered categories. | RPS |
 
-*Source: `aieng/forecasting/methods/README.md`. The first two are the continuous
+| Method                      | Module                       | How the distribution is formed                                                                                                                                                               | Score |
+| --------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **Sampled trajectory**      | `sampled_trajectory.py`      | Ask for a whole path several times; read empirical quantiles off the samples. Closer to true sampling, but *n* calls per origin — token-heavy. Supports labeled covariate blocks (CiK §5.4). | CRPS  |
+| **Quantile grid**           | `quantile_grid.py`           | Ask for the full quantile grid in one structured completion. Much cheaper — you pay for the context once, which matters when you prepend long reports.                                       | CRPS  |
+| **Binary probability**      | `binary_probability.py`      | Elicit one calibrated event probability directly.                                                                                                                                            | Brier |
+| **Categorical probability** | `categorical_probability.py` | Elicit a calibrated distribution over ordered categories.                                                                                                                                    | RPS   |
+
+
+*Source:* `aieng/forecasting/methods/README.md`*. The first two are the continuous
 forecasters used here; the binary and categorical variants reuse the same machinery for
 the shock-call and central-bank tasks later in the series.*
 
@@ -110,12 +101,12 @@ December — a 12-month trajectory that collapses into the report's headline
 "average-over-average" year-over-year number. Here is the overall food index at the three
 most recent origins.
 
-![Forecast trajectories for the overall Canadian food CPI at three July origins. Observed history is a solid black line, the realized future a dashed black line; AutoARIMA is blue, and the LLM Processes are red/purple with shaded uncertainty bands. At the 2023 origin AutoARIMA extrapolates the recent upward trend while the realized series flattens; the LLM Processes bend toward the flattening and stay closer to truth.](../../assets/figures/d1-03/llmp_trajectory_fan.png)
+Forecast trajectories for the overall Canadian food CPI at three July origins. Observed history is a solid black line, the realized future a dashed black line; AutoARIMA is blue, and the LLM Processes are red/purple with shaded uncertainty bands. At the 2023 origin AutoARIMA extrapolates the recent upward trend while the realized series flattens; the LLM Processes bend toward the flattening and stay closer to truth.
 
 *Real backtest — food-CPI trajectories (Statistics Canada 18-10-0004-11), overall food
 index, three most recent July origins. Solid black: observed; dashed black: realized
-future; blue: AutoARIMA; red/purple: LLM Processes with uncertainty bands. Source:
-`implementations/food_price_forecasting/02_food_cpi_experiment.ipynb` (trajectory fan).*
+future; blue: AutoARIMA; red/purple: LLM Processes with uncertainty bands. Source:*
+`implementations/food_price_forecasting/02_food_cpi_experiment.ipynb` *(trajectory fan).*
 
 The behaviour Ali highlighted is visible at the 2023 origin: AutoARIMA does the only thing
 it can with numbers alone — extrapolate the recent climb — while food inflation was
@@ -126,16 +117,18 @@ headed that a numbers-only model has no way to hold.
 Across all nine sub-indices and six annual origins, that shows up in the score. Mean CRPS
 over the backtest (lower is better):
 
-| Predictor | Mean CRPS |
-|---|---|
-| Last-value naive | 7.71 |
-| AutoARIMA | 4.93 |
-| LLMP — sampled trajectory (flash-lite) | 4.32 |
-| LLMP — sampled trajectory (flash) | 3.07 |
-| LLMP — quantile grid (pro) | 2.83 |
+
+| Predictor                              | Mean CRPS |
+| -------------------------------------- | --------- |
+| Last-value naive                       | 7.71      |
+| AutoARIMA                              | 4.93      |
+| LLMP — sampled trajectory (flash-lite) | 4.32      |
+| LLMP — sampled trajectory (flash)      | 3.07      |
+| LLMP — quantile grid (pro)             | 2.83      |
+
 
 *Real backtest — mean CRPS across 9 categories × 6 July origins × 12 horizons (72
-predictions per category), from `02_food_cpi_experiment.ipynb`. Model tiers are
+predictions per category), from* `02_food_cpi_experiment.ipynb`*. Model tiers are
 Gemini-class flash/pro variants routed through the Vector proxy.*
 
 So a frozen, general-purpose language model with no training on this data beats the
@@ -144,12 +137,12 @@ and AutoARIMA comfortably. Per category, the story is the same shape (the notebo
 panels tell it on a plain point-error lens too), though it is not uniform: the model is
 close on meat and restaurants and overshoots fruit and vegetables.
 
-![Average-over-average year-over-year predictions versus realized for all nine food-CPI sub-indices, one panel per category. The realized series is a solid black line; AutoARIMA, the naive baseline, and the LLM Processes are overlaid with shaded uncertainty bands. Across most categories the LLM Processes track the black line more closely than AutoARIMA.](../../assets/figures/d1-03/llmp_avgyoy_grid.png)
+Average-over-average year-over-year predictions versus realized for all nine food-CPI sub-indices, one panel per category. The realized series is a solid black line; AutoARIMA, the naive baseline, and the LLM Processes are overlaid with shaded uncertainty bands. Across most categories the LLM Processes track the black line more closely than AutoARIMA.
 
 *Real backtest — average-over-average YoY predictions vs realized (black) across the nine
 CFPR categories. The LLM Processes track the realized line more closely than AutoARIMA in
-most categories, though they overshoot in a few (fruit, vegetables). Source:
-`implementations/food_price_forecasting/02_food_cpi_experiment.ipynb`.*
+most categories, though they overshoot in a few (fruit, vegetables). Source:*
+`implementations/food_price_forecasting/02_food_cpi_experiment.ipynb`*.*
 
 That is a real win, and it is worth being precise about *why* it is not the end of the
 story.
@@ -169,9 +162,9 @@ It gets subtler. Some models effectively carry *two* cutoff dates — a stated o
 model card, and an effective one where knowledge actually trails off, which need not
 agree. So you cannot fully trust even the number the provider gives you.
 
-![Placeholder — dual training-cutoff illustration: a timeline showing a model's stated cutoff date versus its (earlier, fuzzy) effective knowledge boundary, with a backtest origin sitting inside the leaked region and a protected origin sitting safely after both dates.](images/dual-cutoff.png)
+Placeholder — dual training-cutoff illustration: a timeline showing a model's stated cutoff date versus its (earlier, fuzzy) effective knowledge boundary, with a backtest origin sitting inside the leaked region and a protected origin sitting safely after both dates.
 
-*Placeholder to be created — see `CAPTURE-LIST.md`. A didactic figure contrasting a
+*Placeholder to be created — see* `CAPTURE-LIST.md`*. A didactic figure contrasting a
 stated cutoff with the fuzzier effective one, and where a backtest origin falls relative
 to each.*
 
@@ -232,3 +225,7 @@ stronger model would do better — is to stop hand-feeding the context and let t
 get it. Next in the series, Ethan turns the LLM Process into an **Analyst Agent** that
 sources, fetches, and computes its own context — and runs straight into a leakage problem
 that no amount of prompting fully solves.
+
+
+
+(General notes -- still a lot of wall breaking going on here. Also I just wonder whether this makes any sense to talk about in the context of the blog posts. For the bootcamp maybe it was fine to present everything in the reference implementations. But for this CFPR use case, we're essentially introducing a forecasting task -- an annual experiment going back 16 years -- that cannot possibly give us anything but a smoke test for LLMPs. We're evaluating on known-to-the-models ground truths. I'm heavily leaning towards a new plan that would rewrite this series of technical blogs entirely. I want to draw inspiration from the bootcamp lectures, but I think it makes more sense to develop a standalone series of technical contributions that perhaps focus on exactly one use case (perhaps it could still be based on markets rather than oil, just to *try* to keep some geopolitics out of it, while still basically building experiments that can and should react to all the same content) and then our series of posts (or maybe this even rolls into a paper...) can describe a much more coherent progression of methods from conventional through to adaptive agent. IN FACT -- I'm going to argue that we should plan to build this as a net-new implementation. We can backtest on predictions from 2025 (while using data from before that for training or context) and evaluate on data so far from 2026. We will acknowledge the potential for data leakage in models and through news, but we can still present our best efforts to control for those. Yeah. I think what's missing is our best effort to run a full dedicated experiment that stiches together all of the methods we've built for this bootcamp, into a new reference that is based on SP500 instead of oil. There are a few reasons I like this. It will force us to generalize the agentic predictors. They can't be biased to focus on context retrieval that are specific to Oil. They would have to be able to much more generally configured. But even once we have all those experiments and artifacts, we can still tell the story as a progression of methods (even if the results aren't in our favour -- we can lean in on the qualitative aspects of agents if they end up underperforming.)
