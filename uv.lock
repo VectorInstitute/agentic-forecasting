@@ -101,12 +101,14 @@ source = { editable = "implementations" }
 dependencies = [
     { name = "aieng-forecasting", extra = ["agentic", "comparison", "documents", "llm", "numerical"] },
     { name = "beautifulsoup4" },
+    { name = "macroforecast" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "aieng-forecasting", extras = ["numerical", "llm", "agentic", "documents", "comparison"], editable = "aieng-forecasting" },
     { name = "beautifulsoup4", specifier = ">=4.12,<5" },
+    { name = "macroforecast", specifier = ">=0.9.2" },
 ]
 
 [[package]]
