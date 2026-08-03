@@ -95,7 +95,7 @@ from aieng.forecasting.methods.agentic import (
 | `llm_processes/sampled_trajectory.py` | `SampledTrajectoryLLMPredictor` | Samples full trajectories from an LLM, then computes empirical quantiles per horizon. Supports optional covariates: set `covariate_series_ids` to serialize labeled exogenous-series history into the prompt (Context-is-Key §5.4). |
 | `llm_processes/quantile_grid.py` | `QuantileGridLLMPredictor` | Asks an LLM for the standard quantile grid in one structured completion. |
 | `llm_processes/binary_probability.py` | `BinaryProbabilityLLMPredictor` | Direct elicitation of one calibrated event probability for binary tasks (Brier-scored), in one structured completion. |
-| `llm_processes/categorical_probability.py` | `CategoricalProbabilityLLMPredictor` | Direct elicitation of a calibrated distribution over the task-declared ordered categories (RPS-scored); history serialized as category labels. |
+| `llm_processes/categorical_probability.py` | `CategoricalProbabilityLLMPredictor` | Direct elicitation of a calibrated distribution over the task-declared ordered categories (RPS-scored); history serialized as category labels. Each completion appears as a nested Langfuse Generation, including its system/user messages and response. |
 | `llm_processes/point_intervals.py` | — | Placeholder for a compact point-plus-interval contract; may become configurable sparse quantile-grid elicitation. |
 
 ### Agentic
