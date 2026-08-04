@@ -8,11 +8,11 @@ The target is measured in basis point and is forecast at selected business-day
 horizons, such as 1, 5, and 21 business days.
 
 
-- (forecast 1 step ahead)  → next-session return.
-- (forecast 5 steps ahead) → forward 1-week return.
-- (forecast 21 steps ahead)→ forward 1-month return.
+- (forecast 1 step ahead)  → next-session spread return.
+- (forecast 5 steps ahead) → forward 1-week spread return.
+- (forecast 21 steps ahead)→ forward 1-month spread return.
 
-Using returns (rather than the index level) keeps the target stationary, which
+Using spread changes (rather than the spread level) helps make the target more stationary, which
 is the appropriate setup for a conventional-methods comparison.
 
 Covariates supported (daily business-day frame):
@@ -26,6 +26,7 @@ Covariates supported (daily business-day frame):
 - Gold returns
 - Dollar index returns
 - NASDAQ returns
+- HYOAS and HYOAS proxy by high yield bond and treasury 
 
 Anti-leakage policy:
 - Every covariate is transformed and then lagged by one business day.
@@ -47,7 +48,12 @@ import warnings
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
-
+from hyoas_proxy import (
+        DGS3_FRED_ID,
+        HYOAS_FRED_ID,
+        HYG_TICKER,
+        build_hyg_dgs3_proxy,
+    )
 import numpy as np
 import pandas as pd
 from aieng.forecasting.data import DataService, SeriesMetadata
@@ -156,7 +162,7 @@ def _build_cumulative_spread_change_frame(spread_df: pd.DataFrame, window: int) 
    
     # BAA10Y is measured in basis. 
     # spread widening/tightening in basis points 
-    frame["value"] = 100*frame["value"] - 100*frame["value"].shift(window)
+    frame["value"] = (frame["value"] - frame["value"].shift(window))*100
 
     frame = frame.dropna(subset=["value"]).reset_index(drop=True)
     frame["released_at"] = pd.to_datetime(frame["timestamp"])
@@ -171,7 +177,7 @@ def build_baa10y_target_service(
     end: str = "2026-07-01",
     fred_cache_dir: Path | None = None,
 ) -> DataService:
-    """Register one close-to-close cumulative log-return target per window in ``windows``."""
+    """Register one close-to-close cumulative spread change target per window in ``windows``."""
     _load_fred_dotenv()
 
     fred_dir = _as_absolute_cache(
@@ -260,6 +266,13 @@ FRED_PREFETCH_REGISTRY: dict[str, tuple[str, str, str]] = {
     "Percent",
     "D",
     ),
+    ## include HYOAS
+    "BAMLH0A0HYM2": (
+        "ICE BofA US High Yield Index Option-Adjusted Spread",
+        "Percent",
+        "D",
+    ),
+    "DGS3": ( "3-Year Treasury Constant Maturity Rate","Percent", "D",),
     
     "DGS10": ("10-Year Treasury Constant Maturity Rate", "Percent", "D"),
     "DGS2": ("2-Year Treasury Constant Maturity Rate", "Percent", "D"),
@@ -295,6 +308,10 @@ FRED_SERIES_IDS_FOR_PREFETCH: tuple[str, ...] = tuple(FRED_PREFETCH_REGISTRY.key
 VIX_TICKER = "^VIX"
 NASDAQ_TICKER = "^IXIC"
 
+# HYOAS observed series and approved HYG-DGS3 proxy.
+SERIES_ID_HYOAS_OBSERVED_CHANGE =  "hyoas_observed_change_1b_bps_l1b"
+SERIES_ID_HYOAS_PROXY_CHANGE = "hyoas_hyg_dgs3_proxy_change_1b_bps_l1b"
+
 SERIES_ID_VIX_LEVEL = "vix_level_l1b"
 SERIES_ID_VIX_CHANGE = "vix_log_ret_1b_l1b"
 SERIES_ID_10Y_YIELD = "ust10y_level_l1b"
@@ -307,6 +324,10 @@ SERIES_ID_GOLD_RETURN = "gold_log_ret_1b_l1b"
 SERIES_ID_DOLLAR_INDEX_RETURN = "dollar_index_log_ret_1b_l1b"
 SERIES_ID_NASDAQ_RETURN = "nasdaq_log_ret_1b_l1b"
 
+HYOAS_OPTIONAL_COVARIATE_SERIES_IDS: list[str] = [
+    SERIES_ID_HYOAS_OBSERVED_CHANGE,
+    SERIES_ID_HYOAS_PROXY_CHANGE,
+]
 
 DEFAULT_COVARIATE_SERIES_IDS: list[str] = [
     SERIES_ID_VIX_LEVEL,
@@ -320,6 +341,7 @@ DEFAULT_COVARIATE_SERIES_IDS: list[str] = [
     SERIES_ID_GOLD_RETURN,
     SERIES_ID_DOLLAR_INDEX_RETURN,
     SERIES_ID_NASDAQ_RETURN,
+
 ]
 
 
@@ -354,6 +376,30 @@ def _fred_frame(
     adapter = FREDAdapter(fred_id, cache_dir=cache_dir, refresh=refresh)
     return _canonical_three_col(adapter.fetch())
 
+
+def _build_observed_hyoas_change_feature(
+    *,
+    cache_dir: Path,
+    refresh: bool,
+) -> pd.DataFrame:
+    """Build observed daily HYOAS changes in basis points, lagged by 1B."""
+    hyoas = _fred_frame(
+        HYOAS_FRED_ID,
+        cache_dir=cache_dir,
+        refresh=refresh,
+    )
+    hyoas = _drop_weekend_timestamp_rows(hyoas)
+    hyoas = _business_daily_ffill(hyoas)
+    hyoas = hyoas.sort_values("timestamp").reset_index(drop=True)
+
+    hyoas["value"] = (pd.to_numeric(hyoas["value"], errors="coerce").diff() * 100.0)
+    hyoas = hyoas.dropna(subset=["value"]).reset_index(drop=True)
+
+    hyoas["released_at"] = pd.to_datetime(hyoas["timestamp"])
+
+    return _apply_one_business_day_feature_lag(
+        hyoas[["timestamp", "value", "released_at"]]
+    )
 
 def _build_monthly_cpi_mom_feature(
     *,
@@ -737,6 +783,84 @@ def build_baa10y_multivariate_service(  # noqa: PLR0912, PLR0915
         except (RuntimeError, ValueError) as exc:
             _handle_covariate_error(SERIES_ID_DOLLAR_INDEX_RETURN, exc)
 
+    ## add for HYOAS
+    if SERIES_ID_HYOAS_OBSERVED_CHANGE in desired_set:
+        try:
+            hyoas_observed = _build_observed_hyoas_change_feature(
+                cache_dir=fred_dir,
+                refresh=refresh,
+            )
+            svc.register(
+                SERIES_ID_HYOAS_OBSERVED_CHANGE,
+                StaticFrameAdapter(hyoas_observed),
+                SeriesMetadata(
+                    series_id=SERIES_ID_HYOAS_OBSERVED_CHANGE,
+                    description=(
+                        "Observed ICE BofA US High Yield OAS daily change, "
+                        "lagged 1 business day"
+                    ),
+                    source=f"FRED ({HYOAS_FRED_ID}), derived",
+                    units="basis-points",
+                    frequency="B",
+                    table_id=f"fred:{HYOAS_FRED_ID}:change-1b-bps-l1b",
+                ),
+            )
+        except (RuntimeError, ValueError) as exc:
+            _handle_covariate_error(
+                SERIES_ID_HYOAS_OBSERVED_CHANGE,
+                exc,
+            )
+    if SERIES_ID_HYOAS_PROXY_CHANGE in desired_set:
+        try:
+            hyg_prices = _load_yahoo_close_frame(
+                    HYG_TICKER,
+                    start=start,
+                    end=end,
+                    cache_dir=yahoo_dir,
+                    refresh=refresh,
+                )
+
+            dgs3_yield = _fred_frame(
+                DGS3_FRED_ID,
+                cache_dir=fred_dir,
+                refresh=refresh,
+            )
+            dgs3_yield = _drop_weekend_timestamp_rows(dgs3_yield)
+            dgs3_yield = _business_daily_ffill(dgs3_yield)
+
+            hyoas_proxy = build_hyg_dgs3_proxy(
+                hyg_prices=hyg_prices,
+                dgs3_yield=dgs3_yield,
+            )
+            hyoas_proxy = _apply_one_business_day_feature_lag(
+                hyoas_proxy
+            )
+
+            svc.register(
+                SERIES_ID_HYOAS_PROXY_CHANGE,
+                StaticFrameAdapter(hyoas_proxy),
+                SeriesMetadata(
+                    series_id=SERIES_ID_HYOAS_PROXY_CHANGE,
+                    description=(
+                        "HYG-DGS3 duration-based high-yield spread-change "
+                        "proxy, lagged 1 business day"
+                    ),
+                    source=(
+                        f"Yahoo Finance ({HYG_TICKER}) and "
+                        f"FRED ({DGS3_FRED_ID}), derived"
+                    ),
+                    units="basis-points",
+                    frequency="B",
+                    table_id="proxy:HYG-DGS3:change-1b-bps-l1b",
+                ),
+            )
+        except (RuntimeError, ValueError) as exc:
+            _handle_covariate_error(
+                SERIES_ID_HYOAS_PROXY_CHANGE,
+                exc,
+            )
+    
+
     return svc
 
 
@@ -764,4 +888,6 @@ __all__ = [
     "baa10y_change_series_id",
     "build_baa10y_target_service",
     "build_baa10y_multivariate_service",
-]
+    "HYOAS_OPTIONAL_COVARIATE_SERIES_IDS",
+    "SERIES_ID_HYOAS_OBSERVED_CHANGE",
+    "SERIES_ID_HYOAS_PROXY_CHANGE",]
