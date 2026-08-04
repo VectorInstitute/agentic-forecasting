@@ -33,7 +33,7 @@ _RECIPE_FAMILY = "baa10y_v1"
 _SERIES_DESCRIPTION = (
     "Series: change in the FRED BAA10Y corporate credit spread over "
     "a fixed number of business days. BAA10Y spread between Moody;s Seasoned Baa Corporate Bond and 10-Year Treasury Constant Maturity.\n"
-    "Units: percentage points. A positive value means spread widening;"
+    "Units: basis points. A positive value means spread widening;"
     "a negative value means spread tightening.\n"
     "Frequency: business days (Mon-Fri)."
 )
