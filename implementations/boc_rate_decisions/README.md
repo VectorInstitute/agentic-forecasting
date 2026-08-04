@@ -87,13 +87,14 @@ validation, but no forecast origin targets them.
 | `boc_rate_cut_event` | `BoCDecisionEventAdapter(kind="cut")` | The binary view of the same derivation |
 | 2-year GoC benchmark yield | StatCan 10-10-0139-01 | Market-implied policy expectations — the strongest single covariate, and naturally directional |
 | CPI all-items | StatCan 18-10-0004-11 | The Bank targets 2% CPI inflation |
+| Real GDP, all industries | StatCan 36-10-0434-01 | Broad domestic activity signal; monthly, chained 2017 dollars, seasonally adjusted annual rates |
 | Unemployment rate | FRED `LRUNTTTTCAM156S` | Labour-market pressure |
 | BoC rate-announcement press releases | Bank of Canada announcement pages (`scripts/fetch_boc_press_releases.py`) | One release per scheduled meeting, cached to `data/reports/boc_press_releases/`; served cutoff-aware by `PressReleaseStore` (only releases published on or before the origin are visible). Currently the published-rationale source for the reasoning-alignment evaluator; available as a context seam for the LLMP/agent predictors |
 
 Populate the cache once:
 
 ```bash
-uv run python scripts/fetch_boc.py                 # series: rate, 2yr yield, CPI, unemployment
+uv run python scripts/fetch_boc.py                 # series: rate, 2yr yield, CPI, GDP, unemployment
 uv run python scripts/fetch_boc_press_releases.py  # press releases (for the rationale-alignment eval)
 ```
 

@@ -17,8 +17,8 @@ Three kinds of data come together here:
    first-class series means the standard resolution and scoring paths in the
    evaluation harness apply unchanged.
 
-Macro covariates (CPI, unemployment, bond yields) are registered for the
-conventional baseline and for prompt context. **Leakage warning:** monthly
+Macro covariates (CPI, GDP, unemployment, bond yields) are registered for
+shared notebook exploration and predictor context. **Leakage warning:** monthly
 covariates carry approximate ``released_at`` stamps (see the adapters);
 feature code must lag them conservatively rather than trusting day-level
 release precision. The daily market series use ``release_lag_days=1``.
@@ -64,6 +64,9 @@ BOND_YIELD_2YR_SERIES_ID = "boc_govt_bond_yield_2yr"
 CPI_SERIES_ID = "cpi_all_items_canada"
 """Monthly CPI All-items, Canada (2002=100). Shared with the getting-started use case."""
 
+GDP_SERIES_ID = "canada_real_gdp_all_industries"
+"""Monthly Canadian real GDP, all industries, seasonally adjusted annual rates."""
+
 UNEMPLOYMENT_SERIES_ID = "fred_canada_unemployment_rate"
 """Monthly Canadian unemployment rate, seasonally adjusted (percent, FRED)."""
 
@@ -72,6 +75,9 @@ RATES_TABLE_ID = "10-10-0139-01"
 
 CPI_TABLE_ID = "18-10-0004-11"
 """StatCan CPI table (monthly, not seasonally adjusted)."""
+
+GDP_TABLE_ID = "36-10-0434-01"
+"""StatCan monthly real GDP by industry table."""
 
 UNEMPLOYMENT_FRED_ID = "LRUNTTTTCAM156S"
 """FRED series: Monthly Unemployment Rate, Total, All Persons for Canada (SA)."""
@@ -353,6 +359,8 @@ def build_boc_service(
       market-implied gauge of near-term policy expectations.
     - ``cpi_all_items_canada`` — monthly headline CPI (the BoC targets 2%
       CPI inflation).
+        - ``canada_real_gdp_all_industries`` — monthly real GDP, a slower-moving
+            activity covariate.
     - ``fred_canada_unemployment_rate`` — monthly labour-market covariate.
 
     Parameters
@@ -471,6 +479,28 @@ def build_boc_service(
         ),
     )
 
+    svc.register(
+        GDP_SERIES_ID,
+        StatCanAdapter(
+            table_id=GDP_TABLE_ID,
+            member_filter={
+                "GEO": "Canada",
+                "Seasonal adjustment": "Seasonally adjusted at annual rates",
+                "Prices": "Chained (2017) dollars",
+                "North American Industry Classification System (NAICS)": "All industries [T001]",
+            },
+            cache_dir=statcan_dir,
+        ),
+        SeriesMetadata(
+            series_id=GDP_SERIES_ID,
+            description="Real GDP, all industries, Canada (seasonally adjusted annual rate)",
+            source=f"StatCan ({GDP_TABLE_ID})",
+            units="Chained 2017 dollars",
+            frequency="MS",
+            table_id=GDP_TABLE_ID,
+        ),
+    )
+
     if include_fred:
         svc.register(
             UNEMPLOYMENT_SERIES_ID,
@@ -495,6 +525,8 @@ __all__ = [
     "DEFAULT_STATCAN_CACHE_DIR",
     "DIRECTION_SERIES_ID",
     "DIRECTION_TASK_CATEGORIES",
+    "GDP_SERIES_ID",
+    "GDP_TABLE_ID",
     "MEETING_SCHEDULE_PATH",
     "RATES_TABLE_ID",
     "RATE_CUT_EVENT_SERIES_ID",
