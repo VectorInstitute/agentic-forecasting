@@ -156,7 +156,7 @@ def _build_cumulative_spread_change_frame(spread_df: pd.DataFrame, window: int) 
    
     # BAA10Y is measured in basis. 
     # spread widening/tightening in basis points 
-    frame["value"] = frame["value"] - frame["value"].shift(window)
+    frame["value"] = 100*frame["value"] - 100*frame["value"].shift(window)
 
     frame = frame.dropna(subset=["value"]).reset_index(drop=True)
     frame["released_at"] = pd.to_datetime(frame["timestamp"])
