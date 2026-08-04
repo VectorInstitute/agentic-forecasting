@@ -298,7 +298,7 @@ module "gce-container" {
 resource "google_compute_disk" "pd" {
   project = var.project
   name    = "coder-${data.coder_workspace.me.id}-data-disk"
-  type    = "hyperdisk-balanced"
+  type    = "pd-balanced"
   zone    = var.zone
   size    = var.pd_size
 }
