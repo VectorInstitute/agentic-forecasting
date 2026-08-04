@@ -42,22 +42,22 @@ class LLMPredictorConfig(BaseModel):
         description=(
             "Model name as expected by the proxy (bare, no provider prefix), "
             "e.g. 'gemini-3.1-flash-lite-preview', 'gpt-4o-mini'. "
-            "When proxy_base_url is set, LiteLLM routes this to the proxy via "
+            "When openai_base_url is set, LiteLLM routes this to the proxy via "
             "custom_llm_provider='openai'."
         ),
     )
-    proxy_base_url: str | None = Field(
-        default_factory=lambda: os.getenv("PROXY_BASE_URL"),
+    openai_base_url: str | None = Field(
+        default_factory=lambda: os.getenv("OPENAI_BASE_URL"),
         description=(
             "Base URL for an OpenAI-compatible LLM proxy. Defaults to the "
-            "``PROXY_BASE_URL`` environment variable. When set, all completions "
+            "``OPENAI_BASE_URL`` environment variable. When set, all completions "
             "are routed through the proxy using ``api_base`` + "
             "``custom_llm_provider='openai'``."
         ),
     )
-    proxy_api_key: str | None = Field(
-        default_factory=lambda: os.getenv("PROXY_API_KEY"),
-        description=("API key for the proxy. Defaults to the ``PROXY_API_KEY`` environment variable."),
+    openai_api_key: str | None = Field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY"),
+        description=("API key for the proxy. Defaults to the ``OPENAI_API_KEY`` environment variable."),
     )
     temperature: float = Field(default=1.0, ge=0.0, le=2.0, description="Sampling temperature.")
     max_tokens: int = Field(

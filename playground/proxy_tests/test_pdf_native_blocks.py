@@ -22,10 +22,10 @@ from dotenv import load_dotenv
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-load_dotenv(REPO_ROOT / ".env")
+load_dotenv(REPO_ROOT / ".env", override=False)
 
-BASE = os.environ.get("PROXY_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
-KEY = os.environ.get("PROXY_API_KEY", "")
+BASE = os.environ.get("OPENAI_BASE_URL", "https://proxy.vectorinstitute.ai/v1")
+KEY = os.environ.get("OPENAI_API_KEY", "")
 PDF = REPO_ROOT / "data" / "reports" / "cfpr" / "2021_en.pdf"
 Q = "What edition number is printed on the title page? Answer with just the number."
 

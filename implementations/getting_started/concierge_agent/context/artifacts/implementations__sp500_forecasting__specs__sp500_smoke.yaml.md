@@ -1,0 +1,59 @@
+# Source: implementations/sp500_forecasting/specs/sp500_smoke.yaml
+
+kind: yaml
+
+```yaml
+# Smoke spec — fast laptop run over a short, post-cutoff (2025) window.
+#
+# Weekly origins in late 2025: after the Gemini training cutoff (~Jan 2025), so
+# the LLM-Process rows in the notebook can be compared *fairly* against the
+# conventional methods here. The notebook keeps its LLMP predictors ON for this
+# window (the predictors cell gates them on a post-cutoff flag).
+#
+# This spec carries experiment design only — the window, stride/warmup, and one
+# single-horizon task per target. WHICH predictors run (and all their
+# hyperparameters, including the covariate panel) is configured in the notebook,
+# not here. Each task targets `sp500_logret_{N}b` (the close-to-close cumulative
+# log return over N business days), so forecasting it N steps ahead resolves to
+# the forward N-session return.
+#
+# Prerequisites (warm caches to the present first):
+#   uv run python scripts/fetch_sp500_market.py --refresh   # ^GSPC / ^VIX / ^IXIC
+#   uv run python scripts/fetch_fred.py                     # macro covariates
+
+spec_id: sp500_smoke
+
+description: >-
+  Smoke multivariate demo: weekly origins in late 2025 (post-cutoff),
+  forecasting close-to-close cumulative returns at 1/5/21 business days.
+
+tasks:
+  - task_id: sp500_logret_1b
+    target_series_id: sp500_logret_1b
+    horizons: [1]
+    frequency: B
+    description: >-
+      S&P 500 close-to-close cumulative log return, 1 business day ahead
+      (next-session return / direction).
+
+  - task_id: sp500_logret_5b
+    target_series_id: sp500_logret_5b
+    horizons: [5]
+    frequency: B
+    description: >-
+      S&P 500 close-to-close cumulative log return, 5 business days ahead
+      (forward 1-week return).
+
+  - task_id: sp500_logret_21b
+    target_series_id: sp500_logret_21b
+    horizons: [21]
+    frequency: B
+    description: >-
+      S&P 500 close-to-close cumulative log return, 21 business days ahead
+      (forward 1-month return).
+
+start: "2025-10-06"
+end: "2025-11-14"
+stride: 5            # weekly origins (~6)
+warmup: 250
+```

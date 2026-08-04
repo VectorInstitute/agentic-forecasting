@@ -1,0 +1,57 @@
+# Source: implementations/sp500_forecasting/specs/sp500_eval_2026.yaml
+
+kind: yaml
+
+```yaml
+# Protected eval — held-out 2026 window, scored through multi_evaluate() with a budget.
+#
+# This is the honest scoreboard. 2026 is unambiguously after the Gemini training
+# cutoff, so neither the numerical methods nor the LLM-Process can have seen the
+# outcomes. Treat it as scarce: `max_runs` caps how many times the spec may be
+# scored (via EvalTracker), so iterate on `sp500_backtest_2025.yaml` and spend
+# this only on a curated set of finalists (chosen in the notebook's eval cell).
+#
+# Loaded as a MultiTargetEvalSpec: one single-horizon task per target, all under
+# a single shared run budget. One multi_evaluate() call across all three
+# horizons counts as ONE run against `max_runs` — the budget is keyed by
+# `spec_id`, not per-horizon. The predictor roster lives in the notebook.
+
+spec_id: sp500_eval_2026
+
+description: >-
+  Protected eval: weekly origins across early/mid 2026 (post-cutoff),
+  forecasting close-to-close cumulative returns at 1/5/21 business days.
+
+tasks:
+  - task_id: sp500_logret_1b
+    target_series_id: sp500_logret_1b
+    horizons: [1]
+    frequency: B
+    description: >-
+      S&P 500 close-to-close cumulative log return, 1 business day ahead
+      (next-session return / direction).
+
+  - task_id: sp500_logret_5b
+    target_series_id: sp500_logret_5b
+    horizons: [5]
+    frequency: B
+    description: >-
+      S&P 500 close-to-close cumulative log return, 5 business days ahead
+      (forward 1-week return).
+
+  - task_id: sp500_logret_21b
+    target_series_id: sp500_logret_21b
+    horizons: [21]
+    frequency: B
+    description: >-
+      S&P 500 close-to-close cumulative log return, 21 business days ahead
+      (forward 1-month return).
+
+start: "2026-02-02"
+end: "2026-03-23"     # 8 weekly origins; all resolve at h=21
+stride: 5             # weekly origins
+warmup: 250
+
+# Budget cap: each multi_evaluate() call (all 3 horizons) counts as one run.
+max_runs: 5
+```

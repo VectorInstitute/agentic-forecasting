@@ -1,0 +1,240 @@
+spec:
+  task:
+    task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons:
+    - 5
+    - 10
+    - 21
+    frequency: B
+    description: 'WTI Crude Oil continuous front-month futures Close price (yfinance
+      symbol: CL=F), projected 5, 10, and 21 trading days ahead.'
+    payload_type: continuous
+    categories: null
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2025-06-02T00:00:00'
+  end: '2025-06-09T00:00:00'
+  stride: 5
+  origin_dates: null
+  warmup: 250
+  description: "Two-origin smoke backtest for local and CI testing of the NB04 pipeline.\
+    \ Uses the same tasks, horizons, and warmup as energy_oil_backtest but with only\
+    \ 2 weekly origins so the full notebook can be exercised without burning tokens\
+    \ on 51 \xD7 5 predictor evaluations."
+predictor_id: agent_predictor_wti_analyst_news_gemini-3.5-flash_continuous
+predictions:
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.5-flash_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:30:15.952219'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-09T00:00:00'
+  payload:
+    point_forecast: 60.6
+    quantiles:
+      '0.05': 56.8
+      '0.1': 57.6
+      '0.2': 58.7
+      '0.3': 59.4
+      '0.4': 60.0
+      '0.5': 60.6
+      '0.6': 61.2
+      '0.7': 61.8
+      '0.8': 62.6
+      '0.9': 63.6
+      '0.95': 64.4
+  metadata:
+    rationale: The forecasts reflect a market in consolidation after the severe price
+      collapse in early April 2025 caused by US tariff announcements and OPEC+ production
+      hikes. The OPEC+ meeting on May 31, 2025, reaffirmed their strategy to gradually
+      return 411,000 bpd to the market in July, reinforcing a comfortable global supply
+      cushion. Downside risk remains linked to macro demand destruction and tariff
+      escalation, while upside risk is driven by potential geopolitical flare-ups
+      in transit routes.
+    horizon_rationale: Over a 5-day horizon, WTI crude is expected to consolidate
+      near its current $60.79/bbl anchor. Following the May 31 OPEC+ virtual meeting,
+      the group confirmed a 411,000 bpd production increase for July 2025. This continuation
+      of voluntary cut unwinding keeps market supply comfortable and limits immediate
+      upside. The range-bound nature is reflected in a relatively tight forecast distribution,
+      with the downside protected by technical support near the 52-week low of $57.13
+      and the upside limited by trade-war concerns.
+    langfuse_trace_id: 832ca9db8cc5fb8252a5b31815dd2487
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/832ca9db8cc5fb8252a5b31815dd2487
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.5-flash_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:30:15.952219'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 60.4
+    quantiles:
+      '0.05': 54.8
+      '0.1': 56.0
+      '0.2': 57.6
+      '0.3': 58.7
+      '0.4': 59.6
+      '0.5': 60.4
+      '0.6': 61.2
+      '0.7': 62.1
+      '0.8': 63.2
+      '0.9': 64.6
+      '0.95': 65.8
+  metadata:
+    rationale: The forecasts reflect a market in consolidation after the severe price
+      collapse in early April 2025 caused by US tariff announcements and OPEC+ production
+      hikes. The OPEC+ meeting on May 31, 2025, reaffirmed their strategy to gradually
+      return 411,000 bpd to the market in July, reinforcing a comfortable global supply
+      cushion. Downside risk remains linked to macro demand destruction and tariff
+      escalation, while upside risk is driven by potential geopolitical flare-ups
+      in transit routes.
+    horizon_rationale: At the 10-day horizon, structural oversupply concerns are expected
+      to weigh slightly more on prices. The combination of ongoing US tariff impacts
+      on trade, soft global demand signals, and steady supply growth means the market
+      will likely trade with a soft bias. The uncertainty bounds expand to reflect
+      potential updates in weekly US commercial crude inventory data and shifting
+      macroeconomic indicators.
+    langfuse_trace_id: 832ca9db8cc5fb8252a5b31815dd2487
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/832ca9db8cc5fb8252a5b31815dd2487
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.5-flash_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:30:15.952219'
+  as_of: '2025-06-02T00:00:00'
+  forecast_date: '2025-07-01T00:00:00'
+  payload:
+    point_forecast: 60.0
+    quantiles:
+      '0.05': 51.8
+      '0.1': 54.0
+      '0.2': 56.2
+      '0.3': 57.7
+      '0.4': 58.9
+      '0.5': 60.0
+      '0.6': 61.1
+      '0.7': 62.3
+      '0.8': 63.9
+      '0.9': 65.9
+      '0.95': 67.6
+  metadata:
+    rationale: The forecasts reflect a market in consolidation after the severe price
+      collapse in early April 2025 caused by US tariff announcements and OPEC+ production
+      hikes. The OPEC+ meeting on May 31, 2025, reaffirmed their strategy to gradually
+      return 411,000 bpd to the market in July, reinforcing a comfortable global supply
+      cushion. Downside risk remains linked to macro demand destruction and tariff
+      escalation, while upside risk is driven by potential geopolitical flare-ups
+      in transit routes.
+    horizon_rationale: By early July 2025 (21 business days), the confirmed OPEC+
+      supply increase of 411,000 bpd will officially begin to take effect. While summer
+      driving season in the Northern Hemisphere should offer seasonal demand support,
+      macro trade headwinds and rising supply are likely to keep prices capped near
+      $60.00/bbl. The wider distribution accounts for geopolitical risks in shipping
+      lanes and potential fluctuations in the pace of the US Strategic Petroleum Reserve
+      (SPR) refills.
+    langfuse_trace_id: 832ca9db8cc5fb8252a5b31815dd2487
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/832ca9db8cc5fb8252a5b31815dd2487
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.5-flash_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:32:07.868060'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-16T00:00:00'
+  payload:
+    point_forecast: 75.5
+    quantiles:
+      '0.05': 66.5
+      '0.1': 68.0
+      '0.2': 71.0
+      '0.3': 73.0
+      '0.4': 74.5
+      '0.5': 75.5
+      '0.6': 76.5
+      '0.7': 77.5
+      '0.8': 78.5
+      '0.9': 80.0
+      '0.95': 82.0
+  metadata:
+    rationale: These calibrated forecasts reflect a full cycle of a short-term geopolitical
+      risk spike and subsequent resolution. Mid-June 2025 is marked by military escalation
+      in the Middle East that briefly spikes prices, followed by a steady normalization
+      as physical flows remain uninterrupted and OPEC+ begins unwinding voluntary
+      production cuts.
+    horizon_rationale: Over a 5-day horizon (targeting June 13, 2025), a sharp price
+      spike is expected due to a sudden escalation in geopolitical tensions, including
+      reported airstrikes on Iranian military and nuclear infrastructure. This event
+      injects a high-volatility risk premium, taking WTI to an intraday high of $77.62
+      per barrel with a median settlement expected near $75.50.
+    langfuse_trace_id: c6e5d943b3c0559a2d811f1de0cc0390
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/c6e5d943b3c0559a2d811f1de0cc0390
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.5-flash_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:32:07.868060'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-06-23T00:00:00'
+  payload:
+    point_forecast: 70.0
+    quantiles:
+      '0.05': 62.0
+      '0.1': 64.0
+      '0.2': 66.5
+      '0.3': 68.0
+      '0.4': 69.0
+      '0.5': 70.0
+      '0.6': 71.0
+      '0.7': 72.5
+      '0.8': 74.0
+      '0.9': 76.0
+      '0.95': 78.0
+  metadata:
+    rationale: These calibrated forecasts reflect a full cycle of a short-term geopolitical
+      risk spike and subsequent resolution. Mid-June 2025 is marked by military escalation
+      in the Middle East that briefly spikes prices, followed by a steady normalization
+      as physical flows remain uninterrupted and OPEC+ begins unwinding voluntary
+      production cuts.
+    horizon_rationale: Over a 10-day horizon (targeting June 20, 2025), crude prices
+      are expected to partially correct downward from the mid-month peak. Markets
+      are anticipated to react to signs of geopolitical de-escalation and the confirmation
+      that critical oil transport infrastructure (e.g., the Strait of Hormuz) remained
+      physically unblocked, bringing the median price down to $70.00.
+    langfuse_trace_id: c6e5d943b3c0559a2d811f1de0cc0390
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/c6e5d943b3c0559a2d811f1de0cc0390
+- predictor_id: agent_predictor_wti_analyst_news_gemini-3.5-flash_continuous
+  task_id: wti_oil_price_forecast
+  issued_at: '2026-06-30T15:32:07.868060'
+  as_of: '2025-06-09T00:00:00'
+  forecast_date: '2025-07-08T00:00:00'
+  payload:
+    point_forecast: 64.0
+    quantiles:
+      '0.05': 56.5
+      '0.1': 58.5
+      '0.2': 61.0
+      '0.3': 62.5
+      '0.4': 63.3
+      '0.5': 64.0
+      '0.6': 64.8
+      '0.7': 66.0
+      '0.8': 67.5
+      '0.9': 70.0
+      '0.95': 72.0
+  metadata:
+    rationale: These calibrated forecasts reflect a full cycle of a short-term geopolitical
+      risk spike and subsequent resolution. Mid-June 2025 is marked by military escalation
+      in the Middle East that briefly spikes prices, followed by a steady normalization
+      as physical flows remain uninterrupted and OPEC+ begins unwinding voluntary
+      production cuts.
+    horizon_rationale: Over a 21-day horizon (targeting early July 2025), the market
+      is projected to fully normalize and return to supply/demand fundamentals. With
+      geopolitical risk premiums heavily faded, the main market drivers will be the
+      planned OPEC+ production increases (+411,000 bpd in July) and seasonally softer
+      global demand expectations. This brings WTI back to its baseline low-$60s range,
+      centering on a median of $64.00.
+    langfuse_trace_id: c6e5d943b3c0559a2d811f1de0cc0390
+    langfuse_trace_url: https://us.cloud.langfuse.com/project/cmobssx3g00buad07gb4o1gh6/traces/c6e5d943b3c0559a2d811f1de0cc0390
+scores:
+- 3.3635546345356078
+- 9.512145403396985
+- 3.3144608678896574
+- 2.2037205341433688
+- 1.3733052025156567
+- 2.605868933811662
+metric: crps
+mean_score: 3.7288425960488225
+ran_at: '2026-06-30T15:32:08.110946'
+skipped_origins: 0

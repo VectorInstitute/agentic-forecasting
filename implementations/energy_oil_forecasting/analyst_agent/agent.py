@@ -49,7 +49,7 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     ContextRetrievalConfig,
 )
 from aieng.forecasting.methods.numerical.darts_arima import DartsAutoARIMAPredictor
-from aieng.forecasting.models import LITE_MODEL
+from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
 from energy_oil_forecasting.data import WTI_SERIES_ID, build_wti_service
 from pydantic import BaseModel
 
@@ -126,6 +126,11 @@ def _build_wti_analyst_instruction() -> str:
         "date from the payload). The ``cutoff_date`` MUST always equal ``as_of`` — "
         "this is the temporal fence that prevents post-origin information from "
         "contaminating historical backtests.\n\n"
+        "If ``search_web`` returns a result beginning with "
+        "``[SEARCH_VERIFICATION_FAILED]``, treat it as no verified news context for "
+        "that query. Do not use your own background knowledge to fill the gap or "
+        "speculate about what the news might have said — proceed with price-history "
+        "and other available signals only, and note the gap in your rationale.\n\n"
         "Recommended queries (call ``search_web`` once per topic):\n"
         '- ``search_web(query="WTI crude oil price trend and OPEC+ supply decisions", cutoff_date=<as_of>)``\n'
         '- ``search_web(query="Persian Gulf geopolitical risk shipping lane disruptions", cutoff_date=<as_of>)``\n'
@@ -155,7 +160,16 @@ markdown summary (3-5 paragraphs) covering relevant aspects of:
 
 Ground your summary in the search results you actually retrieve. \
 When a cutoff date is specified, do not report or speculate about events \
-that occurred after that date.\
+that occurred after that date.
+
+Before finalizing your summary, reason step by step: (1) for each candidate \
+fact, judge its actual recency from the substance of the result itself, \
+never from a source's claimed publish date or byline timestamp — those are \
+frequently stale or updated after original publication; (2) discard \
+anything you cannot confidently place before the cutoff date; (3) only then \
+write your summary. Do not supplement the search results with your own \
+background/training knowledge — if the results are insufficient, say so \
+explicitly rather than filling gaps from memory.\
 """
 
 # ---------------------------------------------------------------------------
@@ -359,6 +373,9 @@ def build_wti_basic_config(model: str = LITE_MODEL) -> AgentConfig:
 def build_wti_multitask_news_config(
     model: str = LITE_MODEL,
     search_model: str = LITE_MODEL,
+    verifier_model: str = ADVANCED_MODEL,
+    verifier_max_attempts: int = 3,
+    verifier_confidence_threshold: int = 8,
 ) -> AgentConfig:
     """News-grounded config for the one-agent-three-tasks demo (NB3).
 
@@ -373,6 +390,16 @@ def build_wti_multitask_news_config(
         Model for the context-retrieval (web-search) sub-tool. Defaults to
         the lite model (``gemini-3.1-flash-lite-preview``) independently of ``model`` so that Gemini
         handles Google Search even when the analyst uses a different provider.
+    verifier_model : str
+        Model for the independent temporal-leakage verifier that audits each
+        ``search_web`` result against ``cutoff_date`` before it is returned.
+        Defaults to the advanced model so it doesn't share ``search_model``'s
+        blind spots.
+    verifier_max_attempts : int
+        Maximum search-then-verify attempts before giving up and returning
+        the ``[SEARCH_VERIFICATION_FAILED]`` sentinel.
+    verifier_confidence_threshold : int
+        Minimum verifier confidence (1-10) required to accept a result.
     """
     return AgentConfig(
         name="wti_analyst_multitask",
@@ -382,6 +409,9 @@ def build_wti_multitask_news_config(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
             search_model=search_model,
+            verifier_model=verifier_model,
+            verifier_max_attempts=verifier_max_attempts,
+            verifier_confidence_threshold=verifier_confidence_threshold,
         ),
     )
 
@@ -389,12 +419,17 @@ def build_wti_multitask_news_config(
 def build_wti_news_config(
     model: str = LITE_MODEL,
     search_model: str = LITE_MODEL,
+    verifier_model: str = ADVANCED_MODEL,
+    verifier_max_attempts: int = 3,
+    verifier_confidence_threshold: int = 8,
 ) -> AgentConfig:
     """Build an :class:`AgentConfig` with bounded Google Search.
 
     Wires a :class:`~aieng.forecasting.methods.agentic.agent_factory.ContextRetrievalConfig`
     sub-agent that enforces a temporal cutoff on every search call, preventing
-    future information from contaminating historical backtests.
+    future information from contaminating historical backtests. An
+    independent verifier call audits each search result against the cutoff
+    before it reaches the analyst (see :class:`ContextRetrievalConfig`).
 
     Parameters
     ----------
@@ -404,6 +439,16 @@ def build_wti_news_config(
         Model for the context-retrieval (web-search) sub-tool. Defaults to
         the lite model (``gemini-3.1-flash-lite-preview``) independently of ``model`` so that Gemini
         handles Google Search even when the analyst uses a different provider.
+    verifier_model : str
+        Model for the independent temporal-leakage verifier that audits each
+        ``search_web`` result against ``cutoff_date`` before it is returned.
+        Defaults to the advanced model so it doesn't share ``search_model``'s
+        blind spots.
+    verifier_max_attempts : int
+        Maximum search-then-verify attempts before giving up and returning
+        the ``[SEARCH_VERIFICATION_FAILED]`` sentinel.
+    verifier_confidence_threshold : int
+        Minimum verifier confidence (1-10) required to accept a result.
 
     Returns
     -------
@@ -417,6 +462,9 @@ def build_wti_news_config(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
             search_model=search_model,
+            verifier_model=verifier_model,
+            verifier_max_attempts=verifier_max_attempts,
+            verifier_confidence_threshold=verifier_confidence_threshold,
         ),
     )
 
@@ -425,6 +473,9 @@ def build_wti_code_exec_config(
     model: str = LITE_MODEL,
     search_model: str = LITE_MODEL,
     max_output_tokens: int = 16_384,
+    verifier_model: str = ADVANCED_MODEL,
+    verifier_max_attempts: int = 3,
+    verifier_confidence_threshold: int = 8,
 ) -> AgentConfig:
     """Build an :class:`AgentConfig` with E2B code execution and forecasting skills.
 
@@ -449,6 +500,16 @@ def build_wti_code_exec_config(
         LiteLLM's OpenAI-compatible endpoint default of 4096, which is not
         enough for Claude to write a complete ``run_code`` Python script in a
         single function call — causing repeated retries with empty arguments.
+    verifier_model : str
+        Model for the independent temporal-leakage verifier that audits each
+        ``search_web`` result against ``cutoff_date`` before it is returned.
+        Defaults to the advanced model so it doesn't share ``search_model``'s
+        blind spots.
+    verifier_max_attempts : int
+        Maximum search-then-verify attempts before giving up and returning
+        the ``[SEARCH_VERIFICATION_FAILED]`` sentinel.
+    verifier_confidence_threshold : int
+        Minimum verifier confidence (1-10) required to accept a result.
 
     Returns
     -------
@@ -463,6 +524,9 @@ def build_wti_code_exec_config(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
             search_model=search_model,
+            verifier_model=verifier_model,
+            verifier_max_attempts=verifier_max_attempts,
+            verifier_confidence_threshold=verifier_confidence_threshold,
         ),
         code_execution=CodeExecutionConfig(enabled=True),
         skills_dirs=[
@@ -478,6 +542,9 @@ def build_wti_tool_config(
     *,
     data_service: DataService | None = None,
     num_samples: int = 200,
+    verifier_model: str = ADVANCED_MODEL,
+    verifier_max_attempts: int = 3,
+    verifier_confidence_threshold: int = 8,
 ) -> AgentConfig:
     """Build an :class:`AgentConfig` with a conventional statistical forecast tool.
 
@@ -505,6 +572,16 @@ def build_wti_tool_config(
     num_samples : int, default=200
         Monte Carlo sample count for AutoARIMA. Kept modest to bound agent
         latency, since AutoARIMA can be slow per origin.
+    verifier_model : str
+        Model for the independent temporal-leakage verifier that audits each
+        ``search_web`` result against ``cutoff_date`` before it is returned.
+        Defaults to the advanced model so it doesn't share ``search_model``'s
+        blind spots.
+    verifier_max_attempts : int
+        Maximum search-then-verify attempts before giving up and returning
+        the ``[SEARCH_VERIFICATION_FAILED]`` sentinel.
+    verifier_confidence_threshold : int
+        Minimum verifier confidence (1-10) required to accept a result.
 
     Returns
     -------
@@ -521,6 +598,9 @@ def build_wti_tool_config(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
             search_model=search_model,
+            verifier_model=verifier_model,
+            verifier_max_attempts=verifier_max_attempts,
+            verifier_confidence_threshold=verifier_confidence_threshold,
         ),
         function_tools=[forecast_tool.as_function_tool()],
     )

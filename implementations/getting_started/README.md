@@ -56,6 +56,15 @@ exactly what to fix. Most ❌ results are a missing or placeholder API key in th
 repo-root `.env`, so it's the fastest way to confirm your setup is complete
 before opening the notebooks below.
 
+The FRED check is optional for `getting_started` itself, but required by the
+S&P 500 reference implementation and useful for the BoC rate decisions one. FRED
+API keys are free but must be requested individually — **we cannot provide one
+for you**. Request yours early at <https://fred.stlouisfed.org/docs/api/api_key.html>
+(approval is usually quick but can take some time). A description like "Requesting
+an API key to explore the effectiveness of various forecasting techniques on
+economic data." works well. Once approved, add `FRED_API_KEY=your_key` to your
+`.env`.
+
 ### Populate the local data cache
 
 Populate the local data cache (the stats-can download is gitignored):
@@ -130,6 +139,33 @@ against [`cpi_gasoline_eval_2025.yaml`](specs/cpi_gasoline_eval_2025.yaml)
 — monthly origins from Jan 2025 through Mar 2026, all currently resolved.
 `max_runs: 5` — spend deliberately.
 
+### 6. Ask the repo concierge — `99_repo_concierge.ipynb`
+
+**Questions about how the repository works?** Open
+[`99_repo_concierge.ipynb`](99_repo_concierge.ipynb) — a lite-model **repo
+concierge** that answers onboarding questions, points you to the right notebooks
+and modules, and can quote snippets from the committed public-`main` catalog.
+
+- Notebook cells are gated by `RUN_AGENT` (safe `Run All`).
+- For longer conversations, run the ADK CLI from the **repository root**:
+
+  ```bash
+  uv run adk run implementations/getting_started/concierge_agent
+  ```
+
+  (`uv run adk web implementations/getting_started/concierge_agent` opens the same
+  agent in a browser.)
+
+  From `implementations/getting_started/`, the shorter `uv run adk run concierge_agent`
+  works too.
+
+This is different from each domain's `99_starter_agent.ipynb` — those are
+hackable **forecasting** agents; the concierge only explains the repo.
+
+Maintainers regenerate the catalog with
+`uv run python scripts/build_concierge_context.py` when library code,
+implementations, or notebooks change.
+
 ---
 
 ## Where to go next
@@ -157,9 +193,11 @@ what you're building:
 getting_started/                 # this directory
 ├── README.md
 ├── specs/                       # backtest and eval YAML
+├── concierge_agent/             # repo concierge ADK agent + catalog + artifacts
 ├── 00_environment_check.ipynb   # self-guided setup preflight — run this first
 ├── 01_cpi_data_exploration.ipynb
-└── 02_cpi_backtest_demo.ipynb
+├── 02_cpi_backtest_demo.ipynb
+└── 99_repo_concierge.ipynb      # ask questions about the repo (onboarding helper)
 ```
 
 Reference predictors live in the `aieng-forecasting` package under

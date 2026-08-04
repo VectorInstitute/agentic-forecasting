@@ -4,7 +4,7 @@
 # arena cheaply during development and end-to-end testing.
 # Use by setting SMOKE_TEST = True in the notebook setup cell.
 #
-# Origin count : 2 (vs. 8 in the full eval)
+# Origin count : 2 (vs. 18 in the full eval)
 # Warmup       : 250 trading days (~1 year) of historical prices
 
 spec_id: energy_oil_eval_smoke

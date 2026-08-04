@@ -19,17 +19,18 @@ repository = "https://github.com/VectorInstitute/agentic-forecasting"
 
 [dependency-groups]
 dev = [
+    "aieng-platform-onboard>=0.7.3",
     "codecov>=2.1.13",
-    "e2b>=2.29.5",
+    "e2b>=2.29.6",
     "mypy>=2.1.0",
     "nbqa>=1.9.1",
     "pip-audit>=2.10.1",
     "pre-commit>=4.6.0",
-    "pytest>=9.1.0",
+    "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "pytest-mock>=3.15.1",
-    "ruff>=0.15.18",
+    "ruff>=0.15.19",
 ]
 
 # Default dependency groups to be installed
@@ -119,6 +120,8 @@ ignore = [
 # Playground: throwaway exploration/diagnostics. Same relaxations as scripts,
 # plus PLC0415 (optional deps are imported inside try/except by design).
 "playground/**" = ["D1", "E402", "W505", "ERA001", "PLC0415"]
+# Repo-root integration tests: optional extras imported inside try/except.
+"tests/**" = ["D1", "E402", "W505", "ERA001", "PLC0415"]
 
 [tool.ruff.lint.pep8-naming]
 ignore-names = ["X*", "setUp"]

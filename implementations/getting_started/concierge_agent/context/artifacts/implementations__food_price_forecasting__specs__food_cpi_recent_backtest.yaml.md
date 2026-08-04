@@ -1,0 +1,108 @@
+# Source: implementations/food_price_forecasting/specs/food_cpi_recent_backtest.yaml
+
+kind: yaml
+
+```yaml
+# Mini backtest spec: all 9 targets, recent 6 origins.
+#
+# All nine food CPI categories, 6 annual July origins (2019-2024).
+# Covers two meaningful macro regimes — the COVID shock (2020-21) and the
+# food-price surge and retreat (2021-24) — while keeping total agent calls
+# manageable.  Not budget-gated; run freely.
+#
+# Origin count : 6    (Jul 2019, 2020, 2021, 2022, 2023, 2024)
+# Agent calls  : ~54  (9 tasks × 6 origins, all 12 trajectory horizons per call)
+#
+# Use `food_cpi_cfpr_backtest.yaml` for the full 16-origin canonical backtest.
+#
+# Prerequisites
+# -------------
+#   uv run python scripts/fetch_cpi.py
+
+spec_id: food_cpi_recent_backtest
+
+description: >-
+  All-targets recent backtest: 9 Canadian food CPI sub-indices, 6 recent
+  annual July origins (2019-2024), 12-step trajectory (horizons 6-17).
+  Covers COVID shock and food-price surge/retreat regimes. Not
+  budget-gated — run freely.
+
+tasks:
+  - task_id: food_cpi_overall_cfpr
+    target_series_id: cpi_food_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Food (overall, 2002=100), trajectory across Jan-Dec of
+      the year following a July origin.
+
+  - task_id: food_cpi_bakery_cereal_cfpr
+    target_series_id: cpi_bakery_cereal_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Bakery and cereal products (excl. baby food), trajectory
+      across Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_dairy_eggs_cfpr
+    target_series_id: cpi_dairy_eggs_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Dairy products and eggs, trajectory across Jan-Dec of
+      the year following a July origin.
+
+  - task_id: food_cpi_fish_seafood_cfpr
+    target_series_id: cpi_fish_seafood_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Fish, seafood and other marine products, trajectory
+      across Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_restaurants_cfpr
+    target_series_id: cpi_restaurants_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Food purchased from restaurants, trajectory across
+      Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_fruit_preparations_nuts_cfpr
+    target_series_id: cpi_fruit_preparations_nuts_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Fruit, fruit preparations and nuts, trajectory across
+      Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_meat_cfpr
+    target_series_id: cpi_meat_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Meat, trajectory across Jan-Dec of the year following a
+      July origin.
+
+  - task_id: food_cpi_other_food_cfpr
+    target_series_id: cpi_other_food_nonalcoholic_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Other food products and non-alcoholic beverages,
+      trajectory across Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_vegetables_cfpr
+    target_series_id: cpi_vegetables_preparations_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Vegetables and vegetable preparations, trajectory across
+      Jan-Dec of the year following a July origin.
+
+# Jul 2019 -> Jul 2024 = 6 annual origins.
+start: "2019-07-01"
+end: "2024-07-01"
+stride: 12
+warmup: 24
+```

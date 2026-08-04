@@ -1,0 +1,36 @@
+# Source: implementations/energy_oil_forecasting/specs/energy_oil_backtest.yaml
+
+kind: yaml
+
+```yaml
+# Energy Oil Backtest Spec — 2025 Weekly Rolling Backtest
+#
+# Runs weekly origins across 2025. Stride is 5 business days (weekly).
+# Target is WTI Crude Oil price (yfinance ticker: CL=F).
+# Horizons: 5, 10, 21 business days.
+#
+# Origin count : 51 (weekly in 2025)
+# Warmup       : 250 trading days (~1 year) of historical prices
+
+spec_id: energy_oil_backtest
+
+description: >-
+  Weekly rolling backtest in 2025 for daily WTI crude oil price forecasting.
+  Evaluates trajectory forecasts (5, 10, 21 business days) with CRPS/MAE and
+  binary up-shock forecasts (climb > $5 in 5 business days) with Brier Score.
+  Used to select the top contender models.
+
+tasks:
+  - task_id: wti_oil_price_forecast
+    target_series_id: wti_crude_oil_price
+    horizons: [5, 10, 21]
+    frequency: B
+    description: >-
+      WTI Crude Oil continuous front-month futures Close price (yfinance symbol: CL=F),
+      projected 5, 10, and 21 trading days ahead.
+
+start: "2025-01-06"
+end: "2025-12-22"
+stride: 5
+warmup: 250
+```

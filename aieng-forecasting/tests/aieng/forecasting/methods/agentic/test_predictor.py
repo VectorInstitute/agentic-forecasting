@@ -26,7 +26,7 @@ import pytest
 from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, Prediction
 from aieng.forecasting.evaluation.task import ForecastingTask
-from aieng.forecasting.methods.agentic.agent_factory import AgentConfig
+from aieng.forecasting.methods.agentic.agent_factory import AS_OF_STATE_KEY, AgentConfig
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput, ContinuousAgentForecastOutput
 from aieng.forecasting.methods.agentic.predictor import AgentPredictor
 from pydantic import ValidationError
@@ -57,14 +57,16 @@ class _StubRunner:
         self._agent.model = model
         # No tracing in unit tests, so no trace is captured.
         self.last_trace_id: str | None = None
+        self.run_text_async_calls: list[dict[str, Any]] = []
 
     @property
     def agent(self) -> Any:
         """Return the stub agent so the predictor can read ``name``/``model``."""
         return self._agent
 
-    async def run_text_async(self, prompt: str, **_: Any) -> str:
-        """Return the canned response regardless of prompt."""
+    async def run_text_async(self, prompt: str, **kwargs: Any) -> str:
+        """Record the call and return the canned response regardless of prompt."""
+        self.run_text_async_calls.append({"prompt": prompt, **kwargs})
         return self._response
 
 
@@ -212,6 +214,22 @@ class TestPredictHappyPath:
         predictor.predict(task, context)
 
         builder.assert_called_once_with(task=task, context=context)
+
+    def test_seeds_harness_as_of_into_run_text_async(self) -> None:
+        """predict() seeds the session with context.as_of so search_web can enforce it.
+
+        This is what closes the bypass where an LLM omits cutoff_date on a
+        search_web call: the harness-controlled as_of is injected regardless
+        of what (if anything) the model passes.
+        """
+        predictor, _ = _make_predictor(response=_output_json([1]))
+        context = _context()  # as_of = datetime(2024, 1, 1)
+
+        predictor.predict(_task([1]), context)
+
+        calls = predictor._runner.run_text_async_calls  # type: ignore[attr-defined]
+        assert len(calls) == 1
+        assert calls[0]["initial_state"] == {AS_OF_STATE_KEY: "2024-01-01"}
 
     def test_fenced_json_is_accepted_and_converts_to_predictions(self) -> None:
         """JSON wrapped in a ```json ... ``` fence still produces valid predictions.

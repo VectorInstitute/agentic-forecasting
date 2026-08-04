@@ -1,0 +1,154 @@
+# Source: implementations/food_price_forecasting/specs/food_cpi_cfpr_backtest.yaml
+
+kind: yaml
+
+```yaml
+# Reference MultiTargetBacktestSpec: Canada Food CPI, CFPR trajectory replica
+#
+# This spec is the canonical backtest for the Canada's Food Price Report
+# (CFPR) forecasting exercise.  The CFPR produces, once a year, an
+# *average-over-average* YoY CPI change projection for the upcoming calendar
+# year: "by how much will the average food CPI index in year Y+1 differ
+# from the average in year Y?"
+#
+# To compute that quantity from a monthly CPI forecast we need the full
+# 12-month trajectory for calendar year Y+1, issued from a July-of-year-Y
+# origin.  Concretely:
+#
+#   * Origin:   July 1, year Y  (the most recent CPI data available in hand
+#               is typically May or June Y, so July is the first origin at
+#               which a CFPR-style prediction can be made).
+#   * Horizons: 6, 7, 8, ..., 17  (January .. December of year Y+1).
+#   * Stride:   12 months (one origin per July, annual cadence).
+#
+# From these 12 forecasts one computes:
+#
+#     avg/avg YoY = mean(predictions for Jan..Dec of Y+1)
+#                   / mean(actuals for Jan..Dec of Y)
+#                 - 1
+#
+# Window
+# ------
+# Jul 2009 → Jul 2024 = 16 annual origins.  This spans three distinct
+# macro regimes (low-inflation 2010-19, COVID shock 2020-21, food-price
+# surge/retreat 2021-24).  The last origin (Jul 2024) forecasts out to
+# Dec 2025, which resolves in the StatCan release of Jan 2026.
+#
+# Predictors
+# ----------
+# This is the open backtesting resource — run it as many times as you
+# like to tune predictors and build intuition.  There is no protected eval
+# spec for this experiment: historical LLM/agent scores are upper bounds
+# on live performance (see the food CPI experiment notebook).
+#
+# Prerequisites
+# -------------
+#   uv run python scripts/fetch_cpi.py    # StatCan food CPI cache
+#
+# (FRED covariates are deliberately NOT part of this canonical spec — see
+# `planning-docs/bootcamp-workplan.md` for the deferred "covariate framing" design
+# discussion.  Predictors that want exogenous inputs should be evaluated
+# on a separate experiment.)
+#
+# Loading
+# -------
+#
+#   import yaml
+#   from aieng.forecasting.evaluation import MultiTargetBacktestSpec, multi_backtest
+#
+#   with open("implementations/food_price_forecasting/specs/food_cpi_cfpr_backtest.yaml") as f:
+#       spec = MultiTargetBacktestSpec.model_validate(yaml.safe_load(f))
+#   results = multi_backtest(predictor=my_predictor, spec=spec, data_service=svc)
+
+spec_id: food_cpi_cfpr_backtest
+
+description: >-
+  CFPR replica backtest: 9 Canadian food CPI sub-indices, annual July
+  origins 2009-2024, 12-step trajectory (horizons 6-17) spanning
+  Jan-Dec of the following calendar year.  Supports computation of the
+  canonical average-over-average YoY CPI change that the Canada's Food
+  Price Report publishes each year.  Open resource — run freely.
+
+tasks:
+  - task_id: food_cpi_overall_cfpr
+    target_series_id: cpi_food_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Food (overall, 2002=100), trajectory across Jan-Dec of
+      the year following a July origin.
+
+  - task_id: food_cpi_bakery_cereal_cfpr
+    target_series_id: cpi_bakery_cereal_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Bakery and cereal products (excl. baby food), trajectory
+      across Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_dairy_eggs_cfpr
+    target_series_id: cpi_dairy_eggs_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Dairy products and eggs, trajectory across Jan-Dec of
+      the year following a July origin.
+
+  - task_id: food_cpi_fish_seafood_cfpr
+    target_series_id: cpi_fish_seafood_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Fish, seafood and other marine products, trajectory
+      across Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_restaurants_cfpr
+    target_series_id: cpi_restaurants_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Food purchased from restaurants, trajectory across
+      Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_fruit_preparations_nuts_cfpr
+    target_series_id: cpi_fruit_preparations_nuts_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Fruit, fruit preparations and nuts, trajectory across
+      Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_meat_cfpr
+    target_series_id: cpi_meat_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Meat, trajectory across Jan-Dec of the year following a
+      July origin.
+
+  - task_id: food_cpi_other_food_cfpr
+    target_series_id: cpi_other_food_nonalcoholic_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Other food products and non-alcoholic beverages,
+      trajectory across Jan-Dec of the year following a July origin.
+
+  - task_id: food_cpi_vegetables_cfpr
+    target_series_id: cpi_vegetables_preparations_canada
+    horizons: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    frequency: MS
+    description: >-
+      Canada CPI Vegetables and vegetable preparations, trajectory across
+      Jan-Dec of the year following a July origin.
+
+# July 2009 -> July 2024 = 16 annual origins.
+start: "2009-07-01"
+end: "2024-07-01"
+
+# stride=12 on monthly (MS) frequency -> one origin per July.
+stride: 12
+
+# Require 24 months of history before the first forecast origin.
+warmup: 24
+```

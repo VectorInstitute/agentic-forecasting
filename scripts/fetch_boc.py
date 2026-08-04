@@ -39,7 +39,7 @@ sys.path.insert(0, str(REPO_ROOT / "implementations"))
 from dotenv import load_dotenv
 
 
-load_dotenv(REPO_ROOT / ".env")
+load_dotenv(REPO_ROOT / ".env", override=False)
 
 from datetime import datetime, timezone
 

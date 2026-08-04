@@ -25,7 +25,7 @@ documents = [
     "pyyaml>=6.0",
 ]
 agentic = [
-    "aieng-agents[code-interpreter]>=0.3.0",
+    "aieng-agents[code-interpreter]>=0.3.1",
     "google-adk>=2.2.0",
     "google-cloud-storage>=2.18,<4",
     "langfuse>=4.5.1",

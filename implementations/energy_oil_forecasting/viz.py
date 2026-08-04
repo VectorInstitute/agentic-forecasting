@@ -1215,3 +1215,273 @@ def prob_bar(val: float, width: int = 10) -> str:
 def conf_bar(conf: str) -> str:
     """Map confidence label to emoji indicator."""
     return {"high": "🟢", "medium": "🟡", "low": "🔴"}.get(conf.lower(), "⚪")
+
+
+# ── NB4 eval-diagnostic charts ────────────────────────────────────────────────
+# These read the tidy per-prediction frame from ``analysis.predictions_to_frame``
+# (one row per predictor × origin × horizon) and answer three questions the bare
+# leaderboard can't: *where* the ranking is decided (heatmap), whether a lead is
+# real or noise (leaderboard with error bars), and *what* the methods actually
+# forecast vs reality (trajectory chart).
+
+# Qualitative palette for an arbitrary, growing predictor set. Stable per call:
+# colours are assigned by sorted predictor name so a method keeps its colour
+# across the heatmap, leaderboard, and trajectory charts within one notebook run.
+_PREDICTOR_PALETTE = [
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
+    "#393b79",
+    "#b5651d",
+]
+
+
+def predictor_colors(predictors: list[str]) -> dict[str, str]:
+    """Assign a stable colour to each predictor name."""
+    return {name: _PREDICTOR_PALETTE[i % len(_PREDICTOR_PALETTE)] for i, name in enumerate(predictors)}
+
+
+def make_crps_heatmap(per_horizon_df: pd.DataFrame) -> go.Figure:
+    """Predictor × horizon mean-CRPS heatmap (lower = better, sorted best-first).
+
+    Expects the output of ``analysis.per_horizon_crps`` — horizon columns plus a
+    final ``All`` column. Reveals which horizon decides the ranking: typically the
+    short horizons are a wash and one long horizon dominates the mean.
+    """
+    df = per_horizon_df.copy()
+    # Best predictor on top: reverse so plotly's bottom-up y-axis shows it first.
+    df = df.iloc[::-1]
+    z = df.to_numpy(dtype=float)
+    fig = go.Figure(
+        go.Heatmap(
+            z=z,
+            x=list(df.columns),
+            y=list(df.index),
+            colorscale="RdYlGn_r",
+            colorbar={"title": "CRPS"},
+            text=[[f"{v:.2f}" if np.isfinite(v) else "" for v in row] for row in z],
+            texttemplate="%{text}",
+            textfont={"size": 12},
+            hovertemplate="%{y}<br>%{x}: %{z:.3f}<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        title={"text": "Mean CRPS by Predictor × Horizon (lower = better)", "font": {"size": 16}},
+        xaxis={"title": "Horizon", "side": "top"},
+        yaxis={"title": ""},
+        template="plotly_white",
+        width=720,
+        height=40 * len(df) + 160,
+        margin={"t": 90, "b": 40, "l": 230, "r": 40},
+    )
+    # Visually separate the "All" summary column.
+    if "All" in per_horizon_df.columns:
+        fig.add_vline(x=len(per_horizon_df.columns) - 1.5, line={"color": "#333333", "width": 1.5})
+    return fig
+
+
+def make_leaderboard_interval_chart(board_df: pd.DataFrame) -> go.Figure:
+    """Mean CRPS ± standard error per predictor, exposing whether a lead is noise.
+
+    Expects ``analysis.leaderboard_with_uncertainty``. When the error bars of the
+    top methods overlap heavily, the ranking is not statistically meaningful — the
+    honest read on a short eval window.
+    """
+    df = board_df.iloc[::-1]  # best at top of the bottom-up axis
+    fam_colors = {"Baseline": "#7f7f7f", "Numerical ML": "#1f77b4", "LLM / Agent": "#2ca02c", "Other": "#b5651d"}
+    colors = [fam_colors.get(f, "#b5651d") for f in df["family"]]
+    fig = go.Figure(
+        go.Scatter(
+            x=df["mean_crps"],
+            y=df.index,
+            mode="markers",
+            marker={"size": 11, "color": colors},
+            error_x={"type": "data", "array": df["se"].fillna(0.0), "thickness": 1.6, "width": 6, "color": "#888888"},
+            hovertemplate="%{y}<br>CRPS %{x:.3f} ± %{error_x.array:.3f}<extra></extra>",
+            showlegend=False,
+        )
+    )
+    best = float(df["mean_crps"].min())
+    fig.add_vline(
+        x=best,
+        line={"color": "#31a354", "dash": "dot", "width": 1.5},
+        annotation_text=" best",
+        annotation_position="top",
+        annotation_font={"size": 11, "color": "#31a354"},
+    )
+    fig.update_layout(
+        title={"text": "Eval Leaderboard — Mean CRPS ± 1 SE (overlap ⇒ tied)", "font": {"size": 16}},
+        xaxis={"title": "Mean CRPS (lower = better)", "showgrid": True, "gridcolor": "#f0f0f0"},
+        yaxis={"title": ""},
+        template="plotly_white",
+        width=760,
+        height=34 * len(df) + 150,
+        margin={"t": 70, "b": 50, "l": 230, "r": 40},
+    )
+    return fig
+
+
+def make_eval_forecast_chart(
+    pred_frame: pd.DataFrame,
+    price_df: pd.DataFrame,
+    predictors: list[str],
+    *,
+    history_window: int = 25,
+) -> go.Figure:
+    """Per-origin trajectory chart: each method's median + 80% band vs reality.
+
+    One column per forecast origin. Shows the pre-origin price history, the
+    realised price path, and — for each selected predictor — point forecasts at
+    each horizon with 80% interval error bars. This is the "what are the top
+    methods actually doing" view: you can see who tracks the move, who lags, and
+    whose intervals are too tight.
+    """
+    origins = sorted(pred_frame["as_of"].unique())
+    colors = predictor_colors(predictors)
+
+    titles = []
+    for o_raw in origins:
+        o = pd.Timestamp(o_raw)
+        rows = price_df[price_df.index >= o.normalize()]
+        spot = f"${float(rows.iloc[0]['price']):.0f}" if not rows.empty else ""
+        titles.append(f"{o.strftime('%b %d, %Y')}  WTI {spot}")
+
+    fig = psp.make_subplots(
+        rows=1, cols=len(origins), subplot_titles=titles, shared_yaxes=True, horizontal_spacing=0.03
+    )
+
+    for col, origin_raw in enumerate(origins, start=1):
+        origin = pd.Timestamp(origin_raw)
+        show_legend = col == 1
+        sub = pred_frame[pred_frame["as_of"] == origin]
+        last_fdate = pd.Timestamp(sub["forecast_date"].max())
+
+        # Pre-origin history + realised future path.
+        hist = price_df[price_df.index <= origin.normalize()].iloc[-history_window:]
+        future = price_df[(price_df.index > origin.normalize()) & (price_df.index <= last_fdate)]
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index.tolist(),
+                y=hist["price"].tolist(),
+                mode="lines",
+                line={"color": CLR_HISTORY, "width": 1.5},
+                name="WTI history",
+                showlegend=show_legend,
+                legendgroup="hist",
+            ),
+            row=1,
+            col=col,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=future.index.tolist(),
+                y=future["price"].tolist(),
+                mode="lines+markers",
+                line={"color": CLR_ACTUAL, "width": 2.5},
+                marker={"size": 5},
+                name="Realised price",
+                showlegend=show_legend,
+                legendgroup="actual",
+            ),
+            row=1,
+            col=col,
+        )
+
+        # Each predictor's median + 80% interval at every horizon.
+        for name in predictors:
+            pr = sub[sub["predictor"] == name].sort_values("forecast_date")
+            if pr.empty:
+                continue
+            err_hi = (pr["q80"] - pr["point"]).clip(lower=0).fillna(0.0)
+            err_lo = (pr["point"] - pr["q20"]).clip(lower=0).fillna(0.0)
+            fig.add_trace(
+                go.Scatter(
+                    x=pr["forecast_date"].tolist(),
+                    y=pr["point"].tolist(),
+                    mode="lines+markers",
+                    line={"color": colors[name], "width": 1.4, "dash": "dot"},
+                    marker={"size": 8, "symbol": "diamond"},
+                    error_y={
+                        "type": "data",
+                        "symmetric": False,
+                        "array": err_hi.tolist(),
+                        "arrayminus": err_lo.tolist(),
+                        "color": colors[name],
+                        "thickness": 1.4,
+                        "width": 4,
+                    },
+                    name=name,
+                    showlegend=show_legend,
+                    legendgroup=name,
+                ),
+                row=1,
+                col=col,
+            )
+
+        fig.add_vline(
+            x=origin.timestamp() * 1000, line={"color": "#aaaaaa", "dash": "dash", "width": 1}, row=1, col=col
+        )
+
+    fig.update_layout(
+        title={"text": "Eval Forecasts vs Reality — Median + 80% Interval by Origin", "font": {"size": 16}},
+        template="plotly_white",
+        width=max(420 * len(origins), 720),
+        height=480,
+        margin={"t": 80, "b": 110, "l": 60, "r": 20},
+        legend={"orientation": "h", "y": -0.18, "x": 0.0, "xanchor": "left", "font": {"size": 11}},
+    )
+    fig.update_xaxes(showgrid=True, gridcolor="#f0f0f0", tickfont={"size": 10})
+    fig.update_yaxes(showgrid=True, gridcolor="#f0f0f0", tickfont={"size": 11})
+    return fig
+
+
+def render_rationales_html(rationale_df: pd.DataFrame, *, max_chars: int = 700) -> str:
+    """Render agent/LLM rationales as readable HTML cards with trace links.
+
+    Expects ``analysis.extract_agent_rationales``. One card per (predictor,
+    origin), showing the overall rationale, the per-horizon note, and a link to
+    the Langfuse trace so the full agent reasoning is one click away.
+    """
+    if rationale_df.empty:
+        return "<p><em>No agent/LLM rationales found in this run's metadata.</em></p>"
+
+    def _clip(text: str) -> str:
+        text = (text or "").strip()
+        return text if len(text) <= max_chars else text[:max_chars].rsplit(" ", 1)[0] + " …"
+
+    # One representative card per (predictor, origin) — the rationale is shared
+    # across horizons, so dedupe to the first row of each group.
+    seen: set[tuple[str, str]] = set()
+    cards: list[str] = []
+    for _, r in rationale_df.sort_values(["predictor", "as_of"]).iterrows():
+        key = (r["predictor"], str(pd.Timestamp(r["as_of"]).date()))
+        if key in seen:
+            continue
+        seen.add(key)
+        link = (
+            f"<a href='{r['trace_url']}' target='_blank' style='color:#2171b5'>🔗 Langfuse trace</a>"
+            if r.get("trace_url")
+            else ""
+        )
+        horizon_note = (
+            f"<div style='margin-top:6px;color:#444'><b>Horizon note:</b> {_clip(r['horizon_rationale'])}</div>"
+            if r.get("horizon_rationale")
+            else ""
+        )
+        cards.append(
+            f"<div style='border:1px solid #e0e0e0;border-radius:8px;padding:12px 14px;margin:8px 0;"
+            f"background:#fafafa;font-size:13px;line-height:1.5'>"
+            f"<div style='display:flex;justify-content:space-between'>"
+            f"<b style='color:#1a1a1a'>{r['predictor']}</b>"
+            f"<span style='color:#888'>{key[1]} &nbsp; point ${r['point']:.1f} &nbsp; {link}</span></div>"
+            f"<div style='margin-top:6px;color:#333'>{_clip(r['rationale'])}</div>"
+            f"{horizon_note}</div>"
+        )
+    return f"<div style='max-width:900px'>{''.join(cards)}</div>"

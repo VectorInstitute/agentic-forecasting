@@ -1,0 +1,54 @@
+# Source: implementations/sp500_forecasting/specs/sp500_backtest_2025.yaml
+
+kind: yaml
+
+```yaml
+# Main backtest spec — weekly origins across 2025 (post-cutoff).
+#
+# 2025 is after the Gemini training cutoff (~Jan 2025), so this is the window
+# where the conventional methods AND the LLM-Process can be compared *fairly* —
+# the LLM has not memorised these outcomes. Mirrors the energy reference's 2025
+# backtest window. Use it for open iteration; spend the protected 2026 eval
+# (`sp500_eval_2026.yaml`) sparingly on your finalists.
+#
+# This spec carries experiment design only (window + one single-horizon task per
+# target). The predictor roster and hyperparameters live in the notebook. Note
+# the LLMP predictors are token-heavy over ~50 weekly origins — the notebook lets
+# you trim the predictor list (or widen the stride here) before enabling them.
+
+spec_id: sp500_backtest_2025
+
+description: >-
+  Main multivariate comparison: weekly origins across 2025 (post-cutoff),
+  forecasting close-to-close cumulative returns at 1/5/21 business days.
+
+tasks:
+  - task_id: sp500_logret_1b
+    target_series_id: sp500_logret_1b
+    horizons: [1]
+    frequency: B
+    description: >-
+      S&P 500 close-to-close cumulative log return, 1 business day ahead
+      (next-session return / direction).
+
+  - task_id: sp500_logret_5b
+    target_series_id: sp500_logret_5b
+    horizons: [5]
+    frequency: B
+    description: >-
+      S&P 500 close-to-close cumulative log return, 5 business days ahead
+      (forward 1-week return).
+
+  - task_id: sp500_logret_21b
+    target_series_id: sp500_logret_21b
+    horizons: [21]
+    frequency: B
+    description: >-
+      S&P 500 close-to-close cumulative log return, 21 business days ahead
+      (forward 1-month return).
+
+start: "2025-01-06"
+end: "2025-12-22"
+stride: 5            # weekly origins (~50)
+warmup: 250
+```

@@ -25,8 +25,7 @@ Every method can be used in one of two modes, and the distinction runs through t
 
 Each is independent and self-contained — pick the one that matches the problem you care about, and read that directory's `README.md` for the full walkthrough. They are numbered in a recommended order that mirrors the bootcamp progression — conventional numerical methods → LLM Processes → agents → agentic evaluation — but any one stands on its own, so jump straight to the problem you care about.
 
-**Start here → #0 [`getting_started/`](implementations/getting_started/)** — one CPI series, one month ahead. The smallest end-to-end loop: a `Predictor`, a `BacktestSpec` and `EvalSpec`, naive + AutoARIMA baselines, CRPS scoring. The place to learn the evaluation framework before picking a domain below.
-
+**Start here → #0 [`getting_started/`](implementations/getting_started/)** — one CPI series, one month ahead. The smallest end-to-end loop: a `Predictor`, a `BacktestSpec` and `EvalSpec`, naive + AutoARIMA baselines, CRPS scoring. The place to learn the evaluation framework before picking a domain below. Also includes [`99_repo_concierge.ipynb`](implementations/getting_started/99_repo_concierge.ipynb) — a lite-model repo guide for “how does this codebase work?” questions (`uv run adk run implementations/getting_started/concierge_agent` from the repo root).
 
 | #   | Implementation                                                       | The problem                                                                     | Concepts & techniques it demonstrates                                                                                                                                                                                                                                                                       |
 | --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -34,7 +33,6 @@ Each is independent and self-contained — pick the one that matches the problem
 | 2   | [`food_price_forecasting/`](implementations/food_price_forecasting/) | A multivariate food-CPI trajectory, in the style of Canada's Food Price Report. | Nine correlated sub-indices, a 12-step trajectory, a domain metric (avg/avg YoY), baselines vs LLM-Process predictors, leakage-aware backtests, and cached artifacts for fast iteration.                                                                                                                    |
 | 3   | [`energy_oil_forecasting/`](implementations/energy_oil_forecasting/) | Daily WTI crude-oil price under regime-breaking news.                           | A capability progression — Prophet → LLM-Process → news-grounded agent → code-executing agent — plus an adaptive agent that learns a strategy from data and is scored before vs after. Continuous trajectories, a binary up-shock task, and interactive scenario analysis.                                  |
 | 4   | [`boc_rate_decisions/`](implementations/boc_rate_decisions/)         | Will the Bank of Canada cut, hold, or hike at its next meeting?                 | Discrete-event forecasting: ordered-categorical outcomes on an irregular calendar, RPS scoring and one-vs-rest calibration (instead of CRPS), a binary (Brier) special case, cutoff-aware document ingestion, and an LLM-as-judge that scores an agent's reasoning against the official rationale.          |
-
 
 **Not sure where to start building?** Each of the four domain implementations above ends with a `99_starter_agent.ipynb` — a fresh, hackable **starter agent** (a `starter_agent/` module) with toggleable news search and code execution, two lightweight tool-usage skills, an interactive cell, and one scored forecast. It's the consistent "continue from here" entry point for taking any reference use case in an agentic direction, and a quick end-to-end test of that use case's agent stack.
 
@@ -46,12 +44,31 @@ Each is independent and self-contained — pick the one that matches the problem
 
 Historical data is cached locally under `data/` and is not committed. Each implementation's README names the fetch script(s) it needs.
 
+### FRED API key
+
+Several reference implementations (S&P 500, BoC rate decisions) fetch data from the Federal Reserve Economic Data (FRED) API, which requires a free personal API key. **We cannot provide this key for you** — each participant must request their own at:
+
+> [https://fred.stlouisfed.org/docs/api/api_key.html](https://fred.stlouisfed.org/docs/api/api_key.html)
+
+FRED keys are free and approval is typically quick, but it can occasionally take some time, so request yours early. When asked for a use-case description, something extended from the following works well:
+
+> "Requesting an API key to explore the effectiveness of various forecasting techniques on economic data."
+
+Once you have the key, add it to your repo-root `.env`:
+
+```
+FRED_API_KEY=your_fred_api_key
+```
+
+On Coder workspaces, bootcamp keys (`OPENAI_*`, `E2B_*`, `LANGFUSE_*`) live in your shell environment — **not** in repo `.env`. See [Bootcamp environment](#bootcamp-environment-coder).
+
 ## Repository layout
 
 ```text
 aieng-forecasting/   # Installable library: import as aieng.forecasting
 implementations/     # Self-contained reference implementations + co-located specs
 scripts/             # Data-fetch scripts + E2B template builder
+tests/               # Onboarding integration tests (not run in CI)
 planning-docs/       # Architecture notes and the extension/roadmap catalog
 playground/          # Exploration and archived demos (not reference implementations)
 ```
@@ -63,7 +80,7 @@ Install dependencies from the repo root:
 ```bash
 git clone <repo-url>. # If running locally. Coder environment setup clones repo automatically.
 cd agentic-forecasting
-uv sync
+uv sync --dev
 ```
 
 **macOS — LightGBM and OpenMP.** The library depends on **LightGBM** (used by `DartsLightGBMPredictor` and some notebooks). The PyPI wheel expects **OpenMP** at runtime. If you see `Library not loaded: @rpath/libomp.dylib` when importing or training, install Homebrew's OpenMP once and restart your shell or Jupyter kernel:
@@ -73,6 +90,39 @@ brew install libomp
 ```
 
 On Apple Silicon the dylib is typically under `/opt/homebrew/opt/libomp/lib/`; on Intel Homebrew, `/usr/local/opt/libomp/lib/`.
+
+### Coder Workspaces
+
+When you open a **Coder workspace**, startup runs automatically in the background. By the time you connect you should have:
+
+- The repo cloned, a Python venv, and dependencies installed
+- Bootcamp API keys (`OPENAI_*`, `E2B_*`, `LANGFUSE_*`) available in your shell (not in `.env`)
+- A shell that opens in the repo with the venv activated
+
+**Your next step:** run [`00_environment_check.ipynb`](implementations/getting_started/00_environment_check.ipynb) top to bottom. That notebook will confirm that startup succeeded.
+
+On first boot, keys are verified against live services and your onboarding status is recorded. Workspace restarts reload keys without re-running the full test suite.
+
+**Local machine or troubleshooting** — fetch and verify keys manually:
+
+```bash
+eval "$(onboard --bootcamp-name agentic-forecasting --test-script tests/test_integration.py)"
+```
+
+Reload keys in a new shell without re-testing:
+
+```bash
+eval "$(onboard --bootcamp-name agentic-forecasting --skip-test)"
+```
+
+Headless verification (same checks as first-boot onboarding):
+
+```bash
+uv sync --all-extras --dev --all-packages
+uv run pytest tests/test_integration.py -v
+```
+
+**Credential model:** bootcamp keys live in your shell environment. Optional personal keys (e.g. `FRED_API_KEY`) go in a `.env` only — see [`.env.example`](.env.example).
 
 ### Verify your environment first
 
@@ -94,10 +144,13 @@ If this was unsuccessful, or if you prefer to run with E2B in an alternative env
 
 1. Create a free account at [e2b.dev](https://e2b.dev) and copy your API key.
 2. Add it to your `.env` file alongside the other keys (see `.env.example`):
+
   ```
    E2B_API_KEY=your_e2b_api_key
   ```
-3. Build the template (takes a few minutes on first run):
+
+1. Build the template (takes a few minutes on first run):
+
   ```bash
    uv run --env-file .env scripts/build_e2b_template.py
   ```

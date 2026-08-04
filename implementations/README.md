@@ -32,6 +32,8 @@ YAML backtest and eval specs live under each use case in `specs/`. Each director
 
 Every domain use case (all except `getting_started`) also ships a `starter_agent/` module and a `99_starter_agent.ipynb` — a fresh, hackable **starter agent** that is the consistent "build your own" entry point for that use case (toggleable news search + code execution, two lightweight tool-usage skills, an interactive cell, and one scored forecast).
 
+`getting_started/` additionally ships a **`concierge_agent/`** module and **`99_repo_concierge.ipynb`** — a repo onboarding helper (not a forecaster) that answers questions about how the codebase works using a committed public-`main` knowledge digest. From the repository root: `uv run adk run implementations/getting_started/concierge_agent`. See [`getting_started/README.md`](getting_started/README.md) and the notebook for full usage.
+
 ---
 
 ## Relationship to `aieng-forecasting`

@@ -17,6 +17,12 @@ Always pass `cutoff_date` equal to the `as_of` date in your payload. It is the
 temporal fence that keeps post-origin information out of a historical forecast.
 A forecast that "knew" what happened after `as_of` is not a forecast.
 
+`search_web` runs an independent verifier on every result and returns
+`[SEARCH_VERIFICATION_FAILED]` instead of content it couldn't confirm as
+pre-cutoff. Treat that as no verified news for the query — proceed on your
+other signals and say so, never filling the gap from your own background
+knowledge.
+
 ## How to search
 
 - **Search before you forecast, not after.** Gather context first, then reason.

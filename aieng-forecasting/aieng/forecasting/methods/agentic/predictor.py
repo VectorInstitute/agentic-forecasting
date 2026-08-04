@@ -29,7 +29,7 @@ from aieng.forecasting.evaluation.prediction import Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic.adk_runner import AdkTextRunner, AdkTextRunnerConfig
-from aieng.forecasting.methods.agentic.agent_factory import AgentConfig, build_adk_agent
+from aieng.forecasting.methods.agentic.agent_factory import AS_OF_STATE_KEY, AgentConfig, build_adk_agent
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
 from aieng.forecasting.methods.llm_processes._client import strip_markdown_fence, trace_url_for
 from google.adk.agents.base_agent import BaseAgent
@@ -235,10 +235,20 @@ class AgentPredictor(Predictor):
     def predictor_id(self) -> str:
         """Stable identifier for this predictor.
 
-        This is used to identify the predictor in the evaluation results.
+        This is used to identify the predictor in the evaluation results — and,
+        via the artefact cache, as a filename component. The model name is folded
+        in so the same agent run on different models yields distinct ids (and
+        distinct cache entries). When the proxy is active the agent's ``model`` is
+        a ``BaseLlm`` wrapper (e.g. ``LiteLlm``) rather than a bare string; in that
+        case we unwrap its nested ``.model`` (e.g. ``"openai/gemini-3.5-flash"``)
+        and keep the bare model name. Non-string models with no usable name are
+        omitted rather than leaking a noisy ``repr`` into the id.
         """
         model = getattr(self._agent, "model", None)
-        model_suffix = f"_{model}" if isinstance(model, str) else ""
+        if not isinstance(model, str):
+            inner = getattr(model, "model", None)
+            model = inner if isinstance(inner, str) else None
+        model_suffix = f"_{model.rsplit('/', 1)[-1]}" if model else ""
         return f"agent_predictor_{self._agent.name}{model_suffix}_{self._forecast_output_modality}"
 
     def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
@@ -267,7 +277,11 @@ class AgentPredictor(Predictor):
             validation errors on the agent's JSON are not swallowed.
         """
         prompt = self.prompt_builder(task=task, context=context)
-        output_str = _run_coroutine_sync(self._runner.run_text_async(prompt))
+        # Seed the harness-controlled as_of into the ADK session before the run,
+        # so search_web can enforce it via ToolContext.state regardless of
+        # whether the LLM remembers to pass a matching cutoff_date argument.
+        initial_state = {AS_OF_STATE_KEY: str(context.as_of)[:10]}
+        output_str = _run_coroutine_sync(self._runner.run_text_async(prompt, initial_state=initial_state))
 
         # Normalise: strip markdown fences before validation so any model can
         # be swapped in without breaking the parse layer.
