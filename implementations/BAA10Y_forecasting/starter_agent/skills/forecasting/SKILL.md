@@ -12,12 +12,34 @@ description: >-
 Load this when your task payload asks for a structured forecast. For open-ended
 questions, ignore it and just answer.
 
+### Using HYOAS information
+
+The covariate snapshot may include:
+
+- `hyoas_observed_change_1b_bps_l1b`: observed HYOAS change;
+- `hyoas_hyg_dgs3_proxy_change_1b_bps_l1b`: HYG-DGS3 proxy change.
+
+Both are measured in basis points and lagged by one business day.
+
+Prefer observed HYOAS when it is available. Use the proxy as confirmation or
+as a fallback when observed HYOAS is unavailable. Do not count observed HYOAS
+and the proxy as two independent signals because they measure the same
+high-yield credit-risk factor.
+
+Positive HYOAS changes indicate spread widening and increasing credit stress;
+negative changes indicate spread tightening. If observed HYOAS and the proxy
+disagree materially, reduce directional confidence or widen the forecast
+interval rather than averaging them mechanically.
+
+In the rationale, briefly state whether observed HYOAS, the proxy, both, or
+neither influenced the BAA10Y forecast.
+
 ## What you'll receive
 
 A JSON payload describing the task: a `task` id, the `as_of` cutoff date,
 `horizons` (steps ahead), the `standard_quantiles` grid, a `target_summary`, the
-recent `target_history_csv`, and an `output_schema` showing the exact JSON to
-return.
+recent `target_history_csv`, an optional `covariate_snapshot`, and an
+`output_schema` showing the exact JSON to return.
 
 ## The output contract
 
