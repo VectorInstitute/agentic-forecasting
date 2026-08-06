@@ -1,0 +1,112 @@
+{
+  "description": "Pre-computed historical benchmarks for BAA10Y cumulative spread changes, measured in basis points.",
+  "period": "2000-01-01 to 2024-12-31",
+  "rolling_window_observations": 30,
+  "targets": {
+    "baa10y_change_1b": {
+      "horizon_business_days": 1,
+      "n_observations": 6521,
+      "regime_thresholds_bps": {
+        "description": "Classify the latest rolling-30-observation standard deviation using historical percentiles.",
+        "low_vol_max": 1.74,
+        "normal_vol_max": 3.07,
+        "elevated_vol_max": 4.21,
+        "note": "Above elevated_vol_max is extreme. Values at or below low_vol_max are low volatility."
+      },
+      "rolling_30_observation_vol_bps": {
+        "median": 2.31,
+        "p10": 1.42,
+        "p90": 4.21,
+        "mean": 2.63
+      },
+      "target_move_stats_bps": {
+        "mean": -0.0,
+        "median": 0.0,
+        "standard_deviation": 3.07,
+        "p10": -3.0,
+        "p90": 3.0,
+        "minimum": -20.0,
+        "maximum": 38.0,
+        "median_absolute_move": 1.0,
+        "p90_absolute_move": 4.0,
+        "mean_absolute_move": 1.98
+      },
+      "horizon_calibration": {
+        "description": "Empirical central 80% interval for this target horizon.",
+        "q10_bps": -3.0,
+        "q50_bps": 0.0,
+        "q90_bps": 3.0
+      }
+    },
+    "baa10y_change_5b": {
+      "horizon_business_days": 5,
+      "n_observations": 6517,
+      "regime_thresholds_bps": {
+        "description": "Classify the latest rolling-30-observation standard deviation using historical percentiles.",
+        "low_vol_max": 3.54,
+        "normal_vol_max": 6.73,
+        "elevated_vol_max": 9.79,
+        "note": "Above elevated_vol_max is extreme. Values at or below low_vol_max are low volatility."
+      },
+      "rolling_30_observation_vol_bps": {
+        "median": 4.88,
+        "p10": 2.57,
+        "p90": 9.79,
+        "mean": 5.85
+      },
+      "target_move_stats_bps": {
+        "mean": -0.02,
+        "median": 0.0,
+        "standard_deviation": 8.4,
+        "p10": -8.0,
+        "p90": 8.0,
+        "minimum": -50.0,
+        "maximum": 93.0,
+        "median_absolute_move": 4.0,
+        "p90_absolute_move": 11.0,
+        "mean_absolute_move": 5.36
+      },
+      "horizon_calibration": {
+        "description": "Empirical central 80% interval for this target horizon.",
+        "q10_bps": -8.0,
+        "q50_bps": 0.0,
+        "q90_bps": 8.0
+      }
+    },
+    "baa10y_change_21b": {
+      "horizon_business_days": 21,
+      "n_observations": 6501,
+      "regime_thresholds_bps": {
+        "description": "Classify the latest rolling-30-observation standard deviation using historical percentiles.",
+        "low_vol_max": 5.1,
+        "normal_vol_max": 11.69,
+        "elevated_vol_max": 18.07,
+        "note": "Above elevated_vol_max is extreme. Values at or below low_vol_max are low volatility."
+      },
+      "rolling_30_observation_vol_bps": {
+        "median": 7.47,
+        "p10": 3.74,
+        "p90": 18.07,
+        "mean": 10.07
+      },
+      "target_move_stats_bps": {
+        "mean": -0.09,
+        "median": -1.0,
+        "standard_deviation": 22.41,
+        "p10": -20.0,
+        "p90": 20.0,
+        "minimum": -116.0,
+        "maximum": 222.0,
+        "median_absolute_move": 9.0,
+        "p90_absolute_move": 30.0,
+        "mean_absolute_move": 13.89
+      },
+      "horizon_calibration": {
+        "description": "Empirical central 80% interval for this target horizon.",
+        "q10_bps": -20.0,
+        "q50_bps": -1.0,
+        "q90_bps": 20.0
+      }
+    }
+  }
+}

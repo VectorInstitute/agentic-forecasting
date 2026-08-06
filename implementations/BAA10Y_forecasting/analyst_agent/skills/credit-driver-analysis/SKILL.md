@@ -1,39 +1,59 @@
 ---
-name: trend-projection
+name: credit-driver-analysis
 description: >-
-  Copy-pasteable scikit-learn and numpy code patterns for fitting a linear
-  trend on recent WTI price history, projecting point forecasts to standard
-  horizons, and calibrating 80% prediction interval widths from residual
-  standard errors. Load references/projection-examples.md before writing any
-  trend-projection code.
+  Copy-pasteable pandas and numpy code patterns for analyzing recent BAA10Y
+  covariate history, standardizing market-driver movements, translating them
+  into spread-widening or spread-tightening evidence, and combining the signals
+  into a conservative driver conclusion. Load references/driver-patterns.md
+  before writing any credit-driver-analysis code.
 ---
 
-# Trend projection skill
+# Credit driver analysis skill
 
-Run the `statistical-analysis` skill first to determine the current vol
-regime and appropriate trend window before applying these patterns.
+Run the statistical-analysis skill first to determine the current volatility
+regime, anomaly status, and appropriate analysis window before applying these
+patterns.
 
-Load `references/projection-examples.md` via
-`load_skill_resource("trend-projection", "references/projection-examples.md")`
+Load `references/driver-patterns.md` via
+`load_skill_resource("credit-driver-analysis", "references/driver-patterns.md")`
 **before writing any trend-projection code**.
 
 The reference file contains:
-- A complete working code pattern using `sklearn.linear_model.LinearRegression`
-  to fit the most recent 30 trading days of WTI close prices.
-- The standard interval-width formula: `1.28 * residual_std * sqrt(h / 5)`,
-  which produces the 80% CI half-width at horizon `h` business days.
-- A guard for the edge case where the trend line overshoots the 52-week range.
-- Worked numeric examples showing expected output for typical WTI vol regimes.
+- A complete working code pattern using pandas and numpy to analyze the
+  supplied covariate_history. 
+- Direction rules for translating recent driver movements into
+  spread-widening, spread-tightening, or neutral evidence.
+- A guard against double-counting related signals, including observed and
+  proxy HYOAS series.
+- A concise output pattern for reporting supporting signals, contradicting
+  signals, and the overall driver conclusion.
 
 ## Quick-reference steps
 
-1. Parse the CSV history from the task payload into a DataFrame.
-2. Select the most recent 30 rows (trading days).
-3. Fit `LinearRegression` on `[0..29]` (x) vs close price (y).
-4. Project to horizons 5, 10, 21 by evaluating the regression at `30 + h - 1`.
-5. Compute `residual_std = std of (y - y_hat)` on the 30-day window.
-6. Set 80% CI half-width = `1.28 * residual_std * sqrt(h / 5)`.
-7. Clip projected point forecast to `[0.5 * 52w_low, 1.5 * 52w_high]` as a
-   plausibility guard — extreme trend extrapolation is usually wrong.
+1. Read the covariate histories from the task payload.
+2. Use the 15-, 30-, or 45-observation window selected by
+  `statistical-analysis`
+3. Measure the recent direction and magnitude of each available driver.
+4. Standardize each recent movement relative to its own historical behavior.
+5. Translate the signals into widening, tightening, or neutral evidence.
+6. Avoid double-counting correlated series or observed/proxy versions of the
+   same credit signal.
+7. Report the strongest supporting signals, strongest contradicting signals,
+   and an overall conservative driver conclusion.
+
+Typical interpretations include:
+
+1. Rising VIX, falling equities, and rising HYOAS generally support spread
+widening.
+2. Falling VIX, rising equities, and falling HYOAS generally support spread
+tightening.
+3. Treasury yields, the 2s10s curve, and lower-frequency macro variables should
+be interpreted as context rather than assigned a fixed mechanical direction.
+
+Use driver results to interpret or challenge the forecast direction. Do not use
+this skill alone to calculate the final point forecast or forecast quantiles.
+
+Describe driver relationships as market evidence or associations. Do not claim
+that a covariate caused the BAA10Y movement.
 
 **No scripts in this skill. Do not call `run_skill_script`.**
