@@ -72,7 +72,10 @@ from pydantic import BaseModel
 
 
 def _build_boc_analyst_instruction() -> str:
-    """Build the BoC analyst instruction, embedding the output schema from the class.
+    """Build the tool-free BoC analyst instruction (payload signals only).
+
+    Web-search guidance is appended by :func:`build_boc_news_config` — never
+    reference a tool here that ``build_boc_basic_config`` does not attach.
 
     Using a function instead of a static string ensures the ``## Output
     schema`` block is always in sync with ``CategoricalAgentForecastOutput``
@@ -116,22 +119,35 @@ def _build_boc_analyst_instruction() -> str:
         "strongly shape which tail outcome is plausible.\n"
         "4. Use ONLY information available on or before `as_of`. Do not use "
         "knowledge of what the Bank actually decided on or after "
-        "`announcement_date`, even if you remember it. If `search_web` returns a "
-        "result beginning with `[SEARCH_VERIFICATION_FAILED]`, treat it as no "
-        "verified news for that query — proceed on the other signals in your "
-        "payload and note the gap, never filling it from your own background "
-        "knowledge.\n"
+        "`announcement_date`, even if you remember it. Reason only from the "
+        "payload (and any tools listed in later sections of this instruction — "
+        "if none are listed, you have no tools).\n"
         "5. Document your reasoning in `reasoning` and list the decisive inputs "
         "in `key_signals` — these are compared against the Bank's own published "
         "rationale by a downstream evaluator, so be specific.\n\n"
         "## Output schema\n\n"
-        "Call `set_model_response` with a `json_response` string matching "
-        "**exactly**:\n\n"
-        "```json\n" + schema + "\n```\n"
+        "If a `set_model_response` tool is available, call it with a "
+        "`json_response` string matching **exactly**:\n\n"
+        "```json\n" + schema + "\n```\n\n"
+        "Otherwise return that JSON directly as plain text with no preamble.\n"
     )
 
 
 _BOC_ANALYST_INSTRUCTION = _build_boc_analyst_instruction()
+
+# Appended only by configs that enable ContextRetrievalConfig (news).
+_BOC_CONTEXT_RETRIEVAL_SUPPLEMENT = """
+
+## Context retrieval
+
+Call ``search_web`` to gather recent BoC communications and macro-news context \
+BEFORE producing your distribution. Pass ``cutoff_date`` equal to the payload's \
+``as_of`` date.
+
+If ``search_web`` returns a result beginning with ``[SEARCH_VERIFICATION_FAILED]``, \
+treat it as no verified news for that query — proceed on the other signals in your \
+payload and note the gap, never filling it from your own background knowledge.
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -335,7 +351,7 @@ def build_boc_news_config(
     return AgentConfig(
         name="boc_analyst_news",
         model=model,
-        instruction=_BOC_ANALYST_INSTRUCTION,
+        instruction=_BOC_ANALYST_INSTRUCTION + _BOC_CONTEXT_RETRIEVAL_SUPPLEMENT,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_BOC_CONTEXT_RETRIEVAL_INSTRUCTION,
