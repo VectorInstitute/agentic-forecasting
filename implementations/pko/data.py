@@ -64,6 +64,7 @@ from typing import Any
 import pandas as pd
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.adapters import FREDAdapter
+from aieng.forecasting.data.adapters.yfinance import YFinanceDailyAdapter
 from aieng.forecasting.data.features import StaticFrameAdapter
 
 
@@ -275,12 +276,152 @@ def build_palm_oil_service(
     return svc
 
 
+# ── Daily futures target (primary) ───────────────────────────────────────────
+#
+# The FRED service above is a monthly, publication-lagged view: a price is
+# stamped with the start of its reference month but not released for ~2 months,
+# and FRED twice stopped publishing for half a year at a stretch -- including
+# straight through the 2022 Indonesian export ban.  That caps the newest usable
+# forecast origin at 2025-08 and rules out weekly news alignment entirely.
+#
+# The daily CME Crude Palm Oil settlement price has neither problem: the
+# exchange publishes it the same day, so ``timestamp`` *is* the release date and
+# no ``released_at`` correction is needed.  It tracks the FRED series at 0.92
+# correlation on monthly returns, with the peak strictly at zero lag.
+#
+# Caveats, recorded here so they stay attached to the data:
+#
+# - The contract is thinly traded (volume is reported on ~10% of days).  CME
+#   cash-settles it against the Bursa Malaysia FCPO benchmark, so the daily
+#   number is an exchange settlement reference rather than a traded price.
+#   Prices still move on zero-volume days (mean 0.87%), so the series is live,
+#   not stale -- but do not describe it as a liquid market price.
+# - Yahoo keeps no vintage archive, so we assume history is never revised.  The
+#   repo's WTI implementation makes the same assumption for ``CL=F``.
+# - Jan--Jun 2016 is missing from Yahoo's history.  Start backtests at 2017.
+
+PALM_OIL_DAILY_SERIES_ID = "palm_oil_futures_daily"
+"""Daily CME Crude Palm Oil settlement price."""
+
+PALM_OIL_WEEKLY_SERIES_ID = "palm_oil_futures_weekly"
+"""Weekly (Friday-close) resampling of the daily series.
+
+Weekly is the frequency that matches GDELT news aggregation, and the one the
+backtest specs target.
+"""
+
+YAHOO_TICKER = "CPO=F"
+"""Yahoo Finance ticker: CME Crude Palm Oil futures, continuous front month."""
+
+YAHOO_CACHE_DIR = Path("data/yfinance")
+"""Default yfinance cache directory, shared with the repo's other use cases."""
+
+_YAHOO_HISTORY_START = "2004-01-01"
+
+#: Yahoo's history for this contract has a hole in the first half of 2016.
+#: Backtests should start after it; recorded here so the reason is not lost.
+YAHOO_HISTORY_GAP = ("2016-01", "2016-06")
+
+
+def to_weekly(daily: pd.DataFrame) -> pd.DataFrame:
+    """Resample a daily price frame to Friday-close weekly observations.
+
+    Resampling with ``W-FRI`` labels every bin on its Friday even when that
+    Friday was a holiday, so the weekly grid has no missing labels.  The
+    evaluation harness resolves ground truth by exact timestamp match, so a
+    complete, regular grid is what makes weekly forecast dates resolvable.
+
+    Parameters
+    ----------
+    daily : pd.DataFrame
+        Frame with ``timestamp`` and ``value`` columns.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns ``timestamp``, ``value``, ``released_at``.  ``released_at``
+        equals ``timestamp`` -- an exchange settlement is public the same day.
+    """
+    series = daily.set_index("timestamp")["value"].resample("W-FRI").last().dropna()
+    return pd.DataFrame(
+        {"timestamp": series.index, "value": series.to_numpy(), "released_at": series.index}
+    ).reset_index(drop=True)
+
+
+def build_palm_oil_futures_service(
+    cache_dir: Path | None = None,
+    *,
+    start: str = _YAHOO_HISTORY_START,
+) -> DataService:
+    """Return a :class:`DataService` with daily *and* weekly palm oil prices.
+
+    Registers :data:`PALM_OIL_DAILY_SERIES_ID` (business-daily) and
+    :data:`PALM_OIL_WEEKLY_SERIES_ID` (Friday close).  Both carry
+    ``released_at == timestamp``, which is correct for an exchange settlement
+    price and means the cutoff enforcer needs no correction.
+
+    Parameters
+    ----------
+    cache_dir : Path or None
+        yfinance cache directory.  Defaults to :data:`YAHOO_CACHE_DIR`.
+    start : str
+        Earliest date requested from Yahoo Finance.
+
+    Returns
+    -------
+    DataService
+        Ready for the backtest and evaluation harnesses.
+    """
+    resolved_dir = cache_dir if cache_dir is not None else YAHOO_CACHE_DIR
+    adapter = YFinanceDailyAdapter(ticker=YAHOO_TICKER, start=start, cache_dir=resolved_dir)
+    daily = adapter.fetch()[["timestamp", "value"]].copy()
+    daily["timestamp"] = pd.to_datetime(daily["timestamp"]).dt.normalize()
+    daily = daily.dropna(subset=["value"]).sort_values("timestamp").reset_index(drop=True)
+    daily["released_at"] = daily["timestamp"]
+
+    svc = DataService()
+    svc.register(
+        PALM_OIL_DAILY_SERIES_ID,
+        StaticFrameAdapter(daily),
+        SeriesMetadata(
+            series_id=PALM_OIL_DAILY_SERIES_ID,
+            description=(
+                "CME Crude Palm Oil futures daily settlement price, cash-settled against "
+                "the Bursa Malaysia FCPO benchmark (Yahoo Finance CPO=F)"
+            ),
+            source="yfinance",
+            units="USD per metric ton",
+            frequency="B",
+            table_id=f"yahoo:{YAHOO_TICKER}:close",
+        ),
+    )
+    svc.register(
+        PALM_OIL_WEEKLY_SERIES_ID,
+        StaticFrameAdapter(to_weekly(daily)),
+        SeriesMetadata(
+            series_id=PALM_OIL_WEEKLY_SERIES_ID,
+            description="CME Crude Palm Oil settlement price, Friday close (Yahoo Finance CPO=F, resampled)",
+            source="yfinance, derived",
+            units="USD per metric ton",
+            frequency="W-FRI",
+            table_id=f"yahoo:{YAHOO_TICKER}:close-w-fri",
+        ),
+    )
+    return svc
+
+
 __all__ = [
     "DEFAULT_CACHE_DIR",
     "FALLBACK_RELEASE_LAG_DAYS",
     "FRED_SERIES_ID",
+    "PALM_OIL_DAILY_SERIES_ID",
     "PALM_OIL_SERIES_ID",
+    "PALM_OIL_WEEKLY_SERIES_ID",
+    "YAHOO_CACHE_DIR",
+    "YAHOO_HISTORY_GAP",
+    "YAHOO_TICKER",
     "attach_release_dates",
+    "build_palm_oil_futures_service",
     "build_palm_oil_service",
     "fetch_release_dates",
     "naive_utc_now",
