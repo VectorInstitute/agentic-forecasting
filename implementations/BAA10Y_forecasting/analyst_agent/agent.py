@@ -633,5 +633,5 @@ def build_baa10y_agent_predictor(config: AgentConfig) -> AgentPredictor:
 def __getattr__(name: str) -> Any:
     """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``."""
     if name == "root_agent":
-        return build_adk_agent(build_baa10y_multitask_news_config())
+        return build_adk_agent(build_baa10y_code_exec_config())
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
