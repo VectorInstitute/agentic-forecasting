@@ -23,12 +23,6 @@ from aieng.forecasting.methods.agentic import (
 from aieng.forecasting.methods.agentic.agent_factory import AgentConfig
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
 from aieng.forecasting.models import LITE_MODEL
-from energy_oil_forecasting.analyst_agent import (
-    WtiPriceForecastPromptBuilder,
-    build_wti_multitask_news_config,
-    build_wti_news_config,
-    compress_history,
-)
 from BAA10Y_forecasting.analyst_agent.agent import (
     BAA10Y_ANALYST_COVARIATE_SERIES_IDS,
     BAA10YForecastPromptBuilder,
@@ -75,6 +69,9 @@ class BAA10YMultitaskPromptBuilder(BaseModel):
             "as_of": str(context.as_of)[:10],
             "origin_target_change_bps": float(last_row["value"]),
             "target_history_csv": compress_history(df),
+            "covariate_history": build_covariate_history(
+            context,
+            rows=21,),
         }
         return json.dumps(payload, indent=2)
 
@@ -135,7 +132,14 @@ class ScenarioAgentForecastOutput(AgentForecastOutput):
         horizon = task.horizons[0]
         issued_at = datetime.utcnow()
         offset = pd.tseries.frequencies.to_offset(task.frequency)
-        base_prob = float(sum(s.probability for s in self.scenarios))
+        widening_probability = float(
+            sum(
+                scenario.probability
+                for scenario in self.scenarios
+                if scenario.point_estimate_bps > SHOCK_THRESHOLD_BPS
+            )
+        )
+
         prediction_metadata: dict[str, Any] = (
             dict(metadata) if metadata is not None else {}
         )
@@ -153,7 +157,12 @@ class ScenarioAgentForecastOutput(AgentForecastOutput):
                 forecast_date=(
                     pd.Timestamp(context.as_of) + offset * horizon
                 ).to_pydatetime(),
-                payload=BinaryForecast(probability=min(base_prob, 1.0)),
+                payload=BinaryForecast(
+                    probability=min(
+                        max(widening_probability, 0.0),
+                        1.0,
+                    )
+                ), 
                 metadata=prediction_metadata,
             )
         ]

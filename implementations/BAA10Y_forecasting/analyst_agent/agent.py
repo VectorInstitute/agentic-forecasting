@@ -95,12 +95,17 @@ execute the requested task precisely.
 Copy the predictor id and supplied point forecast exactly from
 `model_forecast`.
 
-If `set_model_response` is available, call it with your complete JSON as
-`json_response`. Otherwise return the JSON directly as plain text with no
-preamble, markdown fence, or trailing commentary.
+If the input contains a structured `task_spec`, follow its required JSON
+schema. If `set_model_response` is available, call it with the complete JSON
+as `json_response`.
 
-running agent by cd /home/coder/agentic-forecasting/implementations/BAA10Y_forecasting/analyst_agent
-uv run adk web ..
+For a free-form ADK Web question, return readable Markdown instead of JSON.
+Use the sections: Observed Evidence, Economic Interpretation, Conditional
+Scenarios, and Limitations.
+
+Never invent missing observations or describe an unavailable date as a future
+date unless a tool explicitly confirms that it is in the future.
+
 """
 
 
@@ -488,6 +493,8 @@ def build_baa10y_multitask_news_config(
         model=model,
         instruction=_BAA10Y_MULTITASK_ANALYST_INSTRUCTION,
         context_retrieval=ContextRetrievalConfig(
+            enabled=True,
+            instruction=_BAA10Y_CONTEXT_RETRIEVAL_INSTRUCTION,
             search_model=search_model,
             verifier_model=verifier_model,
             verifier_max_attempts=verifier_max_attempts,
@@ -626,5 +633,5 @@ def build_baa10y_agent_predictor(config: AgentConfig) -> AgentPredictor:
 def __getattr__(name: str) -> Any:
     """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``."""
     if name == "root_agent":
-        return build_adk_agent(build_baa10y_basic_config())
+        return build_adk_agent(build_baa10y_multitask_news_config())
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
