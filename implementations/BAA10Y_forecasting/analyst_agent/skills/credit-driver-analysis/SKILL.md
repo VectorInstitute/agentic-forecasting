@@ -16,7 +16,7 @@ patterns.
 
 Load `references/driver-patterns.md` via
 `load_skill_resource("credit-driver-analysis", "references/driver-patterns.md")`
-**before writing any trend-projection code**.
+**before writing any credit-driver-analysis code**.
 
 The reference file contains:
 - A complete working code pattern using pandas and numpy to analyze the

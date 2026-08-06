@@ -98,6 +98,9 @@ Copy the predictor id and supplied point forecast exactly from
 If `set_model_response` is available, call it with your complete JSON as
 `json_response`. Otherwise return the JSON directly as plain text with no
 preamble, markdown fence, or trailing commentary.
+
+running agent by cd /home/coder/agentic-forecasting/implementations/BAA10Y_forecasting/analyst_agent
+uv run adk web ..
 """
 
 
