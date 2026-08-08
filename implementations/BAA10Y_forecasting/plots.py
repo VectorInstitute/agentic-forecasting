@@ -455,7 +455,7 @@ def plot_spread_change_forecast_vs_actual_multi(
     ax.axhline(0.0, color="0.5", linewidth=0.8, linestyle="--", zorder=1)
     ax.plot(
         base["session"].to_numpy(),
-        100.0 * base["actual_spread_change"].to_numpy(dtype=float),
+        base["actual_spread_change"].to_numpy(dtype=float),
         color="#0d47a1",
         linewidth=2.2,
         marker="o",
@@ -471,7 +471,7 @@ def plot_spread_change_forecast_vs_actual_multi(
         d = d.sort_values("session")
         ax.plot(
             d["session"].to_numpy(),
-            100.0 * d["forecast_spread_change"].to_numpy(dtype=float),
+            d["forecast_spread_change"].to_numpy(dtype=float),
             color=cmap(i % 10),
             linewidth=1.6,
             linestyle="--",
@@ -488,7 +488,7 @@ def plot_spread_change_forecast_vs_actual_multi(
     ax.legend(loc="upper left", framealpha=0.92, fontsize=8, ncol=2)
     ax.grid(True, alpha=0.28, linestyle="-", linewidth=0.6)
     ax.tick_params(axis="both", labelsize=9, colors="0.35")
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.1f}%"))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.1f}"))
     fig.autofmt_xdate()
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
@@ -582,7 +582,7 @@ def plotly_spread_change_forecast_vs_actual_multi(
                     dash="dash",
                 ),
                 marker=dict(size=5, symbol="square"),
-                hovertemplate=f"{label}: " + "%{y:.2%}<extra></extra>",
+                hovertemplate=f"{label}: " + "%{y:+.2%}<extra></extra>",
             )
         )
 
@@ -614,7 +614,12 @@ def plotly_spread_change_forecast_vs_actual_multi(
         spikecolor="rgba(120, 120, 120, 0.5)",
         spikethickness=1,
     )
-    fig.update_yaxes(showgrid=True, gridcolor="rgba(0, 0, 0, 0.08)", tickformat=".1%")
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor="rgba(0, 0, 0, 0.08)",
+        tickformat=".1f",
+        ticksuffix=" bp",
+    )
     return fig
 
 

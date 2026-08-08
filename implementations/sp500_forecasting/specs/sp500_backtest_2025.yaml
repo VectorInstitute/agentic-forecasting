@@ -44,5 +44,5 @@ tasks:
 
 start: "2025-01-06"
 end: "2025-12-22"
-stride: 5            # weekly origins (~50)
+stride: 1            # weekly origins (~50)
 warmup: 250
