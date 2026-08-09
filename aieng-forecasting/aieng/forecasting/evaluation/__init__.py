@@ -20,6 +20,7 @@ from aieng.forecasting.evaluation.backtest import (
     compute_rps,
     multi_backtest,
 )
+from aieng.forecasting.evaluation.compare import ComparisonResult, compare_multi, compare_results
 from aieng.forecasting.evaluation.describe import describe_spec, describe_task
 from aieng.forecasting.evaluation.eval import (
     EvalBudgetExceededError,
@@ -47,6 +48,7 @@ __all__ = [
     "BacktestSpec",
     "BinaryForecast",
     "CategoricalForecast",
+    "ComparisonResult",
     "ContinuousForecast",
     "EvalBudgetExceededError",
     "EvalResult",
@@ -62,6 +64,8 @@ __all__ = [
     "backtest",
     "cached_backtest",
     "cached_multi_backtest",
+    "compare_multi",
+    "compare_results",
     "compute_brier_score",
     "compute_rps",
     "describe_spec",

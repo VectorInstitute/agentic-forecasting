@@ -1,0 +1,50 @@
+# Regime-stress spec — the 2020 COVID crash, NUMERICAL METHODS ONLY.
+#
+# ⚠️  Keep the notebook's LLM-Process predictors OFF for this window. 2020 is
+# BEFORE the Gemini training cutoff (~Jan 2025), so an LLM has effectively
+# memorised these outcomes — scoring an LLMP here measures recall, not
+# forecasting, and would silently flatter it in the comparison. The numerical
+# methods are cutoff-safe by construction (they only see the series up to the
+# origin), so this volatile window is a perfectly valid stress test *for them* —
+# it's where a covariate edge is most visible.
+#
+# The notebook enforces "numerical only" in code: its predictors cell gates the
+# LLMP variants on a post-cutoff flag that is False for this config. Use this to
+# study "when do covariates help?" among the conventional methods; use the 2025
+# backtest / 2026 eval for anything involving the LLMP.
+
+spec_id: baa10y_stress_2020
+
+description: >-
+  COVID-crash regime stress (numerical methods only): daily origins Feb–Apr
+  2020, forecasting close-to-close cumulative changes at 1/5/21 business days.
+
+tasks:
+  - task_id: baa10y_change_1b
+    target_series_id: baa10y_change_1b
+    horizons: [1]
+    frequency: B
+    description: >-
+      BAA10Y close-to-close cumulative change, 1 business day ahead
+      (next-session change / direction).
+
+  - task_id: baa10y_change_5b
+    target_series_id: baa10y_change_5b
+    horizons: [5]
+    frequency: B
+    description: >-
+      BAA10Y close-to-close cumulative change, 5 business days ahead
+      (forward 1-week change).
+
+  - task_id: baa10y_change_21b
+    target_series_id: baa10y_change_21b
+    horizons: [21]
+    frequency: B
+    description: >-
+      BAA10Y close-to-close cumulative change, 21 business days ahead
+      (forward 1-month change).
+
+start: "2020-02-03"
+end: "2020-04-30"
+stride: 1            # daily origins across the crash
+warmup: 250
