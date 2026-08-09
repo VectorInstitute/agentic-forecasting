@@ -26,7 +26,8 @@ import logging
 import os
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, TypeVar
+from contextlib import contextmanager
+from typing import Any, Callable, Iterator, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -117,6 +118,40 @@ def trace_url_for(trace_id: str) -> str | None:
         return get_client().get_trace_url(trace_id=trace_id)
     except Exception:
         return None
+
+
+@contextmanager
+def langfuse_generation(*, model: str, messages: list[dict[str, Any]]) -> Iterator[Any | None]:
+    """Create a best-effort Langfuse Generation for one LLM-process call.
+
+    The LiteLLM OTEL callback is useful for standalone calls, but does not
+    reliably inherit the native Langfuse ``@observe`` context used by LLMP
+    predictors.  Creating the Generation through the Langfuse client makes it
+    a child of that predictor trace and records the actual request messages.
+    """
+    context: Any | None = None
+    try:
+        from langfuse import get_client  # noqa: PLC0415
+
+        context = get_client().start_as_current_observation(
+            name="litellm.acompletion",
+            as_type="generation",
+            input=messages,
+            model=model,
+        )
+        observation = context.__enter__()
+    except Exception:
+        logger.debug("Could not start Langfuse Generation for LLM-process call.", exc_info=True)
+        yield None
+        return
+
+    try:
+        yield observation
+    finally:
+        try:
+            context.__exit__(None, None, None)
+        except Exception:
+            logger.debug("Could not close Langfuse Generation for LLM-process call.", exc_info=True)
 
 
 def set_current_trace_name(name: str) -> None:
@@ -299,17 +334,26 @@ async def _one_completion_async(
         # models that don't support them (e.g. temperature on some o-series).
         kwargs["drop_params"] = True
 
-    resp = await litellm.acompletion(**kwargs)
-    cost = float(getattr(resp, "_hidden_params", {}).get("response_cost") or 0.0)
-    usage = getattr(resp, "usage", None)
-    in_tok = int(getattr(usage, "prompt_tokens", 0) or 0) if usage is not None else 0
-    out_tok = int(getattr(usage, "completion_tokens", 0) or 0) if usage is not None else 0
-    # Log full usage so we can see thinking-token breakdown when available.
-    # The proxy may populate completion_tokens_details.reasoning_tokens.
-    if usage is not None:
-        logger.debug("LLM usage: %s", vars(usage) if hasattr(usage, "__dict__") else usage)
-    raw = resp.choices[0].message.content
-    content = strip_markdown_fence(raw) if raw else raw
+    with langfuse_generation(model=str(kwargs["model"]), messages=messages) as generation:
+        resp = await litellm.acompletion(**kwargs)
+        cost = float(getattr(resp, "_hidden_params", {}).get("response_cost") or 0.0)
+        usage = getattr(resp, "usage", None)
+        in_tok = int(getattr(usage, "prompt_tokens", 0) or 0) if usage is not None else 0
+        out_tok = int(getattr(usage, "completion_tokens", 0) or 0) if usage is not None else 0
+        # Log full usage so we can see thinking-token breakdown when available.
+        # The proxy may populate completion_tokens_details.reasoning_tokens.
+        if usage is not None:
+            logger.debug("LLM usage: %s", vars(usage) if hasattr(usage, "__dict__") else usage)
+        raw = resp.choices[0].message.content
+        content = strip_markdown_fence(raw) if raw else raw
+        if generation is not None:
+            try:
+                generation.update(
+                    output={"role": "assistant", "content": raw},
+                    usage_details={"input": in_tok, "output": out_tok},
+                )
+            except Exception:
+                logger.debug("Could not update Langfuse Generation for LLM-process call.", exc_info=True)
     return content, cost, in_tok, out_tok
 
 

@@ -7,6 +7,7 @@ stripping.  All LLM I/O is mocked so tests run without network access.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -123,6 +124,39 @@ def _mock_litellm_response(content: str) -> MagicMock:
 
 _DUMMY_MESSAGES = [{"role": "user", "content": "forecast"}]
 _DUMMY_FORMAT = {"type": "json_schema", "json_schema": {"name": "x", "schema": {}, "strict": True}}
+
+
+@pytest.mark.asyncio
+async def test_completion_is_recorded_as_a_nested_langfuse_generation() -> None:
+    """LLMP calls explicitly record messages and output on the predictor trace."""
+    generation = MagicMock()
+
+    @contextmanager
+    def fake_generation(**kwargs):  # type: ignore[no-untyped-def]
+        assert kwargs == {"model": "gemini-3-flash-preview", "messages": _DUMMY_MESSAGES}
+        yield generation
+
+    with (
+        patch(
+            "aieng.forecasting.methods.llm_processes._client.langfuse_generation",
+            side_effect=fake_generation,
+        ),
+        patch("litellm.acompletion", new=AsyncMock(return_value=_mock_litellm_response('{"cut": 0.2}'))),
+    ):
+        await _one_completion_async(
+            model="gemini-3-flash-preview",
+            messages=_DUMMY_MESSAGES,
+            response_format=_DUMMY_FORMAT,
+            temperature=1.0,
+            max_tokens=512,
+            timeout_s=30.0,
+            reasoning_effort=None,
+        )
+
+    generation.update.assert_called_once_with(
+        output={"role": "assistant", "content": '{"cut": 0.2}'},
+        usage_details={"input": 0, "output": 0},
+    )
 
 
 @pytest.mark.asyncio

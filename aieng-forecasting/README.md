@@ -32,7 +32,7 @@ pip install "aieng-forecasting[agentic]"
 Current extras:
 
 - `numerical` — Darts-based numerical predictors and related model dependencies
-- `llm` — LiteLLM-based LLM-process predictors; Langfuse tracing via `langfuse_otel`
+- `llm` — LiteLLM-based LLM-process predictors; each completion is recorded as a nested Langfuse Generation with its request messages and response
 - `agentic` — Google ADK runner (`AdkTextRunner`), generic agent factory (`build_adk_agent`), Track 1 predictor wrapper (`AgentPredictor`), structured agent output schemas, E2B code interpreter, and Langfuse / OpenInference tracing
 
 > **E2B setup:** the `agentic` extra requires a one-time sandbox image build.
