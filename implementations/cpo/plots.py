@@ -94,26 +94,35 @@ class Cutoff:
         return pd.Timestamp(self.date)
 
 
-#: Candidate cutoffs from the volatility scan.  All have a 2-month information
-#: gap and resolve fully at horizons 1-6.  Override in the notebook to explore.
+#: Forecast horizons in weeks: one week to one quarter ahead.
+HORIZONS_WEEKS: list[int] = [1, 2, 4, 8, 13]
+
+#: The seven forecast origins, selected in ``02_cutoff_selection.ipynb``.
+#:
+#: All are Fridays on the MPOB weekly grid, all resolve at every horizon in
+#: :data:`HORIZONS_WEEKS`, and all sit at least 10 weeks apart so their forecast
+#: windows do not overlap and their scores stay independent.  Event cutoffs are
+#: placed two weeks *before* a large move, so the shock lands inside the window
+#: rather than in the visible history.
 DEFAULT_CUTOFFS: list[Cutoff] = [
-    Cutoff("2021-05-01", "event", "June 2021 crash, -16.6%"),
-    Cutoff("2022-01-01", "event", "Indonesia export ban, -29.4% over 6mo"),
-    Cutoff("2023-04-01", "event", "May 2023 correction, -10.7%"),
-    Cutoff("2024-09-01", "event", "Oct 2024 rally, +9.7%"),
-    Cutoff("2023-07-01", "quiet", "calmest window, max move 4.1%"),
-    Cutoff("2024-11-01", "quiet", "max move 8.7%"),
-    Cutoff("2025-08-01", "quiet", "max move 5.9%"),
+    Cutoff("2024-04-05", "event", "-7.7% two weeks out; -8.9% over 13 weeks"),
+    Cutoff("2024-10-11", "event", "+7.1% two weeks out; +7.3% over 13 weeks"),
+    Cutoff("2025-04-04", "event", "-7.1% two weeks out; -15.4% over 13 weeks"),
+    Cutoff("2026-02-27", "event", "+7.3% two weeks out; +13.3% over 13 weeks"),
+    Cutoff("2025-01-03", "quiet", "max weekly move ahead 3.7%; flat over 13 weeks"),
+    Cutoff("2025-06-27", "quiet", "max weekly move ahead 3.8%"),
+    Cutoff("2026-05-08", "quiet", "calmest window: max 2.4%, flat over 13 weeks"),
 ]
 
 #: Periods when FRED published no new palm oil prices, from the release-date
-#: analysis in ``scripts/explore_fred_oils.py``.
+#: analysis in ``scripts/explore_fred_oils.py``.  Specific to FRED -- MPOB and
+#: Yahoo publish continuously, so pass ``show_blackouts=False`` for those.
 BLACKOUT_PERIODS: list[tuple[str, str]] = [
     ("2021-12-01", "2022-08-01"),
     ("2025-07-01", "2026-01-01"),
 ]
 
-_HORIZONS = 6
+_HORIZONS = 13
 
 
 def _theme(dark: bool) -> dict[str, str]:
@@ -179,6 +188,10 @@ def plot_price_history(
     cutoffs: list[Cutoff] | None = None,
     start: str | None = "2015-01-01",
     dark: bool = False,
+    title: str = "Palm oil price (FRED PPOILUSDM)",
+    units: str = "USD / metric ton",
+    currency: str = "$",
+    show_blackouts: bool = True,
 ) -> go.Figure:
     """Plot the palm oil price history with candidate cutoffs marked.
 
@@ -192,6 +205,15 @@ def plot_price_history(
         Clip the chart to this start date.  ``None`` shows full history.
     dark : bool
         Render for a dark surface.
+    title : str
+        Chart title.  Override when plotting a source other than FRED.
+    units : str
+        Y-axis label, e.g. ``"MYR per tonne"`` for the MPOB series.
+    currency : str
+        Symbol prefixed to hover values, e.g. ``"RM"`` for ringgit.
+    show_blackouts : bool
+        Shade FRED's publication blackouts.  Set ``False`` for MPOB or Yahoo,
+        which publish continuously and have no blackouts.
 
     Returns
     -------
@@ -211,11 +233,12 @@ def plot_price_history(
             mode="lines",
             name="Palm oil",
             line={"color": theme["series_1"], "width": 2},
-            hovertemplate="%{x|%b %Y}<br><b>$%{y:.0f}</b>/tonne<extra></extra>",
+            hovertemplate=f"%{{x|%d %b %Y}}<br><b>{currency}%{{y:,.0f}}</b>/tonne<extra></extra>",
         )
     )
 
-    _add_blackouts(fig, theme)
+    if show_blackouts:
+        _add_blackouts(fig, theme)
 
     for cut in cutoffs or []:
         fig.add_vline(
@@ -226,9 +249,67 @@ def plot_price_history(
             annotation_font_size=9,
         )
 
-    _style(fig, theme, title="Palm oil price (FRED PPOILUSDM)", ylabel="USD / metric ton", height=520)
+    _style(fig, theme, title=title, ylabel=units, height=520)
     fig.update_xaxes(rangeslider={"visible": True, "thickness": 0.06})
     return fig
+
+
+def plot_news_coverage(
+    articles: pd.DataFrame,
+    *,
+    cutoffs: list[Cutoff] | None = None,
+    dark: bool = False,
+) -> go.Figure:
+    """Plot weekly GDELT article volume, with candidate cutoffs marked.
+
+    An agentic forecaster can only beat a statistical baseline where there is
+    news to read, so news volume is a selection criterion for cutoffs, not just
+    context.  Weeks in the sparse stretch carry little for an agent to reason
+    over, and a cutoff there tests nothing.
+
+    Parameters
+    ----------
+    articles : pd.DataFrame
+        Frame with ``date`` and ``article_count`` columns (daily).
+    cutoffs : list of Cutoff or None
+        Cutoffs to mark.  Defaults to :data:`DEFAULT_CUTOFFS`.
+    dark : bool
+        Render for a dark surface.
+
+    Returns
+    -------
+    go.Figure
+        Interactive weekly bar chart.
+    """
+    theme = _theme(dark)
+    weekly = (
+        articles.assign(date=pd.to_datetime(articles["date"]))
+        .set_index("date")["article_count"]
+        .resample("W-FRI")
+        .sum()
+    )
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=weekly.index,
+            y=weekly.to_numpy(),
+            marker={"color": theme["series_2"]},
+            name="Articles",
+            hovertemplate="week ending %{x|%d %b %Y}<br><b>%{y:.0f}</b> articles<extra></extra>",
+            showlegend=False,
+        )
+    )
+    for cut in cutoffs if cutoffs is not None else DEFAULT_CUTOFFS:
+        fig.add_vline(
+            x=cut.timestamp,
+            line={"color": theme["muted"], "width": 1, "dash": "dot"},
+            annotation_text=cut.kind,
+            annotation_position="top",
+            annotation_font_size=9,
+        )
+
+    return _style(fig, theme, title="GDELT palm oil articles per week", ylabel="articles", height=380)
 
 
 def plot_cutoff_windows(
@@ -261,13 +342,13 @@ def plot_cutoff_windows(
     """
     theme = _theme(dark)
     picks = cutoffs if cutoffs is not None else DEFAULT_CUTOFFS
-    lo = min(c.timestamp for c in picks) - pd.offsets.MonthBegin(6)
-    hi = max(c.timestamp for c in picks) + pd.offsets.MonthBegin(horizons + 6)
+    lo = min(c.timestamp for c in picks) - pd.Timedelta(weeks=8)
+    hi = max(c.timestamp for c in picks) + pd.Timedelta(weeks=horizons + 8)
     df = prices[(prices["timestamp"] >= lo) & (prices["timestamp"] <= hi)]
 
     fig = go.Figure()
     for cut in picks:
-        end = cut.timestamp + pd.offsets.MonthBegin(horizons)
+        end = cut.timestamp + pd.Timedelta(weeks=horizons)
         fig.add_vrect(
             x0=cut.timestamp,
             x1=end,
@@ -286,15 +367,15 @@ def plot_cutoff_windows(
             mode="lines",
             name="Palm oil",
             line={"color": theme["series_1"], "width": 2},
-            hovertemplate="%{x|%b %Y}<br><b>$%{y:.0f}</b>/tonne<extra></extra>",
+            hovertemplate="%{x|%d %b %Y}<br><b>RM%{y:,.0f}</b>/tonne<extra></extra>",
         )
     )
 
     return _style(
         fig,
         theme,
-        title=f"Candidate cutoffs and their {horizons}-month forecast windows",
-        ylabel="USD / metric ton",
+        title=f"Candidate cutoffs and their {horizons}-week forecast windows",
+        ylabel="MYR per tonne",
         height=520,
     )
 
@@ -394,8 +475,15 @@ def plot_information_gap(
     )
 
 
-def plot_monthly_changes(prices: pd.DataFrame, *, start: str = "2020-01-01", dark: bool = False) -> go.Figure:
-    """Plot month-over-month percentage change, coloured by direction.
+def plot_period_changes(
+    prices: pd.DataFrame,
+    *,
+    start: str = "2024-01-01",
+    dark: bool = False,
+    title: str = "Period-over-period change",
+    show_blackouts: bool = False,
+) -> go.Figure:
+    """Plot period-over-period percentage change, coloured by direction.
 
     Parameters
     ----------
@@ -427,10 +515,11 @@ def plot_monthly_changes(prices: pd.DataFrame, *, start: str = "2020-01-01", dar
             showlegend=False,
         )
     )
-    _add_blackouts(fig, theme)
+    if show_blackouts:
+        _add_blackouts(fig, theme)
     fig.add_hline(y=0, line={"color": theme["muted"], "width": 1})
 
-    return _style(fig, theme, title="Palm oil, month-over-month change", ylabel="% change", height=420)
+    return _style(fig, theme, title=title, ylabel="% change", height=420)
 
 
 def plot_oil_complex(frames: dict[str, pd.DataFrame], *, start: str = "2015-01-01", dark: bool = False) -> go.Figure:
@@ -500,7 +589,8 @@ __all__ = [
     "Cutoff",
     "plot_cutoff_windows",
     "plot_information_gap",
-    "plot_monthly_changes",
+    "plot_news_coverage",
+    "plot_period_changes",
     "plot_oil_complex",
     "plot_price_history",
 ]

@@ -1,137 +1,181 @@
-# Palm Oil Data Survey — What FRED Actually Has
+# Palm Oil Data — Source Evaluation and Decision
 
-Survey of FRED's palm and edible-oil coverage, run 2026-08-06 with
-`scripts/explore_fred_oils.py`. Reproduce with:
+We evaluated three sources for the palm oil price and chose **MPOB**. This documents
+what each offers and why, so the choice can be audited rather than taken on trust.
+
+Reproduce any of it with:
 
 ```bash
-uv run python scripts/explore_fred_oils.py
-uv run python scripts/explore_fred_oils.py --lag PPOILUSDM
+uv run python scripts/explore_fred_oils.py     # FRED catalogue + publication lag
+uv run python scripts/fetch_mpob.py            # MPOB daily history
 ```
 
 ---
 
-## Headline: FRED has no palm kernel oil
+## Decision: MPOB daily crude palm oil price
 
-Searching FRED for **"palm kernel oil" returns zero series.** The term is not in
-the catalogue. The closest available is palm *oil*, which is a related but
-genuinely different commodity with a different price.
+**Malaysian Palm Oil Board, "Crude Palm Oil (Local Delivered)"** — the weighted average
+of actual reported physical transactions, published by the official Malaysian body.
 
-**This needs a team decision before anyone builds on it** — see
-[Open decision](#open-decision) below.
+| | |
+|---|---|
+| Source | [bepi.mpob.gov.my](https://bepi.mpob.gov.my) — free, no account |
+| Units | MYR per tonne |
+| Daily | **4,502** observations, 2008-01-02 → present |
+| Weekly | **971** Friday closes, complete grid, zero missing |
+| Publication lag | Next working day |
+| Contract rolls | None — physical price |
 
-## Headline: everything on FRED is monthly
-
-The survey covered 9 search terms and found 66 unique series. **All 66 are
-monthly.** There are no daily or weekly edible-oil series on FRED.
-
-This breaks the original plan's assumption of a weekly price series matched to
-weekly GDELT aggregation. Horizons have to be in months.
+Forecasting in **MYR**, the currency MPOB publishes. Converting to USD would mix
+exchange-rate movement into the target.
 
 ---
 
-## The usable series
+## The three-way comparison
 
-Of the 66 hits, only **4 are actual prices** in dollars per tonne. The other 62
-are Producer Price or Consumer Price *indices* — base-year-relative numbers, not
-prices, and not forecastable as dollars.
-
-All four come from the same IMF release (Primary Commodity Prices), so they
-share a calendar, a lag, and a leak-safety fix.
-
-| FRED ID | Commodity | Freq | Units | Coverage | Samples |
-|---|---|---|---|---|---|
-| `PPOILUSDM` | Palm oil | Monthly | USD/tonne | 1992-01 → 2026-06 | 414 |
-| `PSOILUSDM` | Soybean oil | Monthly | USD/tonne | 1992-01 → 2026-06 | 414 |
-| `PSUNOUSDM` | Sunflower oil | Monthly | USD/tonne | 1992-01 → 2026-06 | 414 |
-| `PROILUSDM` | Rapeseed oil | Monthly | USD/tonne | 1992-01 → 2026-06 | 414 |
-
-### Price ranges observed
-
-| FRED ID | Min | Max | Latest (2026-06) |
+| | FRED `PPOILUSDM` | Yahoo `CPO=F` | **MPOB** |
 |---|---|---|---|
-| `PPOILUSDM` | 185 | 1,653 | 1,109 |
-| `PSOILUSDM` | 321 | 1,839 | 1,581 |
-| `PSUNOUSDM` | 333 | 2,537 | 1,806 |
-| `PROILUSDM` | 315 | 2,291 | 1,526 |
+| What it is | IMF monthly benchmark | CME futures contract | **Physical transactions** |
+| Frequency | Monthly | Daily | **Daily** |
+| Weekly points | — | 814 | **971** |
+| History | 1992–2026 (414 mo) | 2010–2026 | **2008–2026** |
+| Publication lag | 10 days – 2 months | Same day | **Next day** |
+| Roll artifacts | None | **5.2x** | 1.6x |
+| Latest cutoff usable | 2025-08 | 2026 | **2026** |
 
-**Proposal:** `PPOILUSDM` as the forecast target; the other three as covariates.
-They are close substitutes, cost nothing extra to add, and inherit the same
-leak-safe release handling.
+MPOB wins on every axis that matters here, and loses on none.
+
+### Why not FRED
+
+Four problems, each disqualifying on its own:
+
+1. **Monthly only.** No weekly alignment with GDELT news.
+2. **Published ~2 months late.** At a typical cutoff the newest price is 2 months old,
+   so a nominal 1-step forecast is really a 3-month extrapolation.
+3. **Two publication blackouts** — Dec 2021–Aug 2022 and Jul 2025–Jan 2026. Six months
+   of silence each. The first covers the entire Indonesian export ban, the largest palm
+   oil event of the decade: FRED published nothing while prices doubled and collapsed.
+4. **Data ends June 2026**, capping the newest usable cutoff at 2025-08 — inside most
+   LLM training windows, which defeats the point of testing on unseen events.
+
+FRED does have one genuine strength: a **vintage archive** giving each observation's true
+first-publication date. `pko.data.build_palm_oil_service()` uses it and remains available
+as a leak-safe monthly cross-check.
+
+FRED also carries **no palm kernel oil series at all** — the search returns zero hits.
+That is why this use case forecasts palm oil (CPO) despite the `pko/` directory name.
+
+### Why not Yahoo `CPO=F`
+
+It is the only palm oil price on Yahoo, and it has no publication lag — but it is a
+**futures contract**, and Yahoo's continuous series switches contracts every month:
+
+```
+first-of-month moves : 3.57%      other days : 0.68%      ratio 5.2x
+19 of the 20 largest daily moves land on a roll date
+```
+
+For comparison, `CL=F` crude — used by the repo's WTI implementation — scores 1.0x with
+zero clustering. The effect is specific to palm oil, whose contracts are thin and priced
+further apart.
+
+Each roll injects ~3.6% of non-economic movement, contaminating **one week in four**. We
+verified against MPOB that the gaps are unpredictable noise (mean −0.08%, std 3.55%,
+autocorrelation 0.21, sign consistency 50%), so they cannot be corrected without a
+reference series — and the only reference is MPOB itself.
+
+Cross-check on the same commodity: MPOB monthly averages converted to USD track FRED's
+IMF benchmark at **0.996** on levels and **0.962** month-over-month.
 
 ---
 
-## Release dates and leakage
+## Retrieving MPOB history
 
-FRED stamps each observation with the **start of its reference period** — the
-June 2026 average is stamped `2026-06-01`. It is not published until weeks
-later. June 2026 appeared on **2026-07-13**.
+The endpoint is a **POST** form. A GET with the same query string returns HTTP 200 with
+an empty body for historical years, which reads as "no data" but is not — history runs
+back to 2008.
 
-The library's `FREDAdapter` assumes `released_at = timestamp`, which would tell
-the harness the June price was knowable on June 1 — **42 days early, at every
-origin.** `implementations/cpo/data.py` fixes this by fetching each
-observation's true first-publication date from FRED's real-time archive.
+```bash
+curl -X POST -d "jenis=1Y&tahun=2015&Submit123=Submit" \
+  -e "https://bepi.mpob.gov.my/admin2/daily.php" \
+  "https://bepi.mpob.gov.my/admin2/price_local_daily_view_cpo_msia.php"
+```
 
-### Publication lag, measured
+In a browser it is the "Malaysia : Local Prices Summary of CPO" selector on
+[daily.php](https://bepi.mpob.gov.my/admin2/daily.php).
 
-| FRED ID | Median lag | 90th pct | Vintages | Archive starts | Obs with exact release date |
+`scripts/fetch_mpob.py` does this for every year and caches to
+`data/mpob/cpo_daily.parquet`. The same portal also publishes **Crude Palm Kernel Oil**,
+should the team ever return to the original PKO framing.
+
+---
+
+## News data
+
+`palm_articles_daily.csv` — GDELT palm oil articles, **2,584 articles over 716 days**,
+2024-01-01 → 2026-08-10.
+
+Coverage is **not uniform**:
+
+| Period | Articles/month |
+|---|---|
+| 2024-01 → 2025-05 | 69–153 |
+| **2025-06 → 2026-02** | **6–31** |
+| 2026-03 → 2026-07 | 58–186 |
+
+December 2025 has 6 articles in the whole month. Cutoffs in that stretch give an agent
+nothing to reason over, so cutoff selection requires ≥100 articles in the prior 8 weeks.
+
+---
+
+## Forecast setup
+
+**Horizons:** 1, 2, 4, 8, 13 weeks.
+
+**Seven cutoffs**, derived in `02_cutoff_selection.ipynb`, frozen in
+`pko.plots.DEFAULT_CUTOFFS`:
+
+| Cutoff | Kind | Price (RM) | Max move ahead | 13-week total | News (8wk) |
 |---|---|---|---|---|---|
-| `PPOILUSDM` | 10 days | 28 days | 90 | 2015-11-06 | 128 of 414 |
-| `PSOILUSDM` | 10 days | 28 days | 90 | 2015-11-06 | 128 of 414 |
-| `PSUNOUSDM` | 9 days | 27 days | 90 | 2015-11-06 | 128 of 414 |
-| `PROILUSDM` | 9 days | 27 days | 90 | 2015-11-06 | 128 of 414 |
+| 2024-04-05 | event | 4,512 | 7.7% | −8.9% | 251 |
+| 2024-10-11 | event | 4,402 | 7.1% | +7.3% | 158 |
+| 2025-01-03 | quiet | 4,726 | 3.7% | +0.8% | 251 |
+| 2025-04-04 | event | 4,764 | 7.1% | −15.4% | 166 |
+| 2025-06-27 | quiet | 3,956 | 3.8% | +10.2% | 106 |
+| 2026-02-27 | event | 3,956 | 7.3% | +13.3% | **45** |
+| 2026-05-08 | quiet | 4,515 | 2.4% | −0.1% | 180 |
 
-"Lag" is days from the **end of the reference month** to the publication date.
+Event windows average 7.3% max move against 3.3% for quiet — a **2.2x separation**. The
+closest two cutoffs are 10 weeks apart, so no forecast windows overlap and the seven
+scores are independent.
 
-The 286 observations before 2015-11 are absent from FRED's archive and fall back
-to `month end + 29 days`. They serve as warmup history only — keep every
-forecast origin after 2015-11 and the fallback never affects a score.
-
-### The release calendar is irregular
-
-The IMF announces **no future release dates** to FRED. Recent releases:
-
-| Release date | Gap since previous |
-|---|---|
-| 2025-06-26 | — |
-| 2025-07-14 | 18 days |
-| 2026-01-22 | **192 days** |
-| 2026-02-12 | 21 days |
-| 2026-03-24 | 40 days |
-| 2026-04-15 | 22 days |
-| 2026-06-05 | 51 days |
-| 2026-07-13 | 38 days |
-
-Two consequences for experiment design:
-
-1. **There is a publication blackout from mid-July 2025 to late January 2026.**
-   Any forecast cutoff in that window sees prices frozen at roughly mid-2025. A
-   "quiet" cutoff there is quiet because no data existed, not because the market
-   was calm. Avoid the window, or choose it deliberately as a stress case.
-
-2. **The information set varies by cutoff.** Sometimes last month's price is
-   available at an origin, sometimes it isn't — 2026-06-05 published April and
-   May together. Baselines must tolerate a ragged edge.
+Event cutoffs are placed **two weeks before** a large move, so the shock falls inside the
+forecast window rather than in the visible history.
 
 ---
 
-## Open decision
+## Known limitations
 
-FRED has no palm kernel oil. The options:
-
-| Option | Consequence |
-|---|---|
-| **Forecast palm oil** (`PPOILUSDM`) | Stay on FRED, Vector-verifiable. Rename the use case from PKO — done, the folder is now `po`. |
-| **Keep palm kernel oil** | Needs a non-FRED source (World Bank Pink Sheet has it, monthly). Vector would have to verify a new source. |
-
-The baseline work is nearly identical either way, so it is not blocking — but
-the target should be settled before notebooks and specs are written against it.
+- **Seven origins × five horizons = 35 scored points.** Mean CRPS differences between
+  close predictors will not be significant. Treat these as the narrative set and run a
+  denser weekly backtest to decide which model is genuinely better.
+- **Events were selected with hindsight.** Valid for a controlled comparison, not a live
+  forecasting record.
+- **The 2026-02-27 cutoff is news-poor** (~45 articles), kept deliberately as the only
+  2026 event available. Report it separately.
+- **No 2022-style shock exists in the GDELT window.** The largest weekly move is 7.7%
+  against 30%+ during the export ban, so the event/quiet contrast is one of degree.
+- **MPOB has no vintage archive.** We assume published prices are not revised. Unlike
+  FRED, this cannot be verified — the same assumption the repo's WTI implementation makes
+  for `CL=F`.
 
 ---
 
 ## Status
 
-- [x] Find the right FRED series — done, with the caveat above
-- [x] Load the price data — `implementations/cpo/data.py`, leak-safe
-- [ ] Pull news from GDELT
-- [ ] Build a simple baseline forecast
+- [x] Find the right series — MPOB daily CPO; FRED carries no palm kernel oil
+- [x] Load the price data — `pko.data.build_mpob_service()`, daily and weekly
+- [x] Pull news from GDELT — `palm_articles_daily.csv`
+- [x] Select forecast cutoffs — 7 cutoffs, 5 horizons
+- [ ] Build a baseline forecast
 - [ ] Build an agent forecast and compare
