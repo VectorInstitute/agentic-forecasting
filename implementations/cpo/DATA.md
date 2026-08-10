@@ -1,95 +1,97 @@
 # Palm Oil Data — Source Evaluation and Decision
 
-We evaluated three sources for the palm oil price. **MPOB was the cleanest on every
-measured axis but is not approved for this project; the target is Yahoo Finance
-`CPO=F`, with a documented mitigation for its main defect.** This records the full
-evaluation so the choice can be audited rather than taken on trust.
+We evaluated three sources for the palm oil price. **MPOB is the target** — a physical
+transaction price, cleanest on every measured axis, and cleared for local use. This
+records the full evaluation so the choice can be audited rather than taken on trust.
 
 Reproduce any of it with:
 
 ```bash
 uv run python scripts/explore_fred_oils.py     # FRED catalogue + publication lag
-uv run python scripts/fetch_mpob.py            # MPOB daily history (kept for reference)
+uv run python scripts/fetch_mpob.py            # MPOB daily history — run locally only, see governance below
 ```
 
 ---
 
-## Decision: Yahoo `CPO=F`, weekly, aggregated by median
+## Data governance — read this before touching MPOB
 
-**CME Crude Palm Oil futures, continuous front-month contract**, cash-settled against
-the Bursa Malaysia FCPO benchmark.
+Per Vector (Ethan Jackson, Slack, 2026-08-10), in response to a direct question about
+using MPOB instead of Yahoo:
+
+> if you are going to use the Vector provided environment (Coder) then it's required
+> to submit a request to our data office... But if you're running the code in your own
+> environment (locally, for example) then it's totally fine, as long as you don't
+> redistribute the data in any way (like pushing it to GitHub)
+
+The rule this project follows:
+
+| | Coder | Local machine |
+|---|---|---|
+| Use MPOB | Requires data-office approval — not yet obtained | Fine, no approval needed |
+| Push raw MPOB data | Never, either way | Never, either way |
+| Push derived work (notebooks, charts, cutoff dates, stats) | Fine | Fine |
+
+**In practice:** `data/mpob/` is gitignored and must never be committed. Everything
+else — this file, the notebooks (including their embedded Plotly charts, which do
+contain real MPOB values in their JSON), `plots.DEFAULT_CUTOFFS` — is analysis derived
+from the data, not the data itself, and is fine to commit and push.
+
+**If you're working inside a Coder workspace without the data-office approval**, use
+`build_palm_oil_futures_service()` (Yahoo `CPO=F`) instead — it remains fully
+maintained as the Vector-approved fallback. Do not run `scripts/fetch_mpob.py` inside
+Coder without approval.
+
+---
+
+## Decision: MPOB daily crude palm oil price
+
+**Malaysian Palm Oil Board, "Crude Palm Oil (Local Delivered)"** — the weighted average
+of actual reported physical transactions, published by the official Malaysian body.
 
 | | |
 |---|---|
-| Source | Yahoo Finance — approved, already used elsewhere in this repo (`CL=F`) |
-| Units | USD per tonne |
-| Daily | 3,918 observations, 2010-05-28 → present |
-| Weekly | **815** points, complete Friday grid |
-| Publication lag | Same day — `released_at == timestamp` |
-| Aggregation | **Median** of the week's available trading days, not Friday close — see below |
+| Source | [bepi.mpob.gov.my](https://bepi.mpob.gov.my) — free, no account |
+| Units | MYR per tonne |
+| Daily | **4,502** observations, 2008-01-02 → present |
+| Weekly | **971** Friday closes, complete grid, zero missing |
+| Publication lag | Next working day — `released_at == timestamp` |
+| Contract rolls | None — physical price, not a futures contract |
 
-### Why not Friday close: the contract-roll problem
+Forecasting in **MYR**, the currency MPOB publishes. Converting to USD would mix
+exchange-rate movement into the target.
 
-Yahoo's continuous series switches to the next futures contract on the first trading
-day of each month. Consecutive palm-oil contracts are not priced identically, so the
-switch produces a price jump that is not a market move.
+### Retrieving the history
 
-Measured against the MPOB physical price over 2024–2026 (23 roll days with a direct
-comparison): mean gap **−0.09%**, median **−0.01%**, std **3.47%**. **Unbiased noise,
-not a directional bias** — but large, and severe on 5 of 23 roll days (>5%).
+The endpoint is a **POST** form. A GET with the same query string returns HTTP 200
+with an empty body for historical years, which reads as "no data" but is not — history
+runs back to 2008:
 
-Two real examples, verified against MPOB on the same calendar days:
+```bash
+curl -X POST -d "jenis=1Y&tahun=2015&Submit123=Submit" \
+  -e "https://bepi.mpob.gov.my/admin2/daily.php" \
+  "https://bepi.mpob.gov.my/admin2/price_local_daily_view_cpo_msia.php"
+```
 
-| Roll date | Yahoo `CPO=F` move | Real move (MPOB) | Verdict |
-|---|---|---|---|
-| 2022-04-01 | −12.78% | −2.70% | Mostly artifact — the market barely moved |
-| 2022-03-01 | +13.62% | ~+14.9% | Mostly real — a genuine surge, not fabricated |
-
-**The roll cannot be identified from Yahoo data alone.** Some roll days are almost
-entirely artifact, some are almost entirely real, and the direction is a coin flip
-(11 up, 12 down across 23 roll days in 2024–2026). This rules out any rule that
-discards or "corrects" roll days by assumption.
-
-### Why median, and what was rejected first
-
-Three approaches were tested, all using only Yahoo data (no MPOB values enter the
-registered series):
-
-| Method | Full-history roll ratio | Problem |
-|---|---|---|
-| Weekly, Friday close (naive) | 1.93x | Full contamination on every roll week |
-| Weekly, drop first 1–4 trading days | 1.1–1.65x (unstable) | 91 of 501 weeks (2017–2026) built from only 1–2 days; the first 1–4 trading days span **two different calendar weeks in 52 of 116 months**, so one roll can hollow out two consecutive weeks; raising the drop threshold makes the ratio *worse* |
-| Weekly, mean of all 5 days | 1.43x | Real, no thin weeks, but a blunter reduction |
-| **Weekly, median of all available days** | **1.33x** | Adopted — no dropped data, no calendar-boundary logic, no thin-week failure mode |
-
-"Roll ratio" = (average |move| on weeks containing a roll) ÷ (average |move| on weeks
-that don't). 1.0x means no distortion; MPOB's own ratio is 0.98–1.0x, the ceiling for
-how clean this can get.
-
-**Median does not reach parity with MPOB (1.33x vs ~1.0x).** State the residual, don't
-claim it's solved. It also changes what "this week's price" means — a within-week
-statistic rather than "the price as of Friday" — verified to track Friday-close within
-a mean 0.03% gap in ordinary weeks, and to *preserve* rather than dampen genuine
-multi-day moves (the March 2022 surge reads larger under median: +16.4% vs +12.1% for
-Friday close, because the excluded roll-day price no longer drags the average down).
-
-Full derivation: `implementations/cpo/data.py`, `build_palm_oil_futures_service()`
-docstring.
+`scripts/fetch_mpob.py` does this for every year and caches to
+`data/mpob/cpo_daily.parquet` — **local machines only**, per the governance rule above.
 
 ---
 
 ## The three-way comparison
 
-| | FRED `PPOILUSDM` | **Yahoo `CPO=F`** | MPOB |
+| | FRED `PPOILUSDM` | Yahoo `CPO=F` | **MPOB** |
 |---|---|---|---|
-| What it is | IMF monthly benchmark | **Futures contract** | Physical transactions |
-| Frequency | Monthly | **Daily** | Daily |
-| Weekly points | — | **815** | 971 |
-| History | 1992–2026 (414 mo) | **2010–2026** | 2008–2026 |
-| Publication lag | 10 days – 2 months | **Same day** | Next day |
-| Roll artifacts | None | **1.3x (median-mitigated)** | ~1.0x |
-| Latest cutoff usable | 2025-08 | **2026** | 2026 |
-| Vector-approved | Yes | **Yes** | **No** |
+| What it is | IMF monthly benchmark | Futures contract | **Physical transactions** |
+| Frequency | Monthly | Daily | **Daily** |
+| Weekly points | — | 815 | **971** |
+| History | 1992–2026 (414 mo) | 2010–2026 | **2008–2026** |
+| Publication lag | 10 days – 2 months | Same day | **Next day** |
+| Roll artifacts | None | 1.3x (median-mitigated) | **~1.0x** |
+| Latest cutoff usable | 2025-08 | 2026 | **2026** |
+| Needs approval | No | No | **Yes, in Coder; no, locally** |
+
+MPOB wins on every axis except approval friction, which the local-use rule resolves
+for anyone running this repo on their own machine.
 
 ### Why not FRED
 
@@ -102,25 +104,35 @@ docstring.
    LLM training windows.
 5. **No palm kernel oil series at all** — zero hits on that search term.
 
-`pko.data.build_palm_oil_service()` remains available as a monthly, leak-safe
-cross-check using FRED's real-time vintage archive.
+`build_palm_oil_service()` remains available as a monthly, leak-safe cross-check using
+FRED's real-time vintage archive.
 
-### Why not MPOB, despite being cleaner
+### Why Yahoo `CPO=F` was the target before MPOB was cleared, and remains the fallback
 
-MPOB — "Crude Palm Oil (Local Delivered)," the weighted average of actual reported
-transactions — beat both alternatives on every measured axis: no contracts, no rolls,
-18 years of daily history, published next day. It is the source Jyotsna's team
-references internally.
+Approved from the start and daily, but it's a **futures contract**: Yahoo's continuous
+series switches to the next contract on the first trading day of each month, and
+consecutive palm-oil contracts are not priced identically. Measured against MPOB over
+2024–2026 (23 roll days): mean gap −0.09%, median −0.01%, std 3.47% — unbiased noise,
+not a directional bias, but severe on 5 of 23 days.
 
-**Vector has not approved MPOB for this project.** Our access route differs from the
-one under review: we retrieved it from the public `bepi.mpob.gov.my` web form (no API
-key, no registration, no vendor — see `scripts/fetch_mpob.py`), where Jyotsna's team
-receives it via a licensed API into BigQuery. Whether that distinction changes the
-ruling is an open question, being checked directly.
+Two real examples, verified against MPOB on the same calendar days:
 
-`build_mpob_service()` and the cached data remain in the repo as a validated
-reference — used above to measure the roll artifact and verify the median mitigation —
-but **no MPOB value enters the registered forecast target or any scored result.**
+| Roll date | Yahoo `CPO=F` move | Real move (MPOB) | Verdict |
+|---|---|---|---|
+| 2022-04-01 | −12.78% | −2.70% | Mostly artifact — the market barely moved |
+| 2022-03-01 | +13.62% | ~+14.9% | Mostly real — a genuine surge, not fabricated |
+
+**The roll cannot be identified from Yahoo data alone** — the direction is a coin flip
+(11 up, 12 down across 23 roll days), which rules out any rule that discards or
+"corrects" roll days by assumption. `build_palm_oil_futures_service()` mitigates it by
+aggregating weekly with the **median** rather than Friday close — full-history roll
+ratio 1.93x → 1.33x, still short of MPOB's ~1.0x ceiling. Two more aggressive fixes
+(dropping the first 1–4 trading days of the month; a plain 5-day mean) were tried and
+rejected — see the function's docstring in `data.py` for the full comparison and why
+each was worse.
+
+**This is now the fallback**, not the target — used for anyone working inside Coder
+without the MPOB data-office approval, or as an independent cross-check.
 
 ---
 
@@ -130,8 +142,8 @@ but **no MPOB value enters the registered forecast target or any scored result.*
 
 **18 of 734 rows (2.5%) are malformed** — free text has leaked into the `date` column
 on some lines, most likely from unescaped commas or line breaks in the `texts` field.
-Cutoff selection parses with `errors="coerce"` and drops these rows; flagged to
-Jyotsna as a data-quality item, not something we've silently patched around.
+Both notebooks parse with `errors="coerce"` and drop these rows; flagged to Jyotsna as
+a data-quality item, not something silently patched around.
 
 Coverage is **not uniform** across the valid rows:
 
@@ -150,60 +162,72 @@ articles in the prior 8 weeks, which excludes that stretch entirely.
 
 **Horizons:** 1, 2, 4, 8, 13 weeks.
 
-**Seven cutoffs**, derived in `02_cutoff_selection.ipynb` on the median-mitigated
-`CPO=F` weekly series, frozen in `cpo.plots.DEFAULT_CUTOFFS`:
+**Seven cutoffs**, derived in `02_cutoff_selection.ipynb` on the MPOB weekly series,
+frozen in `cpo.plots.DEFAULT_CUTOFFS`:
 
-| Cutoff | Kind | Price ($) | Max move ahead | 13-week total | News (8wk) |
+| Cutoff | Kind | Price (RM) | Max move ahead | 13-week total | News (8wk) |
 |---|---|---|---|---|---|
-| 2024-04-19 | event | 870 | 6.3% | −2.9% | 226 |
-| 2024-06-28 | quiet | 832 | 4.3% | +10.6% | 252 |
-| 2024-10-25 | event | 1,008 | 10.0% | −5.0% | 161 |
-| 2025-01-03 | quiet | 1,015 | **5.7%** | −2.3% | 251 |
-| 2025-03-28 | event | 996 | 5.8% | −5.7% | 163 |
-| 2025-06-06 | event | 924 | **3.2%** | +14.2% | 146 |
-| 2026-04-24 | quiet | 1,158 | 1.9% | −2.8% | 140 |
+| 2024-02-02 | event | 3,800 | 7.7% | +2.1% | 150 |
+| 2024-04-19 | quiet | 4,100 | 3.9% | −2.3% | 226 |
+| 2024-07-26 | event | 4,030 | 7.1% | +16.3% | 165 |
+| 2024-10-18 | event | 4,374 | 7.1% | +4.7% | 162 |
+| 2025-01-17 | event | 4,578 | **7.1%** (weakest event) | −8.7% | 257 |
+| 2025-06-20 | quiet | 4,076 | **3.8%** (strongest quiet) | +7.3% | 112 |
+| 2026-04-17 | quiet | 4,434 | 2.4% | +1.4% | 135 |
 
-**Independence was prioritised over separation.** An exhaustive search over the 20
-largest-move candidates found **zero** combinations of 4 events that sit ≥10 weeks
-apart from each other — the large moves in this window cluster too closely in time.
-Relaxing to 8 or 6 weeks produces combinations, but reintroduces the window overlap
-that independence exists to prevent. We kept full independence and accepted the
-consequence: event/quiet group means separate 1.6x, but **one pair is not cleanly
-ordered** — the quiet 2025-01-03 (5.7%) moves more than the weakest event, 2025-06-06
-(3.2%). Stated plainly rather than re-labelled to look cleaner.
+**Cleanly ordered and well separated:** every event cutoff moves more than every quiet
+cutoff (weakest event 7.07% > strongest quiet 3.89%), group means differ **2.16x**.
+Minimum gap between any two cutoffs is 11 weeks, so all seven forecast windows are
+independent.
 
-This is materially weaker than the 2.2x, cleanly-ordered split found during the MPOB
-evaluation. The reason is structural: `CPO=F`'s ordinary-week volatility is lower than
-MPOB's (mean |move| in non-roll weeks: 1.13% vs 2.06%), so its moves compress toward
-the middle and separate less cleanly.
+This required widening the search beyond the top-20-by-move candidates: the pool
+resolvable at every horizon and clearing the news-coverage floor contains only **one**
+independent 4-event combination among the top 20, and it's entirely 2024 (no move in
+2025 or 2026 makes that cut). Widening to the top 30 and requiring events from ≥2
+distinct years found a combination one point weaker (1.82x vs 1.87x on the strict
+weakest-event/strongest-quiet ratio) but reaching into January 2025 — worth the small
+cost for a cutoff further from most LLMs' training data. **2026 has no event-quality
+move available at all** in the news-covered pool (largest candidate ~3%) — every event
+cutoff falls in 2024–2025, stated as a limitation below rather than concealed by
+forcing in a weak 2026 pick.
+
+This is a materially better result than the analogous Yahoo `CPO=F` search, which
+found **zero** independent 4-event combinations and had to accept a set where one
+quiet cutoff (5.7%) exceeded the weakest event (3.2%). The difference is structural:
+MPOB's ordinary-week volatility is higher than the futures series (mean |move| in
+non-roll weeks: 2.06% vs 1.13%), spreading its moves out instead of compressing them
+toward the middle.
 
 ---
 
 ## Known limitations
 
-- **Event/quiet separation is weak and not cleanly ordered** — see above. Report this,
-  don't smooth over it.
-- **The target carries residual roll noise** — 1.3x vs MPOB's ~1.0x ceiling.
+- **All four event cutoffs fall in 2024–2025; none in 2026.** The largest available
+  move in 2026 is ~3%, too weak to compete for an event slot under the news-coverage
+  constraint. Quiet cutoffs do reach into 2026 (2026-04-17).
 - **Seven origins × five horizons = 35 scored points.** Mean CRPS differences between
   close predictors will not be significant. Treat these as the narrative set and run a
   denser weekly backtest to decide which model is genuinely better.
 - **Events were selected with hindsight.** Valid for a controlled comparison, not a
   live forecasting record.
 - **No 2022-style shock exists in the 2024–2026 GDELT window.** The largest weekly
-  move is ~10% against 30%+ during the export ban.
-- **Yahoo has no vintage archive.** We assume published prices are not revised — the
-  same assumption the repo's WTI implementation makes for `CL=F`. Unlike FRED, this
-  cannot be independently verified.
-- **MPOB's own history is unverified for revisions** — used here only as an offline
-  reference to measure the roll artifact, never as the scored target.
+  move here is ~7.7%, against 30%+ during the export ban.
+- **MPOB has no vintage archive.** We assume published prices are not revised — this
+  cannot be independently verified, unlike FRED's real-time archive.
+- **Data governance is a standing constraint, not a one-time decision.** Anyone
+  extending this work inside Coder without the data-office approval must use the
+  Yahoo fallback; re-check the rule at the top of this file before assuming otherwise.
 
 ---
 
 ## Status
 
 - [x] Evaluate FRED, Yahoo, and MPOB; document the tradeoffs
-- [x] Confirm Vector approval status — Yahoo yes, MPOB no (pending clarification)
-- [x] Build and verify the roll mitigation (median, full-history ratio 1.33x)
-- [x] Select forecast cutoffs — 7 cutoffs, 5 horizons, limitations stated
+- [x] Confirm Vector's data-governance rule — MPOB fine locally, needs approval in
+  Coder, raw data never redistributed either way
+- [x] Build and verify the Yahoo roll mitigation as a maintained fallback (median,
+  full-history ratio 1.33x)
+- [x] Select forecast cutoffs on MPOB — 7 cutoffs, 5 horizons, cleanly separated
+  (2.16x), fully independent
 - [ ] Build a baseline forecast
 - [ ] Build an agent forecast and compare

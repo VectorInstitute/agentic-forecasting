@@ -276,7 +276,13 @@ def build_palm_oil_service(
     return svc
 
 
-# ── Daily futures target (primary) ───────────────────────────────────────────
+# ── Daily futures target (approved fallback) ─────────────────────────────────
+#
+# Superseded by MPOB below as the primary target once MPOB became available for
+# local use.  Kept as: (a) the Vector-approved series for anyone working inside
+# Coder, where MPOB requires a data-office approval that has not been obtained;
+# (b) the source used to first prove FRED's monthly/lagged design was
+# unworkable, before MPOB was in the picture at all.
 #
 # The FRED service above is a monthly, publication-lagged view: a price is
 # stamped with the start of its reference month but not released for ~2 months,
@@ -467,7 +473,7 @@ def build_palm_oil_futures_service(
     return svc
 
 
-# ── MPOB physical price (the recommended target) ─────────────────────────────
+# ── MPOB physical price (the active target) ──────────────────────────────────
 #
 # The Malaysian Palm Oil Board publishes the official daily CPO price: a
 # weighted average of actual reported transactions, "Local Delivered".  It is
@@ -476,15 +482,25 @@ def build_palm_oil_futures_service(
 #
 #                    weekly points   span         roll artifact   publication lag
 #   FRED PPOILUSDM   -- (monthly)    1992-2026    none            10 days-2 months
-#   Yahoo CPO=F      814             2010-2026    5.2x            same day
-#   MPOB             971             2008-2026    1.6x            ~1 day
+#   Yahoo CPO=F      814             2010-2026    5.2x (1.3x median-mitigated)  same day
+#   MPOB             971             2008-2026    ~1.0x           ~1 day
 #
 # Being a physical transaction price, MPOB has no contracts and therefore no
-# monthly roll discontinuities -- the 1.6x first-of-month ratio is ordinary
-# month-start seasonality, against 5.2x for the futures series where 19 of the
-# 20 largest daily moves fall on a roll date.  MPOB is published the next
-# working day, so ``timestamp`` is effectively the release date and no
-# ``released_at`` correction is required.
+# monthly roll discontinuities -- against Yahoo's futures series, where 19 of
+# the 20 largest daily moves fall on a roll date even after mitigation.  MPOB
+# is published the next working day, so ``timestamp`` is effectively the
+# release date and no ``released_at`` correction is required.
+#
+# DATA GOVERNANCE -- read before touching this section.  Per Vector (Ethan
+# Jackson, Slack, 2026-08-10): using MPOB *inside the Coder environment*
+# requires a data-office approval that has not been obtained.  Using it in
+# your *own local* environment needs no approval, on the condition that the
+# raw data is never redistributed -- explicitly called out: never push it to
+# GitHub.  The team's read of "redistribute": the raw MPOB series (this
+# module's parquet cache, gitignored, never commit it) must stay local-only;
+# derived work built from it -- notebooks, charts, cutoff dates, aggregate
+# statistics -- is fine to commit and push.  If you're working inside Coder
+# without the approval, use ``build_palm_oil_futures_service`` instead.
 #
 # One difference to carry into any writeup: MPOB quotes **MYR per tonne**,
 # where the other two quote USD.  Forecasting in MYR keeps exchange-rate
@@ -494,6 +510,7 @@ def build_palm_oil_futures_service(
 # which is what establishes these are the same commodity.
 #
 # Populate the cache first:  uv run python scripts/fetch_mpob.py
+# (Coder users without approval: do not run this inside a Coder workspace.)
 
 MPOB_DAILY_SERIES_ID = "palm_oil_mpob_daily"
 """Daily MPOB crude palm oil price, MYR per tonne."""

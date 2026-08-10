@@ -98,30 +98,32 @@ class Cutoff:
 HORIZONS_WEEKS: list[int] = [1, 2, 4, 8, 13]
 
 #: The seven forecast origins, selected in ``02_cutoff_selection.ipynb`` on the
-#: median-mitigated CPO=F weekly series (:data:`PALM_OIL_WEEKLY_SERIES_ID`).
+#: MPOB weekly series (:data:`MPOB_WEEKLY_SERIES_ID`) -- the physical price,
+#: not a futures contract, so it carries no roll artifact to correct for.
 #:
 #: All are Fridays on the weekly grid, all resolve at every horizon in
-#: :data:`HORIZONS_WEEKS`, and all sit at least 10 weeks apart -- verified by
-#: exhaustive search over the top volatility candidates, not just a greedy
-#: pick -- so no two forecast windows overlap and the seven scores are
-#: independent. Event cutoffs are placed two weeks *before* a large move, so
-#: the shock lands inside the window rather than in the visible history.
+#: :data:`HORIZONS_WEEKS`, and all sit at least 11 weeks apart -- verified by
+#: exhaustive search over the top-30 volatility candidates requiring events
+#: from at least 2 distinct years, not just a greedy pick -- so no two
+#: forecast windows overlap and the seven scores are independent. Event
+#: cutoffs are placed two weeks *before* a large move, so the shock lands
+#: inside the window rather than in the visible history.
 #:
-#: Full independence was prioritised over separation strength: event mean max
-#: move 6.30% vs quiet mean 3.97% (1.6x), weaker than the analogous MPOB-based
-#: split (2.2x) because CPO=F is structurally smoother in ordinary weeks (see
-#: the ``build_palm_oil_futures_service`` docstring: non-roll-week |move| is
-#: 1.13% on CPO=F vs 2.06% on MPOB over the same period). One label pair is
-#: not strictly ordered -- the quiet 2025-01-03 (5.73%) moves more than the
-#: event 2025-06-06 (3.23%) -- stated here rather than hidden by re-labelling.
+#: Cleanly ordered and well separated: event mean max move 7.26% vs quiet
+#: mean 3.36% (2.16x); the weakest event (7.07%) still exceeds the strongest
+#: quiet (3.89%). This is the result the earlier CPO=F-based selection
+#: predicted MPOB would give (see git history) -- confirmed once MPOB became
+#: available for local use. 2026 has no comparably large news-covered move in
+#: this pool (largest candidate 2.99%), so all four events fall in 2024-2025;
+#: stated as a limitation, not concealed by forcing a weak 2026 pick in.
 DEFAULT_CUTOFFS: list[Cutoff] = [
-    Cutoff("2024-04-19", "event", "-6.3% two weeks out; -2.9% over 13 weeks"),
-    Cutoff("2024-06-28", "quiet", "max weekly move ahead 4.3%; +10.6% over 13 weeks"),
-    Cutoff("2024-10-25", "event", "+10.0% two weeks out; -5.0% over 13 weeks"),
-    Cutoff("2025-01-03", "quiet", "max weekly move ahead 5.7% -- exceeds one event cutoff, see note above"),
-    Cutoff("2025-03-28", "event", "-5.8% two weeks out; -5.7% over 13 weeks"),
-    Cutoff("2025-06-06", "event", "+3.2% two weeks out; +14.2% over 13 weeks -- weakest event"),
-    Cutoff("2026-04-24", "quiet", "calmest window: max 1.9%, -2.8% over 13 weeks"),
+    Cutoff("2024-02-02", "event", "+7.7% two weeks out; +2.1% over 13 weeks"),
+    Cutoff("2024-04-19", "quiet", "max weekly move ahead 3.9%; -2.3% over 13 weeks"),
+    Cutoff("2024-07-26", "event", "+7.1% two weeks out; +16.3% over 13 weeks"),
+    Cutoff("2024-10-18", "event", "+7.1% two weeks out; +4.7% over 13 weeks"),
+    Cutoff("2025-01-17", "event", "+7.1% two weeks out; -8.7% over 13 weeks -- weakest event"),
+    Cutoff("2025-06-20", "quiet", "max weekly move ahead 3.8% -- strongest quiet, still < weakest event"),
+    Cutoff("2026-04-17", "quiet", "calmest window: max 2.4%, +1.4% over 13 weeks"),
 ]
 
 #: Periods when FRED published no new palm oil prices, from the release-date
@@ -250,18 +252,69 @@ def plot_price_history(
     if show_blackouts:
         _add_blackouts(fig, theme)
 
-    for cut in cutoffs or []:
-        fig.add_vline(
-            x=cut.timestamp,
-            line={"color": theme["muted"], "width": 1, "dash": "dot"},
-            annotation_text=f"{cut.date[:7]} ({cut.kind})",
-            annotation_position="top",
-            annotation_font_size=9,
-        )
+    _add_cutoff_lines(fig, theme, cutoffs or [], df["timestamp"])
 
     _style(fig, theme, title=title, ylabel=units, height=520)
     fig.update_xaxes(rangeslider={"visible": True, "thickness": 0.06})
     return fig
+
+
+def _add_cutoff_lines(fig: go.Figure, theme: dict[str, str], cutoffs: list[Cutoff], plotted_dates: pd.Series) -> None:
+    """Draw a dashed vline per cutoff, labelling individually only if they won't collide.
+
+    Seven cutoffs spanning ~2 years, drawn on an 18-year axis, sit only a few
+    pixels apart -- individual date labels there collide into unreadable text
+    regardless of vertical offset, since the problem is horizontal spacing, not
+    label placement. Below a legibility threshold, draw unlabelled lines plus one
+    collective note instead of forcing labels that cannot be read.
+
+    Parameters
+    ----------
+    fig : go.Figure
+        Figure to annotate in place.
+    theme : dict
+        Colour dict from :func:`_theme`.
+    cutoffs : list of Cutoff
+        Cutoffs to mark.
+    plotted_dates : pd.Series
+        The x-axis dates actually shown, used to judge the plotted span.
+    """
+    if not cutoffs:
+        return
+
+    line_style = {"color": theme["muted"], "width": 1, "dash": "dot"}
+    cutoff_span_days = (max(c.timestamp for c in cutoffs) - min(c.timestamp for c in cutoffs)).days
+    plotted_span_days = max((plotted_dates.max() - plotted_dates.min()).days, 1)
+    legible = cutoffs[0] is cutoffs[-1] or cutoff_span_days / plotted_span_days > 0.15
+
+    for cut in cutoffs:
+        if legible:
+            fig.add_vline(
+                x=cut.date,
+                line=line_style,
+                annotation_text=f"{cut.date[:7]} ({cut.kind})",
+                annotation_position="top",
+                annotation_font_size=9,
+            )
+        else:
+            # No annotation_position/text at all -- add_vline still creates an
+            # annotation object even with annotation_text=None, and Plotly's
+            # collision-avoidance across many empty annotations plus the one
+            # real one below garbles the render. Omitting the kwargs entirely
+            # creates no annotation object for these lines.
+            fig.add_vline(x=cut.date, line=line_style)
+
+    if not legible:
+        fig.add_annotation(
+            x=max(c.date for c in cutoffs),
+            y=1,
+            yref="paper",
+            yanchor="bottom",
+            showarrow=False,
+            text=f"{len(cutoffs)} cutoffs, {min(c.date for c in cutoffs)[:4]}–{max(c.date for c in cutoffs)[:4]}"
+            " — zoom in or see the cutoff-windows chart for individual dates",
+            font={"size": 10, "color": theme["muted"]},
+        )
 
 
 def plot_news_coverage(
@@ -312,7 +365,7 @@ def plot_news_coverage(
     )
     for cut in cutoffs if cutoffs is not None else DEFAULT_CUTOFFS:
         fig.add_vline(
-            x=cut.timestamp,
+            x=cut.date,
             line={"color": theme["muted"], "width": 1, "dash": "dot"},
             annotation_text=cut.kind,
             annotation_position="top",
@@ -360,8 +413,8 @@ def plot_cutoff_windows(
     for cut in picks:
         end = cut.timestamp + pd.Timedelta(weeks=horizons)
         fig.add_vrect(
-            x0=cut.timestamp,
-            x1=end,
+            x0=cut.date,
+            x1=end.strftime("%Y-%m-%d"),
             fillcolor=theme.get(cut.kind, theme["quiet"]),
             line_width=0,
             layer="below",

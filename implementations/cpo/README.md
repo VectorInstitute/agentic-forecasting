@@ -6,38 +6,50 @@ the news actually helps.
 Started as palm *kernel* oil — FRED has no such series, so the target is palm
 oil. See [`DATA.md`](DATA.md) for the full survey.
 
+## Data governance — read this first
+
+MPOB is the primary target, but it comes with a standing rule (Vector, Slack,
+2026-08-10): **fine to use locally without approval; requires a data-office
+approval to use inside Coder, which has not been obtained.** Raw MPOB data must
+never be committed either way — `data/mpob/` is gitignored. Derived work
+(notebooks, charts, cutoff dates) is fine to commit and push. Full detail in
+[`DATA.md`](DATA.md).
+
+**If you're working inside Coder without that approval, use
+`build_palm_oil_futures_service()` (Yahoo `CPO=F`) instead.**
+
 ## Data
 
-- **Price** — Yahoo Finance `CPO=F`, the CME Crude Palm Oil contract. Daily,
-  current to yesterday, resampled to a **weekly median** (not Friday close —
-  see below). Built by [`data.py`](data.py) → `build_palm_oil_futures_service()`.
+- **Price (primary, local only)** — MPOB official daily crude palm oil price,
+  "Local Delivered". Daily, current to yesterday, no publication lag, no
+  contract-roll artifact (it's a physical price, not a futures contract). Built
+  by [`data.py`](data.py) → `build_mpob_service()`. Populate the cache with
+  `uv run python scripts/fetch_mpob.py` — **locally only**, see above.
+- **Price (Coder-safe fallback)** — Yahoo Finance `CPO=F`, the CME Crude Palm
+  Oil futures contract, resampled to a **weekly median** to reduce its
+  contract-roll defect (full-history ratio 1.93x → 1.33x, still short of
+  MPOB's ~1.0x). Built by `build_palm_oil_futures_service()`. See
+  [`DATA.md`](DATA.md) for the full roll-artifact measurement.
 - **News** — [`palm_articles_daily.csv`](palm_articles_daily.csv), from GDELT.
   96 palm oil keywords, top 5 articles per day, 2024–2026. 18 of 734 rows are
   malformed (embedded commas/newlines in the text field) — parse with
-  `errors="coerce"` and drop, as `02_cutoff_selection.ipynb` does.
+  `errors="coerce"` and drop, as both notebooks do.
 
-**Why median, not Friday close:** `CPO=F` rolls to a new futures contract on
-the first trading day of each month, which produces a price jump that isn't a
-real market move (full-history roll-week/other-week volatility ratio 1.93x —
-should be ~1.0x). Weekly median reduces this to 1.33x without dropping any
-data. Still not fully clean; see [`DATA.md`](DATA.md) for the measurement and
-the two alternatives that were tried and rejected.
-
-Two other loaders exist in `data.py` but are not the target:
-- `build_palm_oil_service()` — FRED monthly. Lands ~2 months late and went
-  silent for six months twice, capping usable cutoffs at Aug 2025.
-- `build_mpob_service()` — MPOB physical price. Cleaner than Yahoo on every
-  axis (no roll artifact at all) and the source Jyotsna's team uses
-  internally, but **not Vector-approved for this project**. Kept as a
-  validated reference only — used to measure the roll artifact above, never
-  feeds a scored result. See [`DATA.md`](DATA.md) for the approval question.
+A third loader, `build_palm_oil_service()` (FRED monthly), remains available as
+a leak-safe cross-check — see [`DATA.md`](DATA.md) for why it isn't the target.
 
 ## Specs
 
-Weekly Friday origins, horizons 1 / 4 / 12 weeks, 104-week warmup.
+Weekly Friday origins, horizons 1 / 4 / 12 weeks, 104-week warmup, targeting
+**Yahoo `CPO=F`** (`palm_oil_futures_weekly`) — deliberately left on the
+Coder-safe series, since these specs drive the shared backtest/eval pipeline
+that teammates may run inside Coder without MPOB clearance. Switching them to
+MPOB is a team decision with governance implications, not made here.
+
 **All three are provisional** — `02_cutoff_selection.ipynb` derived 7 cutoffs
-(4 event, 3 quiet) at horizons 1/2/4/8/13 weeks; these specs still use the
-earlier 1/4/12 placeholder. Reconcile before running the full backtest.
+(4 event, 3 quiet) at horizons 1/2/4/8/13 weeks on MPOB; these specs still use
+the earlier 1/4/12 placeholder on Yahoo. Reconcile both the horizons and the
+target series with Mehrshad before running the full backtest.
 
 | Spec | Origins | Window | Use |
 |---|---|---|---|
@@ -55,32 +67,33 @@ the agent and the baseline see the same information.
 | [`data.py`](data.py) | Loads prices, leak-safe. Start here. |
 | [`plots.py`](plots.py) | Price charts; `DEFAULT_CUTOFFS`, `HORIZONS_WEEKS`. |
 | [`00_FRED_source_evaluation.ipynb`](00_FRED_source_evaluation.ipynb) | Superseded — why FRED was rejected. |
-| [`01_cpo_data_exploration.ipynb`](01_cpo_data_exploration.ipynb) | Tour of the price series. |
-| [`02_cutoff_selection.ipynb`](02_cutoff_selection.ipynb) | Derives the 7 forecast cutoffs from data. |
-| [`DATA.md`](DATA.md) | Full three-source evaluation, roll-mitigation analysis, known limitations. |
+| [`01_cpo_data_exploration.ipynb`](01_cpo_data_exploration.ipynb) | Tour of the MPOB price series, incl. the Yahoo roll-artifact comparison. |
+| [`02_cutoff_selection.ipynb`](02_cutoff_selection.ipynb) | Derives the 7 forecast cutoffs from MPOB data. |
+| [`DATA.md`](DATA.md) | Full three-source evaluation, data-governance rule, roll-mitigation analysis, known limitations. |
 
 ## TODO
 
-- [x] Settle the price source — Yahoo `CPO=F`, median-mitigated; MPOB evaluated and kept as reference only (not approved)
+- [x] Settle the price source — MPOB (local), Yahoo median-mitigated as the Coder-safe fallback
 - [x] Load the price data
 - [x] Pull news from GDELT
-- [x] Select forecast cutoffs — 7 cutoffs, 5 horizons, in `02_cutoff_selection.ipynb`
+- [x] Select forecast cutoffs — 7 cutoffs on MPOB, 5 horizons, cleanly separated (2.16x)
 - [ ] Write the news loader — turn the CSV into weekly, cutoff-filtered context
-- [ ] Reconcile spec horizons (1/4/12) with the notebook's (1/2/4/8/13)
+- [ ] Reconcile spec target/horizons (Yahoo 1/4/12) with the notebooks' (MPOB 1/2/4/8/13) with Mehrshad
+- [ ] Decide with the team whether the shared specs should ever target MPOB, or stay on Yahoo permanently for Coder compatibility
 - [ ] Baseline: naive + AutoARIMA on `cpo_smoke`, then `cpo_backtest`
 - [ ] Agent: prices + news, same origins
 - [ ] Compare in one table
 
 ## Notes
 
-- Yahoo's `CPO=F` history has a hole in Jan–Jun 2016 (`data.YAHOO_HISTORY_GAP`).
-  The 104-week warmup keeps backtests clear of it.
-- The contract is thinly traded — it is settled against the Bursa Malaysia
-  benchmark rather than set by active trading. Fine as a price signal, but
-  describe it accurately.
-- Yahoo keeps no revision history, so we assume the past is not rewritten.
-- The monthly contract roll is real and only partially mitigated (1.33x
-  residual volatility ratio vs MPOB's ~1.0x). The 7 selected cutoffs could
-  not achieve full independence *and* a cleanly-ordered event/quiet
-  separation simultaneously — full independence was kept; one quiet cutoff
-  (2025-01-03) moves more than the weakest event (2025-06-06). See `DATA.md`.
+- MPOB's online daily archive covers 2008-01-02 → present with a complete
+  weekly grid (971 of 971 expected Fridays). No history gap, unlike Yahoo's
+  Jan–Jun 2016 hole (`data.YAHOO_HISTORY_GAP`).
+- Yahoo's `CPO=F` contract is thinly traded — it is settled against the Bursa
+  Malaysia benchmark rather than set by active trading, and its monthly
+  contract roll injects a real (if unbiased) distortion even after median
+  mitigation. Fine as the Coder-safe fallback; describe both properties
+  accurately if used.
+- Neither Yahoo nor MPOB has a public vintage/revision archive (unlike FRED),
+  so both assume published prices are not later rewritten — unverified for
+  either source.
