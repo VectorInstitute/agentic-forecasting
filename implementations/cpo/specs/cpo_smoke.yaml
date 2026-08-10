@@ -1,0 +1,31 @@
+# Palm Oil Smoke Spec — 2 origins, for the dry run
+#
+# PROVISIONAL — replace with Khashayar's cutoffs when they land.
+#
+# The cheapest possible end-to-end exercise: two weekly origins, so the whole
+# pipeline (data -> predictor -> backtest -> score) can be run without burning
+# time or tokens. Use this first; only move to cpo_backtest.yaml once it passes.
+#
+# Origin count : 2
+# Warmup       : 104 weeks (~2 years) of weekly closes
+
+spec_id: cpo_smoke
+
+description: >-
+  Two-origin smoke backtest for the palm oil pipeline dry run. Same task,
+  horizons and warmup as cpo_backtest, but only 2 origins so the notebook can
+  be exercised end to end cheaply.
+
+tasks:
+  - task_id: palm_oil_price_forecast
+    target_series_id: palm_oil_futures_weekly
+    horizons: [1, 4, 12]
+    frequency: W-FRI
+    description: >-
+      CME Crude Palm Oil futures settlement price (Yahoo Finance CPO=F), Friday
+      close, projected 1, 4 and 12 weeks ahead.
+
+start: "2025-06-06"
+end: "2025-06-13"
+stride: 1
+warmup: 104

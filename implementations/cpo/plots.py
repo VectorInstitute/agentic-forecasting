@@ -16,8 +16,8 @@ Usage
 -----
 ::
 
-    from pko.data import build_palm_oil_service, PALM_OIL_SERIES_ID
-    from pko.plots import plot_price_history, DEFAULT_CUTOFFS
+    from cpo.data import build_palm_oil_service, PALM_OIL_SERIES_ID
+    from cpo.plots import plot_price_history, DEFAULT_CUTOFFS
 
     svc = build_palm_oil_service()
     prices = svc.get_series(PALM_OIL_SERIES_ID, as_of=datetime.now())

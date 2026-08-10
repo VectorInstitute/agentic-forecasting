@@ -1,4 +1,4 @@
-# PKO Data Survey — What FRED Actually Has
+# Palm Oil Data Survey — What FRED Actually Has
 
 Survey of FRED's palm and edible-oil coverage, run 2026-08-06 with
 `scripts/explore_fred_oils.py`. Reproduce with:
@@ -68,7 +68,7 @@ later. June 2026 appeared on **2026-07-13**.
 
 The library's `FREDAdapter` assumes `released_at = timestamp`, which would tell
 the harness the June price was knowable on June 1 — **42 days early, at every
-origin.** `implementations/pko/data.py` fixes this by fetching each
+origin.** `implementations/cpo/data.py` fixes this by fetching each
 observation's true first-publication date from FRED's real-time archive.
 
 ### Publication lag, measured
@@ -120,7 +120,7 @@ FRED has no palm kernel oil. The options:
 
 | Option | Consequence |
 |---|---|
-| **Forecast palm oil** (`PPOILUSDM`) | Stay on FRED, Vector-verifiable. Rename the use case from PKO. |
+| **Forecast palm oil** (`PPOILUSDM`) | Stay on FRED, Vector-verifiable. Rename the use case from PKO — done, the folder is now `po`. |
 | **Keep palm kernel oil** | Needs a non-FRED source (World Bank Pink Sheet has it, monthly). Vector would have to verify a new source. |
 
 The baseline work is nearly identical either way, so it is not blocking — but
@@ -131,7 +131,7 @@ the target should be settled before notebooks and specs are written against it.
 ## Status
 
 - [x] Find the right FRED series — done, with the caveat above
-- [x] Load the price data — `implementations/pko/data.py`, leak-safe
+- [x] Load the price data — `implementations/cpo/data.py`, leak-safe
 - [ ] Pull news from GDELT
 - [ ] Build a simple baseline forecast
 - [ ] Build an agent forecast and compare

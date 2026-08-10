@@ -44,7 +44,7 @@ Usage
 -----
 ::
 
-    from pko.data import build_palm_oil_service, PALM_OIL_SERIES_ID
+    from cpo.data import build_palm_oil_service, PALM_OIL_SERIES_ID
 
     svc = build_palm_oil_service()
     ctx = svc.context(as_of=datetime(2026, 7, 1))

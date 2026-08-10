@@ -1,0 +1,39 @@
+# Palm Oil Backtest Spec — 2025 Weekly Rolling Backtest
+#
+# PROVISIONAL — replace with Khashayar's cutoffs when they land.
+#
+# Why 2025: it is the largest stretch that sits entirely inside GDELT news
+# coverage (2024 onward), so the news-reading agent and the price-only baseline
+# see the same information window and the comparison stays fair.
+#
+# Why weekly: Yahoo CPO=F is daily, so a weekly grid gives ~52 origins here
+# against the ~12 a monthly grid would allow. More origins is the whole reason
+# we moved off the monthly FRED series.
+#
+# Target is the CME Crude Palm Oil settlement price (Yahoo Finance CPO=F),
+# resampled to Friday close by data.to_weekly().
+#
+# Origin count : 52 (every Friday in 2025)
+# Warmup       : 104 weeks (~2 years) — starts in 2023, well clear of the
+#                Jan-Jun 2016 hole in Yahoo's history (see data.YAHOO_HISTORY_GAP)
+
+spec_id: cpo_backtest
+
+description: >-
+  Weekly rolling backtest across 2025 for the palm oil price. Evaluates
+  trajectory forecasts at 1, 4 and 12 weeks with CRPS and MAE, and is used to
+  pick the contender models taken forward to the 2026 eval window.
+
+tasks:
+  - task_id: palm_oil_price_forecast
+    target_series_id: palm_oil_futures_weekly
+    horizons: [1, 4, 12]
+    frequency: W-FRI
+    description: >-
+      CME Crude Palm Oil futures settlement price (Yahoo Finance CPO=F), Friday
+      close, projected 1, 4 and 12 weeks ahead.
+
+start: "2025-01-03"
+end: "2025-12-26"
+stride: 1
+warmup: 104

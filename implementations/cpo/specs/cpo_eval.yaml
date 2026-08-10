@@ -1,0 +1,37 @@
+# Palm Oil Eval Spec — 2026 Held-Out Window
+#
+# PROVISIONAL — replace with Khashayar's cutoffs when they land.
+#
+# The protected, out-of-sample window. Only the models selected on
+# cpo_backtest.yaml should be run here, and as few times as possible — every
+# extra run leaks information from the eval set into our choices.
+#
+# End date: the longest horizon is 12 weeks, so the last origin must sit at
+# least 12 weeks behind the most recent cached CPO=F price (Aug 5, 2026 at the
+# time of writing) for every origin to fully resolve. 2026-05-08 + 12 weeks
+# lands on 2026-07-31, inside the data. Push `end` later only after refreshing
+# the yfinance cache and re-checking this.
+#
+# Origin count : 19 (every Friday, Jan 2 -> May 8, 2026)
+# Warmup       : 104 weeks (~2 years) of weekly closes
+
+spec_id: cpo_eval
+
+description: >-
+  Held-out 2026 evaluation window for the palm oil price. Scores the selected
+  contender models on 19 weekly origins that were never used for model choice,
+  to estimate real out-of-sample performance.
+
+tasks:
+  - task_id: palm_oil_price_forecast
+    target_series_id: palm_oil_futures_weekly
+    horizons: [1, 4, 12]
+    frequency: W-FRI
+    description: >-
+      CME Crude Palm Oil futures settlement price (Yahoo Finance CPO=F), Friday
+      close, projected 1, 4 and 12 weeks ahead.
+
+start: "2026-01-02"
+end: "2026-05-08"
+stride: 1
+warmup: 104
