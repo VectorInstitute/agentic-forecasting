@@ -323,8 +323,8 @@ _YAHOO_HISTORY_START = "2004-01-01"
 YAHOO_HISTORY_GAP = ("2016-01", "2016-06")
 
 
-def to_weekly(daily: pd.DataFrame) -> pd.DataFrame:
-    """Resample a daily price frame to Friday-close weekly observations.
+def to_weekly(daily: pd.DataFrame, *, how: str = "last") -> pd.DataFrame:
+    """Resample a daily price frame to weekly observations, labelled on Friday.
 
     Resampling with ``W-FRI`` labels every bin on its Friday even when that
     Friday was a holiday, so the weekly grid has no missing labels.  The
@@ -335,14 +335,29 @@ def to_weekly(daily: pd.DataFrame) -> pd.DataFrame:
     ----------
     daily : pd.DataFrame
         Frame with ``timestamp`` and ``value`` columns.
+    how : {"last", "median"}
+        ``"last"`` (default) takes the Friday close -- correct for a source
+        with no within-week artifact, e.g. MPOB or FRED. ``"median"`` takes
+        the median of the week's available trading days instead; see
+        :func:`build_palm_oil_futures_service` for why the futures series
+        uses this.
 
     Returns
     -------
     pd.DataFrame
         Columns ``timestamp``, ``value``, ``released_at``.  ``released_at``
         equals ``timestamp`` -- an exchange settlement is public the same day.
+
+    Raises
+    ------
+    ValueError
+        If ``how`` is not one of the supported values.
     """
-    series = daily.set_index("timestamp")["value"].resample("W-FRI").last().dropna()
+    if how not in ("last", "median"):
+        raise ValueError(f"how must be 'last' or 'median', got {how!r}")
+
+    resampled = daily.set_index("timestamp")["value"].resample("W-FRI")
+    series = (resampled.last() if how == "last" else resampled.median()).dropna()
     return pd.DataFrame(
         {"timestamp": series.index, "value": series.to_numpy(), "released_at": series.index}
     ).reset_index(drop=True)
@@ -355,10 +370,48 @@ def build_palm_oil_futures_service(
 ) -> DataService:
     """Return a :class:`DataService` with daily *and* weekly palm oil prices.
 
-    Registers :data:`PALM_OIL_DAILY_SERIES_ID` (business-daily) and
-    :data:`PALM_OIL_WEEKLY_SERIES_ID` (Friday close).  Both carry
-    ``released_at == timestamp``, which is correct for an exchange settlement
-    price and means the cutoff enforcer needs no correction.
+    Registers :data:`PALM_OIL_DAILY_SERIES_ID` (business-daily, Friday-close
+    equivalent) and :data:`PALM_OIL_WEEKLY_SERIES_ID` (weekly **median** --
+    see below for why).  Both carry ``released_at == timestamp``, which is
+    correct for an exchange settlement price and means the cutoff enforcer
+    needs no correction.
+
+    Weekly aggregation: median, not Friday close
+    ---------------------------------------------
+    Yahoo's continuous ``CPO=F`` series rolls to the next futures contract on
+    the first trading day of each month, and consecutive palm-oil contracts
+    are not priced identically. That produces a level jump with no underlying
+    market move: measured against the MPOB physical price over 2024-2026, the
+    roll-day gap has mean -0.09%, median -0.01%, std 3.47% -- unbiased noise,
+    not a directional bias, but large and sometimes severe (5 of 23 roll days
+    exceeded 5%).
+
+    Two mitigations were tried and rejected before landing on the median:
+
+    - **Dropping the first 1-4 trading days of the month** gets the weekly
+      roll-week/other-week volatility ratio down to ~1.1x (matching MPOB's
+      ~1.0x) but does so by starving some weeks of data -- 91 of 501 weeks
+      (2017-2026) end up built from only 1-2 surviving days, and pushing the
+      drop-day threshold higher makes the ratio *worse*, since more
+      roll-contaminated weeks then fall back to the uncleaned average. The
+      first 1-4 trading days also span two different calendar weeks in 52 of
+      116 months, so a single roll can hollow out two consecutive weeks.
+    - **Mean of all 5 days** dilutes the roll day by 1/5 without ever
+      discarding data: full 2010-2026 history, ratio 1.93x (LAST) -> 1.43x
+      (MEAN).
+
+    **Median of all available days in the week** was chosen over both:
+    every week uses its full sample (no threshold, no calendar-boundary
+    logic, no thin weeks), and it further discounts the one extreme day
+    without excluding it outright -- full-history ratio 1.33x, against
+    MPOB's own 0.98-1.0x benchmark. It does not reach parity; state the
+    residual contamination rather than treat it as solved. Median also
+    changes what "this week's price" means (a within-week statistic, not
+    "the price as of Friday") -- verified to track Friday-close within a
+    mean 0.03% gap in ordinary weeks, and to preserve rather than dampen
+    genuine multi-day moves (the March 2022 surge reads *larger* under
+    median, 16.4% vs 12.1%, because the roll-day price is excluded from
+    the calculation rather than averaged in).
 
     Parameters
     ----------
@@ -397,10 +450,14 @@ def build_palm_oil_futures_service(
     )
     svc.register(
         PALM_OIL_WEEKLY_SERIES_ID,
-        StaticFrameAdapter(to_weekly(daily)),
+        StaticFrameAdapter(to_weekly(daily, how="median")),
         SeriesMetadata(
             series_id=PALM_OIL_WEEKLY_SERIES_ID,
-            description="CME Crude Palm Oil settlement price, Friday close (Yahoo Finance CPO=F, resampled)",
+            description=(
+                "CME Crude Palm Oil settlement price, weekly median (Yahoo Finance CPO=F, "
+                "resampled with how='median' to reduce monthly contract-roll contamination -- "
+                "see build_palm_oil_futures_service docstring)"
+            ),
             source="yfinance, derived",
             units="USD per metric ton",
             frequency="W-FRI",

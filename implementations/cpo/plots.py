@@ -97,21 +97,31 @@ class Cutoff:
 #: Forecast horizons in weeks: one week to one quarter ahead.
 HORIZONS_WEEKS: list[int] = [1, 2, 4, 8, 13]
 
-#: The seven forecast origins, selected in ``02_cutoff_selection.ipynb``.
+#: The seven forecast origins, selected in ``02_cutoff_selection.ipynb`` on the
+#: median-mitigated CPO=F weekly series (:data:`PALM_OIL_WEEKLY_SERIES_ID`).
 #:
-#: All are Fridays on the MPOB weekly grid, all resolve at every horizon in
-#: :data:`HORIZONS_WEEKS`, and all sit at least 10 weeks apart so their forecast
-#: windows do not overlap and their scores stay independent.  Event cutoffs are
-#: placed two weeks *before* a large move, so the shock lands inside the window
-#: rather than in the visible history.
+#: All are Fridays on the weekly grid, all resolve at every horizon in
+#: :data:`HORIZONS_WEEKS`, and all sit at least 10 weeks apart -- verified by
+#: exhaustive search over the top volatility candidates, not just a greedy
+#: pick -- so no two forecast windows overlap and the seven scores are
+#: independent. Event cutoffs are placed two weeks *before* a large move, so
+#: the shock lands inside the window rather than in the visible history.
+#:
+#: Full independence was prioritised over separation strength: event mean max
+#: move 6.30% vs quiet mean 3.97% (1.6x), weaker than the analogous MPOB-based
+#: split (2.2x) because CPO=F is structurally smoother in ordinary weeks (see
+#: the ``build_palm_oil_futures_service`` docstring: non-roll-week |move| is
+#: 1.13% on CPO=F vs 2.06% on MPOB over the same period). One label pair is
+#: not strictly ordered -- the quiet 2025-01-03 (5.73%) moves more than the
+#: event 2025-06-06 (3.23%) -- stated here rather than hidden by re-labelling.
 DEFAULT_CUTOFFS: list[Cutoff] = [
-    Cutoff("2024-04-05", "event", "-7.7% two weeks out; -8.9% over 13 weeks"),
-    Cutoff("2024-10-11", "event", "+7.1% two weeks out; +7.3% over 13 weeks"),
-    Cutoff("2025-04-04", "event", "-7.1% two weeks out; -15.4% over 13 weeks"),
-    Cutoff("2026-02-27", "event", "+7.3% two weeks out; +13.3% over 13 weeks"),
-    Cutoff("2025-01-03", "quiet", "max weekly move ahead 3.7%; flat over 13 weeks"),
-    Cutoff("2025-06-27", "quiet", "max weekly move ahead 3.8%"),
-    Cutoff("2026-05-08", "quiet", "calmest window: max 2.4%, flat over 13 weeks"),
+    Cutoff("2024-04-19", "event", "-6.3% two weeks out; -2.9% over 13 weeks"),
+    Cutoff("2024-06-28", "quiet", "max weekly move ahead 4.3%; +10.6% over 13 weeks"),
+    Cutoff("2024-10-25", "event", "+10.0% two weeks out; -5.0% over 13 weeks"),
+    Cutoff("2025-01-03", "quiet", "max weekly move ahead 5.7% -- exceeds one event cutoff, see note above"),
+    Cutoff("2025-03-28", "event", "-5.8% two weeks out; -5.7% over 13 weeks"),
+    Cutoff("2025-06-06", "event", "+3.2% two weeks out; +14.2% over 13 weeks -- weakest event"),
+    Cutoff("2026-04-24", "quiet", "calmest window: max 1.9%, -2.8% over 13 weeks"),
 ]
 
 #: Periods when FRED published no new palm oil prices, from the release-date
