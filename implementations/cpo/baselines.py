@@ -58,9 +58,11 @@ From the command line -- runs the named predictors and prints every comparison::
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import cpo
 import numpy as np
 import pandas as pd
 import yaml
@@ -74,7 +76,12 @@ if TYPE_CHECKING:
     from aieng.forecasting.evaluation.predictor import Predictor
 
 
-DEFAULT_SPEC_PATH = Path(__file__).parent / "specs" / "cpo_cutoffs.yaml"
+#: Resolved from the installed package rather than ``__file__``: VS Code's
+#: "Run Current File in Interactive Window" and plain Jupyter cells execute the
+#: source without always defining ``__file__``, which would break the spec path.
+_PACKAGE_DIR = Path(cpo.__file__).parent
+
+DEFAULT_SPEC_PATH = _PACKAGE_DIR / "specs" / "cpo_cutoffs.yaml"
 """The seven-cutoff spec, kept in sync with :data:`cpo.plots.DEFAULT_CUTOFFS`."""
 
 DEFAULT_NUM_SAMPLES = 500
@@ -120,7 +127,7 @@ def mpob_service(cache_dir: Path | None = None) -> DataService:
     DataService
         Service with the daily and weekly MPOB series registered.
     """
-    resolved = cache_dir if cache_dir is not None else Path(__file__).parents[2] / "data" / "mpob"
+    resolved = cache_dir if cache_dir is not None else _PACKAGE_DIR.parents[1] / "data" / "mpob"
     return build_mpob_service(cache_dir=resolved)
 
 
@@ -506,8 +513,17 @@ def _run_cli(
     return frame
 
 
-def main() -> None:
-    """Command-line entry point: run baselines over the seven cutoffs."""
+def main(argv: list[str] | None = None) -> None:
+    """Run baselines over the seven cutoffs -- CLI entry point.
+
+    Parameters
+    ----------
+    argv : list[str] or None
+        Argument list to parse.  ``None`` reads ``sys.argv``.  Pass ``[]`` to
+        run with all defaults, which is what the interactive-window path below
+        does -- a Jupyter kernel puts its own flags (``-f kernel.json``) in
+        ``sys.argv`` and argparse would reject them.
+    """
     import argparse  # noqa: PLC0415
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -533,7 +549,7 @@ def main() -> None:
         default="2024-08-30",
         help="Which cutoff the forecast fan draws. Default 2024-08-30 (an event cutoff).",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.mc_noise:
         stats = mc_noise(
@@ -577,4 +593,8 @@ __all__ = [
 
 
 if __name__ == "__main__":
-    main()
+    # Under a Jupyter kernel -- VS Code's "Run Current File in Interactive
+    # Window", or a plain notebook -- sys.argv holds the kernel's own flags,
+    # which argparse would reject.  Run with defaults there instead, so the
+    # file executes either way.
+    main([] if "ipykernel" in sys.modules else None)
