@@ -389,6 +389,7 @@ def build_predictor(name: str, *, num_samples: int = DEFAULT_NUM_SAMPLES, lags: 
         LastValuePredictor,
     )
     from cpo.kalman_fixed import FixedKalmanPredictor  # noqa: PLC0415
+    from cpo.lgbm_differenced import DifferencedLightGBMPredictor  # noqa: PLC0415
 
     builders = {
         "naive": LastValuePredictor,
@@ -408,6 +409,9 @@ def build_predictor(name: str, *, num_samples: int = DEFAULT_NUM_SAMPLES, lags: 
             num_samples=num_samples,
             lgbm_kwargs={"num_threads": 1, "n_jobs": 1, "verbosity": -1},
         ),
+        # Same library as "lightgbm", trained on changes rather than levels --
+        # see cpo/lgbm_differenced.py for why that matters here.
+        "lgbm_diff": lambda: DifferencedLightGBMPredictor(lags=lags, num_samples=num_samples),
         "linreg": lambda: DartsLinearRegressionPredictor(
             lags=lags,
             lags_past_covariates=None,
@@ -426,6 +430,7 @@ PREDICTOR_NAMES: tuple[str, ...] = (
     "kalman",
     "kalman_fixed",
     "lightgbm",
+    "lgbm_diff",
     "linreg",
 )
 """Short names accepted by :func:`build_predictor` and the ``--predictors`` flag."""
