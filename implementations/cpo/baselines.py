@@ -390,6 +390,8 @@ def build_predictor(name: str, *, num_samples: int = DEFAULT_NUM_SAMPLES, lags: 
     )
     from cpo.kalman_fixed import FixedKalmanPredictor  # noqa: PLC0415
     from cpo.lgbm_differenced import DifferencedLightGBMPredictor  # noqa: PLC0415
+    from cpo.prophet_baseline import WeeklyProphetPredictor  # noqa: PLC0415
+    from cpo.seasonal_naive import SeasonalNaivePredictor  # noqa: PLC0415
 
     builders = {
         "naive": LastValuePredictor,
@@ -412,6 +414,10 @@ def build_predictor(name: str, *, num_samples: int = DEFAULT_NUM_SAMPLES, lags: 
         # Same library as "lightgbm", trained on changes rather than levels --
         # see cpo/lgbm_differenced.py for why that matters here.
         "lgbm_diff": lambda: DifferencedLightGBMPredictor(lags=lags, num_samples=num_samples),
+        # Trend + seasonality decomposition, and a pure seasonal anchor --
+        # the two entries that would disagree if an annual cycle existed.
+        "prophet": WeeklyProphetPredictor,
+        "seasonal_naive": SeasonalNaivePredictor,
         "linreg": lambda: DartsLinearRegressionPredictor(
             lags=lags,
             lags_past_covariates=None,
@@ -432,6 +438,8 @@ PREDICTOR_NAMES: tuple[str, ...] = (
     "lightgbm",
     "lgbm_diff",
     "linreg",
+    "prophet",
+    "seasonal_naive",
 )
 """Short names accepted by :func:`build_predictor` and the ``--predictors`` flag."""
 
