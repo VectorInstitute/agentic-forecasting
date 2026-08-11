@@ -8,14 +8,15 @@ oil. See [`DATA.md`](DATA.md) for the full survey.
 
 ## Data governance — read this first
 
-**Vector has approved MPOB for this project (2026-08-11), locally and inside
-Coder.** The earlier Coder restriction no longer applies.
+MPOB carries a standing rule (Vector, Slack, 2026-08-10): **fine to use locally
+with no approval; a data-office request is required to use it inside Coder.**
+We run locally, so no request is needed — but that only holds as long as it
+stays local. Moving this into Coder means going to the data office first.
 
-**One rule still stands: never commit the raw series.** That condition came with
-the data, not with the environment, so approval does not lift it. `data/mpob/`
-is gitignored — keep it that way. Derived work (notebooks, charts, cutoff dates,
-aggregate statistics) is fine to commit and push. Full detail in
-[`DATA.md`](DATA.md).
+**Never commit the raw series.** That condition is on the data, not the
+environment, so it applies regardless. `data/mpob/` is gitignored — keep it that
+way. Derived work (notebooks, charts, cutoff dates, aggregate statistics) is
+fine to commit and push. Full detail in [`DATA.md`](DATA.md).
 
 Every spec targets MPOB, so running the scored pipeline needs the cache —
 `uv run python scripts/fetch_mpob.py`, about two minutes.
@@ -62,9 +63,11 @@ Note that the cutoff spacing rule is `max(HORIZONS_WEEKS)` — change the horizo
 and the cutoffs must be re-derived, since a longer horizon makes windows that are
 currently disjoint overlap.
 
-**News coverage is the binding constraint.** Articles currently run to
-2025-11-28, so news-reading predictors can be scored on `cpo_backtest` but not
-on `cpo_eval`, and not on the `2026-04-17` cutoff. Baselines run everywhere.
+**News coverage is the binding constraint.** Articles run to 2025-11-28, which
+is why `2026-04-17` was swapped out of the cutoff set for `2025-11-28`. It also
+means news-reading predictors cannot be scored on `cpo_eval` (all-2026) at all —
+that window is baselines-only until article coverage extends. Baselines run
+everywhere.
 
 ## Files
 
@@ -87,9 +90,10 @@ on `cpo_eval`, and not on the `2026-04-17` cutoff. Baselines run everywhere.
   independent at 13-week spacing
 - [x] Reconcile spec target and horizons — all four specs now on MPOB at 1/2/4/8/13
 - [ ] Write the news loader — turn the CSV into weekly, cutoff-filtered context
-- [ ] Resolve the `2026-04-17` cutoff — swap for `2025-11-28` if Jyotsna's new
-  articles clear the 100-article floor for Oct 3 – Nov 28, else drop to 6 cutoffs
-- [x] MPOB approved by Vector for use, locally and in Coder (2026-08-11)
+- [x] Resolve the `2026-04-17` cutoff — swapped for `2025-11-28` (2026-08-11)
+- [ ] Confirm the swap clears the 100-article floor — the committed CSV shows
+  only **50** articles for Oct 3 – Nov 28, so this depends on Jyotsna's new pull
+- [x] Decided to run locally, so MPOB needs no data-office approval (2026-08-11)
 - [ ] Baseline: naive + AutoARIMA on `cpo_smoke`, then `cpo_backtest`
 - [ ] Agent: prices + news, same origins
 - [ ] Compare in one table

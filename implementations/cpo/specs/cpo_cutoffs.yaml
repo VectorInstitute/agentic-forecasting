@@ -41,7 +41,7 @@ task:
     per tonne, projected 1, 2, 4, 8 and 13 weeks ahead.
 
 start: "2024-02-02"
-end: "2026-04-17"
+end: "2025-11-28"
 stride: 1
 warmup: 104
 
@@ -53,4 +53,5 @@ origin_dates:
   - "2024-11-29"  # event -- +6.68% at week 1, weakest event
   - "2025-02-28"  # event -- -7.07% at week 7
   - "2025-06-20"  # quiet -- max move ahead 3.81%
-  - "2026-04-17"  # quiet -- max move ahead 2.39%, calmest window
+  - "2025-11-28"  # quiet -- max move ahead 3.34%; swapped in for 2026-04-17,
+                  # which had no news coverage. See CUTOFFS.md.

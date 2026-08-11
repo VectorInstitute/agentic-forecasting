@@ -1,7 +1,7 @@
 # Palm Oil Data — Source Evaluation and Decision
 
 We evaluated three sources for the palm oil price. **MPOB is the target** — a physical
-transaction price, cleanest on every measured axis, and approved by Vector for use. This
+transaction price, cleanest on every measured axis, and cleared for local use. This
 records the full evaluation so the choice can be audited rather than taken on trust.
 
 Reproduce any of it with:
@@ -23,21 +23,20 @@ using MPOB instead of Yahoo:
 > environment (locally, for example) then it's totally fine, as long as you don't
 > redistribute the data in any way (like pushing it to GitHub)
 
-**Update, 2026-08-11: Vector has approved MPOB for this project, including inside
-Coder.** The first clause above is therefore satisfied.
+**This project runs MPOB locally, so no data-office approval is required** (team
+decision, 2026-08-11). The Coder clause simply does not apply to us — it is not
+satisfied, it is avoided. If anyone later needs to run this inside Coder, the
+request to the data office becomes necessary again.
 
-> TODO: record the approver, date and channel here, so the approval is auditable
-> the same way the original restriction is.
-
-**The redistribution clause is unaffected.** It was never about Coder — it is a
-condition on MPOB's data itself, so it still holds: the raw series must not be
-redistributed, and must never be pushed to GitHub.
+**The redistribution clause always applies.** It is a condition on MPOB's data,
+not on the environment: the raw series must not be redistributed, and must never
+be pushed to GitHub.
 
 The rule this project follows:
 
 | | Coder | Local machine |
 |---|---|---|
-| Use MPOB | Approved (2026-08-11) | Fine, no approval needed |
+| Use MPOB | Would need a data-office request — we don't do this | Fine, no approval needed |
 | Push raw MPOB data | Never, either way | Never, either way |
 | Push derived work (notebooks, charts, cutoff dates, stats) | Fine | Fine |
 
@@ -46,8 +45,8 @@ else — this file, the notebooks (including their embedded Plotly charts, which
 contain real MPOB values in their JSON), `plots.DEFAULT_CUTOFFS` — is analysis derived
 from the data, not the data itself, and is fine to commit and push.
 
-Every spec targets MPOB, so anyone running the scored pipeline — locally or in
-Coder — needs the cache. Populate it with `uv run python scripts/fetch_mpob.py`.
+Every spec targets MPOB, so anyone running the scored pipeline needs the cache —
+locally. Populate it with `uv run python scripts/fetch_mpob.py`.
 Yahoo `CPO=F` is no longer a forecast target; `build_palm_oil_futures_service()`
 survives only for the roll-artifact comparison in `01_cpo_data_exploration.ipynb`.
 
@@ -98,9 +97,10 @@ curl -X POST -d "jenis=1Y&tahun=2015&Submit123=Submit" \
 | Publication lag | 10 days – 2 months | Same day | **Next day** |
 | Roll artifacts | None | 1.3x (median-mitigated) | **~1.0x** |
 | Latest cutoff usable | 2025-08 | 2026 | **2026** |
-| Needs approval | No | No | **Approved 2026-08-11** |
+| Needs approval | No | No | **No, running locally** |
 
-MPOB wins on every axis. The approval friction that once counted against it is gone.
+MPOB wins on every axis. The approval friction only ever applied to Coder, which
+this project does not use.
 
 ### Why not FRED
 
@@ -183,7 +183,7 @@ frozen in `cpo.plots.DEFAULT_CUTOFFS`:
 | 2024-11-29 | event | 5,000 | **+6.68%** at week 1 (weakest event) | −6.2% | 188 |
 | 2025-02-28 | event | 4,688 | −7.07% at week 7 | −17.8% | 194 |
 | 2025-06-20 | quiet | 4,076 | max 3.81% | +7.3% | 112 |
-| 2026-04-17 | quiet | 4,434 | max 2.39% | +1.4% | 135 |
+| 2025-11-28 | quiet | 4,090 | max 3.34% | −3.3% | see note |
 
 The move column is signed and dated because magnitude alone hides both direction and
 timing. `"quiet"` describes the window **ahead** of the cutoff, not the history behind
@@ -224,7 +224,7 @@ toward the middle.
 
 - **All four event cutoffs fall in 2024–2025; none in 2026.** The largest available
   move in 2026 is ~3%, too weak to compete for an event slot under the news-coverage
-  constraint. Quiet cutoffs do reach into 2026 (2026-04-17).
+  constraint. Since the 2026-04-17 swap, no cutoff reaches into 2026 at all.
 - **Seven origins × five horizons = 35 scored points.** Mean CRPS differences between
   close predictors will not be significant. Treat these as the narrative set and run a
   denser weekly backtest to decide which model is genuinely better.
@@ -241,17 +241,19 @@ toward the middle.
   move here is ~7.7%, against 30%+ during the export ban.
 - **MPOB has no vintage archive.** We assume published prices are not revised — this
   cannot be independently verified, unlike FRED's real-time archive.
-- **Data governance is a standing constraint, not a one-time decision.** Use of MPOB
-  is approved, but the raw series still must never leave a local machine. Re-check
-  the rule at the top of this file before assuming anything has loosened further.
+- **Data governance is a standing constraint, not a one-time decision.** Running
+  locally is what keeps MPOB approval-free, and the raw series must never leave a
+  local machine either way. Anyone moving this into Coder must go to the data
+  office first — re-read the rule at the top of this file before assuming otherwise.
 
 ---
 
 ## Status
 
 - [x] Evaluate FRED, Yahoo, and MPOB; document the tradeoffs
-- [x] Confirm Vector's data-governance rule — raw data never redistributed
-- [x] Obtain Vector approval for MPOB, locally and in Coder (2026-08-11)
+- [x] Confirm Vector's data-governance rule — MPOB fine locally, needs approval in
+  Coder, raw data never redistributed either way
+- [x] Decide to run locally, so no data-office request is needed (2026-08-11)
 - [x] Measure the Yahoo roll artifact and its median mitigation (full-history ratio
   1.93x -> 1.33x) — the evidence that disqualified it as a target
 - [x] Select forecast cutoffs on MPOB — 7 cutoffs, 5 horizons, cleanly separated

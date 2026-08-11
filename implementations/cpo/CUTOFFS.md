@@ -57,7 +57,18 @@ the strongest quiet (3.89%).
 | 2024-11-29 | event | 5,000 | **+6.68%** at week 1 ← weakest event | −6.2% | 188 |
 | 2025-02-28 | event | 4,688 | −7.07% at week 7 | −17.8% | 194 |
 | 2025-06-20 | quiet | 4,076 | max 3.81% | +7.3% | 112 |
-| 2026-04-17 | quiet | 4,434 | max 2.39% | +1.4% | 135 |
+| 2025-11-28 | quiet | 4,090 | max 3.34% | −3.3% | see note |
+
+> **Note on the last row.** `2025-11-28` replaced `2026-04-17` on 2026-08-11.
+> The news pipeline ends 2025-11-28, so the 2026 origin had no articles for an
+> agent to reason over. Price-wise the replacement is a valid quiet — 3.34% max
+> move ahead, still under the 3.89% strongest quiet — and it sits 23 weeks after
+> `2025-06-20`, so the 13-week independence rule still holds.
+>
+> **Outstanding:** the committed `palm_articles_daily.csv` shows only **50**
+> articles for Oct 3 – Nov 28, against a floor of 100. That is the old GDELT pull;
+> the swap assumes Jyotsna's newer article set clears the floor. Confirm before
+> treating this cutoff as final.
 
 ## Why this set holds up
 

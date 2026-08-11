@@ -139,7 +139,10 @@ DEFAULT_CUTOFFS: list[Cutoff] = [
     Cutoff("2024-11-29", "event", "+6.68% at week 1; -6.2% over 13 weeks -- weakest event"),
     Cutoff("2025-02-28", "event", "-7.07% at week 7; -17.8% over 13 weeks"),
     Cutoff("2025-06-20", "quiet", "max weekly move ahead 3.81% (week 8); +7.3% over 13 weeks"),
-    Cutoff("2026-04-17", "quiet", "max weekly move ahead 2.39% (week 4); +1.4% over 13 weeks -- calmest window"),
+    # Swapped in for 2026-04-17 on 2026-08-11: the news pipeline ends 2025-11-28,
+    # so the 2026 origin had no articles to reason over.  Price-wise this is a
+    # valid quiet -- 3.34% max move ahead, still under the 3.89% strongest quiet.
+    Cutoff("2025-11-28", "quiet", "max weekly move ahead 3.34% (week 4); -3.3% over 13 weeks"),
 ]
 
 #: Periods when FRED published no new palm oil prices, from the release-date

@@ -279,9 +279,9 @@ def build_palm_oil_service(
 # ── Daily futures series (no longer a target) ────────────────────────────────
 #
 # Superseded by MPOB below.  It was kept for a while as the Coder-safe fallback,
-# but MPOB was approved for Coder on 2026-08-11 and every spec now targets MPOB,
-# so this is no longer a forecast target -- swapping it back in would make
-# results incomparable.  Retained for: (a) the roll-artifact comparison in
+# but the team settled on running locally (2026-08-11), where MPOB needs no
+# approval, and every spec now targets MPOB -- so this is no longer a forecast
+# target, and swapping it back in would make results incomparable.  Retained for: (a) the roll-artifact comparison in
 # 01_cpo_data_exploration.ipynb, which is what disqualified it; (b) the source
 # used to first prove FRED's monthly/lagged design was unworkable, before MPOB
 # was in the picture at all.
@@ -498,13 +498,15 @@ def build_palm_oil_futures_service(
 # approval; local use needed none, on the condition that the raw data is never
 # redistributed -- explicitly called out: never push it to GitHub.
 #
-# As of 2026-08-11 that approval has been granted, so MPOB may be used in Coder
-# as well as locally.  **The redistribution condition is unchanged** -- it is a
-# condition on the data, not on the environment.  The team's read of
-# "redistribute": the raw MPOB series (this module's parquet cache, gitignored,
-# never commit it) stays out of the repo; derived work built from it --
-# notebooks, charts, cutoff dates, aggregate statistics -- is fine to commit
-# and push.
+# This project runs locally (team decision, 2026-08-11), so no data-office
+# request is needed.  That holds only while it stays local -- running this inside
+# Coder makes the request necessary again.
+#
+# **The redistribution condition applies regardless** -- it is a condition on the
+# data, not on the environment.  The team's read of "redistribute": the raw MPOB
+# series (this module's parquet cache, gitignored, never commit it) stays out of
+# the repo; derived work built from it -- notebooks, charts, cutoff dates,
+# aggregate statistics -- is fine to commit and push.
 #
 # One difference to carry into any writeup: MPOB quotes **MYR per tonne**,
 # where the other two quote USD.  Forecasting in MYR keeps exchange-rate
