@@ -15,8 +15,10 @@ never be committed either way — `data/mpob/` is gitignored. Derived work
 (notebooks, charts, cutoff dates) is fine to commit and push. Full detail in
 [`DATA.md`](DATA.md).
 
-**If you're working inside Coder without that approval, use
-`build_palm_oil_futures_service()` (Yahoo `CPO=F`) instead.**
+**Every spec now targets MPOB, so running them requires the local cache. If
+you're inside Coder without that approval, you cannot run the scored pipeline
+yet — raise it rather than quietly swapping in another series, or the numbers
+stop being comparable.**
 
 ## Data
 
@@ -40,29 +42,29 @@ a leak-safe cross-check — see [`DATA.md`](DATA.md) for why it isn't the target
 
 ## Specs
 
-Weekly Friday origins, horizons 1 / 4 / 12 weeks, 104-week warmup, targeting
-**Yahoo `CPO=F`** (`palm_oil_futures_weekly`) — deliberately left on the
-Coder-safe series, since these specs drive the shared backtest/eval pipeline
-that teammates may run inside Coder without MPOB clearance. Switching them to
-MPOB is a team decision with governance implications, not made here.
+All four specs target **MPOB weekly** (`palm_oil_mpob_weekly`) on Friday origins
+at horizons **1 / 2 / 4 / 8 / 13 weeks**, with a 104-week warmup. Horizons match
+`cpo.plots.HORIZONS_WEEKS`, so every spec is directly comparable.
 
-**All three are provisional** — `02_cutoff_selection.ipynb` derived 7 cutoffs
-(4 event, 3 quiet) at horizons 1/2/4/8/13 weeks on MPOB; these specs still use
-the earlier 1/4/12 placeholder on Yahoo. Reconcile both the horizons and the
-target series with Mehrshad before running the full backtest.
+| Spec | Origins | Window | Use |
+|---|---|---|---|
+| [`cpo_smoke.yaml`](specs/cpo_smoke.yaml) | 2 | Jun 2025 | Cheap end-to-end check — run this first |
+| [`cpo_cutoffs.yaml`](specs/cpo_cutoffs.yaml) | 7 | Feb 2024 – Apr 2026 | **The scored narrative set** — 4 event, 3 quiet |
+| [`cpo_backtest.yaml`](specs/cpo_backtest.yaml) | 104 | 2024–2025 | Rank the models on a large sample |
+| [`cpo_eval.yaml`](specs/cpo_eval.yaml) | 19 | Jan–May 2026 | Held-out final score |
+
+`cpo_cutoffs` carries the event-vs-quiet story and must stay in sync with
+`cpo.plots.DEFAULT_CUTOFFS`; `cpo_backtest` is its statistical companion, 520
+scored points against the cutoff set's 35. `cpo_backtest` stops at the end of
+2025 so that 2026 stays untouched for `cpo_eval`.
 
 Note that the cutoff spacing rule is `max(HORIZONS_WEEKS)` — change the horizons
 and the cutoffs must be re-derived, since a longer horizon makes windows that are
 currently disjoint overlap.
 
-| Spec | Origins | Window | Use |
-|---|---|---|---|
-| [`cpo_smoke.yaml`](specs/cpo_smoke.yaml) | 2 | Jun 2025 | Cheap end-to-end check — run this first |
-| [`cpo_backtest.yaml`](specs/cpo_backtest.yaml) | 52 | 2025 | Pick the models |
-| [`cpo_eval.yaml`](specs/cpo_eval.yaml) | 19 | Jan–May 2026 | Held-out final score |
-
-2025 is the backtest window because it sits entirely inside GDELT's coverage, so
-the agent and the baseline see the same information.
+**News coverage is the binding constraint.** Articles currently run to
+2025-11-28, so news-reading predictors can be scored on `cpo_backtest` but not
+on `cpo_eval`, and not on the `2026-04-17` cutoff. Baselines run everywhere.
 
 ## Files
 
@@ -78,14 +80,17 @@ the agent and the baseline see the same information.
 
 ## TODO
 
-- [x] Settle the price source — MPOB (local), Yahoo median-mitigated as the Coder-safe fallback
+- [x] Settle the price source — MPOB. Yahoo is no longer used as a target.
 - [x] Load the price data
 - [x] Pull news from GDELT
 - [x] Select forecast cutoffs — 7 cutoffs on MPOB, 5 horizons, cleanly separated (2.13x),
   independent at 13-week spacing
+- [x] Reconcile spec target and horizons — all four specs now on MPOB at 1/2/4/8/13
 - [ ] Write the news loader — turn the CSV into weekly, cutoff-filtered context
-- [ ] Reconcile spec target/horizons (Yahoo 1/4/12) with the notebooks' (MPOB 1/2/4/8/13) with Mehrshad
-- [ ] Decide with the team whether the shared specs should ever target MPOB, or stay on Yahoo permanently for Coder compatibility
+- [ ] Resolve the `2026-04-17` cutoff — swap for `2025-11-28` if Jyotsna's new
+  articles clear the 100-article floor for Oct 3 – Nov 28, else drop to 6 cutoffs
+- [ ] Raise MPOB Coder clearance with the data office, or the shared pipeline
+  cannot be run by teammates without a local cache
 - [ ] Baseline: naive + AutoARIMA on `cpo_smoke`, then `cpo_backtest`
 - [ ] Agent: prices + news, same origins
 - [ ] Compare in one table

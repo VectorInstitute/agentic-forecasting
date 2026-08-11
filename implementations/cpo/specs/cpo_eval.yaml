@@ -1,35 +1,43 @@
-# Palm Oil Eval Spec — 2026 Held-Out Window
+# Palm Oil Eval Spec — held-out 2026 window
 #
-# PROVISIONAL — replace with Khashayar's cutoffs when they land.
+# The protected window. Only models already selected on cpo_backtest.yaml should
+# be run here, and as few times as possible -- every extra run leaks information
+# from the eval set back into our choices.
 #
-# The protected, out-of-sample window. Only the models selected on
-# cpo_backtest.yaml should be run here, and as few times as possible — every
-# extra run leaks information from the eval set into our choices.
+# End date: the longest horizon is 13 weeks, so the last origin must sit at
+# least 13 weeks behind the most recent MPOB observation. The cache currently
+# runs to 2026-08-10, and 2026-05-08 + 13 weeks lands on 2026-08-07, inside it.
+# Push `end` later only after re-running scripts/fetch_mpob.py and re-checking
+# this arithmetic.
 #
-# End date: the longest horizon is 12 weeks, so the last origin must sit at
-# least 12 weeks behind the most recent cached CPO=F price (Aug 5, 2026 at the
-# time of writing) for every origin to fully resolve. 2026-05-08 + 12 weeks
-# lands on 2026-07-31, inside the data. Push `end` later only after refreshing
-# the yfinance cache and re-checking this.
+# Target is MPOB, the physical price, in MYR per tonne.
 #
-# Origin count : 19 (every Friday, Jan 2 -> May 8, 2026)
-# Warmup       : 104 weeks (~2 years) of weekly closes
+# DATA GOVERNANCE: MPOB is local-use only until the data office approves it for
+# Coder. Populate the cache first with `uv run python scripts/fetch_mpob.py`.
+#
+# NOTE: the news pipeline currently ends 2025-11-28, so news-reading predictors
+# cannot yet be scored on this window. It is baselines-only until the article
+# coverage extends into 2026.
+#
+# Origin count : 19 (every Friday, 2026-01-02 -> 2026-05-08)
+# Warmup       : 104 weeks (~2 years)
 
 spec_id: cpo_eval
 
 description: >-
-  Held-out 2026 evaluation window for the palm oil price. Scores the selected
-  contender models on 19 weekly origins that were never used for model choice,
-  to estimate real out-of-sample performance.
+  Held-out 2026 evaluation window on the MPOB crude palm oil price, at horizons
+  1, 2, 4, 8 and 13 weeks. Nineteen weekly origins that played no part in model
+  selection, used to estimate genuine out-of-sample performance.
 
-tasks:
-  - task_id: palm_oil_price_forecast
-    target_series_id: palm_oil_futures_weekly
-    horizons: [1, 4, 12]
-    frequency: W-FRI
-    description: >-
-      CME Crude Palm Oil futures settlement price (Yahoo Finance CPO=F), Friday
-      close, projected 1, 4 and 12 weeks ahead.
+task:
+  task_id: palm_oil_mpob_price_forecast
+  target_series_id: palm_oil_mpob_weekly
+  horizons: [1, 2, 4, 8, 13]
+  frequency: W-FRI
+  payload_type: continuous
+  description: >-
+    MPOB official crude palm oil price, "Local Delivered", Friday close in MYR
+    per tonne, projected 1, 2, 4, 8 and 13 weeks ahead.
 
 start: "2026-01-02"
 end: "2026-05-08"

@@ -1,39 +1,45 @@
-# Palm Oil Backtest Spec — 2025 Weekly Rolling Backtest
+# Palm Oil Backtest Spec — dense weekly rolling backtest, 2024–2025
 #
-# PROVISIONAL — replace with Khashayar's cutoffs when they land.
+# The model-selection run. cpo_cutoffs.yaml is the seven-origin narrative set
+# that carries the event-vs-quiet story; this spec is the statistical companion
+# that decides which model is genuinely better. 104 origins x 5 horizons = 520
+# scored points, against the cutoff set's 35.
 #
-# Why 2025: it is the largest stretch that sits entirely inside GDELT news
-# coverage (2024 onward), so the news-reading agent and the price-only baseline
-# see the same information window and the comparison stays fair.
+# Window: every Friday of 2024 and 2025. That is the stretch covered by the news
+# pipeline, so the news-reading agent and the price-only baselines see the same
+# information. 2026 is deliberately excluded and held for cpo_eval.yaml.
 #
-# Why weekly: Yahoo CPO=F is daily, so a weekly grid gives ~52 origins here
-# against the ~12 a monthly grid would allow. More origins is the whole reason
-# we moved off the monthly FRED series.
+# Target is MPOB, the physical price, in MYR per tonne -- not the Yahoo CPO=F
+# futures series the earlier drafts of this file used. MPOB needs no
+# released_at correction (published next working day) and has no contract-roll
+# artifact.
 #
-# Target is the CME Crude Palm Oil settlement price (Yahoo Finance CPO=F),
-# resampled to Friday close by data.to_weekly().
+# DATA GOVERNANCE: MPOB is local-use only until the data office approves it for
+# Coder. Populate the cache first with `uv run python scripts/fetch_mpob.py`.
 #
-# Origin count : 52 (every Friday in 2025)
-# Warmup       : 104 weeks (~2 years) — starts in 2023, well clear of the
-#                Jan-Jun 2016 hole in Yahoo's history (see data.YAHOO_HISTORY_GAP)
+# Origin count : 104 (every Friday, 2024-01-05 -> 2025-12-26)
+# Warmup       : 104 weeks (~2 years). MPOB history starts 2008, so warmup never
+#                binds here -- it is a guard, not a filter.
 
 spec_id: cpo_backtest
 
 description: >-
-  Weekly rolling backtest across 2025 for the palm oil price. Evaluates
-  trajectory forecasts at 1, 4 and 12 weeks with CRPS and MAE, and is used to
-  pick the contender models taken forward to the 2026 eval window.
+  Dense weekly rolling backtest across 2024 and 2025 on the MPOB crude palm oil
+  price, at horizons 1, 2, 4, 8 and 13 weeks, scored with CRPS. Used to rank
+  models on a sample large enough to separate them; the seven narrative cutoffs
+  in cpo_cutoffs.yaml then show how the leaders behave on events versus quiets.
 
-tasks:
-  - task_id: palm_oil_price_forecast
-    target_series_id: palm_oil_futures_weekly
-    horizons: [1, 4, 12]
-    frequency: W-FRI
-    description: >-
-      CME Crude Palm Oil futures settlement price (Yahoo Finance CPO=F), Friday
-      close, projected 1, 4 and 12 weeks ahead.
+task:
+  task_id: palm_oil_mpob_price_forecast
+  target_series_id: palm_oil_mpob_weekly
+  horizons: [1, 2, 4, 8, 13]
+  frequency: W-FRI
+  payload_type: continuous
+  description: >-
+    MPOB official crude palm oil price, "Local Delivered", Friday close in MYR
+    per tonne, projected 1, 2, 4, 8 and 13 weeks ahead.
 
-start: "2025-01-03"
+start: "2024-01-05"
 end: "2025-12-26"
 stride: 1
 warmup: 104

@@ -1,29 +1,35 @@
-# Palm Oil Smoke Spec — 2 origins, for the dry run
-#
-# PROVISIONAL — replace with Khashayar's cutoffs when they land.
+# Palm Oil Smoke Spec — 2 origins, for pipeline checks
 #
 # The cheapest possible end-to-end exercise: two weekly origins, so the whole
-# pipeline (data -> predictor -> backtest -> score) can be run without burning
-# time or tokens. Use this first; only move to cpo_backtest.yaml once it passes.
+# chain (data -> predictor -> backtest -> score) can be run in seconds. Use this
+# first; only move to cpo_backtest.yaml once it passes.
+#
+# Target is MPOB, the physical price, in MYR per tonne. Horizons match
+# cpo.plots.HORIZONS_WEEKS so smoke results are directly comparable to the
+# scored runs.
+#
+# DATA GOVERNANCE: MPOB is local-use only until the data office approves it for
+# Coder. Populate the cache first with `uv run python scripts/fetch_mpob.py`.
 #
 # Origin count : 2
-# Warmup       : 104 weeks (~2 years) of weekly closes
+# Warmup       : 104 weeks (~2 years)
 
 spec_id: cpo_smoke
 
 description: >-
-  Two-origin smoke backtest for the palm oil pipeline dry run. Same task,
-  horizons and warmup as cpo_backtest, but only 2 origins so the notebook can
-  be exercised end to end cheaply.
+  Two-origin smoke backtest on the MPOB weekly crude palm oil price. Same task,
+  horizons and warmup as cpo_backtest, but only 2 origins so the pipeline can be
+  exercised end to end without waiting.
 
-tasks:
-  - task_id: palm_oil_price_forecast
-    target_series_id: palm_oil_futures_weekly
-    horizons: [1, 4, 12]
-    frequency: W-FRI
-    description: >-
-      CME Crude Palm Oil futures settlement price (Yahoo Finance CPO=F), Friday
-      close, projected 1, 4 and 12 weeks ahead.
+task:
+  task_id: palm_oil_mpob_price_forecast
+  target_series_id: palm_oil_mpob_weekly
+  horizons: [1, 2, 4, 8, 13]
+  frequency: W-FRI
+  payload_type: continuous
+  description: >-
+    MPOB official crude palm oil price, "Local Delivered", Friday close in MYR
+    per tonne, projected 1, 2, 4, 8 and 13 weeks ahead.
 
 start: "2025-06-06"
 end: "2025-06-13"
