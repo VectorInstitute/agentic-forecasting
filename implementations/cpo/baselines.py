@@ -467,7 +467,8 @@ def _show_plots(
             print(f"  wrote {path}")
         return
 
-    print(f"\nopening {len(figures)} figure(s) in your browser...")
+    where = "inline" if "ipykernel" in sys.modules else "in your browser"
+    print(f"\nrendering {len(figures)} figure(s) {where}...")
     for _, fig in figures:
         fig.show()
 
@@ -594,7 +595,9 @@ __all__ = [
 
 if __name__ == "__main__":
     # Under a Jupyter kernel -- VS Code's "Run Current File in Interactive
-    # Window", or a plain notebook -- sys.argv holds the kernel's own flags,
-    # which argparse would reject.  Run with defaults there instead, so the
-    # file executes either way.
-    main([] if "ipykernel" in sys.modules else None)
+    # Window", or a plain notebook -- sys.argv holds the kernel's own flags
+    # (``-f kernel.json``), which argparse would reject.  Substitute a fixed
+    # argument list there so the file runs either way, and turn plotting on:
+    # the whole point of the interactive window is that figures render inline
+    # next to the tables.
+    main(["--plot"] if "ipykernel" in sys.modules else None)
