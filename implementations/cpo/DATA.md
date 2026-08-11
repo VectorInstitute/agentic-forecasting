@@ -1,14 +1,14 @@
 # Palm Oil Data — Source Evaluation and Decision
 
 We evaluated three sources for the palm oil price. **MPOB is the target** — a physical
-transaction price, cleanest on every measured axis, and cleared for local use. This
+transaction price, cleanest on every measured axis, and approved by Vector for use. This
 records the full evaluation so the choice can be audited rather than taken on trust.
 
 Reproduce any of it with:
 
 ```bash
 uv run python scripts/explore_fred_oils.py     # FRED catalogue + publication lag
-uv run python scripts/fetch_mpob.py            # MPOB daily history — run locally only, see governance below
+uv run python scripts/fetch_mpob.py            # MPOB daily history — approved; never commit the cache
 ```
 
 ---
@@ -23,11 +23,21 @@ using MPOB instead of Yahoo:
 > environment (locally, for example) then it's totally fine, as long as you don't
 > redistribute the data in any way (like pushing it to GitHub)
 
+**Update, 2026-08-11: Vector has approved MPOB for this project, including inside
+Coder.** The first clause above is therefore satisfied.
+
+> TODO: record the approver, date and channel here, so the approval is auditable
+> the same way the original restriction is.
+
+**The redistribution clause is unaffected.** It was never about Coder — it is a
+condition on MPOB's data itself, so it still holds: the raw series must not be
+redistributed, and must never be pushed to GitHub.
+
 The rule this project follows:
 
 | | Coder | Local machine |
 |---|---|---|
-| Use MPOB | Requires data-office approval — not yet obtained | Fine, no approval needed |
+| Use MPOB | Approved (2026-08-11) | Fine, no approval needed |
 | Push raw MPOB data | Never, either way | Never, either way |
 | Push derived work (notebooks, charts, cutoff dates, stats) | Fine | Fine |
 
@@ -36,10 +46,10 @@ else — this file, the notebooks (including their embedded Plotly charts, which
 contain real MPOB values in their JSON), `plots.DEFAULT_CUTOFFS` — is analysis derived
 from the data, not the data itself, and is fine to commit and push.
 
-**If you're working inside a Coder workspace without the data-office approval**, use
-`build_palm_oil_futures_service()` (Yahoo `CPO=F`) instead — it remains fully
-maintained as the Vector-approved fallback. Do not run `scripts/fetch_mpob.py` inside
-Coder without approval.
+Every spec targets MPOB, so anyone running the scored pipeline — locally or in
+Coder — needs the cache. Populate it with `uv run python scripts/fetch_mpob.py`.
+Yahoo `CPO=F` is no longer a forecast target; `build_palm_oil_futures_service()`
+survives only for the roll-artifact comparison in `01_cpo_data_exploration.ipynb`.
 
 ---
 
@@ -73,7 +83,7 @@ curl -X POST -d "jenis=1Y&tahun=2015&Submit123=Submit" \
 ```
 
 `scripts/fetch_mpob.py` does this for every year and caches to
-`data/mpob/cpo_daily.parquet` — **local machines only**, per the governance rule above.
+`data/mpob/cpo_daily.parquet` — **never commit that cache**, per the governance rule above.
 
 ---
 
@@ -88,10 +98,9 @@ curl -X POST -d "jenis=1Y&tahun=2015&Submit123=Submit" \
 | Publication lag | 10 days – 2 months | Same day | **Next day** |
 | Roll artifacts | None | 1.3x (median-mitigated) | **~1.0x** |
 | Latest cutoff usable | 2025-08 | 2026 | **2026** |
-| Needs approval | No | No | **Yes, in Coder; no, locally** |
+| Needs approval | No | No | **Approved 2026-08-11** |
 
-MPOB wins on every axis except approval friction, which the local-use rule resolves
-for anyone running this repo on their own machine.
+MPOB wins on every axis. The approval friction that once counted against it is gone.
 
 ### Why not FRED
 
@@ -107,7 +116,7 @@ for anyone running this repo on their own machine.
 `build_palm_oil_service()` remains available as a monthly, leak-safe cross-check using
 FRED's real-time vintage archive.
 
-### Why Yahoo `CPO=F` was the target before MPOB was cleared, and remains the fallback
+### Why Yahoo `CPO=F` was the target before MPOB was cleared, and is no longer
 
 Approved from the start and daily, but it's a **futures contract**: Yahoo's continuous
 series switches to the next contract on the first trading day of each month, and
@@ -131,8 +140,9 @@ ratio 1.93x → 1.33x, still short of MPOB's ~1.0x ceiling. Two more aggressive 
 rejected — see the function's docstring in `data.py` for the full comparison and why
 each was worse.
 
-**This is now the fallback**, not the target — used for anyone working inside Coder
-without the MPOB data-office approval, or as an independent cross-check.
+**This is no longer a forecast target.** With MPOB approved everywhere, every spec
+targets MPOB, and swapping this back in would make results incomparable. It survives
+only as the roll-artifact comparison in `01_cpo_data_exploration.ipynb`.
 
 ---
 
@@ -231,19 +241,19 @@ toward the middle.
   move here is ~7.7%, against 30%+ during the export ban.
 - **MPOB has no vintage archive.** We assume published prices are not revised — this
   cannot be independently verified, unlike FRED's real-time archive.
-- **Data governance is a standing constraint, not a one-time decision.** Anyone
-  extending this work inside Coder without the data-office approval must use the
-  Yahoo fallback; re-check the rule at the top of this file before assuming otherwise.
+- **Data governance is a standing constraint, not a one-time decision.** Use of MPOB
+  is approved, but the raw series still must never leave a local machine. Re-check
+  the rule at the top of this file before assuming anything has loosened further.
 
 ---
 
 ## Status
 
 - [x] Evaluate FRED, Yahoo, and MPOB; document the tradeoffs
-- [x] Confirm Vector's data-governance rule — MPOB fine locally, needs approval in
-  Coder, raw data never redistributed either way
-- [x] Build and verify the Yahoo roll mitigation as a maintained fallback (median,
-  full-history ratio 1.33x)
+- [x] Confirm Vector's data-governance rule — raw data never redistributed
+- [x] Obtain Vector approval for MPOB, locally and in Coder (2026-08-11)
+- [x] Measure the Yahoo roll artifact and its median mitigation (full-history ratio
+  1.93x -> 1.33x) — the evidence that disqualified it as a target
 - [x] Select forecast cutoffs on MPOB — 7 cutoffs, 5 horizons, cleanly separated
   (2.13x), independent at 13-week spacing (35 distinct targets, 4 distinct shocks)
 - [ ] Build a baseline forecast

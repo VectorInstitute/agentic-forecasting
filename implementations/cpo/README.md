@@ -8,30 +8,30 @@ oil. See [`DATA.md`](DATA.md) for the full survey.
 
 ## Data governance — read this first
 
-MPOB is the primary target, but it comes with a standing rule (Vector, Slack,
-2026-08-10): **fine to use locally without approval; requires a data-office
-approval to use inside Coder, which has not been obtained.** Raw MPOB data must
-never be committed either way — `data/mpob/` is gitignored. Derived work
-(notebooks, charts, cutoff dates) is fine to commit and push. Full detail in
+**Vector has approved MPOB for this project (2026-08-11), locally and inside
+Coder.** The earlier Coder restriction no longer applies.
+
+**One rule still stands: never commit the raw series.** That condition came with
+the data, not with the environment, so approval does not lift it. `data/mpob/`
+is gitignored — keep it that way. Derived work (notebooks, charts, cutoff dates,
+aggregate statistics) is fine to commit and push. Full detail in
 [`DATA.md`](DATA.md).
 
-**Every spec now targets MPOB, so running them requires the local cache. If
-you're inside Coder without that approval, you cannot run the scored pipeline
-yet — raise it rather than quietly swapping in another series, or the numbers
-stop being comparable.**
+Every spec targets MPOB, so running the scored pipeline needs the cache —
+`uv run python scripts/fetch_mpob.py`, about two minutes.
 
 ## Data
 
-- **Price (primary, local only)** — MPOB official daily crude palm oil price,
+- **Price (the target)** — MPOB official daily crude palm oil price,
   "Local Delivered". Daily, current to yesterday, no publication lag, no
   contract-roll artifact (it's a physical price, not a futures contract). Built
   by [`data.py`](data.py) → `build_mpob_service()`. Populate the cache with
-  `uv run python scripts/fetch_mpob.py` — **locally only**, see above.
-- **Price (Coder-safe fallback)** — Yahoo Finance `CPO=F`, the CME Crude Palm
-  Oil futures contract, resampled to a **weekly median** to reduce its
-  contract-roll defect (full-history ratio 1.93x → 1.33x, still short of
-  MPOB's ~1.0x). Built by `build_palm_oil_futures_service()`. See
-  [`DATA.md`](DATA.md) for the full roll-artifact measurement.
+  `uv run python scripts/fetch_mpob.py` — the cache is gitignored, see above.
+- **Price (not a target — comparison only)** — Yahoo Finance `CPO=F`, the CME
+  Crude Palm Oil futures contract. Its monthly contract roll injects a real
+  distortion that median-resampling only partly removes (full-history ratio
+  1.93x → 1.33x, against MPOB's ~1.0x), which is what disqualified it. Built by
+  `build_palm_oil_futures_service()`; see [`DATA.md`](DATA.md) for the measurement.
 - **News** — [`palm_articles_daily.csv`](palm_articles_daily.csv), from GDELT.
   96 palm oil keywords, top 5 articles per day, 2024–2026. 18 of 734 rows are
   malformed (embedded commas/newlines in the text field) — parse with
@@ -89,8 +89,7 @@ on `cpo_eval`, and not on the `2026-04-17` cutoff. Baselines run everywhere.
 - [ ] Write the news loader — turn the CSV into weekly, cutoff-filtered context
 - [ ] Resolve the `2026-04-17` cutoff — swap for `2025-11-28` if Jyotsna's new
   articles clear the 100-article floor for Oct 3 – Nov 28, else drop to 6 cutoffs
-- [ ] Raise MPOB Coder clearance with the data office, or the shared pipeline
-  cannot be run by teammates without a local cache
+- [x] MPOB approved by Vector for use, locally and in Coder (2026-08-11)
 - [ ] Baseline: naive + AutoARIMA on `cpo_smoke`, then `cpo_backtest`
 - [ ] Agent: prices + news, same origins
 - [ ] Compare in one table
@@ -103,8 +102,8 @@ on `cpo_eval`, and not on the `2026-04-17` cutoff. Baselines run everywhere.
 - Yahoo's `CPO=F` contract is thinly traded — it is settled against the Bursa
   Malaysia benchmark rather than set by active trading, and its monthly
   contract roll injects a real (if unbiased) distortion even after median
-  mitigation. Fine as the Coder-safe fallback; describe both properties
-  accurately if used.
+  mitigation. That is why it is not the target; describe both properties
+  accurately wherever it is still shown.
 - Neither Yahoo nor MPOB has a public vintage/revision archive (unlike FRED),
   so both assume published prices are not later rewritten — unverified for
   either source.

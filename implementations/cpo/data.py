@@ -276,13 +276,15 @@ def build_palm_oil_service(
     return svc
 
 
-# ── Daily futures target (approved fallback) ─────────────────────────────────
+# ── Daily futures series (no longer a target) ────────────────────────────────
 #
-# Superseded by MPOB below as the primary target once MPOB became available for
-# local use.  Kept as: (a) the Vector-approved series for anyone working inside
-# Coder, where MPOB requires a data-office approval that has not been obtained;
-# (b) the source used to first prove FRED's monthly/lagged design was
-# unworkable, before MPOB was in the picture at all.
+# Superseded by MPOB below.  It was kept for a while as the Coder-safe fallback,
+# but MPOB was approved for Coder on 2026-08-11 and every spec now targets MPOB,
+# so this is no longer a forecast target -- swapping it back in would make
+# results incomparable.  Retained for: (a) the roll-artifact comparison in
+# 01_cpo_data_exploration.ipynb, which is what disqualified it; (b) the source
+# used to first prove FRED's monthly/lagged design was unworkable, before MPOB
+# was in the picture at all.
 #
 # The FRED service above is a monthly, publication-lagged view: a price is
 # stamped with the start of its reference month but not released for ~2 months,
@@ -492,15 +494,17 @@ def build_palm_oil_futures_service(
 # release date and no ``released_at`` correction is required.
 #
 # DATA GOVERNANCE -- read before touching this section.  Per Vector (Ethan
-# Jackson, Slack, 2026-08-10): using MPOB *inside the Coder environment*
-# requires a data-office approval that has not been obtained.  Using it in
-# your *own local* environment needs no approval, on the condition that the
-# raw data is never redistributed -- explicitly called out: never push it to
-# GitHub.  The team's read of "redistribute": the raw MPOB series (this
-# module's parquet cache, gitignored, never commit it) must stay local-only;
-# derived work built from it -- notebooks, charts, cutoff dates, aggregate
-# statistics -- is fine to commit and push.  If you're working inside Coder
-# without the approval, use ``build_palm_oil_futures_service`` instead.
+# Jackson, Slack, 2026-08-10), MPOB use *inside Coder* required a data-office
+# approval; local use needed none, on the condition that the raw data is never
+# redistributed -- explicitly called out: never push it to GitHub.
+#
+# As of 2026-08-11 that approval has been granted, so MPOB may be used in Coder
+# as well as locally.  **The redistribution condition is unchanged** -- it is a
+# condition on the data, not on the environment.  The team's read of
+# "redistribute": the raw MPOB series (this module's parquet cache, gitignored,
+# never commit it) stays out of the repo; derived work built from it --
+# notebooks, charts, cutoff dates, aggregate statistics -- is fine to commit
+# and push.
 #
 # One difference to carry into any writeup: MPOB quotes **MYR per tonne**,
 # where the other two quote USD.  Forecasting in MYR keeps exchange-rate
@@ -510,7 +514,6 @@ def build_palm_oil_futures_service(
 # which is what establishes these are the same commodity.
 #
 # Populate the cache first:  uv run python scripts/fetch_mpob.py
-# (Coder users without approval: do not run this inside a Coder workspace.)
 
 MPOB_DAILY_SERIES_ID = "palm_oil_mpob_daily"
 """Daily MPOB crude palm oil price, MYR per tonne."""

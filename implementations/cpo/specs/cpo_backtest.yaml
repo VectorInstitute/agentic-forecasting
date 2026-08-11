@@ -14,8 +14,9 @@
 # released_at correction (published next working day) and has no contract-roll
 # artifact.
 #
-# DATA GOVERNANCE: MPOB is local-use only until the data office approves it for
-# Coder. Populate the cache first with `uv run python scripts/fetch_mpob.py`.
+# DATA: MPOB is approved for use (2026-08-11), locally and in Coder. The raw
+# series still must never be committed. Populate the cache first with
+# `uv run python scripts/fetch_mpob.py`.
 #
 # Origin count : 104 (every Friday, 2024-01-05 -> 2025-12-26)
 # Warmup       : 104 weeks (~2 years). MPOB history starts 2008, so warmup never
