@@ -48,6 +48,8 @@ From the command line -- runs the named predictors and prints every comparison::
     uv run python -m cpo.baselines                       # naive + autoarima
     uv run python -m cpo.baselines --predictors all
     uv run python -m cpo.baselines --predictors naive ets --num-samples 100
+    uv run python -m cpo.baselines --predictors ets --plot        # open figures in a browser
+    uv run python -m cpo.baselines --predictors ets --save-plots out/  # write PNGs instead
     uv run python -m cpo.baselines --mc-noise autoarima  # measure the run-to-run wobble
 
 **Prerequisite:** the MPOB cache must exist -- ``uv run python scripts/fetch_mpob.py``
@@ -410,7 +412,68 @@ PREDICTOR_NAMES: tuple[str, ...] = ("naive", "autoarima", "ets", "kalman", "ligh
 """Short names accepted by :func:`build_predictor` and the ``--predictors`` flag."""
 
 
-def _run_cli(names: list[str], *, num_samples: int, lags: int) -> pd.DataFrame:
+def per_origin(frame: pd.DataFrame) -> pd.DataFrame:
+    """Mean CRPS at each individual cutoff, labelled event or quiet.
+
+    The aggregate can hide a model that wins big on one origin and loses on the
+    rest.  With only seven origins, reading them individually is cheap and
+    catches that.
+
+    Parameters
+    ----------
+    frame : pd.DataFrame
+        Rows from :func:`predictions_frame`, one or more predictors.
+
+    Returns
+    -------
+    pd.DataFrame
+        Origins (with their kind) as rows, predictors as columns.
+    """
+    out = frame.copy()
+    out["origin_label"] = out.origin.dt.strftime("%Y-%m-%d") + "  " + out.kind
+    return out.pivot_table(index="origin_label", columns="predictor", values="crps").round(2)
+
+
+def _show_plots(
+    frame: pd.DataFrame,
+    names: list[str],
+    *,
+    origin: str,
+    save_dir: Path | None,
+    data_service: DataService,
+) -> None:
+    """Render the CRPS comparison and one forecast fan per predictor."""
+    from cpo.plots import plot_crps_by_horizon, plot_forecast_fan  # noqa: PLC0415
+
+    history = data_service.get_series(MPOB_WEEKLY_SERIES_ID, as_of=naive_utc_now())
+    figures = [("crps_by_horizon", plot_crps_by_horizon(frame))]
+    for predictor_id in frame.predictor.unique():
+        figures.append(
+            (f"fan_{predictor_id}_{origin}", plot_forecast_fan(frame, history, origin=origin, predictor=predictor_id))
+        )
+
+    if save_dir is not None:
+        save_dir.mkdir(parents=True, exist_ok=True)
+        for name, fig in figures:
+            path = save_dir / f"{name}.png"
+            fig.write_image(path, width=1000, height=520, scale=2)
+            print(f"  wrote {path}")
+        return
+
+    print(f"\nopening {len(figures)} figure(s) in your browser...")
+    for _, fig in figures:
+        fig.show()
+
+
+def _run_cli(
+    names: list[str],
+    *,
+    num_samples: int,
+    lags: int,
+    plot: bool = False,
+    save_plots: Path | None = None,
+    origin: str = "2024-08-30",
+) -> pd.DataFrame:
     """Run the named predictors and print every comparison view."""
     spec, svc = load_spec(), mpob_service()
     frames = []
@@ -425,6 +488,8 @@ def _run_cli(names: list[str], *, num_samples: int, lags: int) -> pd.DataFrame:
     print(views["by_horizon"].to_string())
     print("\n=== mean CRPS by cutoff kind ===")
     print(views["by_kind"].to_string())
+    print("\n=== mean CRPS at each cutoff ===")
+    print(per_origin(frame).to_string())
 
     if "last_value_naive" in set(frame.predictor) and len(names) > 1:
         print("\n=== skill vs naive (positive = beats 'nothing changes') ===")
@@ -433,6 +498,11 @@ def _run_cli(names: list[str], *, num_samples: int, lags: int) -> pd.DataFrame:
     cov = coverage(frame)
     print(f"\n=== q10-q90 coverage (nominal {cov.attrs['nominal']:.0%}) ===")
     print(cov.to_string())
+    print("  (well below nominal = overconfident bands; 1.000 = wider than needed;")
+    print("   the naive is 0.000 by construction -- its band has zero width)")
+
+    if plot or save_plots is not None:
+        _show_plots(frame, names, origin=origin, save_dir=save_plots, data_service=svc)
     return frame
 
 
@@ -456,6 +526,13 @@ def main() -> None:
         help="Instead of the comparison, repeat-run this predictor to measure its run-to-run score wobble.",
     )
     parser.add_argument("--runs", type=int, default=5, help="Repeat count for --mc-noise.")
+    parser.add_argument("--plot", action="store_true", help="Open the CRPS chart and a forecast fan per predictor.")
+    parser.add_argument("--save-plots", type=Path, metavar="DIR", help="Write those figures as PNGs instead.")
+    parser.add_argument(
+        "--origin",
+        default="2024-08-30",
+        help="Which cutoff the forecast fan draws. Default 2024-08-30 (an event cutoff).",
+    )
     args = parser.parse_args()
 
     if args.mc_noise:
@@ -470,7 +547,14 @@ def main() -> None:
 
     names = list(PREDICTOR_NAMES) if args.predictors == ["all"] else args.predictors
     print(f"Running {len(names)} predictor(s) over 7 cutoffs x 5 horizons = 35 scored points\n")
-    _run_cli(names, num_samples=args.num_samples, lags=args.lags)
+    _run_cli(
+        names,
+        num_samples=args.num_samples,
+        lags=args.lags,
+        plot=args.plot,
+        save_plots=args.save_plots,
+        origin=args.origin,
+    )
 
 
 __all__ = [
@@ -484,6 +568,7 @@ __all__ = [
     "main",
     "mc_noise",
     "mpob_service",
+    "per_origin",
     "predictions_frame",
     "run_predictor",
     "skill_scores",
