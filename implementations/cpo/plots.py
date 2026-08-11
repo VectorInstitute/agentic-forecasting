@@ -660,13 +660,219 @@ def plot_oil_complex(frames: dict[str, pd.DataFrame], *, start: str = "2015-01-0
     return _style(fig, theme, title="The IMF edible-oil complex", ylabel="USD / metric ton", height=520)
 
 
+#: Quantile column pairs drawn as nested uncertainty bands, widest first, with
+#: the opacity each is filled at.  0.05-0.95 is the 90% interval, 0.10-0.90 the
+#: 80%, and 0.30-0.70 the 40% -- three bands read as "how sure" at a glance
+#: without the ribbon turning into mush.
+_FAN_BANDS: list[tuple[str, str, float]] = [
+    ("q05", "q95", 0.10),
+    ("q10", "q90", 0.16),
+    ("q30", "q70", 0.24),
+]
+
+
+def plot_forecast_fan(
+    predictions: pd.DataFrame,
+    history: pd.DataFrame,
+    *,
+    origin: str,
+    predictor: str | None = None,
+    history_weeks: int = 26,
+    currency: str = "RM",
+    dark: bool = False,
+) -> go.Figure:
+    """Plot one origin's probabilistic forecast against what actually happened.
+
+    The fan is the whole point of a probabilistic forecast: a point line says
+    "4,080", the fan says "4,080, and here is how wrong I might be".  If the
+    realised path stays inside the bands roughly as often as they claim, the
+    model is calibrated; if it repeatedly escapes, the model is overconfident
+    however good its point forecast looks.
+
+    Parameters
+    ----------
+    predictions : pd.DataFrame
+        Rows from :func:`cpo.baselines.predictions_frame` for a single origin,
+        with ``actual`` attached (:func:`cpo.baselines.attach_actuals`).
+    history : pd.DataFrame
+        Weekly price frame with ``timestamp`` and ``value`` columns.
+    origin : str
+        Cutoff date, ``YYYY-MM-DD``.  Selects the rows to draw.
+    predictor : str or None
+        Restrict to one ``predictor`` value.  Required when the frame holds
+        several; ``None`` uses whatever is present.
+    history_weeks : int
+        Weeks of realised history to show to the left of the cutoff.
+    currency : str
+        Symbol used in hover readouts.
+    dark : bool
+        Use the dark palette.
+
+    Returns
+    -------
+    go.Figure
+        Fan chart: shaded quantile bands, median line, realised path.
+
+    Raises
+    ------
+    ValueError
+        If no rows match ``origin`` (and ``predictor``, when given).
+    """
+    theme = _theme(dark)
+    cut = pd.Timestamp(origin)
+
+    rows = predictions[predictions["origin"] == cut]
+    if predictor is not None:
+        rows = rows[rows["predictor"] == predictor]
+    if rows.empty:
+        raise ValueError(f"no predictions for origin {origin}" + (f" and predictor {predictor!r}" if predictor else ""))
+    rows = rows.sort_values("horizon")
+
+    past = history.set_index("timestamp")["value"].loc[cut - pd.Timedelta(weeks=history_weeks) : cut]
+    # Anchor every forecast trace at the last observed price so the fan grows
+    # out of the history instead of floating away from it.  A DatetimeIndex
+    # (not a list of Timestamps) keeps the figure serialisable for static
+    # export -- kaleido's JSON encoder rejects bare pandas Timestamps.
+    anchor_y = float(past.iloc[-1])
+    x = pd.DatetimeIndex([cut, *rows["forecast_date"]])
+
+    fig = go.Figure()
+
+    for lower, upper, opacity in _FAN_BANDS:
+        band = f"rgba(42, 120, 214, {opacity})" if not dark else f"rgba(57, 135, 229, {opacity})"
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=[anchor_y, *rows[upper]],
+                mode="lines",
+                line={"width": 0},
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=[anchor_y, *rows[lower]],
+                mode="lines",
+                line={"width": 0},
+                fill="tonexty",
+                fillcolor=band,
+                name=f"{lower[1:]}-{upper[1:]}%",
+                hoverinfo="skip",
+                showlegend=True,
+            )
+        )
+
+    fig.add_trace(
+        go.Scatter(
+            x=past.index,
+            y=past.to_numpy(),
+            mode="lines",
+            line={"color": theme["muted"], "width": 2},
+            name="history seen at cutoff",
+            hovertemplate=f"%{{x|%d %b %Y}}<br><b>{currency}%{{y:,.0f}}</b><extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=x,
+            y=[anchor_y, *rows["q50"]],
+            mode="lines+markers",
+            line={"color": theme["series_1"], "width": 2},
+            marker={"size": 8},
+            name="forecast median",
+            hovertemplate=f"%{{x|%d %b %Y}}<br>median <b>{currency}%{{y:,.0f}}</b><extra></extra>",
+        )
+    )
+    if "actual" in rows.columns and rows["actual"].notna().any():
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=[anchor_y, *rows["actual"]],
+                mode="lines+markers",
+                line={"color": theme["series_2"], "width": 2, "dash": "dot"},
+                marker={"size": 8},
+                name="what actually happened",
+                hovertemplate=f"%{{x|%d %b %Y}}<br>actual <b>{currency}%{{y:,.0f}}</b><extra></extra>",
+            )
+        )
+
+    fig.add_vline(x=cut.to_pydatetime(), line_width=1, line_dash="dash", line_color=theme["muted"])
+    label = predictor or str(rows["predictor"].iloc[0])
+    kind = next((c.kind for c in DEFAULT_CUTOFFS if c.date == origin), "")
+    return _style(
+        fig,
+        theme,
+        title=f"{label} at {origin}{f' ({kind} cutoff)' if kind else ''}",
+        ylabel=f"MYR per tonne ({currency})",
+    )
+
+
+def plot_crps_by_horizon(
+    frame: pd.DataFrame,
+    *,
+    reference: str = "last_value_naive",
+    dark: bool = False,
+) -> go.Figure:
+    """Compare mean CRPS per horizon, predictor against the naive floor.
+
+    Plotted per horizon rather than as one aggregate because the aggregate hides
+    the usual crossover: a random walk is near-unbeatable one step out, and
+    structure only pays at longer range.  A model that loses at every horizon but
+    wins on the mean is an artefact of that mixing.
+
+    Parameters
+    ----------
+    frame : pd.DataFrame
+        Concatenated rows from :func:`cpo.baselines.predictions_frame`.
+    reference : str
+        ``predictor`` value drawn as the floor.
+    dark : bool
+        Use the dark palette.
+
+    Returns
+    -------
+    go.Figure
+        Grouped bars, one colour per predictor, ordered with the floor first.
+    """
+    theme = _theme(dark)
+    table = frame.pivot_table(index="horizon", columns="predictor", values="crps")
+    others = [c for c in table.columns if c != reference]
+    ordered = ([reference] if reference in table.columns else []) + others
+    slots = [theme["series_1"], theme["series_2"], theme["series_3"], theme["series_4"]]
+
+    fig = go.Figure()
+    for i, name in enumerate(ordered):
+        fig.add_trace(
+            go.Bar(
+                x=[f"{h}w" for h in table.index],
+                y=table[name],
+                name=name,
+                marker={"color": slots[i % len(slots)], "line": {"width": 2, "color": theme["surface"]}},
+                text=[f"{v:,.0f}" for v in table[name]],
+                textposition="outside",
+                textfont={"color": theme["muted"], "size": 11},
+                hovertemplate=f"{name}<br>%{{x}} ahead<br>CRPS <b>%{{y:,.1f}}</b><extra></extra>",
+            )
+        )
+
+    fig.update_layout(barmode="group", bargap=0.28, bargroupgap=0.06)
+    fig = _style(fig, theme, title="Mean CRPS by horizon — lower is better", ylabel="CRPS (MYR per tonne)")
+    fig.update_layout(hovermode="closest")
+    fig.update_xaxes(title="forecast horizon")
+    return fig
+
+
 __all__ = [
     "BLACKOUT_PERIODS",
     "DARK_THEME",
     "DEFAULT_CUTOFFS",
     "LIGHT_THEME",
     "Cutoff",
+    "plot_crps_by_horizon",
     "plot_cutoff_windows",
+    "plot_forecast_fan",
     "plot_information_gap",
     "plot_news_coverage",
     "plot_period_changes",

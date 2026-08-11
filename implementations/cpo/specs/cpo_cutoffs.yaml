@@ -1,0 +1,55 @@
+# Palm Oil Cutoff Spec — the seven narrative origins on MPOB
+#
+# The scored set the whole comparison rests on: 7 origins x 5 horizons = 35
+# points, 4 event cutoffs and 3 quiet ones. Derived in 02_cutoff_selection.ipynb
+# and frozen in cpo.plots.DEFAULT_CUTOFFS -- this file must stay in sync with
+# that list. See CUTOFFS.md for the selection criteria.
+#
+# Origins are explicit rather than derived from start/end/stride: these seven
+# Fridays were chosen individually (largest forward move for events, calmest for
+# quiets, all >= 13 weeks apart), not sampled on a regular grid.
+#
+# Target is MPOB, the physical price, in MYR per tonne -- not the Yahoo CPO=F
+# futures series the older specs use. MPOB requires no released_at correction
+# (published next working day) and carries no contract-roll artifact.
+#
+# DATA GOVERNANCE: MPOB is local-use only until the data office approves it for
+# Coder. Populate the cache first with `uv run python scripts/fetch_mpob.py`.
+#
+# Warmup 104 weeks (~2 years). The earliest origin is 2024-02-02 and MPOB
+# history starts 2008, so warmup never binds here -- it is a guard, not a filter.
+
+spec_id: cpo_cutoffs
+
+description: >-
+  Seven-origin backtest on the MPOB weekly crude palm oil price, at horizons
+  1, 2, 4, 8 and 13 weeks. Four event origins (large move ahead) and three
+  quiet ones (calm ahead), cleanly separated and mutually at least 13 weeks
+  apart so no two forecast windows overlap. Scored with CRPS. This is the
+  narrative set for the event-vs-quiet comparison; a denser weekly backtest
+  decides which model is genuinely better.
+
+task:
+  task_id: palm_oil_mpob_price_forecast
+  target_series_id: palm_oil_mpob_weekly
+  horizons: [1, 2, 4, 8, 13]
+  frequency: W-FRI
+  payload_type: continuous
+  description: >-
+    MPOB official crude palm oil price, "Local Delivered", Friday close in MYR
+    per tonne, projected 1, 2, 4, 8 and 13 weeks ahead.
+
+start: "2024-02-02"
+end: "2026-04-17"
+stride: 1
+warmup: 104
+
+# The frozen seven. Kind and the defining forward move, from CUTOFFS.md.
+origin_dates:
+  - "2024-02-02"  # event -- -7.72% at week 11
+  - "2024-05-03"  # quiet -- max move ahead 3.89%, strongest quiet
+  - "2024-08-30"  # event -- +7.12% at week 8
+  - "2024-11-29"  # event -- +6.68% at week 1, weakest event
+  - "2025-02-28"  # event -- -7.07% at week 7
+  - "2025-06-20"  # quiet -- max move ahead 3.81%
+  - "2026-04-17"  # quiet -- max move ahead 2.39%, calmest window
