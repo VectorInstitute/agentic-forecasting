@@ -34,7 +34,7 @@ The gold-standard practice this module encodes
 
 Usage
 -----
-::
+As a library::
 
     from cpo.baselines import load_spec, run_predictor, predictions_frame, summarise
 
@@ -42,6 +42,16 @@ Usage
     result = run_predictor(DartsAutoARIMAPredictor(num_samples=500), spec)
     frame = predictions_frame(result)
     summarise(frame)
+
+From the command line -- runs the named predictors and prints every comparison::
+
+    uv run python -m cpo.baselines                       # naive + autoarima
+    uv run python -m cpo.baselines --predictors all
+    uv run python -m cpo.baselines --predictors naive ets --num-samples 100
+    uv run python -m cpo.baselines --mc-noise autoarima  # measure the run-to-run wobble
+
+**Prerequisite:** the MPOB cache must exist -- ``uv run python scripts/fetch_mpob.py``
+(local machines only, see ``DATA.md``).
 """
 
 from __future__ import annotations
@@ -334,12 +344,144 @@ def mc_noise(
     }
 
 
+def build_predictor(name: str, *, num_samples: int = DEFAULT_NUM_SAMPLES, lags: int = 5) -> Predictor:
+    """Construct one of the package predictors by short name.
+
+    A thin convenience for the CLI only.  Notebooks should instantiate
+    predictors directly, so hyperparameters stay visible next to the results
+    they produced -- the convention the other implementations follow.
+
+    Parameters
+    ----------
+    name : str
+        One of :data:`PREDICTOR_NAMES`.
+    num_samples : int
+        Monte Carlo draws, for the sampled predictors.
+    lags : int
+        Autoregressive lags, for the regression predictors.  Ignored by the
+        others -- AutoARIMA selects its own orders by AICc.
+
+    Returns
+    -------
+    Predictor
+        A ready-to-run predictor.
+
+    Raises
+    ------
+    KeyError
+        If ``name`` is not a known predictor.
+    """
+    from aieng.forecasting.methods import (  # noqa: PLC0415
+        DartsAutoARIMAPredictor,
+        DartsExponentialSmoothingPredictor,
+        DartsKalmanForecasterPredictor,
+        DartsLightGBMPredictor,
+        DartsLinearRegressionPredictor,
+        LastValuePredictor,
+    )
+
+    builders = {
+        "naive": LastValuePredictor,
+        "autoarima": lambda: DartsAutoARIMAPredictor(num_samples=num_samples),
+        "ets": lambda: DartsExponentialSmoothingPredictor(num_samples=num_samples),
+        "kalman": lambda: DartsKalmanForecasterPredictor(num_samples=num_samples),
+        # The regression models default to expecting a past-covariate panel.
+        # The MPOB service registers the target only, so covariates are
+        # switched off explicitly -- leaving the default would fit against
+        # series that are not there.
+        "lightgbm": lambda: DartsLightGBMPredictor(
+            lags=lags,
+            lags_past_covariates=None,
+            num_samples=num_samples,
+            lgbm_kwargs={"num_threads": 1, "n_jobs": 1, "verbosity": -1},
+        ),
+        "linreg": lambda: DartsLinearRegressionPredictor(
+            lags=lags,
+            lags_past_covariates=None,
+            num_samples=num_samples,
+        ),
+    }
+    if name not in builders:
+        raise KeyError(f"unknown predictor {name!r}; choose from {sorted(builders)}")
+    return builders[name]()
+
+
+PREDICTOR_NAMES: tuple[str, ...] = ("naive", "autoarima", "ets", "kalman", "lightgbm", "linreg")
+"""Short names accepted by :func:`build_predictor` and the ``--predictors`` flag."""
+
+
+def _run_cli(names: list[str], *, num_samples: int, lags: int) -> pd.DataFrame:
+    """Run the named predictors and print every comparison view."""
+    spec, svc = load_spec(), mpob_service()
+    frames = []
+    for name in names:
+        result = run_predictor(build_predictor(name, num_samples=num_samples, lags=lags), spec, svc)
+        frames.append(predictions_frame(result))
+        print(f"  {name:10s} {result.predictor_id:32s} mean CRPS {result.mean_score:8.2f}")
+
+    frame = attach_actuals(pd.concat(frames, ignore_index=True), svc)
+    views = summarise(frame)
+    print("\n=== mean CRPS by horizon (lower is better) ===")
+    print(views["by_horizon"].to_string())
+    print("\n=== mean CRPS by cutoff kind ===")
+    print(views["by_kind"].to_string())
+
+    if "last_value_naive" in set(frame.predictor) and len(names) > 1:
+        print("\n=== skill vs naive (positive = beats 'nothing changes') ===")
+        print(skill_scores(frame).to_string())
+
+    cov = coverage(frame)
+    print(f"\n=== q10-q90 coverage (nominal {cov.attrs['nominal']:.0%}) ===")
+    print(cov.to_string())
+    return frame
+
+
+def main() -> None:
+    """Command-line entry point: run baselines over the seven cutoffs."""
+    import argparse  # noqa: PLC0415
+
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--predictors",
+        nargs="+",
+        default=["naive", "autoarima"],
+        metavar="NAME",
+        help=f"predictors to run, or 'all'. Choices: {', '.join(PREDICTOR_NAMES)}. Default: naive autoarima.",
+    )
+    parser.add_argument("--num-samples", type=int, default=DEFAULT_NUM_SAMPLES, help="Monte Carlo draws.")
+    parser.add_argument("--lags", type=int, default=5, help="Autoregressive lags for the regression predictors.")
+    parser.add_argument(
+        "--mc-noise",
+        metavar="NAME",
+        help="Instead of the comparison, repeat-run this predictor to measure its run-to-run score wobble.",
+    )
+    parser.add_argument("--runs", type=int, default=5, help="Repeat count for --mc-noise.")
+    args = parser.parse_args()
+
+    if args.mc_noise:
+        stats = mc_noise(
+            lambda: build_predictor(args.mc_noise, num_samples=args.num_samples, lags=args.lags),
+            runs=args.runs,
+        )
+        print(f"{args.mc_noise} over {int(stats['runs'])} runs at num_samples={args.num_samples}:")
+        print(f"  mean CRPS {stats['mean']:.2f}   std {stats['std']:.2f}   spread {stats['spread']:.2f}")
+        print("\nA leaderboard gap smaller than the spread is sampling noise, not evidence.")
+        return
+
+    names = list(PREDICTOR_NAMES) if args.predictors == ["all"] else args.predictors
+    print(f"Running {len(names)} predictor(s) over 7 cutoffs x 5 horizons = 35 scored points\n")
+    _run_cli(names, num_samples=args.num_samples, lags=args.lags)
+
+
 __all__ = [
     "DEFAULT_NUM_SAMPLES",
     "DEFAULT_SPEC_PATH",
+    "PREDICTOR_NAMES",
     "attach_actuals",
+    "build_predictor",
     "coverage",
     "load_spec",
+    "main",
     "mc_noise",
     "mpob_service",
     "predictions_frame",
@@ -347,3 +489,7 @@ __all__ = [
     "skill_scores",
     "summarise",
 ]
+
+
+if __name__ == "__main__":
+    main()
