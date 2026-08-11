@@ -51,6 +51,10 @@ MPOB is a team decision with governance implications, not made here.
 the earlier 1/4/12 placeholder on Yahoo. Reconcile both the horizons and the
 target series with Mehrshad before running the full backtest.
 
+Note that the cutoff spacing rule is `max(HORIZONS_WEEKS)` — change the horizons
+and the cutoffs must be re-derived, since a longer horizon makes windows that are
+currently disjoint overlap.
+
 | Spec | Origins | Window | Use |
 |---|---|---|---|
 | [`cpo_smoke.yaml`](specs/cpo_smoke.yaml) | 2 | Jun 2025 | Cheap end-to-end check — run this first |
@@ -69,6 +73,7 @@ the agent and the baseline see the same information.
 | [`00_FRED_source_evaluation.ipynb`](00_FRED_source_evaluation.ipynb) | Superseded — why FRED was rejected. |
 | [`01_cpo_data_exploration.ipynb`](01_cpo_data_exploration.ipynb) | Tour of the MPOB price series, incl. the Yahoo roll-artifact comparison. |
 | [`02_cutoff_selection.ipynb`](02_cutoff_selection.ipynb) | Derives the 7 forecast cutoffs from MPOB data. |
+| [`CUTOFFS.md`](CUTOFFS.md) | Short summary: what the cutoffs are, the selection criteria, the frozen seven. |
 | [`DATA.md`](DATA.md) | Full three-source evaluation, data-governance rule, roll-mitigation analysis, known limitations. |
 
 ## TODO
@@ -76,7 +81,8 @@ the agent and the baseline see the same information.
 - [x] Settle the price source — MPOB (local), Yahoo median-mitigated as the Coder-safe fallback
 - [x] Load the price data
 - [x] Pull news from GDELT
-- [x] Select forecast cutoffs — 7 cutoffs on MPOB, 5 horizons, cleanly separated (2.16x)
+- [x] Select forecast cutoffs — 7 cutoffs on MPOB, 5 horizons, cleanly separated (2.13x),
+  independent at 13-week spacing
 - [ ] Write the news loader — turn the CSV into weekly, cutoff-filtered context
 - [ ] Reconcile spec target/horizons (Yahoo 1/4/12) with the notebooks' (MPOB 1/2/4/8/13) with Mehrshad
 - [ ] Decide with the team whether the shared specs should ever target MPOB, or stay on Yahoo permanently for Coder compatibility

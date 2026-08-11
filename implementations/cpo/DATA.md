@@ -165,31 +165,41 @@ articles in the prior 8 weeks, which excludes that stretch entirely.
 **Seven cutoffs**, derived in `02_cutoff_selection.ipynb` on the MPOB weekly series,
 frozen in `cpo.plots.DEFAULT_CUTOFFS`:
 
-| Cutoff | Kind | Price (RM) | Max move ahead | 13-week total | News (8wk) |
+| Cutoff | Kind | Price (RM) | Defining move ahead | 13-week total | News (8wk) |
 |---|---|---|---|---|---|
-| 2024-02-02 | event | 3,800 | 7.7% | +2.1% | 150 |
-| 2024-04-19 | quiet | 4,100 | 3.9% | −2.3% | 226 |
-| 2024-07-26 | event | 4,030 | 7.1% | +16.3% | 165 |
-| 2024-10-18 | event | 4,374 | 7.1% | +4.7% | 162 |
-| 2025-01-17 | event | 4,578 | **7.1%** (weakest event) | −8.7% | 257 |
-| 2025-06-20 | quiet | 4,076 | **3.8%** (strongest quiet) | +7.3% | 112 |
-| 2026-04-17 | quiet | 4,434 | 2.4% | +1.4% | 135 |
+| 2024-02-02 | event | 3,800 | −7.72% at week 11 | +2.1% | 150 |
+| 2024-05-03 | quiet | 3,881 | max **3.89%** (strongest quiet) | +3.8% | 269 |
+| 2024-08-30 | event | 4,070 | +7.12% at week 8 | +22.8% | 181 |
+| 2024-11-29 | event | 5,000 | **+6.68%** at week 1 (weakest event) | −6.2% | 188 |
+| 2025-02-28 | event | 4,688 | −7.07% at week 7 | −17.8% | 194 |
+| 2025-06-20 | quiet | 4,076 | max 3.81% | +7.3% | 112 |
+| 2026-04-17 | quiet | 4,434 | max 2.39% | +1.4% | 135 |
+
+The move column is signed and dated because magnitude alone hides both direction and
+timing. `"quiet"` describes the window **ahead** of the cutoff, not the history behind
+it — 2025-06-20 follows a +4.3% week, which is deliberate: it tests whether a
+predictor keeps extrapolating a move that is already over.
 
 **Cleanly ordered and well separated:** every event cutoff moves more than every quiet
-cutoff (weakest event 7.07% > strongest quiet 3.89%), group means differ **2.16x**.
-Minimum gap between any two cutoffs is 11 weeks, so all seven forecast windows are
-independent.
+cutoff (weakest event 6.68% > strongest quiet 3.89%), group means differ **2.13x**.
 
-This required widening the search beyond the top-20-by-move candidates: the pool
-resolvable at every horizon and clearing the news-coverage floor contains only **one**
-independent 4-event combination among the top 20, and it's entirely 2024 (no move in
-2025 or 2026 makes that cut). Widening to the top 30 and requiring events from ≥2
-distinct years found a combination one point weaker (1.82x vs 1.87x on the strict
-weakest-event/strongest-quiet ratio) but reaching into January 2025 — worth the small
-cost for a cutoff further from most LLMs' training data. **2026 has no event-quality
-move available at all** in the news-covered pool (largest candidate ~3%) — every event
-cutoff falls in 2024–2025, stated as a limitation below rather than concealed by
-forcing in a weak 2026 pick.
+**Genuinely independent**, checked three ways rather than inferred from spacing: the
+closest two cutoffs are 13 weeks apart, all 35 (cutoff × horizon) target dates are
+distinct, and the four events rest on four *distinct* shocks. The spacing constraint
+is `max(HORIZONS_WEEKS)` = 13 weeks, not a round number — an earlier version used 10
+weeks, which left two window pairs overlapping, two duplicated target dates, and one
+move (2024-10-25) serving as the defining shock for two different event cutoffs.
+
+Reaching 13-week spacing required widening the candidate pool. Among the weeks that
+resolve at every horizon and clear the news floor, the top 20 **and** the top 30 both
+yield zero valid 4-event combinations at 13 weeks; the top 40 is the first depth that
+admits any. (At the old 10-week spacing the top 20 did yield a set, scoring 1.87x on
+the strict weakest-event/strongest-quiet ratio against the current 1.72x — but it was
+entirely 2024 and not actually independent.) Requiring events from ≥2 distinct years
+is the second concession, buying a 2025 cutoff further from most LLMs' training data.
+**2026 has no event-quality move available at all** in the news-covered pool (largest
+candidate ~3%) — every event cutoff falls in 2024–2025, stated as a limitation below
+rather than concealed by forcing in a weak 2026 pick.
 
 This is a materially better result than the analogous Yahoo `CPO=F` search, which
 found **zero** independent 4-event combinations and had to accept a set where one
@@ -210,6 +220,13 @@ toward the middle.
   denser weekly backtest to decide which model is genuinely better.
 - **Events were selected with hindsight.** Valid for a controlled comparison, not a
   live forecasting record.
+- **The candidate depth was widened to the top 40 to make 13-week spacing feasible.**
+  Top 20 and top 30 both yield nothing at that spacing. Widening a pool until the
+  search succeeds is a real degree of freedom, reported rather than folded silently
+  into a constant.
+- **The three quiet cutoffs are picked greedily**, not searched exhaustively — the
+  calmest remaining weeks that respect the spacing rule. A joint search over all seven
+  might find a marginally better set.
 - **No 2022-style shock exists in the 2024–2026 GDELT window.** The largest weekly
   move here is ~7.7%, against 30%+ during the export ban.
 - **MPOB has no vintage archive.** We assume published prices are not revised — this
@@ -228,6 +245,6 @@ toward the middle.
 - [x] Build and verify the Yahoo roll mitigation as a maintained fallback (median,
   full-history ratio 1.33x)
 - [x] Select forecast cutoffs on MPOB — 7 cutoffs, 5 horizons, cleanly separated
-  (2.16x), fully independent
+  (2.13x), independent at 13-week spacing (35 distinct targets, 4 distinct shocks)
 - [ ] Build a baseline forecast
 - [ ] Build an agent forecast and compare

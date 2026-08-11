@@ -102,28 +102,44 @@ HORIZONS_WEEKS: list[int] = [1, 2, 4, 8, 13]
 #: not a futures contract, so it carries no roll artifact to correct for.
 #:
 #: All are Fridays on the weekly grid, all resolve at every horizon in
-#: :data:`HORIZONS_WEEKS`, and all sit at least 11 weeks apart -- verified by
-#: exhaustive search over the top-30 volatility candidates requiring events
-#: from at least 2 distinct years, not just a greedy pick -- so no two
-#: forecast windows overlap and the seven scores are independent. Event
-#: cutoffs are placed two weeks *before* a large move, so the shock lands
-#: inside the window rather than in the visible history.
+#: :data:`HORIZONS_WEEKS`, and all sit at least ``max(HORIZONS_WEEKS)`` = 13
+#: weeks apart -- verified by exhaustive search over the top-40 volatility
+#: candidates requiring events from at least 2 distinct years, not just a
+#: greedy pick. 13 weeks is the threshold that makes the windows genuinely
+#: disjoint: at the 10-week spacing used before, two pairs of windows
+#: overlapped, 2 of the 35 scored target dates were duplicates, and a single
+#: move (2024-10-25) was the defining shock for *two* different event cutoffs.
+#: All 35 target dates are now distinct and the four events rest on four
+#: distinct shocks.
 #:
-#: Cleanly ordered and well separated: event mean max move 7.26% vs quiet
-#: mean 3.36% (2.16x); the weakest event (7.07%) still exceeds the strongest
+#: The labels below are generated from the data in
+#: ``02_cutoff_selection.ipynb``, not written by hand -- an earlier hand-written
+#: set claimed every event moved "two weeks out" when the real offsets were 1
+#: to 13 weeks, and got the sign wrong on two of the four.
+#:
+#: Cleanly ordered and well separated: event mean max move 7.15% vs quiet
+#: mean 3.36% (2.13x); the weakest event (6.68%) still exceeds the strongest
 #: quiet (3.89%). This is the result the earlier CPO=F-based selection
 #: predicted MPOB would give (see git history) -- confirmed once MPOB became
 #: available for local use. 2026 has no comparably large news-covered move in
 #: this pool (largest candidate 2.99%), so all four events fall in 2024-2025;
 #: stated as a limitation, not concealed by forcing a weak 2026 pick in.
+#:
+#: ``quiet`` describes the window *ahead* of the cutoff, not the history
+#: behind it -- 2025-06-20 follows a +4.3% week. That is deliberate: a quiet
+#: origin tests whether a predictor extrapolates a move that is already over.
 DEFAULT_CUTOFFS: list[Cutoff] = [
-    Cutoff("2024-02-02", "event", "+7.7% two weeks out; +2.1% over 13 weeks"),
-    Cutoff("2024-04-19", "quiet", "max weekly move ahead 3.9%; -2.3% over 13 weeks"),
-    Cutoff("2024-07-26", "event", "+7.1% two weeks out; +16.3% over 13 weeks"),
-    Cutoff("2024-10-18", "event", "+7.1% two weeks out; +4.7% over 13 weeks"),
-    Cutoff("2025-01-17", "event", "+7.1% two weeks out; -8.7% over 13 weeks -- weakest event"),
-    Cutoff("2025-06-20", "quiet", "max weekly move ahead 3.8% -- strongest quiet, still < weakest event"),
-    Cutoff("2026-04-17", "quiet", "calmest window: max 2.4%, +1.4% over 13 weeks"),
+    Cutoff("2024-02-02", "event", "-7.72% at week 11; +2.1% over 13 weeks"),
+    Cutoff(
+        "2024-05-03",
+        "quiet",
+        "max weekly move ahead 3.89% (week 4); +3.8% over 13 weeks -- strongest quiet, still < weakest event",
+    ),
+    Cutoff("2024-08-30", "event", "+7.12% at week 8; +22.8% over 13 weeks"),
+    Cutoff("2024-11-29", "event", "+6.68% at week 1; -6.2% over 13 weeks -- weakest event"),
+    Cutoff("2025-02-28", "event", "-7.07% at week 7; -17.8% over 13 weeks"),
+    Cutoff("2025-06-20", "quiet", "max weekly move ahead 3.81% (week 8); +7.3% over 13 weeks"),
+    Cutoff("2026-04-17", "quiet", "max weekly move ahead 2.39% (week 4); +1.4% over 13 weeks -- calmest window"),
 ]
 
 #: Periods when FRED published no new palm oil prices, from the release-date
