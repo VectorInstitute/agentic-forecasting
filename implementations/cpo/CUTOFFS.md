@@ -27,10 +27,25 @@ series (physical price, MYR/tonne — no futures roll artifacts to correct for):
 | 3 | ≥ 100 articles in the prior 8 weeks | An agent with no news to read tests nothing | **79 survive** |
 | 4 | ≥ 13 weeks between cutoffs (= the longest horizon) | Forecast windows must not overlap, or the seven scores are not independent | applied in the search |
 
-Events are found by exhaustive search over the 40 largest-move candidates (all 4-of-40
-combinations), requiring events from ≥ 2 distinct years; quiets are the calmest
-remaining weeks that respect the spacing. Ranked by *(cleanly ordered, weakest event /
-strongest quiet)*.
+**How "top-N" works.** Each of the 79 surviving weeks is scored by its **largest
+weekly move anywhere in the 13 weeks ahead** (`max_move`); top-N = the N biggest
+movers, i.e. the N best event candidates. The search tries every 4-of-N combination,
+requiring ≥ 13-week spacing and events from ≥ 2 distinct years; quiets are then the
+calmest remaining weeks that respect the spacing. Sets are ranked by *(cleanly
+ordered, weakest event / strongest quiet)*.
+
+N is the smallest depth that admits any valid set. Big moves cluster in time
+(adjacent weeks' windows contain the *same* shock, so ranks 1–20 collapse onto just a
+few calendar episodes), which is why shallow pools fail the spacing constraint:
+
+| Depth | Event floor (rank-N move) | Valid 4-event sets at 13-wk spacing |
+|---|---|---|
+| top 20 | 7.12% | **0** |
+| top 30 | 7.07% | **0** |
+| top 40 | 6.68% | 1,298 → best kept |
+
+Cost of widening: the weakest admissible event drops 7.12% → 6.68% — still well above
+the strongest quiet (3.89%).
 
 ## The seven
 
@@ -56,6 +71,10 @@ strongest quiet)*.
 
 ## Known limitations
 
+- **GDELT coverage collapses from Jun 2025 to Feb 2026** — 6–31 articles/month
+  (Dec 2025: **6** in the whole month), against 69–186 in healthy stretches. The
+  ≥ 100-articles floor excludes that entire stretch, so no cutoff can sit there;
+  flagged to Jyotsna as a data-quality item.
 - **No event in 2026** — the largest news-covered 2026 move is ~3%, too weak. Quiets do reach 2026.
 - **35 scored points is small** — CRPS differences between close models won't be significant; this is the narrative set, a denser backtest decides winners.
 - **Events picked with hindsight** — valid for a controlled comparison, not a live record.
