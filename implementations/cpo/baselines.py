@@ -388,12 +388,16 @@ def build_predictor(name: str, *, num_samples: int = DEFAULT_NUM_SAMPLES, lags: 
         DartsLinearRegressionPredictor,
         LastValuePredictor,
     )
+    from cpo.kalman_fixed import FixedKalmanPredictor  # noqa: PLC0415
 
     builders = {
         "naive": LastValuePredictor,
         "autoarima": lambda: DartsAutoARIMAPredictor(num_samples=num_samples),
         "ets": lambda: DartsExponentialSmoothingPredictor(num_samples=num_samples),
         "kalman": lambda: DartsKalmanForecasterPredictor(num_samples=num_samples),
+        # Same model class, with the multi-step variance bug corrected --
+        # see cpo/kalman_fixed.py for the diagnosis and the measured effect.
+        "kalman_fixed": FixedKalmanPredictor,
         # The regression models default to expecting a past-covariate panel.
         # The MPOB service registers the target only, so covariates are
         # switched off explicitly -- leaving the default would fit against
@@ -415,7 +419,15 @@ def build_predictor(name: str, *, num_samples: int = DEFAULT_NUM_SAMPLES, lags: 
     return builders[name]()
 
 
-PREDICTOR_NAMES: tuple[str, ...] = ("naive", "autoarima", "ets", "kalman", "lightgbm", "linreg")
+PREDICTOR_NAMES: tuple[str, ...] = (
+    "naive",
+    "autoarima",
+    "ets",
+    "kalman",
+    "kalman_fixed",
+    "lightgbm",
+    "linreg",
+)
 """Short names accepted by :func:`build_predictor` and the ``--predictors`` flag."""
 
 
