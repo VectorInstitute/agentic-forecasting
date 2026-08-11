@@ -50,7 +50,7 @@ at horizons **1 / 2 / 4 / 8 / 13 weeks**, with a 104-week warmup. Horizons match
 | Spec | Origins | Window | Use |
 |---|---|---|---|
 | [`cpo_smoke.yaml`](specs/cpo_smoke.yaml) | 2 | Jun 2025 | Cheap end-to-end check — run this first |
-| [`cpo_cutoffs.yaml`](specs/cpo_cutoffs.yaml) | 7 | Feb 2024 – Apr 2026 | **The scored narrative set** — 4 event, 3 quiet |
+| [`cpo_cutoffs.yaml`](specs/cpo_cutoffs.yaml) | 7 | Feb 2024 – Nov 2025 | **The scored narrative set** — 4 event, 3 quiet |
 | [`cpo_backtest.yaml`](specs/cpo_backtest.yaml) | 104 | 2024–2025 | Rank the models on a large sample |
 | [`cpo_eval.yaml`](specs/cpo_eval.yaml) | 19 | Jan–May 2026 | Held-out final score |
 
@@ -78,6 +78,9 @@ everywhere.
 | [`00_FRED_source_evaluation.ipynb`](00_FRED_source_evaluation.ipynb) | Superseded — why FRED was rejected. |
 | [`01_cpo_data_exploration.ipynb`](01_cpo_data_exploration.ipynb) | Tour of the MPOB price series, incl. the Yahoo roll-artifact comparison. |
 | [`02_cutoff_selection.ipynb`](02_cutoff_selection.ipynb) | Derives the 7 forecast cutoffs from MPOB data. |
+| [`03_baselines.ipynb`](03_baselines.ipynb) | All ten baselines on the seven cutoffs: leaderboard, calibration, fan grids. |
+| [`baselines.py`](baselines.py) | Baseline runner + CLI (`uv run python -m cpo.baselines --predictors all`). |
+| [`kalman_fixed.py`](kalman_fixed.py), [`lgbm_differenced.py`](lgbm_differenced.py), [`prophet_baseline.py`](prophet_baseline.py), [`seasonal_naive.py`](seasonal_naive.py) | Local predictors, each documenting why it exists. |
 | [`CUTOFFS.md`](CUTOFFS.md) | Short summary: what the cutoffs are, the selection criteria, the frozen seven. |
 | [`DATA.md`](DATA.md) | Full three-source evaluation, data-governance rule, roll-mitigation analysis, known limitations. |
 
@@ -94,7 +97,9 @@ everywhere.
 - [ ] Confirm the swap clears the 100-article floor — the committed CSV shows
   only **50** articles for Oct 3 – Nov 28, so this depends on Jyotsna's new pull
 - [x] Decided to run locally, so MPOB needs no data-office approval (2026-08-11)
-- [ ] Baseline: naive + AutoARIMA on `cpo_smoke`, then `cpo_backtest`
+- [x] Baselines on the seven cutoffs — 10 models, `03_baselines.ipynb` (ETS/ARIMA/kalman_fixed tie ~157-163;
+  every working model converges on a random walk, so the agent's bar is calibration, not point accuracy)
+- [ ] Baselines on the dense weekly `cpo_backtest` (104 origins) to separate the close models
 - [ ] Agent: prices + news, same origins
 - [ ] Compare in one table
 
