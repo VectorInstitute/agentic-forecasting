@@ -29,6 +29,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -867,6 +868,188 @@ def plot_crps_by_horizon(
     return fig
 
 
+def plot_fan_grid(
+    predictions: pd.DataFrame,
+    history: pd.DataFrame,
+    *,
+    predictor: str,
+    history_weeks: int = 10,
+    currency: str = "RM",
+    dark: bool = False,
+) -> go.Figure:
+    """One predictor's forecast fan at every cutoff, as small multiples.
+
+    Events on the top row, quiets on the bottom, so the two regimes read as two
+    rows rather than an interleaved sequence.  All panels share one y-axis
+    range: a band that looks wide must *be* wide, not sit on a stretched axis.
+    Each panel is titled with its origin and mean CRPS, which is the direct
+    label that lets a reader connect the picture to the leaderboard number.
+
+    Parameters
+    ----------
+    predictions : pd.DataFrame
+        Rows from :func:`cpo.baselines.predictions_frame`, ideally with
+        ``actual`` attached (:func:`cpo.baselines.attach_actuals`).
+    history : pd.DataFrame
+        Weekly price frame with ``timestamp`` and ``value`` columns.
+    predictor : str
+        Which ``predictor`` value to draw.  One model per figure -- comparing
+        models is :func:`plot_crps_by_horizon`'s job.
+    history_weeks : int
+        Weeks of realised history shown left of each cutoff.
+    currency : str
+        Symbol used in hover readouts.
+    dark : bool
+        Use the dark palette.
+
+    Returns
+    -------
+    go.Figure
+        A 2-row grid of fan charts, one panel per cutoff.
+
+    Raises
+    ------
+    ValueError
+        If ``predictions`` has no rows for ``predictor``.
+    """
+    from plotly.subplots import make_subplots  # noqa: PLC0415
+
+    theme = _theme(dark)
+    rows = predictions[predictions["predictor"] == predictor]
+    if rows.empty:
+        raise ValueError(f"no predictions for predictor {predictor!r}")
+
+    ordered = [c for c in DEFAULT_CUTOFFS if (rows["origin"] == c.timestamp).any()]
+    events = [c for c in ordered if c.kind == "event"]
+    quiets = [c for c in ordered if c.kind != "event"]
+    n_cols = max(len(events), len(quiets), 1)
+    prices = history.set_index("timestamp")["value"]
+
+    def _title(cut: Cutoff) -> str:
+        crps = rows.loc[rows["origin"] == cut.timestamp, "crps"].mean()
+        return f"{cut.date}  ·  {cut.kind}  ·  CRPS {crps:,.0f}"
+
+    titles = [_title(c) for c in events] + [""] * (n_cols - len(events))
+    titles += [_title(c) for c in quiets] + [""] * (n_cols - len(quiets))
+    fig = make_subplots(
+        rows=2,
+        cols=n_cols,
+        subplot_titles=titles,
+        horizontal_spacing=0.045,
+        vertical_spacing=0.14,
+    )
+
+    band_fill = "rgba(57, 135, 229, {})" if dark else "rgba(42, 120, 214, {})"
+    y_lo, y_hi = np.inf, -np.inf
+
+    for cut, (r, col) in zip(
+        events + quiets,
+        [(1, i + 1) for i in range(len(events))] + [(2, i + 1) for i in range(len(quiets))],
+    ):
+        panel = rows[rows["origin"] == cut.timestamp].sort_values("horizon")
+        past = prices.loc[cut.timestamp - pd.Timedelta(weeks=history_weeks) : cut.timestamp]
+        anchor = float(past.iloc[-1])
+        x = pd.DatetimeIndex([cut.timestamp, *panel["forecast_date"]])
+        first = r == 1 and col == 1  # legend entries once; legendgroup syncs the rest
+
+        for lower, upper, opacity in _FAN_BANDS:
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=[anchor, *panel[upper]],
+                    mode="lines",
+                    line={"width": 0},
+                    hoverinfo="skip",
+                    showlegend=False,
+                    legendgroup=f"band{lower}",
+                ),
+                row=r,
+                col=col,
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=[anchor, *panel[lower]],
+                    mode="lines",
+                    line={"width": 0},
+                    fill="tonexty",
+                    fillcolor=band_fill.format(opacity),
+                    name=f"{lower[1:]}-{upper[1:]}%",
+                    legendgroup=f"band{lower}",
+                    hoverinfo="skip",
+                    showlegend=first,
+                ),
+                row=r,
+                col=col,
+            )
+            y_lo = min(y_lo, float(panel[lower].min()))
+            y_hi = max(y_hi, float(panel[upper].max()))
+
+        fig.add_trace(
+            go.Scatter(
+                x=past.index,
+                y=past.to_numpy(),
+                mode="lines",
+                line={"color": theme["muted"], "width": 2},
+                name="history at cutoff",
+                legendgroup="hist",
+                showlegend=first,
+                hovertemplate=f"%{{x|%d %b %Y}}<br><b>{currency}%{{y:,.0f}}</b><extra></extra>",
+            ),
+            row=r,
+            col=col,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=[anchor, *panel["q50"]],
+                mode="lines+markers",
+                line={"color": theme["series_1"], "width": 2},
+                marker={"size": 5},
+                name="forecast median",
+                legendgroup="med",
+                showlegend=first,
+                hovertemplate=f"%{{x|%d %b %Y}}<br>median <b>{currency}%{{y:,.0f}}</b><extra></extra>",
+            ),
+            row=r,
+            col=col,
+        )
+        if "actual" in panel.columns and panel["actual"].notna().any():
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=[anchor, *panel["actual"]],
+                    mode="lines+markers",
+                    line={"color": theme["series_2"], "width": 2, "dash": "dot"},
+                    marker={"size": 5},
+                    name="actual",
+                    legendgroup="act",
+                    showlegend=first,
+                    hovertemplate=f"%{{x|%d %b %Y}}<br>actual <b>{currency}%{{y:,.0f}}</b><extra></extra>",
+                ),
+                row=r,
+                col=col,
+            )
+            y_hi = max(y_hi, float(panel["actual"].max()))
+        y_lo = min(y_lo, float(past.min()))
+        y_hi = max(y_hi, float(past.max()))
+
+    pad = 0.04 * (y_hi - y_lo)
+    fig.update_yaxes(range=[y_lo - pad, y_hi + pad])
+    fig.update_annotations(font={"size": 11, "color": theme["text"]})
+    fig = _style(
+        fig,
+        theme,
+        title=f"{predictor} across all {len(ordered)} cutoffs — events top, quiets bottom",
+        ylabel="",
+        height=640,
+    )
+    fig.update_layout(hovermode="closest", margin={"l": 55, "r": 30, "t": 95, "b": 40})
+    for r, col in [(1, 1), (2, 1)]:
+        fig.update_yaxes(title=f"MYR/t ({currency})", row=r, col=col)
+    return fig
+
+
 __all__ = [
     "BLACKOUT_PERIODS",
     "DARK_THEME",
@@ -875,6 +1058,7 @@ __all__ = [
     "Cutoff",
     "plot_crps_by_horizon",
     "plot_cutoff_windows",
+    "plot_fan_grid",
     "plot_forecast_fan",
     "plot_information_gap",
     "plot_news_coverage",
