@@ -904,6 +904,61 @@ def plot_forecast_fan(
     )
 
 
+#: Secondary encodings for predictors past the eighth, in order of use.  A hue
+#: on its own runs out at eight validated slots; hue *plus* one of these is a
+#: distinct identity again, which is what lets a twelve-model comparison stay on
+#: one chart instead of hiding the tail.
+_SECOND_CYCLE: list[dict[str, str]] = [
+    {"pattern": "/", "dash": "dot", "symbol": "diamond"},
+    {"pattern": "x", "dash": "dashdot", "symbol": "square"},
+    {"pattern": "-", "dash": "longdash", "symbol": "triangle-up"},
+]
+
+#: Hue slots, cycled only in combination with :data:`_SECOND_CYCLE`.
+_N_SLOTS = 8
+
+
+def _series_styles(names: list[str], theme: dict[str, str]) -> dict[str, dict[str, str]]:
+    """Assign each predictor a hue plus, past slot eight, a secondary encoding.
+
+    Colour follows the predictor, never its rank, so the same set of predictors
+    always paints the same way.  The first eight take the validated hues plain;
+    the next eight reuse those hues with a hatch (bars) or a dash and marker
+    shape (lines), which is composite encoding rather than hue cycling -- two
+    series never share a full identity.
+
+    Parameters
+    ----------
+    names : list[str]
+        Predictor ids, excluding whatever is drawn as the muted reference.
+    theme : dict
+        Colour dict from :func:`_theme`.
+
+    Returns
+    -------
+    dict
+        ``{name: {"colour", "pattern", "dash", "symbol"}}``.
+
+    Raises
+    ------
+    ValueError
+        Past ``8 * (1 + len(_SECOND_CYCLE))`` predictors, where even composite
+        encoding stops being readable.
+    """
+    capacity = _N_SLOTS * (1 + len(_SECOND_CYCLE))
+    if len(names) > capacity:
+        raise ValueError(
+            f"{len(names)} predictors but only {capacity} distinct identities -- facet into small "
+            "multiples rather than pushing more onto one chart"
+        )
+    slots = [theme[f"series_{i}"] for i in range(1, _N_SLOTS + 1)]
+    plain = {"pattern": "", "dash": "solid", "symbol": "circle"}
+    return {
+        name: {"colour": slots[i % _N_SLOTS], **(plain if i < _N_SLOTS else _SECOND_CYCLE[i // _N_SLOTS - 1])}
+        for i, name in enumerate(names)
+    }
+
+
 def plot_median_comparison(
     predictions: pd.DataFrame,
     history: pd.DataFrame,
@@ -912,6 +967,7 @@ def plot_median_comparison(
     reference: str = "last_value_naive",
     history_weeks: int = 26,
     currency: str = "RM",
+    labels: dict[str, str] | None = None,
     dark: bool = False,
 ) -> go.Figure:
     """Draw every method's median path for one origin, against what happened.
@@ -920,6 +976,11 @@ def plot_median_comparison(
     question a room full of people actually asks -- *who got closest, and where
     did they disagree*.  Bands are dropped deliberately: eight overlapping fans
     is a smear, and the spread is already reported by the coverage table.
+
+    The y-axis is framed on the realised path, not on the forecasts: one badly
+    wrong model (Prophet is 30% high at some origins) would otherwise squash
+    every other method into a flat band.  Anything that leaves the frame is
+    named in a note on the figure rather than quietly clipped.
 
     Parameters
     ----------
@@ -936,6 +997,9 @@ def plot_median_comparison(
         Weeks of realised history shown left of the cutoff.
     currency : str
         Symbol used in hover readouts.
+    labels : dict or None
+        Display name per predictor id, for the legend and the out-of-frame
+        note.  ``None`` uses the raw ids.
     dark : bool
         Use the dark palette.
 
@@ -957,12 +1021,8 @@ def plot_median_comparison(
         raise ValueError(f"no predictions for origin {origin}")
 
     names = sorted(p for p in rows["predictor"].unique() if p != reference)
-    slots = [theme[f"series_{i}"] for i in range(1, 9)]
-    if len(names) > len(slots):
-        raise ValueError(
-            f"{len(names)} predictors but only {len(slots)} validated colour slots -- "
-            "fold the extras into a reference role or facet into small multiples"
-        )
+    styles = _series_styles(names, theme)
+    label = dict(labels or {})
 
     past = history.set_index("timestamp")["value"].loc[cut - pd.Timedelta(weeks=history_weeks) : cut]
     anchor_y = float(past.iloc[-1])
@@ -984,19 +1044,25 @@ def plot_median_comparison(
     for name in ([reference] if reference in set(rows["predictor"]) else []) + names:
         one = rows[rows["predictor"] == name].sort_values("horizon")
         is_ref = name == reference
+        # Past the eighth predictor the hue repeats, so the dash pattern and
+        # marker shape carry the difference -- see :func:`_series_styles`.
+        style = {"colour": theme["muted"], "dash": "dash", "symbol": "circle"} if is_ref else styles[name]
         fig.add_trace(
             go.Scatter(
                 x=pd.DatetimeIndex([cut, *one["forecast_date"]]),
                 y=[anchor_y, *one["q50"]],
                 mode="lines+markers",
-                line={
-                    "color": theme["muted"] if is_ref else slots[names.index(name)],
-                    "width": 2,
-                    "dash": "dash" if is_ref else "solid",
+                line={"color": style["colour"], "width": 2, "dash": style["dash"]},
+                marker={
+                    "size": 7,
+                    "symbol": style["symbol"],
+                    "line": {"width": 2, "color": theme["surface"]},
                 },
-                marker={"size": 7, "line": {"width": 2, "color": theme["surface"]}},
-                name=name,
-                hovertemplate=f"{name}<br>%{{x|%d %b %Y}}<br>median <b>{currency}%{{y:,.0f}}</b><extra></extra>",
+                name=label.get(name, name),
+                hovertemplate=(
+                    f"{label.get(name, name)}<br>%{{x|%d %b %Y}}<br>"
+                    f"median <b>{currency}%{{y:,.0f}}</b><extra></extra>"
+                ),
             )
         )
 
@@ -1024,7 +1090,7 @@ def plot_median_comparison(
         annotation_font={"size": 11, "color": theme["muted"]},
     )
     kind = next((c.kind for c in DEFAULT_CUTOFFS if c.date == origin), "")
-    return _style(
+    fig = _style(
         fig,
         theme,
         title=f"Every method at {origin}{f' ({kind} cutoff)' if kind else ''} — median paths",
@@ -1034,6 +1100,32 @@ def plot_median_comparison(
         # legend would land on the forecast lines.
         legend_position="bottom",
     )
+
+    # Frame on what happened, padded by a quarter of its own span, and name
+    # whatever escapes.  Without this one wild forecast sets the scale and
+    # every other method collapses onto a single flat line.
+    grounded = pd.concat([past, pd.Series([anchor_y, *first["actual"].dropna()])])
+    span = float(grounded.max() - grounded.min()) or float(grounded.max()) * 0.05
+    lo, hi = float(grounded.min()) - 0.25 * span, float(grounded.max()) + 0.25 * span
+    escapees = [
+        label.get(name, name)
+        for name in names
+        if rows.loc[rows["predictor"] == name, "q50"].agg(["min", "max"]).pipe(lambda s: s["min"] < lo or s["max"] > hi)
+    ]
+    fig.update_yaxes(range=[lo, hi])
+    if escapees:
+        fig.add_annotation(
+            text=f"off the top or bottom of this frame: {', '.join(escapees)}",
+            xref="paper",
+            yref="paper",
+            x=1,
+            y=1.02,
+            xanchor="right",
+            yanchor="bottom",
+            showarrow=False,
+            font={"size": 11, "color": theme["muted"]},
+        )
+    return fig
 
 
 def plot_crps_by_horizon(
@@ -1073,28 +1165,25 @@ def plot_crps_by_horizon(
     # The floor is drawn in muted ink rather than taking a categorical slot:
     # it is the ruler, not a competitor, and that frees all eight hues for the
     # predictors actually being compared.
-    slots = [theme[f"series_{i}"] for i in range(1, 9)]
-    colours = {name: slots[i] for i, name in enumerate(others)} if len(others) <= len(slots) else {}
-    if not colours and others:
-        raise ValueError(
-            f"{len(others)} predictors besides the floor but only {len(slots)} validated colour "
-            "slots -- fold the extras into a reference role, or facet into small multiples "
-            "rather than cycling hues"
-        )
-    colours[reference] = theme["muted"]
+    styles = _series_styles(others, theme)
+    styles[reference] = {"colour": theme["muted"], "pattern": "", "dash": "dash", "symbol": "circle"}
 
     fig = go.Figure()
     for name in ordered:
+        style = styles[name]
         fig.add_trace(
             go.Bar(
                 x=[f"{h}w" for h in table.index],
                 y=table[name],
                 name=name,
                 # 2px surface gap between neighbouring bars, per the mark spec.
+                # Past the eighth predictor the hue repeats, so a hatch carries
+                # the difference -- see :func:`_series_styles`.
                 marker={
-                    "color": colours[name],
+                    "color": style["colour"],
                     "line": {"width": 2, "color": theme["surface"]},
                     "cornerradius": 4,
+                    "pattern": {"shape": style["pattern"], "fgcolor": theme["surface"], "size": 5, "solidity": 0.25},
                 },
                 hovertemplate=f"{name}<br>%{{x}} ahead<br>CRPS <b>%{{y:,.1f}}</b><extra></extra>",
             )

@@ -36,6 +36,7 @@ from cpo.data import MPOB_WEEKLY_SERIES_ID, naive_utc_now
 from cpo.plots import (
     DARK_THEME,
     DEFAULT_CUTOFFS,
+    _series_styles,  # noqa: PLC2701 -- the table's swatches must match the figures exactly
     plot_crps_by_horizon,
     plot_forecast_fan,
     plot_median_comparison,
@@ -199,28 +200,10 @@ def _colours(order: list[str]) -> dict[str, str]:
     ruler, not a competitor -- which leaves all eight validated hues for the
     predictors being compared.
     """
-    slots = [T[f"series_{i}"] for i in range(1, 9)]
-    others = [p for p in order if p != REFERENCE]
-    mapping = dict.fromkeys(others, T["grid"])
-    mapping.update({p: slots[i] for i, p in enumerate(others[: len(slots)])})
+    styles = _series_styles(sorted(p for p in order if p != REFERENCE), T)
+    mapping = {name: style["colour"] for name, style in styles.items()}
     mapping[REFERENCE] = T["muted"]
     return mapping
-
-
-def _charted(means: pd.Series) -> list[str]:
-    """Pick which predictors get a hue, best-scoring first.
-
-    There are more predictors than validated colour slots, and a ninth hue does
-    not exist -- cycling would put two methods in the same colour, which is
-    worse than leaving one out.  Both agent arms are kept regardless of rank:
-    they are the comparison the page is about.  The rest are ranked by mean
-    CRPS, and whatever does not fit is named in the table instead, never
-    silently dropped.
-    """
-    agents = [p for p in means.index if p in AGENT_ARMS]
-    rest = [p for p in means.index if p not in AGENT_ARMS and p != REFERENCE]
-    keep = agents + [p for p in rest if p not in agents]
-    return [REFERENCE] + sorted(keep[:8], key=lambda p: means[p])
 
 
 def _relabel(fig):
@@ -330,12 +313,10 @@ def main() -> None:
     cov = coverage(frame)
     means = by_horizon.mean().sort_values()
     # Every predictor appears in the table and in the fan picker; only the
-    # hue-worthy ones are drawn in the two multi-series charts.  Charted first,
-    # so the colour assignment in _colours lines up with the figures.
-    charted = _charted(means)
-    left_out = [p for p in means.index if p not in charted]
-    order = charted + left_out
-    chart_frame = frame[frame.predictor.isin(charted)]
+    # Every predictor is charted.  Past the eighth the hue repeats with a hatch
+    # (bars) or a dash and marker shape (lines), so no two share an identity --
+    # see cpo.plots._series_styles.
+    order = [REFERENCE] + sorted(p for p in means.index if p != REFERENCE)
     best, best_score = means.index[0], means.iloc[0]
     naive_score = means[REFERENCE]
     best_baseline = next(p for p in means.index if p not in AGENT_ARMS and p != REFERENCE)
@@ -370,18 +351,13 @@ def main() -> None:
         "and structure only pays at range. A model that loses everywhere but wins on the mean is a mixing artefact.</p>",
         "<figure>",
         # plotly.js is inlined once, here, and reused by every figure below.
-        _relabel(plot_crps_by_horizon(chart_frame, dark=True)).to_html(
+        _relabel(plot_crps_by_horizon(frame, dark=True)).to_html(
             full_html=False, include_plotlyjs="inline", config=_FIG_CONFIG
         ),
         "</figure>",
-        (
-            "<p class='cap'>Drawn: the naive floor plus the eight best-scoring methods, which is every hue the "
-            "palette has. Left out of this chart and the next, and shown in the table below: "
-            + ", ".join(_label(p) for p in left_out)
-            + ".</p>"
-            if left_out
-            else ""
-        ),
+        f"<p class='cap'>All {len(order)} methods, naive floor in grey. The palette has eight validated hues, so "
+        "the last four repeat a hue with a hatch over it &mdash; hue alone never identifies a method here, and no "
+        "two share both.</p>",
         _results_table(by_horizon, skill, cov, order),
         "<h2>Every method, one chart</h2>",
         "<p class='sub'>Median paths from a single cutoff, against what the price actually did. "
@@ -394,7 +370,7 @@ def main() -> None:
     parts.append("</select></label></div>")
 
     for cut in DEFAULT_CUTOFFS:
-        fig = _relabel(plot_median_comparison(chart_frame, history, origin=cut.date, dark=True))
+        fig = plot_median_comparison(frame, history, origin=cut.date, labels=DISPLAY_NAMES, dark=True)
         parts.append(f"<div class='combined' data-cutoff='{cut.date}'><figure>")
         parts.append(fig.to_html(full_html=False, include_plotlyjs=False, config=_FIG_CONFIG))
         parts.append(f"</figure><p class='cap'><span class='kind {cut.kind}'>{cut.kind}</span>{cut.label}</p></div>")
