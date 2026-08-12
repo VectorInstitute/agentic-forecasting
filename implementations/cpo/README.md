@@ -74,7 +74,10 @@ everywhere.
 | File | What it does |
 |---|---|
 | [`data.py`](data.py) | Loads prices, leak-safe. Start here. |
-| [`plots.py`](plots.py) | Price charts; `DEFAULT_CUTOFFS`, `HORIZONS_WEEKS`. |
+| [`plots.py`](plots.py) | Price, fan, and comparison charts; `DEFAULT_CUTOFFS`, `HORIZONS_WEEKS`. |
+| [`agent.py`](agent.py) | The two agent arms: price-only, and price + cutoff-fenced `search_web`. |
+| [`run_agent.py`](run_agent.py) | Runs an agent arm over a spec and caches the result. Needs the Vector proxy keys. |
+| [`make_plots.py`](make_plots.py) | Builds `outputs/baselines_plots.html` — the results page — from the cached artefacts. |
 | [`00_FRED_source_evaluation.ipynb`](00_FRED_source_evaluation.ipynb) | Superseded — why FRED was rejected. |
 | [`01_cpo_data_exploration.ipynb`](01_cpo_data_exploration.ipynb) | Tour of the MPOB price series, incl. the Yahoo roll-artifact comparison. |
 | [`02_cutoff_selection.ipynb`](02_cutoff_selection.ipynb) | Derives the 7 forecast cutoffs from MPOB data. |
@@ -100,8 +103,15 @@ everywhere.
 - [x] Baselines on the seven cutoffs — 10 models, `03_baselines.ipynb` (ETS/ARIMA/kalman_fixed tie ~157-163;
   every working model converges on a random walk, so the agent's bar is calibration, not point accuracy)
 - [ ] Baselines on the dense weekly `cpo_backtest` (104 origins) to separate the close models
-- [ ] Agent: prices + news, same origins
-- [ ] Compare in one table
+- [x] Agent: prices only and prices + search, same origins (2026-08-12) — the
+  news arm uses live `search_web` behind the cutoff verifier, not the CSV
+- [x] Compare in one table — `outputs/baselines_plots.html`, built by
+  `make_plots.py` from the committed artefacts in `data/predictions/`
+- [ ] Repeat the agent arms — one run of the price-only arm scored 143 and
+  another 163 mean CRPS, a swing wider than the gap between the top three
+  baselines, so neither agent number is yet a measurement
+- [ ] Score on `cpo_eval` (2026 hold-out) once news coverage extends past
+  2025-11-28 — the only window where training-data recall is not a threat
 
 ## Notes
 

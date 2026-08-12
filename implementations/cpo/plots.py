@@ -35,8 +35,18 @@ import plotly.graph_objects as go
 
 
 # ── Palette ──────────────────────────────────────────────────────────────────
-# Validated categorical slots 1-4 plus surfaces and ink, for light and dark.
+# Validated categorical slots 1-7 plus surfaces and ink, for light and dark.
 # Swapping a whole dict swaps the theme; no chart code references raw hex.
+#
+# Slots 5-8 were added as the predictor comparison grew past four series --
+# before that the four slots were cycled, so two predictors shared a colour.
+# The eight-slot set passes every gate in both modes on the adjacent pairlist
+# (worst CVD dE 9.1 light / 8.4 dark, worst normal-vision dE 19.6 / 19.3).
+# Eight is the ceiling: a ninth series folds into a reference role (the naive
+# floor is drawn in muted ink, not a slot) rather than inventing a hue.
+# Three light slots sit under 3:1 against the light surface, so light-mode
+# figures ship the numbers alongside -- the table beneath the comparison chart
+# in ``make_plots.py``, or the CLI's printed tables.
 
 LIGHT_THEME: dict[str, str] = {
     "surface": "#fcfcfb",
@@ -238,16 +248,35 @@ def _style(
         title={"text": title, "font": {"size": 17, "color": theme["text"]}, "y": 0.97, "yanchor": "top"},
         paper_bgcolor=theme["surface"],
         plot_bgcolor=theme["surface"],
-        font={"color": theme["muted"], "size": 12},
+        font={"family": "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif"},
         height=height,
         width=width,
         margin=margin,
         hovermode="x unified",
-        legend=legend,
+        # Plotly's default hover card is a light box, unreadable on the dark
+        # surface; it takes the theme like everything else.
+        hoverlabel={
+            "bgcolor": theme["surface"],
+            "bordercolor": theme["grid"],
+            "font": {"color": theme["text"], "size": 12},
+        },
+        legend=legend | {"font": {"color": theme["muted"], "size": 12}, "bgcolor": "rgba(0,0,0,0)"},
     )
-    axis = {"gridcolor": theme["grid"], "zeroline": False, "linecolor": theme["grid"], "showspikes": False}
-    fig.update_xaxes(**axis)
-    fig.update_yaxes(**axis, title=ylabel)
+    axis = {
+        "gridcolor": theme["grid"],
+        "zeroline": False,
+        "linecolor": theme["grid"],
+        "showspikes": False,
+        "ticks": "outside",
+        "ticklen": 4,
+        "tickcolor": theme["grid"],
+        "tickfont": {"color": theme["muted"], "size": 12},
+        "title_font": {"color": theme["muted"], "size": 12},
+    }
+    fig.update_xaxes(**axis, showgrid=False)
+    # title_text, not title: a bare string would replace the title object and
+    # drop the font set just above, leaving Plotly's default blue label.
+    fig.update_yaxes(**axis, title_text=ylabel, griddash="dot")
     return fig
 
 
@@ -836,7 +865,9 @@ def plot_forecast_fan(
             y=[anchor_y, *rows["q50"]],
             mode="lines+markers",
             line={"color": theme["series_1"], "width": 2},
-            marker={"size": 8},
+            # 2px surface ring: the median and the realised path cross, and
+            # without it the markers merge where they meet.
+            marker={"size": 9, "line": {"width": 2, "color": theme["surface"]}},
             name="forecast median",
             hovertemplate=f"%{{x|%d %b %Y}}<br>median <b>{currency}%{{y:,.0f}}</b><extra></extra>",
         )
@@ -848,13 +879,21 @@ def plot_forecast_fan(
                 y=[anchor_y, *rows["actual"]],
                 mode="lines+markers",
                 line={"color": theme["series_2"], "width": 2, "dash": "dot"},
-                marker={"size": 8},
+                marker={"size": 9, "line": {"width": 2, "color": theme["surface"]}},
                 name="what actually happened",
                 hovertemplate=f"%{{x|%d %b %Y}}<br>actual <b>{currency}%{{y:,.0f}}</b><extra></extra>",
             )
         )
 
-    fig.add_vline(x=cut.to_pydatetime(), line_width=1, line_dash="dash", line_color=theme["muted"])
+    fig.add_vline(
+        x=cut.to_pydatetime(),
+        line_width=1,
+        line_dash="dash",
+        line_color=theme["muted"],
+        annotation_text="cutoff",
+        annotation_position="top",
+        annotation_font={"size": 11, "color": theme["muted"]},
+    )
     label = predictor or str(rows["predictor"].iloc[0])
     kind = next((c.kind for c in DEFAULT_CUTOFFS if c.date == origin), "")
     return _style(
@@ -862,6 +901,135 @@ def plot_forecast_fan(
         theme,
         title=f"{label} at {origin}{f' ({kind} cutoff)' if kind else ''}",
         ylabel=f"MYR per tonne ({currency})",
+    )
+
+
+def plot_median_comparison(
+    predictions: pd.DataFrame,
+    history: pd.DataFrame,
+    *,
+    origin: str,
+    reference: str = "last_value_naive",
+    history_weeks: int = 26,
+    currency: str = "RM",
+    dark: bool = False,
+) -> go.Figure:
+    """Draw every method's median path for one origin, against what happened.
+
+    The per-predictor fan answers "was this model calibrated"; this answers the
+    question a room full of people actually asks -- *who got closest, and where
+    did they disagree*.  Bands are dropped deliberately: eight overlapping fans
+    is a smear, and the spread is already reported by the coverage table.
+
+    Parameters
+    ----------
+    predictions : pd.DataFrame
+        Rows from :func:`cpo.baselines.predictions_frame`, several predictors,
+        with ``actual`` attached.
+    history : pd.DataFrame
+        Weekly price frame with ``timestamp`` and ``value``.
+    origin : str
+        Cutoff date, ``YYYY-MM-DD``.
+    reference : str
+        Predictor drawn as the muted floor rather than in a categorical hue.
+    history_weeks : int
+        Weeks of realised history shown left of the cutoff.
+    currency : str
+        Symbol used in hover readouts.
+    dark : bool
+        Use the dark palette.
+
+    Returns
+    -------
+    go.Figure
+        One line per predictor, the realised path in ink, history behind it.
+
+    Raises
+    ------
+    ValueError
+        If no rows match ``origin``, or more predictors are present than there
+        are validated colour slots.
+    """
+    theme = _theme(dark)
+    cut = pd.Timestamp(origin)
+    rows = predictions[predictions["origin"] == cut]
+    if rows.empty:
+        raise ValueError(f"no predictions for origin {origin}")
+
+    names = sorted(p for p in rows["predictor"].unique() if p != reference)
+    slots = [theme[f"series_{i}"] for i in range(1, 9)]
+    if len(names) > len(slots):
+        raise ValueError(
+            f"{len(names)} predictors but only {len(slots)} validated colour slots -- "
+            "fold the extras into a reference role or facet into small multiples"
+        )
+
+    past = history.set_index("timestamp")["value"].loc[cut - pd.Timedelta(weeks=history_weeks) : cut]
+    anchor_y = float(past.iloc[-1])
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=past.index,
+            y=past.to_numpy(),
+            mode="lines",
+            line={"color": theme["muted"], "width": 2},
+            name="history seen at cutoff",
+            hovertemplate=f"%{{x|%d %b %Y}}<br><b>{currency}%{{y:,.0f}}</b><extra></extra>",
+        )
+    )
+
+    # The floor first and in muted ink, so the eye reads it as the ruler; then
+    # each predictor in its own hue; the realised path last, on top, in ink.
+    for name in ([reference] if reference in set(rows["predictor"]) else []) + names:
+        one = rows[rows["predictor"] == name].sort_values("horizon")
+        is_ref = name == reference
+        fig.add_trace(
+            go.Scatter(
+                x=pd.DatetimeIndex([cut, *one["forecast_date"]]),
+                y=[anchor_y, *one["q50"]],
+                mode="lines+markers",
+                line={
+                    "color": theme["muted"] if is_ref else slots[names.index(name)],
+                    "width": 2,
+                    "dash": "dash" if is_ref else "solid",
+                },
+                marker={"size": 7, "line": {"width": 2, "color": theme["surface"]}},
+                name=name,
+                hovertemplate=f"{name}<br>%{{x|%d %b %Y}}<br>median <b>{currency}%{{y:,.0f}}</b><extra></extra>",
+            )
+        )
+
+    first = rows[rows["predictor"] == rows["predictor"].iloc[0]].sort_values("horizon")
+    if "actual" in rows.columns and first["actual"].notna().any():
+        fig.add_trace(
+            go.Scatter(
+                x=pd.DatetimeIndex([cut, *first["forecast_date"]]),
+                y=[anchor_y, *first["actual"]],
+                mode="lines+markers",
+                line={"color": theme["text"], "width": 3},
+                marker={"size": 10, "line": {"width": 2, "color": theme["surface"]}},
+                name="what actually happened",
+                hovertemplate=f"%{{x|%d %b %Y}}<br>actual <b>{currency}%{{y:,.0f}}</b><extra></extra>",
+            )
+        )
+
+    fig.add_vline(
+        x=cut.to_pydatetime(),
+        line_width=1,
+        line_dash="dash",
+        line_color=theme["muted"],
+        annotation_text="cutoff",
+        annotation_position="top",
+        annotation_font={"size": 11, "color": theme["muted"]},
+    )
+    kind = next((c.kind for c in DEFAULT_CUTOFFS if c.date == origin), "")
+    return _style(
+        fig,
+        theme,
+        title=f"Every method at {origin}{f' ({kind} cutoff)' if kind else ''} — median paths",
+        ylabel=f"MYR per tonne ({currency})",
+        height=560,
     )
 
 
@@ -894,29 +1062,56 @@ def plot_crps_by_horizon(
     """
     theme = _theme(dark)
     table = frame.pivot_table(index="horizon", columns="predictor", values="crps")
-    others = [c for c in table.columns if c != reference]
+    # The floor leads, then the rest in name order.  Deterministic on purpose:
+    # colour follows the predictor, so re-running with the same set of
+    # predictors always paints each one the same.
+    others = sorted(c for c in table.columns if c != reference)
     ordered = ([reference] if reference in table.columns else []) + others
-    slots = [theme["series_1"], theme["series_2"], theme["series_3"], theme["series_4"]]
+    # The floor is drawn in muted ink rather than taking a categorical slot:
+    # it is the ruler, not a competitor, and that frees all eight hues for the
+    # predictors actually being compared.
+    slots = [theme[f"series_{i}"] for i in range(1, 9)]
+    colours = {name: slots[i] for i, name in enumerate(others)} if len(others) <= len(slots) else {}
+    if not colours and others:
+        raise ValueError(
+            f"{len(others)} predictors besides the floor but only {len(slots)} validated colour "
+            "slots -- fold the extras into a reference role, or facet into small multiples "
+            "rather than cycling hues"
+        )
+    colours[reference] = theme["muted"]
 
     fig = go.Figure()
-    for i, name in enumerate(ordered):
+    for name in ordered:
         fig.add_trace(
             go.Bar(
                 x=[f"{h}w" for h in table.index],
                 y=table[name],
                 name=name,
-                marker={"color": slots[i % len(slots)], "line": {"width": 2, "color": theme["surface"]}},
-                text=[f"{v:,.0f}" for v in table[name]],
-                textposition="outside",
-                textfont={"color": theme["muted"], "size": 11},
+                # 2px surface gap between neighbouring bars, per the mark spec.
+                marker={
+                    "color": colours[name],
+                    "line": {"width": 2, "color": theme["surface"]},
+                    "cornerradius": 4,
+                },
                 hovertemplate=f"{name}<br>%{{x}} ahead<br>CRPS <b>%{{y:,.1f}}</b><extra></extra>",
             )
         )
 
-    fig.update_layout(barmode="group", bargap=0.28, bargroupgap=0.06)
-    fig = _style(fig, theme, title="Mean CRPS by horizon — lower is better", ylabel="CRPS (MYR per tonne)")
+    fig.update_layout(barmode="group", bargap=0.3, bargroupgap=0.04)
+    fig = _style(
+        fig,
+        theme,
+        title="Mean CRPS by horizon — lower is better",
+        ylabel="CRPS (MYR per tonne)",
+        height=520,
+    )
+    # Per-bar value labels are left off: 35 numbers on 35 bars is noise, and at
+    # this density they collide.  Hover carries the exact figure, and the page
+    # and CLI both print the table.
     fig.update_layout(hovermode="closest")
-    fig.update_xaxes(title="forecast horizon")
+    # title_text, not title -- passing a bare string would drop the font set in
+    # _style and the label would come back in Plotly's default blue.
+    fig.update_xaxes(title_text="forecast horizon")
     return fig
 
 
@@ -1300,6 +1495,7 @@ __all__ = [
     "plot_fan_grid",
     "plot_forecast_fan",
     "plot_information_gap",
+    "plot_median_comparison",
     "plot_news_coverage",
     "plot_period_changes",
     "plot_oil_complex",

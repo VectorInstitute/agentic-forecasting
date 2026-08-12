@@ -41,6 +41,11 @@ implementations/**/data/
 !implementations/energy_oil_forecasting/data/
 !implementations/energy_oil_forecasting/data/predictions/
 !implementations/energy_oil_forecasting/data/predictions/**
+# CPO backtest artefacts: the agent arms cost real tokens to produce, so the
+# scored results are committed rather than left to a local cache.
+!implementations/cpo/data/
+!implementations/cpo/data/predictions/
+!implementations/cpo/data/predictions/**
 
 # workspace-specific agents
 .github/agents/
