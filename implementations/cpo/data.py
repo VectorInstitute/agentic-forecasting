@@ -44,7 +44,7 @@ Usage
 -----
 ::
 
-    from pko.data import build_palm_oil_service, PALM_OIL_SERIES_ID
+    from cpo.data import build_palm_oil_service, PALM_OIL_SERIES_ID
 
     svc = build_palm_oil_service()
     ctx = svc.context(as_of=datetime(2026, 7, 1))
@@ -276,7 +276,15 @@ def build_palm_oil_service(
     return svc
 
 
-# ── Daily futures target (primary) ───────────────────────────────────────────
+# ── Daily futures series (no longer a target) ────────────────────────────────
+#
+# Superseded by MPOB below.  It was kept for a while as the Coder-safe fallback,
+# but the team settled on running locally (2026-08-11), where MPOB needs no
+# approval, and every spec now targets MPOB -- so this is no longer a forecast
+# target, and swapping it back in would make results incomparable.  Retained for: (a) the roll-artifact comparison in
+# 01_cpo_data_exploration.ipynb, which is what disqualified it; (b) the source
+# used to first prove FRED's monthly/lagged design was unworkable, before MPOB
+# was in the picture at all.
 #
 # The FRED service above is a monthly, publication-lagged view: a price is
 # stamped with the start of its reference month but not released for ~2 months,
@@ -323,8 +331,8 @@ _YAHOO_HISTORY_START = "2004-01-01"
 YAHOO_HISTORY_GAP = ("2016-01", "2016-06")
 
 
-def to_weekly(daily: pd.DataFrame) -> pd.DataFrame:
-    """Resample a daily price frame to Friday-close weekly observations.
+def to_weekly(daily: pd.DataFrame, *, how: str = "last") -> pd.DataFrame:
+    """Resample a daily price frame to weekly observations, labelled on Friday.
 
     Resampling with ``W-FRI`` labels every bin on its Friday even when that
     Friday was a holiday, so the weekly grid has no missing labels.  The
@@ -335,14 +343,29 @@ def to_weekly(daily: pd.DataFrame) -> pd.DataFrame:
     ----------
     daily : pd.DataFrame
         Frame with ``timestamp`` and ``value`` columns.
+    how : {"last", "median"}
+        ``"last"`` (default) takes the Friday close -- correct for a source
+        with no within-week artifact, e.g. MPOB or FRED. ``"median"`` takes
+        the median of the week's available trading days instead; see
+        :func:`build_palm_oil_futures_service` for why the futures series
+        uses this.
 
     Returns
     -------
     pd.DataFrame
         Columns ``timestamp``, ``value``, ``released_at``.  ``released_at``
         equals ``timestamp`` -- an exchange settlement is public the same day.
+
+    Raises
+    ------
+    ValueError
+        If ``how`` is not one of the supported values.
     """
-    series = daily.set_index("timestamp")["value"].resample("W-FRI").last().dropna()
+    if how not in ("last", "median"):
+        raise ValueError(f"how must be 'last' or 'median', got {how!r}")
+
+    resampled = daily.set_index("timestamp")["value"].resample("W-FRI")
+    series = (resampled.last() if how == "last" else resampled.median()).dropna()
     return pd.DataFrame(
         {"timestamp": series.index, "value": series.to_numpy(), "released_at": series.index}
     ).reset_index(drop=True)
@@ -355,10 +378,48 @@ def build_palm_oil_futures_service(
 ) -> DataService:
     """Return a :class:`DataService` with daily *and* weekly palm oil prices.
 
-    Registers :data:`PALM_OIL_DAILY_SERIES_ID` (business-daily) and
-    :data:`PALM_OIL_WEEKLY_SERIES_ID` (Friday close).  Both carry
-    ``released_at == timestamp``, which is correct for an exchange settlement
-    price and means the cutoff enforcer needs no correction.
+    Registers :data:`PALM_OIL_DAILY_SERIES_ID` (business-daily, Friday-close
+    equivalent) and :data:`PALM_OIL_WEEKLY_SERIES_ID` (weekly **median** --
+    see below for why).  Both carry ``released_at == timestamp``, which is
+    correct for an exchange settlement price and means the cutoff enforcer
+    needs no correction.
+
+    Weekly aggregation: median, not Friday close
+    ---------------------------------------------
+    Yahoo's continuous ``CPO=F`` series rolls to the next futures contract on
+    the first trading day of each month, and consecutive palm-oil contracts
+    are not priced identically. That produces a level jump with no underlying
+    market move: measured against the MPOB physical price over 2024-2026, the
+    roll-day gap has mean -0.09%, median -0.01%, std 3.47% -- unbiased noise,
+    not a directional bias, but large and sometimes severe (5 of 23 roll days
+    exceeded 5%).
+
+    Two mitigations were tried and rejected before landing on the median:
+
+    - **Dropping the first 1-4 trading days of the month** gets the weekly
+      roll-week/other-week volatility ratio down to ~1.1x (matching MPOB's
+      ~1.0x) but does so by starving some weeks of data -- 91 of 501 weeks
+      (2017-2026) end up built from only 1-2 surviving days, and pushing the
+      drop-day threshold higher makes the ratio *worse*, since more
+      roll-contaminated weeks then fall back to the uncleaned average. The
+      first 1-4 trading days also span two different calendar weeks in 52 of
+      116 months, so a single roll can hollow out two consecutive weeks.
+    - **Mean of all 5 days** dilutes the roll day by 1/5 without ever
+      discarding data: full 2010-2026 history, ratio 1.93x (LAST) -> 1.43x
+      (MEAN).
+
+    **Median of all available days in the week** was chosen over both:
+    every week uses its full sample (no threshold, no calendar-boundary
+    logic, no thin weeks), and it further discounts the one extreme day
+    without excluding it outright -- full-history ratio 1.33x, against
+    MPOB's own 0.98-1.0x benchmark. It does not reach parity; state the
+    residual contamination rather than treat it as solved. Median also
+    changes what "this week's price" means (a within-week statistic, not
+    "the price as of Friday") -- verified to track Friday-close within a
+    mean 0.03% gap in ordinary weeks, and to preserve rather than dampen
+    genuine multi-day moves (the March 2022 surge reads *larger* under
+    median, 16.4% vs 12.1%, because the roll-day price is excluded from
+    the calculation rather than averaged in).
 
     Parameters
     ----------
@@ -397,10 +458,14 @@ def build_palm_oil_futures_service(
     )
     svc.register(
         PALM_OIL_WEEKLY_SERIES_ID,
-        StaticFrameAdapter(to_weekly(daily)),
+        StaticFrameAdapter(to_weekly(daily, how="median")),
         SeriesMetadata(
             series_id=PALM_OIL_WEEKLY_SERIES_ID,
-            description="CME Crude Palm Oil settlement price, Friday close (Yahoo Finance CPO=F, resampled)",
+            description=(
+                "CME Crude Palm Oil settlement price, weekly median (Yahoo Finance CPO=F, "
+                "resampled with how='median' to reduce monthly contract-roll contamination -- "
+                "see build_palm_oil_futures_service docstring)"
+            ),
             source="yfinance, derived",
             units="USD per metric ton",
             frequency="W-FRI",
@@ -410,10 +475,152 @@ def build_palm_oil_futures_service(
     return svc
 
 
+# ── MPOB physical price (the active target) ──────────────────────────────────
+#
+# The Malaysian Palm Oil Board publishes the official daily CPO price: a
+# weighted average of actual reported transactions, "Local Delivered".  It is
+# the best of the three sources registered in this module, on every axis that
+# matters here:
+#
+#                    weekly points   span         roll artifact   publication lag
+#   FRED PPOILUSDM   -- (monthly)    1992-2026    none            10 days-2 months
+#   Yahoo CPO=F      814             2010-2026    5.2x (1.3x median-mitigated)  same day
+#   MPOB             971             2008-2026    ~1.0x           ~1 day
+#
+# Being a physical transaction price, MPOB has no contracts and therefore no
+# monthly roll discontinuities -- against Yahoo's futures series, where 19 of
+# the 20 largest daily moves fall on a roll date even after mitigation.  MPOB
+# is published the next working day, so ``timestamp`` is effectively the
+# release date and no ``released_at`` correction is required.
+#
+# DATA GOVERNANCE -- read before touching this section.  Per Vector (Ethan
+# Jackson, Slack, 2026-08-10), MPOB use *inside Coder* required a data-office
+# approval; local use needed none, on the condition that the raw data is never
+# redistributed -- explicitly called out: never push it to GitHub.
+#
+# This project runs locally (team decision, 2026-08-11), so no data-office
+# request is needed.  That holds only while it stays local -- running this inside
+# Coder makes the request necessary again.
+#
+# **The redistribution condition applies regardless** -- it is a condition on the
+# data, not on the environment.  The team's read of "redistribute": the raw MPOB
+# series (this module's parquet cache, gitignored, never commit it) stays out of
+# the repo; derived work built from it -- notebooks, charts, cutoff dates,
+# aggregate statistics -- is fine to commit and push.
+#
+# One difference to carry into any writeup: MPOB quotes **MYR per tonne**,
+# where the other two quote USD.  Forecasting in MYR keeps exchange-rate
+# movement out of the target; converting to USD makes it comparable with FRED
+# but mixes in USD/MYR.  Monthly averages of MPOB converted to USD track the
+# FRED IMF benchmark at 0.996 on levels and 0.962 on month-over-month changes,
+# which is what establishes these are the same commodity.
+#
+# Populate the cache first:  uv run python scripts/fetch_mpob.py
+
+MPOB_DAILY_SERIES_ID = "palm_oil_mpob_daily"
+"""Daily MPOB crude palm oil price, MYR per tonne."""
+
+MPOB_WEEKLY_SERIES_ID = "palm_oil_mpob_weekly"
+"""Weekly (Friday-close) MPOB price -- the frequency the backtest specs target."""
+
+MPOB_CACHE_DIR = Path("data/mpob")
+"""Directory written by ``scripts/fetch_mpob.py``."""
+
+MPOB_CACHE_FILENAME = "cpo_daily.parquet"
+
+
+def load_mpob_prices(cache_dir: Path | None = None) -> pd.DataFrame:
+    """Load the cached MPOB daily price history.
+
+    Parameters
+    ----------
+    cache_dir : Path or None
+        Directory holding ``cpo_daily.parquet``.  Defaults to
+        :data:`MPOB_CACHE_DIR`, resolved against the current working directory.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns ``timestamp``, ``value`` (MYR/tonne), ``released_at``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the cache has not been populated yet.
+    """
+    resolved_dir = cache_dir if cache_dir is not None else MPOB_CACHE_DIR
+    cache_path = resolved_dir / MPOB_CACHE_FILENAME
+    if not cache_path.exists():
+        raise FileNotFoundError(
+            f"No MPOB cache at {cache_path}. Populate it first:\n  uv run python scripts/fetch_mpob.py"
+        )
+
+    frame = pd.read_parquet(cache_path).rename(columns={"date": "timestamp", "myr": "value"})
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"]).dt.normalize()
+    frame = frame.dropna(subset=["value"]).sort_values("timestamp").reset_index(drop=True)
+    # MPOB posts each day's weighted average the next working day, so the
+    # observation is public within a day of its timestamp. Treating them as
+    # equal is accurate to within that day and never optimistic at a weekly grid.
+    frame["released_at"] = frame["timestamp"]
+    return frame[["timestamp", "value", "released_at"]]
+
+
+def build_mpob_service(cache_dir: Path | None = None) -> DataService:
+    """Return a :class:`DataService` with daily and weekly MPOB palm oil prices.
+
+    Registers :data:`MPOB_DAILY_SERIES_ID` (business-daily) and
+    :data:`MPOB_WEEKLY_SERIES_ID` (Friday close), both in MYR per tonne.
+
+    Parameters
+    ----------
+    cache_dir : Path or None
+        Directory holding the parquet written by ``scripts/fetch_mpob.py``.
+
+    Returns
+    -------
+    DataService
+        Ready for the backtest and evaluation harnesses.
+    """
+    daily = load_mpob_prices(cache_dir)
+
+    svc = DataService()
+    svc.register(
+        MPOB_DAILY_SERIES_ID,
+        StaticFrameAdapter(daily),
+        SeriesMetadata(
+            series_id=MPOB_DAILY_SERIES_ID,
+            description=(
+                "MPOB official daily crude palm oil price, Local Delivered — the weighted "
+                "average of reported physical transactions (Malaysian Palm Oil Board)"
+            ),
+            source="MPOB (bepi.mpob.gov.my)",
+            units="MYR per metric ton",
+            frequency="B",
+            table_id="mpob:cpo-local-delivered:daily",
+        ),
+    )
+    svc.register(
+        MPOB_WEEKLY_SERIES_ID,
+        StaticFrameAdapter(to_weekly(daily)),
+        SeriesMetadata(
+            series_id=MPOB_WEEKLY_SERIES_ID,
+            description="MPOB official crude palm oil price, Friday close (resampled from daily)",
+            source="MPOB (bepi.mpob.gov.my), derived",
+            units="MYR per metric ton",
+            frequency="W-FRI",
+            table_id="mpob:cpo-local-delivered:w-fri",
+        ),
+    )
+    return svc
+
+
 __all__ = [
     "DEFAULT_CACHE_DIR",
     "FALLBACK_RELEASE_LAG_DAYS",
     "FRED_SERIES_ID",
+    "MPOB_CACHE_DIR",
+    "MPOB_DAILY_SERIES_ID",
+    "MPOB_WEEKLY_SERIES_ID",
     "PALM_OIL_DAILY_SERIES_ID",
     "PALM_OIL_SERIES_ID",
     "PALM_OIL_WEEKLY_SERIES_ID",
@@ -421,8 +628,10 @@ __all__ = [
     "YAHOO_HISTORY_GAP",
     "YAHOO_TICKER",
     "attach_release_dates",
+    "build_mpob_service",
     "build_palm_oil_futures_service",
     "build_palm_oil_service",
     "fetch_release_dates",
+    "load_mpob_prices",
     "naive_utc_now",
 ]

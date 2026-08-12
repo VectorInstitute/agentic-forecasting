@@ -1,0 +1,776 @@
+spec:
+  task:
+    task_id: palm_oil_mpob_price_forecast
+    target_series_id: palm_oil_mpob_weekly
+    horizons:
+    - 1
+    - 2
+    - 4
+    - 8
+    - 13
+    frequency: W-FRI
+    description: MPOB official crude palm oil price, "Local Delivered", Friday close
+      in MYR per tonne, projected 1, 2, 4, 8 and 13 weeks ahead.
+    payload_type: continuous
+    categories: null
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2024-02-02T00:00:00'
+  end: '2025-11-28T00:00:00'
+  stride: 1
+  origin_dates:
+  - '2024-02-02T00:00:00'
+  - '2024-05-03T00:00:00'
+  - '2024-08-30T00:00:00'
+  - '2024-11-29T00:00:00'
+  - '2025-02-28T00:00:00'
+  - '2025-06-20T00:00:00'
+  - '2025-11-28T00:00:00'
+  warmup: 104
+  description: Seven-origin backtest on the MPOB weekly crude palm oil price, at horizons
+    1, 2, 4, 8 and 13 weeks. Four event origins (large move ahead) and three quiet
+    ones (calm ahead), cleanly separated and mutually at least 13 weeks apart so no
+    two forecast windows overlap. Scored with CRPS. This is the narrative set for
+    the event-vs-quiet comparison; a denser weekly backtest decides which model is
+    genuinely better.
+predictor_id: last_value_naive
+predictions:
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.807069'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-02-09T00:00:00'
+  payload:
+    point_forecast: 3800.0
+    quantiles:
+      '0.05': 3800.0
+      '0.1': 3800.0
+      '0.2': 3800.0
+      '0.3': 3800.0
+      '0.4': 3800.0
+      '0.5': 3800.0
+      '0.6': 3800.0
+      '0.7': 3800.0
+      '0.8': 3800.0
+      '0.9': 3800.0
+      '0.95': 3800.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.807069'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-02-16T00:00:00'
+  payload:
+    point_forecast: 3800.0
+    quantiles:
+      '0.05': 3800.0
+      '0.1': 3800.0
+      '0.2': 3800.0
+      '0.3': 3800.0
+      '0.4': 3800.0
+      '0.5': 3800.0
+      '0.6': 3800.0
+      '0.7': 3800.0
+      '0.8': 3800.0
+      '0.9': 3800.0
+      '0.95': 3800.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.807069'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-03-01T00:00:00'
+  payload:
+    point_forecast: 3800.0
+    quantiles:
+      '0.05': 3800.0
+      '0.1': 3800.0
+      '0.2': 3800.0
+      '0.3': 3800.0
+      '0.4': 3800.0
+      '0.5': 3800.0
+      '0.6': 3800.0
+      '0.7': 3800.0
+      '0.8': 3800.0
+      '0.9': 3800.0
+      '0.95': 3800.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.807069'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-03-29T00:00:00'
+  payload:
+    point_forecast: 3800.0
+    quantiles:
+      '0.05': 3800.0
+      '0.1': 3800.0
+      '0.2': 3800.0
+      '0.3': 3800.0
+      '0.4': 3800.0
+      '0.5': 3800.0
+      '0.6': 3800.0
+      '0.7': 3800.0
+      '0.8': 3800.0
+      '0.9': 3800.0
+      '0.95': 3800.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.807069'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-05-03T00:00:00'
+  payload:
+    point_forecast: 3800.0
+    quantiles:
+      '0.05': 3800.0
+      '0.1': 3800.0
+      '0.2': 3800.0
+      '0.3': 3800.0
+      '0.4': 3800.0
+      '0.5': 3800.0
+      '0.6': 3800.0
+      '0.7': 3800.0
+      '0.8': 3800.0
+      '0.9': 3800.0
+      '0.95': 3800.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.813242'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-05-10T00:00:00'
+  payload:
+    point_forecast: 3881.0
+    quantiles:
+      '0.05': 3881.0
+      '0.1': 3881.0
+      '0.2': 3881.0
+      '0.3': 3881.0
+      '0.4': 3881.0
+      '0.5': 3881.0
+      '0.6': 3881.0
+      '0.7': 3881.0
+      '0.8': 3881.0
+      '0.9': 3881.0
+      '0.95': 3881.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.813242'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-05-17T00:00:00'
+  payload:
+    point_forecast: 3881.0
+    quantiles:
+      '0.05': 3881.0
+      '0.1': 3881.0
+      '0.2': 3881.0
+      '0.3': 3881.0
+      '0.4': 3881.0
+      '0.5': 3881.0
+      '0.6': 3881.0
+      '0.7': 3881.0
+      '0.8': 3881.0
+      '0.9': 3881.0
+      '0.95': 3881.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.813242'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-05-31T00:00:00'
+  payload:
+    point_forecast: 3881.0
+    quantiles:
+      '0.05': 3881.0
+      '0.1': 3881.0
+      '0.2': 3881.0
+      '0.3': 3881.0
+      '0.4': 3881.0
+      '0.5': 3881.0
+      '0.6': 3881.0
+      '0.7': 3881.0
+      '0.8': 3881.0
+      '0.9': 3881.0
+      '0.95': 3881.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.813242'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-06-28T00:00:00'
+  payload:
+    point_forecast: 3881.0
+    quantiles:
+      '0.05': 3881.0
+      '0.1': 3881.0
+      '0.2': 3881.0
+      '0.3': 3881.0
+      '0.4': 3881.0
+      '0.5': 3881.0
+      '0.6': 3881.0
+      '0.7': 3881.0
+      '0.8': 3881.0
+      '0.9': 3881.0
+      '0.95': 3881.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.813242'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-08-02T00:00:00'
+  payload:
+    point_forecast: 3881.0
+    quantiles:
+      '0.05': 3881.0
+      '0.1': 3881.0
+      '0.2': 3881.0
+      '0.3': 3881.0
+      '0.4': 3881.0
+      '0.5': 3881.0
+      '0.6': 3881.0
+      '0.7': 3881.0
+      '0.8': 3881.0
+      '0.9': 3881.0
+      '0.95': 3881.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.819223'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-09-06T00:00:00'
+  payload:
+    point_forecast: 4070.0
+    quantiles:
+      '0.05': 4070.0
+      '0.1': 4070.0
+      '0.2': 4070.0
+      '0.3': 4070.0
+      '0.4': 4070.0
+      '0.5': 4070.0
+      '0.6': 4070.0
+      '0.7': 4070.0
+      '0.8': 4070.0
+      '0.9': 4070.0
+      '0.95': 4070.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.819223'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-09-13T00:00:00'
+  payload:
+    point_forecast: 4070.0
+    quantiles:
+      '0.05': 4070.0
+      '0.1': 4070.0
+      '0.2': 4070.0
+      '0.3': 4070.0
+      '0.4': 4070.0
+      '0.5': 4070.0
+      '0.6': 4070.0
+      '0.7': 4070.0
+      '0.8': 4070.0
+      '0.9': 4070.0
+      '0.95': 4070.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.819223'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-09-27T00:00:00'
+  payload:
+    point_forecast: 4070.0
+    quantiles:
+      '0.05': 4070.0
+      '0.1': 4070.0
+      '0.2': 4070.0
+      '0.3': 4070.0
+      '0.4': 4070.0
+      '0.5': 4070.0
+      '0.6': 4070.0
+      '0.7': 4070.0
+      '0.8': 4070.0
+      '0.9': 4070.0
+      '0.95': 4070.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.819223'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-10-25T00:00:00'
+  payload:
+    point_forecast: 4070.0
+    quantiles:
+      '0.05': 4070.0
+      '0.1': 4070.0
+      '0.2': 4070.0
+      '0.3': 4070.0
+      '0.4': 4070.0
+      '0.5': 4070.0
+      '0.6': 4070.0
+      '0.7': 4070.0
+      '0.8': 4070.0
+      '0.9': 4070.0
+      '0.95': 4070.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.819223'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-11-29T00:00:00'
+  payload:
+    point_forecast: 4070.0
+    quantiles:
+      '0.05': 4070.0
+      '0.1': 4070.0
+      '0.2': 4070.0
+      '0.3': 4070.0
+      '0.4': 4070.0
+      '0.5': 4070.0
+      '0.6': 4070.0
+      '0.7': 4070.0
+      '0.8': 4070.0
+      '0.9': 4070.0
+      '0.95': 4070.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.824252'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2024-12-06T00:00:00'
+  payload:
+    point_forecast: 4999.5
+    quantiles:
+      '0.05': 4999.5
+      '0.1': 4999.5
+      '0.2': 4999.5
+      '0.3': 4999.5
+      '0.4': 4999.5
+      '0.5': 4999.5
+      '0.6': 4999.5
+      '0.7': 4999.5
+      '0.8': 4999.5
+      '0.9': 4999.5
+      '0.95': 4999.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.824252'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2024-12-13T00:00:00'
+  payload:
+    point_forecast: 4999.5
+    quantiles:
+      '0.05': 4999.5
+      '0.1': 4999.5
+      '0.2': 4999.5
+      '0.3': 4999.5
+      '0.4': 4999.5
+      '0.5': 4999.5
+      '0.6': 4999.5
+      '0.7': 4999.5
+      '0.8': 4999.5
+      '0.9': 4999.5
+      '0.95': 4999.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.824252'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2024-12-27T00:00:00'
+  payload:
+    point_forecast: 4999.5
+    quantiles:
+      '0.05': 4999.5
+      '0.1': 4999.5
+      '0.2': 4999.5
+      '0.3': 4999.5
+      '0.4': 4999.5
+      '0.5': 4999.5
+      '0.6': 4999.5
+      '0.7': 4999.5
+      '0.8': 4999.5
+      '0.9': 4999.5
+      '0.95': 4999.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.824252'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2025-01-24T00:00:00'
+  payload:
+    point_forecast: 4999.5
+    quantiles:
+      '0.05': 4999.5
+      '0.1': 4999.5
+      '0.2': 4999.5
+      '0.3': 4999.5
+      '0.4': 4999.5
+      '0.5': 4999.5
+      '0.6': 4999.5
+      '0.7': 4999.5
+      '0.8': 4999.5
+      '0.9': 4999.5
+      '0.95': 4999.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.824252'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2025-02-28T00:00:00'
+  payload:
+    point_forecast: 4999.5
+    quantiles:
+      '0.05': 4999.5
+      '0.1': 4999.5
+      '0.2': 4999.5
+      '0.3': 4999.5
+      '0.4': 4999.5
+      '0.5': 4999.5
+      '0.6': 4999.5
+      '0.7': 4999.5
+      '0.8': 4999.5
+      '0.9': 4999.5
+      '0.95': 4999.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.829925'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-03-07T00:00:00'
+  payload:
+    point_forecast: 4687.5
+    quantiles:
+      '0.05': 4687.5
+      '0.1': 4687.5
+      '0.2': 4687.5
+      '0.3': 4687.5
+      '0.4': 4687.5
+      '0.5': 4687.5
+      '0.6': 4687.5
+      '0.7': 4687.5
+      '0.8': 4687.5
+      '0.9': 4687.5
+      '0.95': 4687.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.829925'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-03-14T00:00:00'
+  payload:
+    point_forecast: 4687.5
+    quantiles:
+      '0.05': 4687.5
+      '0.1': 4687.5
+      '0.2': 4687.5
+      '0.3': 4687.5
+      '0.4': 4687.5
+      '0.5': 4687.5
+      '0.6': 4687.5
+      '0.7': 4687.5
+      '0.8': 4687.5
+      '0.9': 4687.5
+      '0.95': 4687.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.829925'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-03-28T00:00:00'
+  payload:
+    point_forecast: 4687.5
+    quantiles:
+      '0.05': 4687.5
+      '0.1': 4687.5
+      '0.2': 4687.5
+      '0.3': 4687.5
+      '0.4': 4687.5
+      '0.5': 4687.5
+      '0.6': 4687.5
+      '0.7': 4687.5
+      '0.8': 4687.5
+      '0.9': 4687.5
+      '0.95': 4687.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.829925'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-04-25T00:00:00'
+  payload:
+    point_forecast: 4687.5
+    quantiles:
+      '0.05': 4687.5
+      '0.1': 4687.5
+      '0.2': 4687.5
+      '0.3': 4687.5
+      '0.4': 4687.5
+      '0.5': 4687.5
+      '0.6': 4687.5
+      '0.7': 4687.5
+      '0.8': 4687.5
+      '0.9': 4687.5
+      '0.95': 4687.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.829925'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-05-30T00:00:00'
+  payload:
+    point_forecast: 4687.5
+    quantiles:
+      '0.05': 4687.5
+      '0.1': 4687.5
+      '0.2': 4687.5
+      '0.3': 4687.5
+      '0.4': 4687.5
+      '0.5': 4687.5
+      '0.6': 4687.5
+      '0.7': 4687.5
+      '0.8': 4687.5
+      '0.9': 4687.5
+      '0.95': 4687.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.835638'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-06-27T00:00:00'
+  payload:
+    point_forecast: 4076.5
+    quantiles:
+      '0.05': 4076.5
+      '0.1': 4076.5
+      '0.2': 4076.5
+      '0.3': 4076.5
+      '0.4': 4076.5
+      '0.5': 4076.5
+      '0.6': 4076.5
+      '0.7': 4076.5
+      '0.8': 4076.5
+      '0.9': 4076.5
+      '0.95': 4076.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.835638'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-07-04T00:00:00'
+  payload:
+    point_forecast: 4076.5
+    quantiles:
+      '0.05': 4076.5
+      '0.1': 4076.5
+      '0.2': 4076.5
+      '0.3': 4076.5
+      '0.4': 4076.5
+      '0.5': 4076.5
+      '0.6': 4076.5
+      '0.7': 4076.5
+      '0.8': 4076.5
+      '0.9': 4076.5
+      '0.95': 4076.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.835638'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-07-18T00:00:00'
+  payload:
+    point_forecast: 4076.5
+    quantiles:
+      '0.05': 4076.5
+      '0.1': 4076.5
+      '0.2': 4076.5
+      '0.3': 4076.5
+      '0.4': 4076.5
+      '0.5': 4076.5
+      '0.6': 4076.5
+      '0.7': 4076.5
+      '0.8': 4076.5
+      '0.9': 4076.5
+      '0.95': 4076.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.835638'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-08-15T00:00:00'
+  payload:
+    point_forecast: 4076.5
+    quantiles:
+      '0.05': 4076.5
+      '0.1': 4076.5
+      '0.2': 4076.5
+      '0.3': 4076.5
+      '0.4': 4076.5
+      '0.5': 4076.5
+      '0.6': 4076.5
+      '0.7': 4076.5
+      '0.8': 4076.5
+      '0.9': 4076.5
+      '0.95': 4076.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.835638'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-09-19T00:00:00'
+  payload:
+    point_forecast: 4076.5
+    quantiles:
+      '0.05': 4076.5
+      '0.1': 4076.5
+      '0.2': 4076.5
+      '0.3': 4076.5
+      '0.4': 4076.5
+      '0.5': 4076.5
+      '0.6': 4076.5
+      '0.7': 4076.5
+      '0.8': 4076.5
+      '0.9': 4076.5
+      '0.95': 4076.5
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.841023'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2025-12-05T00:00:00'
+  payload:
+    point_forecast: 4090.0
+    quantiles:
+      '0.05': 4090.0
+      '0.1': 4090.0
+      '0.2': 4090.0
+      '0.3': 4090.0
+      '0.4': 4090.0
+      '0.5': 4090.0
+      '0.6': 4090.0
+      '0.7': 4090.0
+      '0.8': 4090.0
+      '0.9': 4090.0
+      '0.95': 4090.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.841023'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2025-12-12T00:00:00'
+  payload:
+    point_forecast: 4090.0
+    quantiles:
+      '0.05': 4090.0
+      '0.1': 4090.0
+      '0.2': 4090.0
+      '0.3': 4090.0
+      '0.4': 4090.0
+      '0.5': 4090.0
+      '0.6': 4090.0
+      '0.7': 4090.0
+      '0.8': 4090.0
+      '0.9': 4090.0
+      '0.95': 4090.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.841023'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2025-12-26T00:00:00'
+  payload:
+    point_forecast: 4090.0
+    quantiles:
+      '0.05': 4090.0
+      '0.1': 4090.0
+      '0.2': 4090.0
+      '0.3': 4090.0
+      '0.4': 4090.0
+      '0.5': 4090.0
+      '0.6': 4090.0
+      '0.7': 4090.0
+      '0.8': 4090.0
+      '0.9': 4090.0
+      '0.95': 4090.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.841023'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2026-01-23T00:00:00'
+  payload:
+    point_forecast: 4090.0
+    quantiles:
+      '0.05': 4090.0
+      '0.1': 4090.0
+      '0.2': 4090.0
+      '0.3': 4090.0
+      '0.4': 4090.0
+      '0.5': 4090.0
+      '0.6': 4090.0
+      '0.7': 4090.0
+      '0.8': 4090.0
+      '0.9': 4090.0
+      '0.95': 4090.0
+  metadata: {}
+- predictor_id: last_value_naive
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-12T16:11:33.841023'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2026-02-27T00:00:00'
+  payload:
+    point_forecast: 4090.0
+    quantiles:
+      '0.05': 4090.0
+      '0.1': 4090.0
+      '0.2': 4090.0
+      '0.3': 4090.0
+      '0.4': 4090.0
+      '0.5': 4090.0
+      '0.6': 4090.0
+      '0.7': 4090.0
+      '0.8': 4090.0
+      '0.9': 4090.0
+      '0.95': 4090.0
+  metadata: {}
+scores:
+- 152.5
+- 132.0
+- 213.0
+- 485.0
+- 81.0
+- 26.5
+- 2.5
+- 179.0
+- 114.5
+- 147.0
+- 64.0
+- 74.5
+- 131.5
+- 615.5
+- 929.5
+- 334.0
+- 151.5
+- 17.0
+- 472.0
+- 312.0
+- 129.5
+- 127.0
+- 17.5
+- 515.0
+- 833.0
+- 120.0
+- 44.0
+- 154.0
+- 302.0
+- 299.5
+- 9.5
+- 80.5
+- 50.5
+- 0.5
+- 133.5
+metric: crps
+mean_score: 212.87142857142857
+ran_at: '2026-08-12T16:11:33.845144'
+skipped_origins: 0
