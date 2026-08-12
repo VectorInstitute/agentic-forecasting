@@ -47,6 +47,10 @@ LIGHT_THEME: dict[str, str] = {
     "series_2": "#eb6834",  # orange — soybean oil
     "series_3": "#1baf7a",  # aqua   — sunflower oil
     "series_4": "#eda100",  # yellow — rapeseed oil
+    "series_5": "#e87ba4",  # magenta
+    "series_6": "#008300",  # green
+    "series_7": "#4a3aa7",  # violet
+    "series_8": "#e34948",  # red
     "up": "#2a78d6",
     "down": "#e34948",
     "event": "rgba(235, 104, 52, 0.13)",
@@ -63,6 +67,10 @@ DARK_THEME: dict[str, str] = {
     "series_2": "#d95926",
     "series_3": "#199e70",
     "series_4": "#c98500",
+    "series_5": "#d55181",  # magenta
+    "series_6": "#008300",  # green
+    "series_7": "#9085e9",  # violet
+    "series_8": "#e66767",  # red
     "up": "#3987e5",
     "down": "#e66767",
     "event": "rgba(217, 89, 38, 0.18)",
@@ -162,7 +170,16 @@ def _theme(dark: bool) -> dict[str, str]:
     return DARK_THEME if dark else LIGHT_THEME
 
 
-def _style(fig: go.Figure, theme: dict[str, str], *, title: str, ylabel: str, height: int = 500) -> go.Figure:
+def _style(
+    fig: go.Figure,
+    theme: dict[str, str],
+    *,
+    title: str,
+    ylabel: str,
+    height: int = 500,
+    width: int | None = None,
+    legend_position: str = "top",
+) -> go.Figure:
     """Apply shared layout: recessive grid, unified hover, legend, sane margins.
 
     Parameters
@@ -177,21 +194,56 @@ def _style(fig: go.Figure, theme: dict[str, str], *, title: str, ylabel: str, he
         Y-axis label.
     height : int
         Figure height in pixels.
+    width : int or None
+        Figure width in pixels.  Leave ``None`` for single-panel charts, where
+        Plotly's auto-sizing to the container is correct. Set explicitly for
+        multi-column subplot grids: auto-sizing shrinks to whatever the
+        notebook's output cell happens to be, and subplot titles that fit at
+        one width collide into unreadable text at another -- the content's
+        text needs a guaranteed minimum, not whatever the container gives it.
+    legend_position : {"top", "bottom"}
+        ``"top"`` (default) places the legend in the header, below the title
+        -- correct for single-panel charts, where that header is otherwise
+        empty. ``"bottom"``, below the plot, is for subplot grids
+        (:func:`plot_fan_grid`, :func:`plot_predictor_comparison`): the
+        header there already holds subplot titles for row 1, and a legend
+        placed above competes for the same space -- verified: pushing the
+        legend down enough to clear the *title* at 10+ entries instead
+        pushed it down far enough to overlap row 1's *subplot titles and
+        plot area*, because the row-1 panels start much higher up than a
+        single-panel chart's one plot area does. Below row 2 has no such
+        competition.
 
     Returns
     -------
     go.Figure
         The same figure, restyled.
     """
+    # Title and legend both used unpinned/relative positioning with no shared
+    # reference point and no allowance for the legend wrapping to more than one
+    # row -- reproduced colliding with as few as 4 legend entries in a narrow
+    # container, and with 10+ in a wide one. Pin both explicitly in "paper"
+    # coordinates, verified by rendering the real 10-11 predictor case, not
+    # assumed -- the first attempt to fix this (legend above, pushed down
+    # below the title) worked for single-panel charts but collided with
+    # subplot titles/plot area on grid charts; see `legend_position` above.
+    if legend_position == "bottom":
+        margin = {"l": 70, "r": 110, "t": 70, "b": 130}
+        legend = {"orientation": "h", "yanchor": "top", "y": -0.14, "xanchor": "left", "x": 0}
+    else:
+        margin = {"l": 70, "r": 110, "t": 130, "b": 55}
+        legend = {"orientation": "h", "yanchor": "top", "y": 0.90, "xanchor": "left", "x": 0}
+
     fig.update_layout(
-        title={"text": title, "font": {"size": 17, "color": theme["text"]}},
+        title={"text": title, "font": {"size": 17, "color": theme["text"]}, "y": 0.97, "yanchor": "top"},
         paper_bgcolor=theme["surface"],
         plot_bgcolor=theme["surface"],
         font={"color": theme["muted"], "size": 12},
         height=height,
-        margin={"l": 70, "r": 110, "t": 70, "b": 55},
+        width=width,
+        margin=margin,
         hovermode="x unified",
-        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "left", "x": 0},
+        legend=legend,
     )
     axis = {"gridcolor": theme["grid"], "zeroline": False, "linecolor": theme["grid"], "showspikes": False}
     fig.update_xaxes(**axis)
@@ -1037,14 +1089,201 @@ def plot_fan_grid(
     pad = 0.04 * (y_hi - y_lo)
     fig.update_yaxes(range=[y_lo - pad, y_hi + pad])
     fig.update_annotations(font={"size": 11, "color": theme["text"]})
+    # Each subplot title ("2024-02-02 · event · CRPS 213") needs ~330px to read
+    # cleanly. Without an explicit width, Plotly auto-sizes to whatever the
+    # notebook's output cell happens to be, and titles that fit at one width
+    # collide into unreadable overlapping text at another -- reproduced and
+    # verified: identical figure renders clean at 1500px, garbled at 780px.
     fig = _style(
         fig,
         theme,
         title=f"{predictor} across all {len(ordered)} cutoffs — events top, quiets bottom",
         ylabel="",
         height=640,
+        width=max(1400, 330 * n_cols),
+        legend_position="bottom",
     )
-    fig.update_layout(hovermode="closest", margin={"l": 55, "r": 30, "t": 95, "b": 40})
+    # hovermode only -- NOT margin. An earlier version reset margin here right
+    # after _style() had just set it correctly, silently undoing the legend
+    # fix below. Subplot grids need "closest" hover since "x unified" doesn't
+    # make sense across independent per-panel x-axes.
+    fig.update_layout(hovermode="closest")
+    fig.update_layout(margin={"l": 55, "r": 30})
+    for r, col in [(1, 1), (2, 1)]:
+        fig.update_yaxes(title=f"MYR/t ({currency})", row=r, col=col)
+    return fig
+
+
+#: Palette slots cycled for :func:`plot_predictor_comparison`, in a fixed order
+#: so the same predictor always gets the same colour across a session.
+_COMPARISON_SLOTS = ["series_1", "series_2", "series_3", "series_4", "series_5", "series_6", "series_7", "series_8"]
+
+
+def plot_predictor_comparison(
+    predictions: pd.DataFrame,
+    history: pd.DataFrame,
+    *,
+    predictors: list[str] | None = None,
+    history_weeks: int = 10,
+    currency: str = "RM",
+    dark: bool = False,
+) -> go.Figure:
+    """All predictors' median forecasts overlaid at every cutoff, legend-toggleable.
+
+    :func:`plot_fan_grid` is a deep dive on one model, including its full
+    uncertainty fan. This is the breadth view: every model's central forecast
+    on the same axes, so two or three can be isolated and compared directly
+    against each other and against what happened. Stacking every model's full
+    quantile bands here instead would be unreadable with more than two or
+    three predictors -- median-only is the deliberate trade for legibility.
+
+    Every trace for a given predictor, across all 7 subplot panels, shares one
+    ``legendgroup``. Click its legend entry once and it toggles everywhere,
+    not just in the panel you clicked -- built on the same technique
+    :func:`plot_fan_grid` already uses to give each band one legend entry
+    instead of seven.
+
+    Parameters
+    ----------
+    predictions : pd.DataFrame
+        Rows from :func:`cpo.baselines.predictions_frame`, ideally with
+        ``actual`` attached (:func:`cpo.baselines.attach_actuals`).
+    history : pd.DataFrame
+        Weekly price frame with ``timestamp`` and ``value`` columns.
+    predictors : list of str or None
+        Which ``predictor`` values to draw. ``None`` draws every predictor
+        present in ``predictions``, in first-seen order.
+    history_weeks : int
+        Weeks of realised history shown left of each cutoff.
+    currency : str
+        Symbol used in hover readouts.
+    dark : bool
+        Use the dark palette.
+
+    Returns
+    -------
+    go.Figure
+        A 2-row grid of overlaid median forecasts, one panel per cutoff.
+
+    Raises
+    ------
+    ValueError
+        If ``predictions`` is empty, or none of ``predictors`` are present.
+    """
+    from plotly.subplots import make_subplots  # noqa: PLC0415
+
+    theme = _theme(dark)
+    if predictions.empty:
+        raise ValueError("predictions is empty")
+
+    names = predictors if predictors is not None else list(dict.fromkeys(predictions["predictor"]))
+    present = [p for p in names if (predictions["predictor"] == p).any()]
+    if not present:
+        raise ValueError(f"none of {names!r} are present in predictions")
+
+    ordered = [c for c in DEFAULT_CUTOFFS if (predictions["origin"] == c.timestamp).any()]
+    events = [c for c in ordered if c.kind == "event"]
+    quiets = [c for c in ordered if c.kind != "event"]
+    n_cols = max(len(events), len(quiets), 1)
+    prices = history.set_index("timestamp")["value"]
+
+    titles = [c.date for c in events] + [""] * (n_cols - len(events))
+    titles += [c.date for c in quiets] + [""] * (n_cols - len(quiets))
+    fig = make_subplots(rows=2, cols=n_cols, subplot_titles=titles, horizontal_spacing=0.045, vertical_spacing=0.14)
+
+    y_lo, y_hi = np.inf, -np.inf
+    seen_legend: set[str] = set()
+
+    for cut, (r, col) in zip(
+        events + quiets,
+        [(1, i + 1) for i in range(len(events))] + [(2, i + 1) for i in range(len(quiets))],
+    ):
+        past = prices.loc[cut.timestamp - pd.Timedelta(weeks=history_weeks) : cut.timestamp]
+        anchor = float(past.iloc[-1])
+        first_panel = r == 1 and col == 1
+
+        fig.add_trace(
+            go.Scatter(
+                x=past.index,
+                y=past.to_numpy(),
+                mode="lines",
+                line={"color": theme["muted"], "width": 2},
+                name="history at cutoff",
+                legendgroup="hist",
+                showlegend=first_panel,
+                hovertemplate=f"%{{x|%d %b %Y}}<br><b>{currency}%{{y:,.0f}}</b><extra></extra>",
+            ),
+            row=r,
+            col=col,
+        )
+
+        origin_rows = predictions[predictions["origin"] == cut.timestamp]
+        actual_drawn = False
+        for i, name in enumerate(present):
+            panel = origin_rows[origin_rows["predictor"] == name].sort_values("horizon")
+            if panel.empty:
+                continue
+            x = pd.DatetimeIndex([cut.timestamp, *panel["forecast_date"]])
+            colour = theme[_COMPARISON_SLOTS[i % 8]]
+            dash = "solid" if i < 8 else "dash"
+            show = name not in seen_legend
+            seen_legend.add(name)
+
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=[anchor, *panel["q50"]],
+                    mode="lines+markers",
+                    line={"color": colour, "width": 2, "dash": dash},
+                    marker={"size": 5},
+                    name=name,
+                    legendgroup=f"pred-{name}",
+                    showlegend=show,
+                    hovertemplate=f"{name}<br>%{{x|%d %b %Y}}<br><b>{currency}%{{y:,.0f}}</b><extra></extra>",
+                ),
+                row=r,
+                col=col,
+            )
+            y_lo = min(y_lo, float(panel["q50"].min()))
+            y_hi = max(y_hi, float(panel["q50"].max()))
+
+            if not actual_drawn and "actual" in panel.columns and panel["actual"].notna().any():
+                fig.add_trace(
+                    go.Scatter(
+                        x=x,
+                        y=[anchor, *panel["actual"]],
+                        mode="lines+markers",
+                        line={"color": theme["text"], "width": 3, "dash": "dot"},
+                        marker={"size": 6, "symbol": "diamond"},
+                        name="actual",
+                        legendgroup="act",
+                        showlegend=first_panel,
+                        hovertemplate=f"actual<br>%{{x|%d %b %Y}}<br><b>{currency}%{{y:,.0f}}</b><extra></extra>",
+                    ),
+                    row=r,
+                    col=col,
+                )
+                y_hi = max(y_hi, float(panel["actual"].max()))
+                actual_drawn = True
+        y_lo = min(y_lo, float(past.min()))
+        y_hi = max(y_hi, float(past.max()))
+
+    pad = 0.04 * (y_hi - y_lo)
+    fig.update_yaxes(range=[y_lo - pad, y_hi + pad])
+    fig.update_annotations(font={"size": 11, "color": theme["text"]})
+    fig = _style(
+        fig,
+        theme,
+        title=f"{len(present)} predictors across all {len(ordered)} cutoffs — click legend to isolate",
+        ylabel="",
+        height=640,
+        width=max(1400, 330 * n_cols),
+        legend_position="bottom",
+    )
+    # hovermode only -- NOT margin, which _style() just set correctly for a
+    # bottom legend. See the matching comment in plot_fan_grid.
+    fig.update_layout(hovermode="closest")
+    fig.update_layout(margin={"l": 55, "r": 30})
     for r, col in [(1, 1), (2, 1)]:
         fig.update_yaxes(title=f"MYR/t ({currency})", row=r, col=col)
     return fig
@@ -1064,5 +1303,6 @@ __all__ = [
     "plot_news_coverage",
     "plot_period_changes",
     "plot_oil_complex",
+    "plot_predictor_comparison",
     "plot_price_history",
 ]

@@ -18,6 +18,34 @@ Yearly seasonality is left **on** for that reason; compare against
 ``cpo.seasonal_naive.SeasonalNaivePredictor``, which tests the same hypothesis
 with no trend component.
 
+Why two variants
+-----------------
+The default (full-history) variant scores badly and unevenly across origins --
+mean CRPS 410, versus 213 for the naive floor -- and it is a genuine, diagnosed
+failure, not noise. Prophet fits one piecewise-linear trend across all visible
+history, but by default (``changepoint_range=0.8``) only allows trend changes
+in the first 80% of it; the most recent ~20% is pure extrapolation. Palm oil's
+one dominant structural break -- the 2022 Indonesian export ban, price to
+~7,600 and back -- sits inside that unreachable final 20% for the earliest
+cutoffs, so the fitted trend is still extrapolating the pre-shock slope and
+comes out badly mismatched from the actual price: +27.6% at the worst cutoff
+(2024-02-02), measured as fitted trend vs. last observed price. As later
+cutoffs push the changepoint boundary past the shock, the mismatch shrinks
+(-11.2%, then -0.6%) and so does the error (CRPS 909 -> 218 -> 162). Prophet's
+80% interval also only covers the actual value 57-71% of the time against a
+nominal 80%, compounding an already-mislocated trend with bands too narrow to
+cover it.
+
+``history_years`` fixes the mechanism, not the symptom: bound the training
+window so the changepoint boundary sits close to every cutoff regardless of
+how much history happens to be available, rather than drifting arbitrarily
+with an ever-growing dataset. Keep *both* variants in the lineup rather than
+replacing one with the other -- Prophet exists here to test whether trend and
+yearly structure genuinely exist, and a single broken run cannot answer that;
+a version verified to be fairly configured can. If it still scores no better
+than the naive floor, that is a materially stronger version of the same
+finding. If it beats the pack, that is worth knowing on its own.
+
 Uncertainty
 -----------
 Prophet returns ``yhat_lower``/``yhat_upper`` at ``interval_width``.  Those are
@@ -61,6 +89,29 @@ class WeeklyProphetPredictor(Predictor):
         main reason this model is in the lineup.
     seasonality_mode : str
         ``"multiplicative"`` suits a price level whose swings scale with it.
+    history_years : float or None
+        Train only on the trailing ``history_years`` of visible data instead
+        of everything back to 2008. ``None`` (default) uses full history, the
+        original variant with the diagnosed changepoint-boundary problem --
+        see the module docstring. A bounded window keeps the changepoint
+        boundary close to every cutoff regardless of total history length,
+        but this *also* shrinks the number of annual cycles feeding the
+        yearly-seasonality estimate, since Prophet fits both from the same
+        truncated data -- see the module docstring for the failure this
+        causes at 4 years. Also changes :attr:`predictor_id`.
+    changepoint_range : float
+        Fraction of the (full, untruncated) training history in which
+        Prophet is allowed to place trend changepoints; the remainder is
+        pure extrapolation. Default 0.8 leaves a gap of `0.2 * history
+        length` between the changepoint boundary and the cutoff -- on this
+        series' 16+ years of history, over 3 years, comfortably wide enough
+        to leave the 2022 shock unreachable for the earliest test cutoffs.
+        Raising it (e.g. 0.98) moves the boundary within months of the
+        cutoff *without truncating the training set*, so unlike
+        ``history_years`` it does not cost the seasonality estimate any
+        cycles -- trend and seasonality get separately-appropriate effective
+        windows from one fit. Also changes :attr:`predictor_id` when not the
+        Prophet default.
     """
 
     def __init__(
@@ -68,14 +119,22 @@ class WeeklyProphetPredictor(Predictor):
         interval_width: float = 0.80,
         yearly_seasonality: bool = True,
         seasonality_mode: str = "multiplicative",
+        history_years: float | None = None,
+        changepoint_range: float = 0.80,
     ) -> None:
         self._interval_width = interval_width
         self._yearly_seasonality = yearly_seasonality
         self._seasonality_mode = seasonality_mode
+        self._history_years = history_years
+        self._changepoint_range = changepoint_range
 
     @property
     def predictor_id(self) -> str:
         """Return a stable identifier for this predictor."""
+        if self._history_years is not None:
+            return f"prophet_weekly_{self._history_years:g}y"
+        if self._changepoint_range != 0.80:
+            return f"prophet_weekly_cr{self._changepoint_range:g}"
         return "prophet_weekly"
 
     def predict(self, task: ForecastingTask, context: ForecastContext) -> list[Prediction]:
@@ -92,16 +151,21 @@ class WeeklyProphetPredictor(Predictor):
         -------
         list[Prediction]
             One :class:`ContinuousForecast` per horizon; empty if the visible
-            history is shorter than 50 observations.
+            history (after any ``history_years`` truncation) is shorter than
+            50 observations.
         """
         from prophet import Prophet  # noqa: PLC0415
 
         series_df = context.get_series(task.target_series_id)
-        if len(series_df) < _MIN_OBSERVATIONS:
-            return []
-
         train = series_df.rename(columns={"timestamp": "ds", "value": "y"})[["ds", "y"]]
         train["ds"] = pd.to_datetime(train["ds"])
+
+        if self._history_years is not None:
+            cutoff = train["ds"].max() - pd.Timedelta(days=round(self._history_years * 365.25))
+            train = train[train["ds"] >= cutoff].reset_index(drop=True)
+
+        if len(train) < _MIN_OBSERVATIONS:
+            return []
 
         logging.getLogger("prophet").setLevel(logging.ERROR)
         logging.getLogger("cmdstanpy").setLevel(logging.ERROR)
@@ -111,6 +175,7 @@ class WeeklyProphetPredictor(Predictor):
             weekly_seasonality=False,  # the grid is already weekly
             yearly_seasonality=self._yearly_seasonality,
             seasonality_mode=self._seasonality_mode,
+            changepoint_range=self._changepoint_range,
         )
         model.fit(train)
 
