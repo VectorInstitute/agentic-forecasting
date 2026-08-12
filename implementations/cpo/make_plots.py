@@ -62,7 +62,10 @@ DISPLAY_NAMES: dict[str, str] = {
     "darts_kalman": "Kalman",
     "kalman_fixed_dim1": "Kalman (fixed)",
     "darts_lightgbm": "LightGBM",
+    "lgbm_diff": "LightGBM (differenced)",
     "darts_linreg": "linear regression",
+    "prophet_weekly": "Prophet",
+    "seasonal_naive_52": "seasonal naive (52w)",
     **AGENT_ARMS,
 }
 
@@ -198,9 +201,26 @@ def _colours(order: list[str]) -> dict[str, str]:
     """
     slots = [T[f"series_{i}"] for i in range(1, 9)]
     others = [p for p in order if p != REFERENCE]
-    mapping = {p: slots[i] for i, p in enumerate(others)}
+    mapping = dict.fromkeys(others, T["grid"])
+    mapping.update({p: slots[i] for i, p in enumerate(others[: len(slots)])})
     mapping[REFERENCE] = T["muted"]
     return mapping
+
+
+def _charted(means: pd.Series) -> list[str]:
+    """Pick which predictors get a hue, best-scoring first.
+
+    There are more predictors than validated colour slots, and a ninth hue does
+    not exist -- cycling would put two methods in the same colour, which is
+    worse than leaving one out.  Both agent arms are kept regardless of rank:
+    they are the comparison the page is about.  The rest are ranked by mean
+    CRPS, and whatever does not fit is named in the table instead, never
+    silently dropped.
+    """
+    agents = [p for p in means.index if p in AGENT_ARMS]
+    rest = [p for p in means.index if p not in AGENT_ARMS and p != REFERENCE]
+    keep = agents + [p for p in rest if p not in agents]
+    return [REFERENCE] + sorted(keep[:8], key=lambda p: means[p])
 
 
 def _relabel(fig):
@@ -308,8 +328,14 @@ def main() -> None:
     by_horizon = summarise(frame)["by_horizon"]
     skill = skill_scores(frame)
     cov = coverage(frame)
-    order = [REFERENCE] + sorted(p for p in by_horizon.columns if p != REFERENCE)
     means = by_horizon.mean().sort_values()
+    # Every predictor appears in the table and in the fan picker; only the
+    # hue-worthy ones are drawn in the two multi-series charts.  Charted first,
+    # so the colour assignment in _colours lines up with the figures.
+    charted = _charted(means)
+    left_out = [p for p in means.index if p not in charted]
+    order = charted + left_out
+    chart_frame = frame[frame.predictor.isin(charted)]
     best, best_score = means.index[0], means.iloc[0]
     naive_score = means[REFERENCE]
     best_baseline = next(p for p in means.index if p not in AGENT_ARMS and p != REFERENCE)
@@ -323,7 +349,8 @@ def main() -> None:
         "<header>",
         "<p class='eyebrow'>Crude palm oil &middot; MPOB weekly price</p>",
         "<h1>Can a news-reading agent beat the statistics?</h1>",
-        f"<p class='lede'>Nine forecasters &mdash; seven numerical baselines and two LLM agent arms &mdash; "
+        f"<p class='lede'>{len(order)} forecasters &mdash; {len(order) - len(AGENT_ARMS)} numerical baselines and "
+        "two LLM agent arms &mdash; "
         f"scored on the same {len(DEFAULT_CUTOFFS)} forecast origins &times; 5 horizons (1&ndash;13 weeks) "
         "against the MPOB weekly physical price, in MYR per tonne. Every predictor sees the same data at the "
         "same cutoffs; nothing after an origin reaches the model that forecasts it.</p>",
@@ -343,15 +370,23 @@ def main() -> None:
         "and structure only pays at range. A model that loses everywhere but wins on the mean is a mixing artefact.</p>",
         "<figure>",
         # plotly.js is inlined once, here, and reused by every figure below.
-        _relabel(plot_crps_by_horizon(frame, dark=True)).to_html(
+        _relabel(plot_crps_by_horizon(chart_frame, dark=True)).to_html(
             full_html=False, include_plotlyjs="inline", config=_FIG_CONFIG
         ),
         "</figure>",
+        (
+            "<p class='cap'>Drawn: the naive floor plus the eight best-scoring methods, which is every hue the "
+            "palette has. Left out of this chart and the next, and shown in the table below: "
+            + ", ".join(_label(p) for p in left_out)
+            + ".</p>"
+            if left_out
+            else ""
+        ),
         _results_table(by_horizon, skill, cov, order),
         "<h2>Every method, one chart</h2>",
         "<p class='sub'>Median paths from a single cutoff, against what the price actually did. "
-        "Bands are dropped here on purpose &mdash; nine overlapping fans is a smear; calibration is in the "
-        "coverage row above and in the individual fans below.</p>",
+        "Bands are dropped here on purpose &mdash; a dozen overlapping fans is a smear; calibration is in the "
+        "coverage column above and in the individual fans below.</p>",
         "<div class='controls'><label>Cutoff<select id='cutoff'>",
     ]
     for cut in DEFAULT_CUTOFFS:
@@ -359,7 +394,7 @@ def main() -> None:
     parts.append("</select></label></div>")
 
     for cut in DEFAULT_CUTOFFS:
-        fig = _relabel(plot_median_comparison(frame, history, origin=cut.date, dark=True))
+        fig = _relabel(plot_median_comparison(chart_frame, history, origin=cut.date, dark=True))
         parts.append(f"<div class='combined' data-cutoff='{cut.date}'><figure>")
         parts.append(fig.to_html(full_html=False, include_plotlyjs=False, config=_FIG_CONFIG))
         parts.append(f"</figure><p class='cap'><span class='kind {cut.kind}'>{cut.kind}</span>{cut.label}</p></div>")
@@ -423,10 +458,13 @@ def main() -> None:
         "&mdash; bands wider than they need to be, which CRPS charges for &mdash; then fall to <b>43&ndash;57%</b> "
         "at 8 weeks, overconfident exactly where the error is largest. The agents are also under-covered at one "
         "week (43&ndash;57%): they commit to a number the price does not honour.</p></div>",
-        "<div class='finding'><h3>LightGBM is worse than doing nothing</h3>"
-        "<p>Negative skill overall: a gradient-boosted model with five lags and no covariates has nothing to "
-        "learn from ~900 weekly points, and it extrapolates the last move instead. It stays in the table as a "
-        "reminder that &ldquo;ML&rdquo; is not a free upgrade.</p></div>",
+        "<div class='finding'><h3>Three models are worse than doing nothing</h3>"
+        "<p>LightGBM, Prophet, and the 52-week seasonal naive all score <b>negative skill</b> &mdash; worse than "
+        "assuming the price never moves. Prophet and the seasonal naive both impose an annual cycle this series "
+        "does not have at weekly resolution; LightGBM has ~900 points and five lags to learn from, and "
+        "extrapolates the last move instead.</p>"
+        "<p>They stay in the table rather than being quietly dropped: knowing which methods fail here is part of "
+        "the result.</p></div>",
         "</div>",
         f"<footer>Target: MPOB weekly crude palm oil price, MYR per tonne. Spec: <code>{SPEC_ID}</code> "
         f"({len(DEFAULT_CUTOFFS)} origins, horizons 1/2/4/8/13 weeks, 104-week warmup). Scored by CRPS on the "

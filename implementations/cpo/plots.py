@@ -1030,6 +1030,9 @@ def plot_median_comparison(
         title=f"Every method at {origin}{f' ({kind} cutoff)' if kind else ''} — median paths",
         ylabel=f"MYR per tonne ({currency})",
         height=560,
+        # Same reason as the CRPS chart: ten-plus entries wrap, and a top
+        # legend would land on the forecast lines.
+        legend_position="bottom",
     )
 
 
@@ -1104,6 +1107,10 @@ def plot_crps_by_horizon(
         title="Mean CRPS by horizon — lower is better",
         ylabel="CRPS (MYR per tonne)",
         height=520,
+        # Nine entries wrap to two legend rows, and a top legend then sits on
+        # top of the tallest bars.  Below the plot it cannot collide with
+        # anything however many predictors are compared.
+        legend_position="bottom",
     )
     # Per-bar value labels are left off: 35 numbers on 35 bars is noise, and at
     # this density they collide.  Hover carries the exact figure, and the page
