@@ -1,0 +1,1233 @@
+spec:
+  task:
+    task_id: palm_oil_mpob_price_forecast
+    target_series_id: palm_oil_mpob_weekly
+    horizons:
+    - 1
+    - 2
+    - 4
+    - 8
+    - 13
+    frequency: W-FRI
+    description: MPOB official crude palm oil price, "Local Delivered", Friday close
+      in MYR per tonne, projected 1, 2, 4, 8 and 13 weeks ahead.
+    payload_type: continuous
+    categories: null
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2024-02-02T00:00:00'
+  end: '2025-11-28T00:00:00'
+  stride: 1
+  origin_dates:
+  - '2024-02-02T00:00:00'
+  - '2024-05-03T00:00:00'
+  - '2024-08-30T00:00:00'
+  - '2024-11-29T00:00:00'
+  - '2025-02-28T00:00:00'
+  - '2025-06-20T00:00:00'
+  - '2025-11-28T00:00:00'
+  warmup: 104
+  description: Seven-origin backtest on the MPOB weekly crude palm oil price, at horizons
+    1, 2, 4, 8 and 13 weeks. Four event origins (large move ahead) and three quiet
+    ones (calm ahead), cleanly separated and mutually at least 13 weeks apart so no
+    two forecast windows overlap. Scored with CRPS. This is the narrative set for
+    the event-vs-quiet comparison; a denser weekly backtest decides which model is
+    genuinely better.
+predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+predictions:
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:08.138051'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-02-09T00:00:00'
+  payload:
+    point_forecast: 3820.0
+    quantiles:
+      '0.05': 3650.0
+      '0.1': 3700.0
+      '0.2': 3750.0
+      '0.3': 3780.0
+      '0.4': 3800.0
+      '0.5': 3820.0
+      '0.6': 3850.0
+      '0.7': 3880.0
+      '0.8': 3930.0
+      '0.9': 3980.0
+      '0.95': 4050.0
+  metadata:
+    rationale: "The short-term horizon is buoyed by Q1 low production cycles, rainy\
+      \ weather, and a robust Indonesian biodiesel mandate. However, over the medium\
+      \ term, the primary headwind is the vegetable oil complex\u2014a huge South\
+      \ American soybean crop pushing CBOT soy oil to recent lows. Palm oil's shrinking\
+      \ discount to soy threatens export volumes unless CPO tracks downward into the\
+      \ second quarter as its own peak production season begins."
+    horizon_rationale: Over the next week, short-term supply tightness due to seasonal
+      lows, monsoon weather, and the upcoming Chinese New Year holidays provides strong
+      support. However, weak export figures for January and competitive pressures
+      from dropping soft oil prices cap any major rally.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:08.138051'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-02-16T00:00:00'
+  payload:
+    point_forecast: 3830.0
+    quantiles:
+      '0.05': 3550.0
+      '0.1': 3620.0
+      '0.2': 3700.0
+      '0.3': 3750.0
+      '0.4': 3790.0
+      '0.5': 3830.0
+      '0.6': 3870.0
+      '0.7': 3920.0
+      '0.8': 3980.0
+      '0.9': 4050.0
+      '0.95': 4120.0
+  metadata:
+    rationale: "The short-term horizon is buoyed by Q1 low production cycles, rainy\
+      \ weather, and a robust Indonesian biodiesel mandate. However, over the medium\
+      \ term, the primary headwind is the vegetable oil complex\u2014a huge South\
+      \ American soybean crop pushing CBOT soy oil to recent lows. Palm oil's shrinking\
+      \ discount to soy threatens export volumes unless CPO tracks downward into the\
+      \ second quarter as its own peak production season begins."
+    horizon_rationale: In week two, the market will process post-CNY inventory numbers.
+      Tight supply is expected to keep the balance relatively firm, though palm's
+      shrinking price discount against rival soybean oil will suppress major upward
+      momentum.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:08.138051'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-03-01T00:00:00'
+  payload:
+    point_forecast: 3850.0
+    quantiles:
+      '0.05': 3450.0
+      '0.1': 3550.0
+      '0.2': 3650.0
+      '0.3': 3730.0
+      '0.4': 3790.0
+      '0.5': 3850.0
+      '0.6': 3920.0
+      '0.7': 3980.0
+      '0.8': 4060.0
+      '0.9': 4150.0
+      '0.95': 4250.0
+  metadata:
+    rationale: "The short-term horizon is buoyed by Q1 low production cycles, rainy\
+      \ weather, and a robust Indonesian biodiesel mandate. However, over the medium\
+      \ term, the primary headwind is the vegetable oil complex\u2014a huge South\
+      \ American soybean crop pushing CBOT soy oil to recent lows. Palm oil's shrinking\
+      \ discount to soy threatens export volumes unless CPO tracks downward into the\
+      \ second quarter as its own peak production season begins."
+    horizon_rationale: By early March, pre-Ramadan restocking should provide a boost
+      in exports, helping offset the pressure from South American soybean harvests.
+      Indonesia's B35 mandate continues to secure a solid floor for CPO.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:08.138051'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-03-29T00:00:00'
+  payload:
+    point_forecast: 3800.0
+    quantiles:
+      '0.05': 3300.0
+      '0.1': 3420.0
+      '0.2': 3550.0
+      '0.3': 3650.0
+      '0.4': 3730.0
+      '0.5': 3800.0
+      '0.6': 3880.0
+      '0.7': 3980.0
+      '0.8': 4100.0
+      '0.9': 4250.0
+      '0.95': 4400.0
+  metadata:
+    rationale: "The short-term horizon is buoyed by Q1 low production cycles, rainy\
+      \ weather, and a robust Indonesian biodiesel mandate. However, over the medium\
+      \ term, the primary headwind is the vegetable oil complex\u2014a huge South\
+      \ American soybean crop pushing CBOT soy oil to recent lows. Palm oil's shrinking\
+      \ discount to soy threatens export volumes unless CPO tracks downward into the\
+      \ second quarter as its own peak production season begins."
+    horizon_rationale: Looking 8 weeks out to late March, seasonal production typically
+      begins to accelerate. Furthermore, the massive influx of cheap South American
+      soybeans will heavily influence the vegetable oil complex. Palm oil will likely
+      need to adjust lower to maintain its competitive discount.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:08.138051'
+  as_of: '2024-02-02T00:00:00'
+  forecast_date: '2024-05-03T00:00:00'
+  payload:
+    point_forecast: 3750.0
+    quantiles:
+      '0.05': 3100.0
+      '0.1': 3250.0
+      '0.2': 3400.0
+      '0.3': 3550.0
+      '0.4': 3650.0
+      '0.5': 3750.0
+      '0.6': 3850.0
+      '0.7': 3980.0
+      '0.8': 4150.0
+      '0.9': 4350.0
+      '0.95': 4500.0
+  metadata:
+    rationale: "The short-term horizon is buoyed by Q1 low production cycles, rainy\
+      \ weather, and a robust Indonesian biodiesel mandate. However, over the medium\
+      \ term, the primary headwind is the vegetable oil complex\u2014a huge South\
+      \ American soybean crop pushing CBOT soy oil to recent lows. Palm oil's shrinking\
+      \ discount to soy threatens export volumes unless CPO tracks downward into the\
+      \ second quarter as its own peak production season begins."
+    horizon_rationale: By May, seasonal yields in Malaysia and Indonesia will be decidedly
+      higher. With foreign labor improving Malaysian outputs and the lingering El
+      Nino proving less destructive than feared, higher supply juxtaposed with plentiful
+      soft oils makes a sustained structural premium unlikely, guiding prices lower.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:51.739916'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-05-10T00:00:00'
+  payload:
+    point_forecast: 3850.0
+    quantiles:
+      '0.05': 3650.0
+      '0.1': 3700.0
+      '0.2': 3750.0
+      '0.3': 3800.0
+      '0.4': 3825.0
+      '0.5': 3850.0
+      '0.6': 3875.0
+      '0.7': 3900.0
+      '0.8': 3950.0
+      '0.9': 4000.0
+      '0.95': 4050.0
+  metadata:
+    rationale: The recent news context highlights a transition in CPO market fundamentals.
+      Over Q1, prices surged on the back of Ramadan-driven export demand, constrained
+      yields, and historically low stockpiles (Malaysian stocks dipping to a 10-month
+      low of 1.71 million tons). However, we are now entering a seasonally weaker
+      pricing period characterized by recovering production and a lull in destination
+      buying following the festivals. Competing soft oils, particularly soybean oil,
+      have experienced weakness globally, causing CPO's price discount to narrow and
+      diminishing its relative appeal. Consequently, I forecast a downward drift,
+      with prices consolidating towards the 3700-3800 MYR/tonne range over the medium
+      term, while Indonesian biodiesel mandates prevent a structural collapse.
+    horizon_rationale: Prices are currently facing downward pressure as market participants
+      digest the end of Ramadan/Eid al-Fitr demand and note increasing April production.
+      I expect short-term consolidation around the 3850 support level, with technicals
+      indicating oversold conditions after a steep 15% drop over the past four weeks.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:51.739916'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-05-17T00:00:00'
+  payload:
+    point_forecast: 3830.0
+    quantiles:
+      '0.05': 3550.0
+      '0.1': 3620.0
+      '0.2': 3690.0
+      '0.3': 3750.0
+      '0.4': 3790.0
+      '0.5': 3830.0
+      '0.6': 3870.0
+      '0.7': 3920.0
+      '0.8': 3980.0
+      '0.9': 4050.0
+      '0.95': 4100.0
+  metadata:
+    rationale: The recent news context highlights a transition in CPO market fundamentals.
+      Over Q1, prices surged on the back of Ramadan-driven export demand, constrained
+      yields, and historically low stockpiles (Malaysian stocks dipping to a 10-month
+      low of 1.71 million tons). However, we are now entering a seasonally weaker
+      pricing period characterized by recovering production and a lull in destination
+      buying following the festivals. Competing soft oils, particularly soybean oil,
+      have experienced weakness globally, causing CPO's price discount to narrow and
+      diminishing its relative appeal. Consequently, I forecast a downward drift,
+      with prices consolidating towards the 3700-3800 MYR/tonne range over the medium
+      term, while Indonesian biodiesel mandates prevent a structural collapse.
+    horizon_rationale: As we move further into May, incoming MPOB data is expected
+      to confirm a rebound in Malaysian stocks. Competitiveness remains an issue,
+      as the discount to soy oil has narrowed significantly, which will likely keep
+      a lid on prices.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:51.739916'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-05-31T00:00:00'
+  payload:
+    point_forecast: 3800.0
+    quantiles:
+      '0.05': 3400.0
+      '0.1': 3500.0
+      '0.2': 3600.0
+      '0.3': 3700.0
+      '0.4': 3750.0
+      '0.5': 3800.0
+      '0.6': 3850.0
+      '0.7': 3920.0
+      '0.8': 4000.0
+      '0.9': 4100.0
+      '0.95': 4200.0
+  metadata:
+    rationale: The recent news context highlights a transition in CPO market fundamentals.
+      Over Q1, prices surged on the back of Ramadan-driven export demand, constrained
+      yields, and historically low stockpiles (Malaysian stocks dipping to a 10-month
+      low of 1.71 million tons). However, we are now entering a seasonally weaker
+      pricing period characterized by recovering production and a lull in destination
+      buying following the festivals. Competing soft oils, particularly soybean oil,
+      have experienced weakness globally, causing CPO's price discount to narrow and
+      diminishing its relative appeal. Consequently, I forecast a downward drift,
+      with prices consolidating towards the 3700-3800 MYR/tonne range over the medium
+      term, while Indonesian biodiesel mandates prevent a structural collapse.
+    horizon_rationale: The seasonal recovery in output should be fully underway by
+      the end of May. Historical patterns and recent news suggest production will
+      apply consistent pressure, pulling the central forecast lower toward the 3800
+      level.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:51.739916'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-06-28T00:00:00'
+  payload:
+    point_forecast: 3750.0
+    quantiles:
+      '0.05': 3200.0
+      '0.1': 3350.0
+      '0.2': 3500.0
+      '0.3': 3600.0
+      '0.4': 3680.0
+      '0.5': 3750.0
+      '0.6': 3850.0
+      '0.7': 3950.0
+      '0.8': 4050.0
+      '0.9': 4200.0
+      '0.95': 4350.0
+  metadata:
+    rationale: The recent news context highlights a transition in CPO market fundamentals.
+      Over Q1, prices surged on the back of Ramadan-driven export demand, constrained
+      yields, and historically low stockpiles (Malaysian stocks dipping to a 10-month
+      low of 1.71 million tons). However, we are now entering a seasonally weaker
+      pricing period characterized by recovering production and a lull in destination
+      buying following the festivals. Competing soft oils, particularly soybean oil,
+      have experienced weakness globally, causing CPO's price discount to narrow and
+      diminishing its relative appeal. Consequently, I forecast a downward drift,
+      with prices consolidating towards the 3700-3800 MYR/tonne range over the medium
+      term, while Indonesian biodiesel mandates prevent a structural collapse.
+    horizon_rationale: By late June, the market will enter the traditional high-production
+      season for palm oil in Southeast Asia. Unless weather anomalies (like an early
+      transition to La Nina) disrupt harvests, rising inventories will likely force
+      prices lower. Strong Indonesian domestic biodiesel consumption (B35 mandate)
+      provides the primary downside support.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:25:51.739916'
+  as_of: '2024-05-03T00:00:00'
+  forecast_date: '2024-08-02T00:00:00'
+  payload:
+    point_forecast: 3700.0
+    quantiles:
+      '0.05': 3000.0
+      '0.1': 3200.0
+      '0.2': 3400.0
+      '0.3': 3550.0
+      '0.4': 3630.0
+      '0.5': 3700.0
+      '0.6': 3800.0
+      '0.7': 3950.0
+      '0.8': 4100.0
+      '0.9': 4300.0
+      '0.95': 4450.0
+  metadata:
+    rationale: The recent news context highlights a transition in CPO market fundamentals.
+      Over Q1, prices surged on the back of Ramadan-driven export demand, constrained
+      yields, and historically low stockpiles (Malaysian stocks dipping to a 10-month
+      low of 1.71 million tons). However, we are now entering a seasonally weaker
+      pricing period characterized by recovering production and a lull in destination
+      buying following the festivals. Competing soft oils, particularly soybean oil,
+      have experienced weakness globally, causing CPO's price discount to narrow and
+      diminishing its relative appeal. Consequently, I forecast a downward drift,
+      with prices consolidating towards the 3700-3800 MYR/tonne range over the medium
+      term, while Indonesian biodiesel mandates prevent a structural collapse.
+    horizon_rationale: In early August, output is typically robust, and absent major
+      weather shocks or a massive rally in competing soft oils and crude oil, supply
+      should be comfortable. The forecast reflects a balanced market shifting slightly
+      into oversupply as global edible oil availability increases.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:26:31.871476'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-09-06T00:00:00'
+  payload:
+    point_forecast: 4020.0
+    quantiles:
+      '0.05': 3870.0
+      '0.1': 3900.0
+      '0.2': 3940.0
+      '0.3': 3970.0
+      '0.4': 4000.0
+      '0.5': 4020.0
+      '0.6': 4040.0
+      '0.7': 4060.0
+      '0.8': 4090.0
+      '0.9': 4120.0
+      '0.95': 4160.0
+  metadata:
+    rationale: The short-term dynamic is dominated by seasonal harvest pressures in
+      Malaysia and weak export demand (with a potential Indian tax hike acting as
+      a bearish catalyst), suggesting a near-term dip. However, the medium-term outlook
+      flips bullish as Q4 progresses. Indonesian production has been downgraded, and
+      its aggressive push towards a B40 (and later B50) biodiesel mandate guarantees
+      an increasingly tight export balance heading into 2025. The interplay between
+      soft short-term factors and structural long-term tightness results in a shallow
+      'U-shaped' price curve.
+    horizon_rationale: Short-term pressure from seasonal peak production in September
+      and a 14-15% drop in Malaysian August exports. Additionally, physicals at 4,070
+      MYR are pricing at a premium to futures, which closed lower due to a strengthening
+      ringgit and looming fears that India will raise import taxes to protect its
+      domestic oilseed farmers.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:26:31.871476'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-09-13T00:00:00'
+  payload:
+    point_forecast: 3980.0
+    quantiles:
+      '0.05': 3760.0
+      '0.1': 3810.0
+      '0.2': 3870.0
+      '0.3': 3910.0
+      '0.4': 3950.0
+      '0.5': 3980.0
+      '0.6': 4010.0
+      '0.7': 4050.0
+      '0.8': 4090.0
+      '0.9': 4150.0
+      '0.95': 4200.0
+  metadata:
+    rationale: The short-term dynamic is dominated by seasonal harvest pressures in
+      Malaysia and weak export demand (with a potential Indian tax hike acting as
+      a bearish catalyst), suggesting a near-term dip. However, the medium-term outlook
+      flips bullish as Q4 progresses. Indonesian production has been downgraded, and
+      its aggressive push towards a B40 (and later B50) biodiesel mandate guarantees
+      an increasingly tight export balance heading into 2025. The interplay between
+      soft short-term factors and structural long-term tightness results in a shallow
+      'U-shaped' price curve.
+    horizon_rationale: Prices are likely to sag slightly into mid-September. Yields
+      remain seasonally high, and heavy US soybean supplies (record 4.6 billion bushel
+      crop anticipated) will weigh on the broader vegetable oil complex, offsetting
+      concerns about European rapeseed and Black Sea sunflower crop shortfalls.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:26:31.871476'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-09-27T00:00:00'
+  payload:
+    point_forecast: 3950.0
+    quantiles:
+      '0.05': 3650.0
+      '0.1': 3720.0
+      '0.2': 3800.0
+      '0.3': 3870.0
+      '0.4': 3910.0
+      '0.5': 3950.0
+      '0.6': 3990.0
+      '0.7': 4040.0
+      '0.8': 4100.0
+      '0.9': 4180.0
+      '0.95': 4250.0
+  metadata:
+    rationale: The short-term dynamic is dominated by seasonal harvest pressures in
+      Malaysia and weak export demand (with a potential Indian tax hike acting as
+      a bearish catalyst), suggesting a near-term dip. However, the medium-term outlook
+      flips bullish as Q4 progresses. Indonesian production has been downgraded, and
+      its aggressive push towards a B40 (and later B50) biodiesel mandate guarantees
+      an increasingly tight export balance heading into 2025. The interplay between
+      soft short-term factors and structural long-term tightness results in a shallow
+      'U-shaped' price curve.
+    horizon_rationale: End of September represents the likely peak in MPOB inventories.
+      As buyers absorb this peak supply and digest the Indian import tax hike (if
+      implemented), CPO prices should find support around the 3,850-3,950 range, supported
+      by robust biodiesel fundamentals in the background.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:26:31.871476'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-10-25T00:00:00'
+  payload:
+    point_forecast: 4000.0
+    quantiles:
+      '0.05': 3550.0
+      '0.1': 3650.0
+      '0.2': 3780.0
+      '0.3': 3870.0
+      '0.4': 3940.0
+      '0.5': 4000.0
+      '0.6': 4060.0
+      '0.7': 4130.0
+      '0.8': 4220.0
+      '0.9': 4350.0
+      '0.95': 4450.0
+  metadata:
+    rationale: The short-term dynamic is dominated by seasonal harvest pressures in
+      Malaysia and weak export demand (with a potential Indian tax hike acting as
+      a bearish catalyst), suggesting a near-term dip. However, the medium-term outlook
+      flips bullish as Q4 progresses. Indonesian production has been downgraded, and
+      its aggressive push towards a B40 (and later B50) biodiesel mandate guarantees
+      an increasingly tight export balance heading into 2025. The interplay between
+      soft short-term factors and structural long-term tightness results in a shallow
+      'U-shaped' price curve.
+    horizon_rationale: By late October, production traditionally enters a seasonal
+      decline. A major shift in fundamentals comes from Indonesia's confirmed intention
+      to increase its biodiesel mandate to B40 by Jan 2025 (and eventually B50), which
+      will divert immense volumes of CPO away from export markets. This structurally
+      bullish transition will start lifting forward prices.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:26:31.871476'
+  as_of: '2024-08-30T00:00:00'
+  forecast_date: '2024-11-29T00:00:00'
+  payload:
+    point_forecast: 4100.0
+    quantiles:
+      '0.05': 3550.0
+      '0.1': 3680.0
+      '0.2': 3820.0
+      '0.3': 3940.0
+      '0.4': 4020.0
+      '0.5': 4100.0
+      '0.6': 4180.0
+      '0.7': 4280.0
+      '0.8': 4400.0
+      '0.9': 4550.0
+      '0.95': 4700.0
+  metadata:
+    rationale: The short-term dynamic is dominated by seasonal harvest pressures in
+      Malaysia and weak export demand (with a potential Indian tax hike acting as
+      a bearish catalyst), suggesting a near-term dip. However, the medium-term outlook
+      flips bullish as Q4 progresses. Indonesian production has been downgraded, and
+      its aggressive push towards a B40 (and later B50) biodiesel mandate guarantees
+      an increasingly tight export balance heading into 2025. The interplay between
+      soft short-term factors and structural long-term tightness results in a shallow
+      'U-shaped' price curve.
+    horizon_rationale: Looking 13 weeks ahead to late November/early December, the
+      market will be pricing in tighter Q1 supplies. Indonesia's revised 2024 production
+      downgrade (estimated to drop to 52-53M tonnes due to aging trees and drought)
+      combined with the heavy pull from the B40 mandate will squeeze export availability
+      globally. Prices are expected to re-test highs above the 4,000 MYR mark.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:10.434449'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2024-12-06T00:00:00'
+  payload:
+    point_forecast: 4950.0
+    quantiles:
+      '0.05': 4650.0
+      '0.1': 4720.0
+      '0.2': 4820.0
+      '0.3': 4880.0
+      '0.4': 4920.0
+      '0.5': 4950.0
+      '0.6': 4980.0
+      '0.7': 5020.0
+      '0.8': 5080.0
+      '0.9': 5180.0
+      '0.95': 5250.0
+  metadata:
+    rationale: The recent surge in CPO prices to the 5000 MYR/tonne level is driven
+      by acute prompt tightness (falling production, East Coast floods, and robust
+      pull-forward buying for EUDR and festivals) paired with the impending Indonesian
+      B40 mandate. However, the forward curve shows a steep backwardation. Palm oil
+      is currently trading at a rare premium to soybean oil, making it vulnerable
+      to substitution and demand destruction in price-sensitive markets. Our forecast
+      traces the backwardation, projecting a gradual moderation from current highs
+      as seasonal production recovers into Q1/Q2 2025, balanced against the structural
+      supply removal expected from Indonesia's B40 implementation. Geopolitical shifts,
+      specifically incoming US biofuel trade policies, add wide uncertainty bounds
+      at longer horizons.
+    horizon_rationale: Near-term supply remains exceptionally tight due to disappointing
+      production figures in Malaysia and Indonesia, further exacerbated by recent
+      flooding in Malaysia's East Coast. Spot physical prices remain elevated around
+      5000-5100 MYR/tonne, though futures exhibit a strong backwardation, suggesting
+      a slight near-term softening as profit-taking occurs.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:10.434449'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2024-12-13T00:00:00'
+  payload:
+    point_forecast: 4900.0
+    quantiles:
+      '0.05': 4500.0
+      '0.1': 4600.0
+      '0.2': 4720.0
+      '0.3': 4800.0
+      '0.4': 4860.0
+      '0.5': 4900.0
+      '0.6': 4940.0
+      '0.7': 5000.0
+      '0.8': 5080.0
+      '0.9': 5200.0
+      '0.95': 5300.0
+  metadata:
+    rationale: The recent surge in CPO prices to the 5000 MYR/tonne level is driven
+      by acute prompt tightness (falling production, East Coast floods, and robust
+      pull-forward buying for EUDR and festivals) paired with the impending Indonesian
+      B40 mandate. However, the forward curve shows a steep backwardation. Palm oil
+      is currently trading at a rare premium to soybean oil, making it vulnerable
+      to substitution and demand destruction in price-sensitive markets. Our forecast
+      traces the backwardation, projecting a gradual moderation from current highs
+      as seasonal production recovers into Q1/Q2 2025, balanced against the structural
+      supply removal expected from Indonesia's B40 implementation. Geopolitical shifts,
+      specifically incoming US biofuel trade policies, add wide uncertainty bounds
+      at longer horizons.
+    horizon_rationale: Prices are expected to drift lower as the market digests the
+      current high price environment, which has pushed CPO to a rare premium over
+      soybean oil, threatening to curb demand from price-sensitive importers like
+      India ahead of the winter season.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:10.434449'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2024-12-27T00:00:00'
+  payload:
+    point_forecast: 4850.0
+    quantiles:
+      '0.05': 4300.0
+      '0.1': 4450.0
+      '0.2': 4600.0
+      '0.3': 4710.0
+      '0.4': 4790.0
+      '0.5': 4850.0
+      '0.6': 4910.0
+      '0.7': 4980.0
+      '0.8': 5080.0
+      '0.9': 5250.0
+      '0.95': 5400.0
+  metadata:
+    rationale: The recent surge in CPO prices to the 5000 MYR/tonne level is driven
+      by acute prompt tightness (falling production, East Coast floods, and robust
+      pull-forward buying for EUDR and festivals) paired with the impending Indonesian
+      B40 mandate. However, the forward curve shows a steep backwardation. Palm oil
+      is currently trading at a rare premium to soybean oil, making it vulnerable
+      to substitution and demand destruction in price-sensitive markets. Our forecast
+      traces the backwardation, projecting a gradual moderation from current highs
+      as seasonal production recovers into Q1/Q2 2025, balanced against the structural
+      supply removal expected from Indonesia's B40 implementation. Geopolitical shifts,
+      specifically incoming US biofuel trade policies, add wide uncertainty bounds
+      at longer horizons.
+    horizon_rationale: As we close out the calendar year, market focus will shift
+      to the impending implementation of Indonesia's B40 mandate on January 1. This
+      structurally supports prices from a major crash, but the broad trend remains
+      downward following the futures curve's backwardation.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:10.434449'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2025-01-24T00:00:00'
+  payload:
+    point_forecast: 4750.0
+    quantiles:
+      '0.05': 4050.0
+      '0.1': 4200.0
+      '0.2': 4400.0
+      '0.3': 4550.0
+      '0.4': 4660.0
+      '0.5': 4750.0
+      '0.6': 4840.0
+      '0.7': 4950.0
+      '0.8': 5100.0
+      '0.9': 5300.0
+      '0.95': 5500.0
+  metadata:
+    rationale: The recent surge in CPO prices to the 5000 MYR/tonne level is driven
+      by acute prompt tightness (falling production, East Coast floods, and robust
+      pull-forward buying for EUDR and festivals) paired with the impending Indonesian
+      B40 mandate. However, the forward curve shows a steep backwardation. Palm oil
+      is currently trading at a rare premium to soybean oil, making it vulnerable
+      to substitution and demand destruction in price-sensitive markets. Our forecast
+      traces the backwardation, projecting a gradual moderation from current highs
+      as seasonal production recovers into Q1/Q2 2025, balanced against the structural
+      supply removal expected from Indonesia's B40 implementation. Geopolitical shifts,
+      specifically incoming US biofuel trade policies, add wide uncertainty bounds
+      at longer horizons.
+    horizon_rationale: By late January, the B40 mandate will be fully active, constraining
+      exportable Indonesian supply. However, post-Lunar New Year demand traditionally
+      cools. At these price levels, demand rationing and substitution toward South
+      American soybean oil are likely to bring CPO prices down from their recent peaks.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:10.434449'
+  as_of: '2024-11-29T00:00:00'
+  forecast_date: '2025-02-28T00:00:00'
+  payload:
+    point_forecast: 4650.0
+    quantiles:
+      '0.05': 3800.0
+      '0.1': 4000.0
+      '0.2': 4250.0
+      '0.3': 4420.0
+      '0.4': 4550.0
+      '0.5': 4650.0
+      '0.6': 4750.0
+      '0.7': 4880.0
+      '0.8': 5050.0
+      '0.9': 5250.0
+      '0.95': 5500.0
+  metadata:
+    rationale: The recent surge in CPO prices to the 5000 MYR/tonne level is driven
+      by acute prompt tightness (falling production, East Coast floods, and robust
+      pull-forward buying for EUDR and festivals) paired with the impending Indonesian
+      B40 mandate. However, the forward curve shows a steep backwardation. Palm oil
+      is currently trading at a rare premium to soybean oil, making it vulnerable
+      to substitution and demand destruction in price-sensitive markets. Our forecast
+      traces the backwardation, projecting a gradual moderation from current highs
+      as seasonal production recovers into Q1/Q2 2025, balanced against the structural
+      supply removal expected from Indonesia's B40 implementation. Geopolitical shifts,
+      specifically incoming US biofuel trade policies, add wide uncertainty bounds
+      at longer horizons.
+    horizon_rationale: Looking 13 weeks ahead into late February/early March, palm
+      oil production enters its seasonal recovery phase. The futures curve strongly
+      prices in a discount for April and May contracts (currently trading in the 4500-4700
+      range) as yields improve and global vegetable oil supplies potentially adjust
+      to the new biofuel mandates.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:51.841030'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-03-07T00:00:00'
+  payload:
+    point_forecast: 4600.0
+    quantiles:
+      '0.05': 4350.0
+      '0.1': 4420.0
+      '0.2': 4480.0
+      '0.3': 4520.0
+      '0.4': 4560.0
+      '0.5': 4600.0
+      '0.6': 4640.0
+      '0.7': 4680.0
+      '0.8': 4720.0
+      '0.9': 4780.0
+      '0.95': 4850.0
+  metadata:
+    rationale: The recent CPO price spike (approaching RM4,800) was driven by acute
+      Q1 weather disruptions and the absorption shock of Indonesia's B40 biodiesel
+      mandate. However, this pushed CPO to a rare and heavy premium over rival soft
+      oils like soybean and sunflower oil, causing severe demand destruction in India
+      (imports hitting a 14-year low, widespread order cancellations). We expect this
+      unsustainable situation to correct downward. Once the Q1 low-cycle and Ramadan
+      restocking pass, structural production recovery in Q2 from both Malaysia and
+      Indonesia will force CPO prices to moderate back toward the low RM4,000s to
+      regain competitiveness against an abundant global soybean supply.
+    horizon_rationale: In the very short term, CPO remains supported by tight Q1 inventories
+      due to recent floods in Malaysia and Indonesia's B40 mandate, but heavy price
+      premiums over soybean oil are triggering demand rationing in India. A slight
+      pullback to 4600 is expected.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:51.841030'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-03-14T00:00:00'
+  payload:
+    point_forecast: 4550.0
+    quantiles:
+      '0.05': 4200.0
+      '0.1': 4300.0
+      '0.2': 4400.0
+      '0.3': 4450.0
+      '0.4': 4500.0
+      '0.5': 4550.0
+      '0.6': 4600.0
+      '0.7': 4660.0
+      '0.8': 4730.0
+      '0.9': 4800.0
+      '0.95': 4880.0
+  metadata:
+    rationale: The recent CPO price spike (approaching RM4,800) was driven by acute
+      Q1 weather disruptions and the absorption shock of Indonesia's B40 biodiesel
+      mandate. However, this pushed CPO to a rare and heavy premium over rival soft
+      oils like soybean and sunflower oil, causing severe demand destruction in India
+      (imports hitting a 14-year low, widespread order cancellations). We expect this
+      unsustainable situation to correct downward. Once the Q1 low-cycle and Ramadan
+      restocking pass, structural production recovery in Q2 from both Malaysia and
+      Indonesia will force CPO prices to moderate back toward the low RM4,000s to
+      regain competitiveness against an abundant global soybean supply.
+    horizon_rationale: By mid-March, pre-Ramadan restocking will be largely completed.
+      The market will begin anticipating the start of the seasonal production recovery,
+      maintaining a gentle downward drift.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:51.841030'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-03-28T00:00:00'
+  payload:
+    point_forecast: 4450.0
+    quantiles:
+      '0.05': 3950.0
+      '0.1': 4080.0
+      '0.2': 4200.0
+      '0.3': 4300.0
+      '0.4': 4380.0
+      '0.5': 4450.0
+      '0.6': 4520.0
+      '0.7': 4600.0
+      '0.8': 4680.0
+      '0.9': 4780.0
+      '0.95': 4900.0
+  metadata:
+    rationale: The recent CPO price spike (approaching RM4,800) was driven by acute
+      Q1 weather disruptions and the absorption shock of Indonesia's B40 biodiesel
+      mandate. However, this pushed CPO to a rare and heavy premium over rival soft
+      oils like soybean and sunflower oil, causing severe demand destruction in India
+      (imports hitting a 14-year low, widespread order cancellations). We expect this
+      unsustainable situation to correct downward. Once the Q1 low-cycle and Ramadan
+      restocking pass, structural production recovery in Q2 from both Malaysia and
+      Indonesia will force CPO prices to moderate back toward the low RM4,000s to
+      regain competitiveness against an abundant global soybean supply.
+    horizon_rationale: Approaching late March/early April, the festival demand bump
+      fades. If the expected narrowing of CPO's premium over soyoil plays out, prices
+      will have to trace lower to re-attract price-sensitive buyers like India, where
+      imports recently hit 14-year lows.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:51.841030'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-04-25T00:00:00'
+  payload:
+    point_forecast: 4250.0
+    quantiles:
+      '0.05': 3600.0
+      '0.1': 3750.0
+      '0.2': 3950.0
+      '0.3': 4050.0
+      '0.4': 4150.0
+      '0.5': 4250.0
+      '0.6': 4350.0
+      '0.7': 4450.0
+      '0.8': 4580.0
+      '0.9': 4750.0
+      '0.95': 4900.0
+  metadata:
+    rationale: The recent CPO price spike (approaching RM4,800) was driven by acute
+      Q1 weather disruptions and the absorption shock of Indonesia's B40 biodiesel
+      mandate. However, this pushed CPO to a rare and heavy premium over rival soft
+      oils like soybean and sunflower oil, causing severe demand destruction in India
+      (imports hitting a 14-year low, widespread order cancellations). We expect this
+      unsustainable situation to correct downward. Once the Q1 low-cycle and Ramadan
+      restocking pass, structural production recovery in Q2 from both Malaysia and
+      Indonesia will force CPO prices to moderate back toward the low RM4,000s to
+      regain competitiveness against an abundant global soybean supply.
+    horizon_rationale: Into late April, post-Ramadan production typically rebounds.
+      High-profile analysts like Dorab Mistry and Thomas Mielke forecast Indonesian
+      output to begin recovering noticeably here. Increased supply pushes prices meaningfully
+      lower to clear into the global market.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:27:51.841030'
+  as_of: '2025-02-28T00:00:00'
+  forecast_date: '2025-05-30T00:00:00'
+  payload:
+    point_forecast: 4050.0
+    quantiles:
+      '0.05': 3300.0
+      '0.1': 3500.0
+      '0.2': 3700.0
+      '0.3': 3850.0
+      '0.4': 3950.0
+      '0.5': 4050.0
+      '0.6': 4150.0
+      '0.7': 4300.0
+      '0.8': 4450.0
+      '0.9': 4650.0
+      '0.95': 4850.0
+  metadata:
+    rationale: The recent CPO price spike (approaching RM4,800) was driven by acute
+      Q1 weather disruptions and the absorption shock of Indonesia's B40 biodiesel
+      mandate. However, this pushed CPO to a rare and heavy premium over rival soft
+      oils like soybean and sunflower oil, causing severe demand destruction in India
+      (imports hitting a 14-year low, widespread order cancellations). We expect this
+      unsustainable situation to correct downward. Once the Q1 low-cycle and Ramadan
+      restocking pass, structural production recovery in Q2 from both Malaysia and
+      Indonesia will force CPO prices to moderate back toward the low RM4,000s to
+      regain competitiveness against an abundant global soybean supply.
+    horizon_rationale: By late May, the higher-yielding months will be well underway.
+      The consensus among planters (e.g., SD Guthrie, FGV) and analysts is that CPO
+      prices will moderate toward RM4,000 to eliminate its unsustainable premium over
+      abundant Latin American soybean oil and newly harvested global soft oils.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:28:24.122924'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-06-27T00:00:00'
+  payload:
+    point_forecast: 4070.0
+    quantiles:
+      '0.05': 3860.0
+      '0.1': 3910.0
+      '0.2': 3960.0
+      '0.3': 4000.0
+      '0.4': 4035.0
+      '0.5': 4070.0
+      '0.6': 4105.0
+      '0.7': 4140.0
+      '0.8': 4180.0
+      '0.9': 4230.0
+      '0.95': 4280.0
+  metadata:
+    rationale: The forecast leverages a confluence of near-term exogenous shocks (soyoil
+      limits-up on US mandates, Mid-East tension spiking crude) which have artificially
+      pulled CPO out of its ~3,900 MYR orbit up to ~4,076 MYR. Structural fundamentals
+      (rising MPOB inventories, impending peak seasonal yields in Q3, price-sensitive
+      Indian cancellations) exert a downward gravitational pull over the medium term.
+      Meanwhile, supportive policies (Indonesian B40/B50 prospects and the halving
+      of the Indian CPO import duty) place a firm floor on how far prices can fall.
+      The spread systematically widens over the horizon, reflecting accumulated uncertainty
+      around weather developments and macro-economic factors (e.g. Fed policy and
+      US tariffs).
+    horizon_rationale: CPO recently surged past 4,000 MYR/tonne on the back of escalated
+      geopolitical tensions in the Middle East boosting crude oil prices, and the
+      US EPA's higher biofuel mandate proposal elevating substitute soy oil. While
+      India cut its import duty on crude edible oils to 10%, the sharp 6% price spike
+      prompted some Indian refiners to cancel July-September orders, signaling strong
+      near-term resistance.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:28:24.122924'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-07-04T00:00:00'
+  payload:
+    point_forecast: 4050.0
+    quantiles:
+      '0.05': 3750.0
+      '0.1': 3820.0
+      '0.2': 3890.0
+      '0.3': 3950.0
+      '0.4': 4000.0
+      '0.5': 4050.0
+      '0.6': 4100.0
+      '0.7': 4150.0
+      '0.8': 4210.0
+      '0.9': 4280.0
+      '0.95': 4350.0
+  metadata:
+    rationale: The forecast leverages a confluence of near-term exogenous shocks (soyoil
+      limits-up on US mandates, Mid-East tension spiking crude) which have artificially
+      pulled CPO out of its ~3,900 MYR orbit up to ~4,076 MYR. Structural fundamentals
+      (rising MPOB inventories, impending peak seasonal yields in Q3, price-sensitive
+      Indian cancellations) exert a downward gravitational pull over the medium term.
+      Meanwhile, supportive policies (Indonesian B40/B50 prospects and the halving
+      of the Indian CPO import duty) place a firm floor on how far prices can fall.
+      The spread systematically widens over the horizon, reflecting accumulated uncertainty
+      around weather developments and macro-economic factors (e.g. Fed policy and
+      US tariffs).
+    horizon_rationale: We anticipate a slight consolidation as the initial shock of
+      the Middle East premium in crude oil and the US EPA news is digested. Rising
+      MPOB inventories, which hit an eight-month high of 1.99M tonnes in May, will
+      start weighing on upside momentum.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:28:24.122924'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-07-18T00:00:00'
+  payload:
+    point_forecast: 4020.0
+    quantiles:
+      '0.05': 3590.0
+      '0.1': 3680.0
+      '0.2': 3800.0
+      '0.3': 3880.0
+      '0.4': 3950.0
+      '0.5': 4020.0
+      '0.6': 4090.0
+      '0.7': 4160.0
+      '0.8': 4240.0
+      '0.9': 4360.0
+      '0.95': 4450.0
+  metadata:
+    rationale: The forecast leverages a confluence of near-term exogenous shocks (soyoil
+      limits-up on US mandates, Mid-East tension spiking crude) which have artificially
+      pulled CPO out of its ~3,900 MYR orbit up to ~4,076 MYR. Structural fundamentals
+      (rising MPOB inventories, impending peak seasonal yields in Q3, price-sensitive
+      Indian cancellations) exert a downward gravitational pull over the medium term.
+      Meanwhile, supportive policies (Indonesian B40/B50 prospects and the halving
+      of the Indian CPO import duty) place a firm floor on how far prices can fall.
+      The spread systematically widens over the horizon, reflecting accumulated uncertainty
+      around weather developments and macro-economic factors (e.g. Fed policy and
+      US tariffs).
+    horizon_rationale: By July, the physical supply situation should feature higher
+      stocks across Malaysia and Indonesia. As production continues to recover from
+      Q1 lows, structural pressure mounts on price, pulling the market down towards
+      the 4,000 handle.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:28:24.122924'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-08-15T00:00:00'
+  payload:
+    point_forecast: 3980.0
+    quantiles:
+      '0.05': 3380.0
+      '0.1': 3510.0
+      '0.2': 3670.0
+      '0.3': 3780.0
+      '0.4': 3880.0
+      '0.5': 3980.0
+      '0.6': 4080.0
+      '0.7': 4180.0
+      '0.8': 4290.0
+      '0.9': 4450.0
+      '0.95': 4580.0
+  metadata:
+    rationale: The forecast leverages a confluence of near-term exogenous shocks (soyoil
+      limits-up on US mandates, Mid-East tension spiking crude) which have artificially
+      pulled CPO out of its ~3,900 MYR orbit up to ~4,076 MYR. Structural fundamentals
+      (rising MPOB inventories, impending peak seasonal yields in Q3, price-sensitive
+      Indian cancellations) exert a downward gravitational pull over the medium term.
+      Meanwhile, supportive policies (Indonesian B40/B50 prospects and the halving
+      of the Indian CPO import duty) place a firm floor on how far prices can fall.
+      The spread systematically widens over the horizon, reflecting accumulated uncertainty
+      around weather developments and macro-economic factors (e.g. Fed policy and
+      US tariffs).
+    horizon_rationale: Approaching peak production season (Q3) in the palm complex.
+      Increased FFB yields will keep regional inventories comfortable. However, price
+      drops will be buffered by resilient demand floors provided by Indonesia's strict
+      B40 biodiesel mandate and the Indian tax cut effectively encouraging imports.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:28:24.122924'
+  as_of: '2025-06-20T00:00:00'
+  forecast_date: '2025-09-19T00:00:00'
+  payload:
+    point_forecast: 3950.0
+    quantiles:
+      '0.05': 3190.0
+      '0.1': 3350.0
+      '0.2': 3550.0
+      '0.3': 3700.0
+      '0.4': 3830.0
+      '0.5': 3950.0
+      '0.6': 4070.0
+      '0.7': 4200.0
+      '0.8': 4350.0
+      '0.9': 4550.0
+      '0.95': 4710.0
+  metadata:
+    rationale: The forecast leverages a confluence of near-term exogenous shocks (soyoil
+      limits-up on US mandates, Mid-East tension spiking crude) which have artificially
+      pulled CPO out of its ~3,900 MYR orbit up to ~4,076 MYR. Structural fundamentals
+      (rising MPOB inventories, impending peak seasonal yields in Q3, price-sensitive
+      Indian cancellations) exert a downward gravitational pull over the medium term.
+      Meanwhile, supportive policies (Indonesian B40/B50 prospects and the halving
+      of the Indian CPO import duty) place a firm floor on how far prices can fall.
+      The spread systematically widens over the horizon, reflecting accumulated uncertainty
+      around weather developments and macro-economic factors (e.g. Fed policy and
+      US tariffs).
+    horizon_rationale: Peak output traditionally depresses prices heavily in September.
+      An expected normalization of crude oil risk premiums may also withdraw some
+      biodiesel margin support. I project a reversion to a 3,900-4,000 range, consistent
+      with historical Q3 seasonality in an otherwise stable regulatory environment.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:29:06.322180'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2025-12-05T00:00:00'
+  payload:
+    point_forecast: 4080.0
+    quantiles:
+      '0.05': 3880.0
+      '0.1': 3930.0
+      '0.2': 3980.0
+      '0.3': 4020.0
+      '0.4': 4050.0
+      '0.5': 4080.0
+      '0.6': 4110.0
+      '0.7': 4140.0
+      '0.8': 4180.0
+      '0.9': 4230.0
+      '0.95': 4280.0
+  metadata:
+    rationale: 'The near-term outlook is restrained by a 6.5-year high in MPOB October
+      stocks and a sharp 14-20% drop in November exports, as palm oil lost its competitive
+      discount to soybean and sunflower oils. However, the medium-to-long-term fundamentals
+      are very supportive: Malaysian and Indonesian output is entering a seasonal
+      trough exacerbated by monsoon rains, and the market must begin pricing in Indonesia''s
+      aggressive B50 mandate expected in mid-to-late 2026, which is projected to withdraw
+      over 2 million tonnes from the global export market. As festive demand for Ramadan
+      and CNY materializes in Q1, the stock overhang will clear, leading to a sustained
+      price recovery.'
+    horizon_rationale: In the short term, prices are pressured by high October end-stocks
+      (2.46M tonnes, a 6.5-year high) and weak export demand in November (down 14-20%).
+      The narrow discount or even premium of palm oil to soybean oil is reducing its
+      competitiveness, keeping prices near support levels around 4000-4100 MYR.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:29:06.322180'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2025-12-12T00:00:00'
+  payload:
+    point_forecast: 4100.0
+    quantiles:
+      '0.05': 3840.0
+      '0.1': 3900.0
+      '0.2': 3970.0
+      '0.3': 4020.0
+      '0.4': 4060.0
+      '0.5': 4100.0
+      '0.6': 4140.0
+      '0.7': 4190.0
+      '0.8': 4240.0
+      '0.9': 4320.0
+      '0.95': 4380.0
+  metadata:
+    rationale: 'The near-term outlook is restrained by a 6.5-year high in MPOB October
+      stocks and a sharp 14-20% drop in November exports, as palm oil lost its competitive
+      discount to soybean and sunflower oils. However, the medium-to-long-term fundamentals
+      are very supportive: Malaysian and Indonesian output is entering a seasonal
+      trough exacerbated by monsoon rains, and the market must begin pricing in Indonesia''s
+      aggressive B50 mandate expected in mid-to-late 2026, which is projected to withdraw
+      over 2 million tonnes from the global export market. As festive demand for Ramadan
+      and CNY materializes in Q1, the stock overhang will clear, leading to a sustained
+      price recovery.'
+    horizon_rationale: High inventories continue to weigh on the market, but the onset
+      of the monsoon and the transition into a seasonally lower production period
+      will prevent significant downside, keeping prices range-bound.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:29:06.322180'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2025-12-26T00:00:00'
+  payload:
+    point_forecast: 4150.0
+    quantiles:
+      '0.05': 3780.0
+      '0.1': 3870.0
+      '0.2': 3980.0
+      '0.3': 4050.0
+      '0.4': 4100.0
+      '0.5': 4150.0
+      '0.6': 4200.0
+      '0.7': 4260.0
+      '0.8': 4330.0
+      '0.9': 4430.0
+      '0.95': 4500.0
+  metadata:
+    rationale: 'The near-term outlook is restrained by a 6.5-year high in MPOB October
+      stocks and a sharp 14-20% drop in November exports, as palm oil lost its competitive
+      discount to soybean and sunflower oils. However, the medium-to-long-term fundamentals
+      are very supportive: Malaysian and Indonesian output is entering a seasonal
+      trough exacerbated by monsoon rains, and the market must begin pricing in Indonesia''s
+      aggressive B50 mandate expected in mid-to-late 2026, which is projected to withdraw
+      over 2 million tonnes from the global export market. As festive demand for Ramadan
+      and CNY materializes in Q1, the stock overhang will clear, leading to a sustained
+      price recovery.'
+    horizon_rationale: As December progresses, the seasonal drop in output (-9% to
+      -11% expected) and potential monsoon harvesting disruptions should begin to
+      tighten supply, shifting the balance and lifting prices slightly.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:29:06.322180'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2026-01-23T00:00:00'
+  payload:
+    point_forecast: 4250.0
+    quantiles:
+      '0.05': 3750.0
+      '0.1': 3880.0
+      '0.2': 4030.0
+      '0.3': 4120.0
+      '0.4': 4190.0
+      '0.5': 4250.0
+      '0.6': 4310.0
+      '0.7': 4380.0
+      '0.8': 4480.0
+      '0.9': 4620.0
+      '0.95': 4720.0
+  metadata:
+    rationale: 'The near-term outlook is restrained by a 6.5-year high in MPOB October
+      stocks and a sharp 14-20% drop in November exports, as palm oil lost its competitive
+      discount to soybean and sunflower oils. However, the medium-to-long-term fundamentals
+      are very supportive: Malaysian and Indonesian output is entering a seasonal
+      trough exacerbated by monsoon rains, and the market must begin pricing in Indonesia''s
+      aggressive B50 mandate expected in mid-to-late 2026, which is projected to withdraw
+      over 2 million tonnes from the global export market. As festive demand for Ramadan
+      and CNY materializes in Q1, the stock overhang will clear, leading to a sustained
+      price recovery.'
+    horizon_rationale: By late January, production will be near its seasonal trough.
+      Restocking demand ahead of Ramadan and Chinese New Year will draw down inventories,
+      pushing prices structurally higher.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:29:06.322180'
+  as_of: '2025-11-28T00:00:00'
+  forecast_date: '2026-02-27T00:00:00'
+  payload:
+    point_forecast: 4350.0
+    quantiles:
+      '0.05': 3700.0
+      '0.1': 3850.0
+      '0.2': 4050.0
+      '0.3': 4180.0
+      '0.4': 4270.0
+      '0.5': 4350.0
+      '0.6': 4440.0
+      '0.7': 4550.0
+      '0.8': 4680.0
+      '0.9': 4850.0
+      '0.95': 4980.0
+  metadata:
+    rationale: 'The near-term outlook is restrained by a 6.5-year high in MPOB October
+      stocks and a sharp 14-20% drop in November exports, as palm oil lost its competitive
+      discount to soybean and sunflower oils. However, the medium-to-long-term fundamentals
+      are very supportive: Malaysian and Indonesian output is entering a seasonal
+      trough exacerbated by monsoon rains, and the market must begin pricing in Indonesia''s
+      aggressive B50 mandate expected in mid-to-late 2026, which is projected to withdraw
+      over 2 million tonnes from the global export market. As festive demand for Ramadan
+      and CNY materializes in Q1, the stock overhang will clear, leading to a sustained
+      price recovery.'
+    horizon_rationale: In late February, the market will increasingly price in Indonesia's
+      B50 biodiesel mandate planned for H2 2026. This anticipated supply squeeze,
+      combined with Q1's low production cycle, creates a strongly bullish environment.
+scores:
+- 75.14462809917356
+- 65.45454545454545
+- 100.28925619834712
+- 295.82644628099183
+- 127.13223140495866
+- 28.921487603305774
+- 50.293388429752056
+- 156.36363636363643
+- 143.24380165289259
+- 189.42148760330585
+- 23.50413223140495
+- 35.12809917355371
+- 157.59090909090915
+- 532.4421487603306
+- 693.3842975206612
+- 284.9876033057852
+- 155.42975206611573
+- 98.98760330578513
+- 153.11983471074376
+- 122.995867768595
+- 139.3636363636364
+- 160.3760330578513
+- 153.26446280991738
+- 106.63223140495865
+- 148.35950413223136
+- 66.9380165289256
+- 50.18595041322312
+- 126.26033057851242
+- 239.54132231404967
+- 253.23966942148766
+- 32.18595041322313
+- 61.13636363636362
+- 76.83884297520659
+- 106.88016528925615
+- 245.8636363636363
+metric: crps
+mean_score: 155.90649350649352
+ran_at: '2026-08-14T19:29:06.342821'
+skipped_origins: 0

@@ -48,10 +48,28 @@ STORE_DIR = Path(__file__).parent / "data" / "predictions"
 SPEC_ID = "cpo_cutoffs"
 REFERENCE = "last_value_naive"
 
+#: What each arm reads, keyed by the arm token inside the ``predictor_id``.
+#: Order matters: ``news_local`` must match before its prefix ``news``.
+_ARM_LABELS = {
+    "basic": "price only",
+    "news_local": "price + local news",
+    "news": "price + web news",
+}
+
+#: Models an arm may have been scored on.  The proxy runs use the lite model;
+#: direct-Gemini runs (``run_agent.check_credentials``) use the pro preview.
+_AGENT_MODELS = ("gemini-3.1-flash-lite-preview", "gemini-3.1-pro-preview")
+
 #: The agent arms, by the ``predictor_id`` their artefacts are stored under.
+#: One entry per arm x model; whichever were actually run have artefacts, and
+#: ``_load_frames`` skips the rest.  The model tag keeps two runs of the same
+#: arm distinguishable on the page.
 AGENT_ARMS: dict[str, str] = {
-    "agent_predictor_cpo_analyst_basic_gemini-3.1-flash-lite-preview_continuous": "agent (price only)",
-    "agent_predictor_cpo_analyst_news_gemini-3.1-flash-lite-preview_continuous": "agent (price + news)",
+    f"agent_predictor_cpo_analyst_{arm}_{model}_continuous": (
+        f"agent ({label}, {model.removeprefix('gemini-').removesuffix('-preview')})"
+    )
+    for arm, label in _ARM_LABELS.items()
+    for model in _AGENT_MODELS
 }
 
 #: Display names, so the page reads as a comparison of methods rather than of
@@ -291,11 +309,13 @@ def _load_frames(spec, svc) -> tuple[list[pd.DataFrame], list[str]]:
             continue
         frames.append(predictions_frame(result))
         print(f"  {arm_label:20s} mean CRPS {result.mean_score:8.2f}")
-    if missing:
-        print("  ! no cached artefact for: " + ", ".join(AGENT_ARMS[m] for m in missing))
+    if len(missing) == len(AGENT_ARMS):
+        # Arm x model combinations that were never run are expected to be
+        # absent; only the complete absence of agent artefacts is worth a nudge.
+        print("  ! no cached agent artefacts at all")
         print(
             "    run: PYTHONPATH=implementations uv run python implementations/cpo/run_agent.py "
-            "--spec cutoffs --arm both"
+            "--spec cutoffs --arm all"
         )
     return frames, missing
 
@@ -451,7 +471,9 @@ def main() -> None:
     ]
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text("\n".join(parts))
+    # Explicit encoding: the page declares utf-8, and agent rationales can
+    # carry non-Latin characters that Windows' cp1252 default cannot encode.
+    OUT.write_text("\n".join(parts), encoding="utf-8")
     print(f"wrote {OUT}")
 
 

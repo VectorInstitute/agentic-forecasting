@@ -1,19 +1,25 @@
 """Agentic forecaster for the MPOB weekly crude palm oil price.
 
-Two configurations, deliberately differing in one thing only -- whether the
-agent may read news:
+Three configurations, deliberately differing in one thing only -- whether the
+agent may read news, and through which channel:
 
 1. :func:`build_cpo_basic_config` -- the LLM reasons from the price history in
    the payload and nothing else.
 2. :func:`build_cpo_news_config` -- the same persona plus bounded, cutoff-fenced
    web search.
+3. :func:`build_cpo_local_news_config` -- the same persona plus the past
+   :data:`NEWS_WEEKS` weeks of ``palm_articles_weekly_mpob.csv``, injected into
+   the payload by :class:`CpoLocalNewsPromptBuilder`.  Same information
+   channel as arm 2, different delivery: the committed corpus instead of live
+   retrieval, with the temporal fence enforced in code
+   (:func:`select_news_window`) rather than by a verifier model.
 
-That pair *is* the experiment this implementation exists to run (``README.md``:
-"testing whether the news actually helps").  Scoring them against each other,
-and both against the seven numerical baselines in :mod:`cpo.baselines`, is only
-meaningful because every predictor sees the same origins, the same target
-series, and the same horizons -- so the agent is run through the same
-``run_predictor`` seam rather than a path of its own.
+Those arms *are* the experiment this implementation exists to run
+(``README.md``: "testing whether the news actually helps").  Scoring them
+against each other, and all against the numerical baselines in
+:mod:`cpo.baselines`, is only meaningful because every predictor sees the same
+origins, the same target series, and the same horizons -- so the agent is run
+through the same ``run_predictor`` seam rather than a path of its own.
 
 Everything routes through the Vector proxy; there are no direct provider keys.
 ``OPENAI_BASE_URL`` and ``OPENAI_API_KEY`` must be set (see
@@ -27,16 +33,18 @@ Usage::
     predictor = build_cpo_agent_predictor(build_cpo_news_config())
     result = run_predictor(predictor, load_spec(SMOKE_SPEC), mpob_service())
 
-Note on the news corpus: ``palm_articles_daily.csv`` is *not* wired in here.
-The agent retrieves its own context through ``search_web`` behind the temporal
-verifier, which is the mechanism the rest of the repo uses and the one that
-needs no new loader.  The CSV remains the record of what coverage exists, and
-the reason ``cpo_eval.yaml`` (2026 origins) stays baselines-only.
+Note on the daily corpus: ``palm_articles_daily.csv`` is still not wired in.
+The local-news arm reads the *weekly* condensation
+(``palm_articles_weekly_mpob.csv``, Sat-Fri weeks, Friday-stamped); the daily
+file remains the record of raw coverage, and the reason ``cpo_eval.yaml``
+(2026 origins) stays baselines-only -- both corpora end 2025-11-28.
 """
 
 from __future__ import annotations
 
 import json
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -58,17 +66,30 @@ from pydantic import BaseModel
 #: enough that the payload stays small next to the model's context budget.
 HISTORY_WEEKS = 260
 
+#: Weeks of news handed to the local-news arm: "the past month" at the corpus's
+#: weekly cadence.  Four summaries of ~25k characters each keep the payload
+#: around 25k tokens -- well inside the lite model's context.
+NEWS_WEEKS = 4
+
+#: The condensed weekly news corpus.  Saturday-to-Friday weeks stamped by
+#: ``week_end``, so at a Friday forecast origin the newest admissible week ends
+#: exactly on the origin date.  Coverage: 2020-02-07 to 2025-11-28, with a gap
+#: from 2020-07 to 2023-08 -- every frozen cutoff has all four weeks present.
+NEWS_CSV = Path(__file__).resolve().parent / "palm_articles_weekly_mpob.csv"
+
 
 # ---------------------------------------------------------------------------
 # System prompt (root analyst agent)
 # ---------------------------------------------------------------------------
 
 
-def _build_cpo_analyst_instruction() -> str:
+def _build_cpo_analyst_instruction(analysis_discipline: str) -> str:
     """Build the palm oil analyst persona with the output schema embedded.
 
     Generated rather than hand-written so the ``## Output schema`` block cannot
-    drift from :class:`ContinuousAgentForecastOutput`.
+    drift from :class:`ContinuousAgentForecastOutput`.  The arms share the
+    persona, contract, and schema; only the ``## Analysis discipline`` section
+    differs -- how the arm is to source (or do without) market intelligence.
     """
     schema = ContinuousAgentForecastOutput.prompt_schema_json()
     return (
@@ -121,28 +142,49 @@ def _build_cpo_analyst_instruction() -> str:
         '`"quantiles"` is a **list** of `{"quantile": <level>, "value": <price>}` '
         "objects -- not a dict. Omit any field not shown above. Prices are in "
         "MYR per tonne, typically in the 3,000-5,500 range.\n\n"
-        "## Analysis discipline\n\n"
-        "When context retrieval is available, call ``search_web`` to gather "
-        "market intelligence BEFORE producing forecasts.\n\n"
-        "Call ``search_web`` with ``query`` and ``cutoff_date`` (set to the "
-        "``as_of`` date from the payload). The ``cutoff_date`` MUST always equal "
-        "``as_of`` -- this is the temporal fence that keeps post-origin "
-        "information out of a historical backtest.\n\n"
-        "If ``search_web`` returns a result beginning with "
-        "``[SEARCH_VERIFICATION_FAILED]``, treat it as no verified news context "
-        "for that query. Do not fall back on your own background knowledge to "
-        "fill the gap -- you know how this story ended, and using that is "
-        "leakage. Proceed on price history alone and say so in the rationale.\n\n"
-        "Recommended queries (call ``search_web`` once per topic):\n"
-        '- ``search_web(query="MPOB palm oil stocks production exports latest monthly data", cutoff_date=<as_of>)``\n'
-        '- ``search_web(query="Indonesia biodiesel mandate palm oil export levy policy", cutoff_date=<as_of>)``\n'
-        '- ``search_web(query="soybean oil price vegetable oil complex outlook", cutoff_date=<as_of>)``\n\n'
+        "## Analysis discipline\n\n" + analysis_discipline + "\n\n"
         "Document your key assumptions (stocks balance, Indonesian policy, "
         "substitute oils, weather, ringgit) in the `rationale` fields."
     )
 
 
-_CPO_ANALYST_INSTRUCTION = _build_cpo_analyst_instruction()
+#: Discipline for the search arm: live retrieval behind the temporal verifier.
+_SEARCH_ANALYSIS_DISCIPLINE = (
+    "When context retrieval is available, call ``search_web`` to gather "
+    "market intelligence BEFORE producing forecasts.\n\n"
+    "Call ``search_web`` with ``query`` and ``cutoff_date`` (set to the "
+    "``as_of`` date from the payload). The ``cutoff_date`` MUST always equal "
+    "``as_of`` -- this is the temporal fence that keeps post-origin "
+    "information out of a historical backtest.\n\n"
+    "If ``search_web`` returns a result beginning with "
+    "``[SEARCH_VERIFICATION_FAILED]``, treat it as no verified news context "
+    "for that query. Do not fall back on your own background knowledge to "
+    "fill the gap -- you know how this story ended, and using that is "
+    "leakage. Proceed on price history alone and say so in the rationale.\n\n"
+    "Recommended queries (call ``search_web`` once per topic):\n"
+    '- ``search_web(query="MPOB palm oil stocks production exports latest monthly data", cutoff_date=<as_of>)``\n'
+    '- ``search_web(query="Indonesia biodiesel mandate palm oil export levy policy", cutoff_date=<as_of>)``\n'
+    '- ``search_web(query="soybean oil price vegetable oil complex outlook", cutoff_date=<as_of>)``'
+)
+
+
+#: Discipline for the local-news arm: the payload already carries the news.
+_LOCAL_NEWS_ANALYSIS_DISCIPLINE = (
+    "The payload includes ``news_context``: condensed weekly palm oil news "
+    "summaries, one per week, covering the four weeks ending at ``as_of``. "
+    "The window is filtered in code so nothing dated after ``as_of`` can "
+    "appear -- treat it as your only source of market intelligence.\n\n"
+    "Read every week's summary BEFORE producing forecasts, and ground your "
+    "reasoning in what they actually say. Do not supplement them with your "
+    "own background knowledge of what happened after ``as_of`` -- you know "
+    "how this story ended, and using that is leakage. If "
+    "``news_context.weeks`` is empty, proceed on price history alone and say "
+    "so in the rationale."
+)
+
+
+_CPO_ANALYST_INSTRUCTION = _build_cpo_analyst_instruction(_SEARCH_ANALYSIS_DISCIPLINE)
+_CPO_LOCAL_NEWS_INSTRUCTION = _build_cpo_analyst_instruction(_LOCAL_NEWS_ANALYSIS_DISCIPLINE)
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +255,59 @@ def format_history(df: pd.DataFrame, *, weeks: int = HISTORY_WEEKS) -> str:
 
 
 # ---------------------------------------------------------------------------
+# News corpus (local-news arm)
+# ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=1)
+def load_weekly_news() -> pd.DataFrame:
+    """Load the condensed weekly news corpus, ascending by ``week_end``.
+
+    Cached: the file is ~60 MB of source text condensed to ~3.6 MB of
+    summaries, and every origin in a backtest reads from the same frame.
+    Treat the result as read-only.
+
+    Returns
+    -------
+    pd.DataFrame
+        The ``status == "ok"`` rows, with ``week_start`` and ``week_end``
+        parsed to timestamps.
+    """
+    news = pd.read_csv(NEWS_CSV, parse_dates=["week_start", "week_end"])
+    return news[news["status"] == "ok"].sort_values("week_end").reset_index(drop=True)
+
+
+def select_news_window(news: pd.DataFrame, as_of: Any, *, weeks: int = NEWS_WEEKS) -> pd.DataFrame:
+    """Return the news weeks from the ``weeks`` weeks up to ``as_of``.
+
+    This is the local-news arm's temporal fence, so both edges matter:
+
+    - ``week_end <= as_of`` keeps post-origin news out of the payload -- the
+      leak-safety condition the search arm needs a verifier model for.
+    - ``week_end > as_of - weeks`` keeps the window "the past month" even
+      where the corpus has gaps, rather than silently reaching back years for
+      stale weeks.
+
+    Parameters
+    ----------
+    news : pd.DataFrame
+        From :func:`load_weekly_news`.
+    as_of : Any
+        The forecast origin; anything ``pd.Timestamp`` accepts.
+    weeks : int
+        Window length in weeks.
+
+    Returns
+    -------
+    pd.DataFrame
+        At most ``weeks`` rows, ascending by ``week_end``.
+    """
+    cutoff = pd.Timestamp(as_of)
+    mask = (news["week_end"] <= cutoff) & (news["week_end"] > cutoff - pd.Timedelta(weeks=weeks))
+    return news[mask]
+
+
+# ---------------------------------------------------------------------------
 # Prompt builder
 # ---------------------------------------------------------------------------
 
@@ -247,6 +342,10 @@ class CpoPriceForecastPromptBuilder(BaseModel):
         str
             JSON payload: task metadata, summary statistics, and the history.
         """
+        return json.dumps(self._payload(task=task, context=context), indent=2)
+
+    def _payload(self, *, task: ForecastingTask, context: ForecastContext) -> dict[str, Any]:
+        """Build the payload dict -- the seam subclasses extend with context."""
         df = context.get_series(task.target_series_id)
         last = df.iloc[-1]
         trailing = df["value"].tail(52)
@@ -269,7 +368,42 @@ class CpoPriceForecastPromptBuilder(BaseModel):
             },
             "target_history_csv": format_history(df),
         }
-        return json.dumps(payload, indent=2)
+        return payload
+
+
+class CpoLocalNewsPromptBuilder(CpoPriceForecastPromptBuilder):
+    """The base payload plus a ``news_context`` block from the committed corpus.
+
+    The local-news arm's counterpart to ``search_web``: the same information
+    channel (palm oil news up to the origin) but delivered from
+    ``palm_articles_weekly_mpob.csv`` instead of live retrieval.  With no tool
+    call there is no verifier either -- the temporal fence is enforced right
+    here, in :func:`select_news_window`, which admits only weeks that ended on
+    or before ``as_of``.
+    """
+
+    news_weeks: int = NEWS_WEEKS
+
+    def _payload(self, *, task: ForecastingTask, context: ForecastContext) -> dict[str, Any]:
+        payload = super()._payload(task=task, context=context)
+        window = select_news_window(load_weekly_news(), context.as_of, weeks=self.news_weeks)
+        payload["news_context"] = {
+            "description": (
+                f"Condensed weekly palm oil news (GDELT), the {self.news_weeks} "
+                "weeks ending at as_of. Filtered in code so nothing after "
+                "as_of appears."
+            ),
+            "weeks": [
+                {
+                    "week_start": str(row.week_start.date()),
+                    "week_end": str(row.week_end.date()),
+                    "n_articles": int(row.n_articles),
+                    "summary": row.timeline,
+                }
+                for row in window.itertuples()
+            ],
+        }
+        return payload
 
 
 # ---------------------------------------------------------------------------
@@ -344,12 +478,40 @@ def build_cpo_news_config(
     )
 
 
+def build_cpo_local_news_config(model: str = LITE_MODEL) -> AgentConfig:
+    """Build the local-news config -- the persona plus the committed corpus.
+
+    The third arm: the same information channel as the news arm (palm oil news
+    up to the origin) but read from ``palm_articles_weekly_mpob.csv`` instead
+    of live ``search_web``.  No tools, no verifier -- the temporal fence lives
+    in :func:`select_news_window`.  The config alone does not carry the news:
+    pair it with :class:`CpoLocalNewsPromptBuilder`, as
+    :func:`build_cpo_agent_predictor` does when given both.
+
+    Parameters
+    ----------
+    model : str
+        Model for the analyst agent.
+
+    Returns
+    -------
+    AgentConfig
+    """
+    return AgentConfig(
+        name="cpo_analyst_news_local",
+        model=model,
+        instruction=_CPO_LOCAL_NEWS_INSTRUCTION,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Predictor factory
 # ---------------------------------------------------------------------------
 
 
-def build_cpo_agent_predictor(config: AgentConfig) -> AgentPredictor:
+def build_cpo_agent_predictor(
+    config: AgentConfig, prompt_builder: CpoPriceForecastPromptBuilder | None = None
+) -> AgentPredictor:
     """Wrap a CPO :class:`AgentConfig` in an :class:`AgentPredictor`.
 
     The result satisfies the same ``Predictor`` protocol the numerical
@@ -359,7 +521,12 @@ def build_cpo_agent_predictor(config: AgentConfig) -> AgentPredictor:
     Parameters
     ----------
     config : AgentConfig
-        From :func:`build_cpo_basic_config` or :func:`build_cpo_news_config`.
+        From :func:`build_cpo_basic_config`, :func:`build_cpo_news_config`, or
+        :func:`build_cpo_local_news_config`.
+    prompt_builder : CpoPriceForecastPromptBuilder, optional
+        Defaults to the price-only payload.  The local-news config needs
+        :class:`CpoLocalNewsPromptBuilder`, which is what puts the news in
+        front of the model.
 
     Returns
     -------
@@ -367,7 +534,7 @@ def build_cpo_agent_predictor(config: AgentConfig) -> AgentPredictor:
     """
     return AgentPredictor(
         agent_config=config,
-        prompt_builder=CpoPriceForecastPromptBuilder(),
+        prompt_builder=prompt_builder or CpoPriceForecastPromptBuilder(),
         output_schema=ContinuousAgentForecastOutput,
     )
 
@@ -381,9 +548,15 @@ def __getattr__(name: str) -> Any:
 
 __all__ = [
     "HISTORY_WEEKS",
+    "NEWS_CSV",
+    "NEWS_WEEKS",
+    "CpoLocalNewsPromptBuilder",
     "CpoPriceForecastPromptBuilder",
     "build_cpo_agent_predictor",
     "build_cpo_basic_config",
+    "build_cpo_local_news_config",
     "build_cpo_news_config",
     "format_history",
+    "load_weekly_news",
+    "select_news_window",
 ]
