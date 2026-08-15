@@ -218,6 +218,11 @@ there are no disk files to read.
 3. Call `load_skill_resource(<skill_name>, <file_path>)` to load a
    reference file (e.g. `references/wti_benchmarks.json`).
 
+Every `run_code` call must be a complete, self-contained Python script:
+include every import used in that same script. In particular, include
+`import json` whenever serializing results with `json.dumps`; do not rely on
+imports from an earlier call.
+
 These skills have NO scripts. Do not call `run_skill_script`.\
 """
 
@@ -534,9 +539,7 @@ def build_wti_code_exec_config(
     return AgentConfig(
         name="wti_analyst_code",
         model=model,
-        instruction=(
-            _WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _CODE_EXEC_SKILLS_SUPPLEMENT
-        ),
+        instruction=(_WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _CODE_EXEC_SKILLS_SUPPLEMENT),
         max_output_tokens=max_output_tokens,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
@@ -611,9 +614,7 @@ def build_wti_tool_config(
     return AgentConfig(
         name="wti_analyst_tool",
         model=model,
-        instruction=(
-            _WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _FORECAST_TOOL_SUPPLEMENT
-        ),
+        instruction=(_WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _FORECAST_TOOL_SUPPLEMENT),
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
