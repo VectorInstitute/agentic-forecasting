@@ -302,8 +302,8 @@ class AdkTextRunner:
                 run_config=run_config,
             ):
                 if event.is_final_response() and event.content and event.content.parts:
-                    return event.content.parts[0].text or ""
-            return ""
+                     final_text = event.content.parts[0].text or ""
+            return final_text or ""
 
         async def run_and_resolve() -> str:
             """Run the agent and return the best available output string.
