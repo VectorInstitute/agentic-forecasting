@@ -23,11 +23,13 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     CodeExecutionConfig,
     ContextRetrievalConfig,
 )
+from google.adk.tools.function_tool import FunctionTool
 from aieng.forecasting.methods.numerical.darts_arima import DartsAutoARIMAPredictor
 from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
 from BAA10Y_forecasting.data import (
     DEFAULT_COVARIATE_SERIES_IDS,
     HYOAS_OPTIONAL_COVARIATE_SERIES_IDS,
+    baa10y_change_series_id,
     build_baa10y_multivariate_service,
 )
 from pydantic import BaseModel
@@ -41,6 +43,24 @@ BAA10Y_ANALYST_COVARIATE_SERIES_IDS = [
 # System prompt (root analyst agent)
 # ---------------------------------------------------------------------------
 
+_INTERACTIVE_DATA_SUPPLEMENT = """
+
+## Interactive ADK Web data loading
+
+For a natural-language question requiring BAA10Y observations, statistics,
+credit-driver analysis, or scenarios, call
+`load_baa10y_analysis_payload` before answering.
+
+Infer `as_of` and `horizon_business_days` from the question. If no date is
+provided, pass an empty `as_of`. If no horizon is provided, use 21 business
+days.
+
+Treat the successful tool result as the internal JSON payload. The user must
+not be asked to manually construct or enter `payload.json`.
+
+If the tool returns `status="error"`, explain the loading error without
+inventing missing data.
+"""
 
 _BAA10Y_MULTITASK_ANALYST_INSTRUCTION = """\
 ## Role
@@ -49,6 +69,15 @@ You are an expert corporate-credit-market analyst specializing in BAA10Y
 spread changes.
 
 ## Input
+When invoked through the forecasting pipeline, the system constructs and
+injects the JSON payload programmatically through
+`BAA10YMultitaskPromptBuilder`. The end user does not need to manually create
+or enter `payload.json`.
+
+If asked whether manual payload entry is required, explain that the user only
+needs to provide the prompt or trigger in the production predictor workflow.
+A sample JSON payload may still be provided manually when testing the agent
+directly in schema-free ADK Web.
 
 You will receive a JSON payload containing:
 - `task_spec`: the exact question and required JSON output schema
@@ -400,6 +429,127 @@ def build_covariate_history(
 
     return result
 
+# Add the payload-loading tool
+def load_baa10y_analysis_payload(
+    question: str,
+    as_of: str = "",
+    horizon_business_days: int = 21,
+) -> dict[str, Any]:
+    """Load the leak-safe BAA10Y payload for an ADK Web question.
+
+    Args:
+        question:
+            The user's natural-language question.
+        as_of:
+            Information cutoff in YYYY-MM-DD format. An empty value uses
+            the latest available BAA10Y observation.
+        horizon_business_days:
+            BAA10Y target window. Must be 1, 5, or 21.
+
+    Returns:
+        The same structured payload produced by
+        BAA10YMultitaskPromptBuilder.
+    """
+    if horizon_business_days not in {1, 5, 21}:
+        return {
+            "status": "error",
+            "message": (
+                "horizon_business_days must be 1, 5, or 21."
+            ),
+        }
+
+    try:
+        cutoff = (
+            pd.Timestamp(as_of).normalize()
+            if as_of.strip()
+            else None
+        )
+    except (TypeError, ValueError):
+        return {
+            "status": "error",
+            "message": "as_of must use YYYY-MM-DD format.",
+        }
+
+    if cutoff is not None and cutoff.tzinfo is not None:
+        cutoff = cutoff.tz_localize(None)
+
+    target_series_id = baa10y_change_series_id(
+        horizon_business_days
+    )
+
+    # `end` is exclusive in the BAA10Y data service.
+    service_end = (
+        None
+        if cutoff is None
+        else str((cutoff + pd.Timedelta(days=1)).date())
+    )
+
+    try:
+        service = build_baa10y_multivariate_service(
+            windows=(horizon_business_days,),
+            covariate_series_ids=(
+                BAA10Y_ANALYST_COVARIATE_SERIES_IDS
+            ),
+            strict_covariates=False,
+            refresh=False,
+            end=service_end,
+        )
+
+        if cutoff is None:
+            summary = service.summary()
+            target_summary = summary.loc[
+                summary["series_id"] == target_series_id
+            ]
+
+            if target_summary.empty:
+                raise ValueError(
+                    f"Target {target_series_id!r} is unavailable."
+                )
+
+            cutoff = pd.Timestamp(
+                target_summary.iloc[0]["end"]
+            ).normalize()
+
+        context = service.context(cutoff.to_pydatetime())
+
+        task = ForecastingTask(
+            task_id=(
+                f"baa10y_interactive_"
+                f"{horizon_business_days}b"
+            ),
+            target_series_id=target_series_id,
+            horizons=[horizon_business_days],
+            frequency="B",
+            description=question,
+        )
+
+        # Local import avoids the module-level circular dependency:
+        # tasks.py already imports agent.py.
+        from BAA10Y_forecasting.tasks import (  # noqa: PLC0415
+            BAA10YMultitaskPromptBuilder,
+        )
+
+        payload_text = BAA10YMultitaskPromptBuilder(
+            task_spec=question,
+        )(
+            task=task,
+            context=context,
+        )
+
+        return {
+            "status": "ok",
+            **json.loads(payload_text),
+        }
+
+    except Exception as exc:
+        return {
+            "status": "error",
+            "message": (
+                "Unable to construct the BAA10Y analysis "
+                f"payload: {exc}"
+            ),
+        }
+
 class BAA10YForecastPromptBuilder(BaseModel):
     """Serialize one leak-safe BAA10Y forecasting task for the analyst.
 
@@ -491,7 +641,7 @@ def build_baa10y_multitask_news_config(
     return AgentConfig(
         name="baa10y_analyst_multitask",
         model=model,
-        instruction=_BAA10Y_MULTITASK_ANALYST_INSTRUCTION,
+        instruction=(_BAA10Y_MULTITASK_ANALYST_INSTRUCTION + _INTERACTIVE_DATA_SUPPLEMENT),
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_BAA10Y_CONTEXT_RETRIEVAL_INSTRUCTION,
@@ -502,6 +652,11 @@ def build_baa10y_multitask_news_config(
                 verifier_confidence_threshold
             ),
         ),
+        function_tools=[
+            FunctionTool(
+                func=load_baa10y_analysis_payload
+            ),
+        ],
     )
 
 def build_baa10y_news_config(
@@ -633,5 +788,5 @@ def build_baa10y_agent_predictor(config: AgentConfig) -> AgentPredictor:
 def __getattr__(name: str) -> Any:
     """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``."""
     if name == "root_agent":
-        return build_adk_agent(build_baa10y_code_exec_config())
+        return build_adk_agent(build_baa10y_multitask_news_config())
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
