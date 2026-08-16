@@ -488,7 +488,7 @@ def build_wti_news_config(
 def build_wti_code_exec_config(
     model: str = LITE_MODEL,
     search_model: str = LITE_MODEL,
-    max_output_tokens: int = 16_384,
+    max_output_tokens: int = 32_768,
     verifier_model: str = ADVANCED_MODEL,
     verifier_max_attempts: int = 3,
     verifier_confidence_threshold: int = 8,
@@ -511,11 +511,11 @@ def build_wti_code_exec_config(
         Model for the context-retrieval (web-search) sub-tool. Defaults to
         the lite model (``gemini-3.1-flash-lite-preview``) independently of ``model`` so that Gemini
         handles Google Search even when the analyst uses a different provider.
-    max_output_tokens : int, default=16_384
+    max_output_tokens : int, default=32_768
         Maximum tokens per model response.  The default is set well above
         LiteLLM's OpenAI-compatible endpoint default of 4096, which is not
-        enough for Claude to write a complete ``run_code`` Python script in a
-        single function call — causing repeated retries with empty arguments.
+        enough for an analyst to run tools and return the final structured
+        forecast in one response.
     verifier_model : str
         Model for the independent temporal-leakage verifier that audits each
         ``search_web`` result against ``cutoff_date`` before it is returned.

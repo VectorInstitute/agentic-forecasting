@@ -287,6 +287,9 @@ class AgentPredictor(Predictor):
         # be swapped in without breaking the parse layer.
         output_str = strip_markdown_fence(output_str)
 
+        if not output_str.strip():
+            raise ValueError("Agent returned an empty response; the output token budget may have been exhausted")
+
         # Validate the output against the output schema; tolerate JSON
         # responses that ``model_validate_json`` cannot parse but
         # ``json.loads`` + ``model_validate`` can.
