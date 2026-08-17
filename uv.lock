@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12, <4.0"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
@@ -88,7 +88,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agentic-forecasting-implementations", virtual = "implementations" },
+    { name = "agentic-forecasting-implementations", editable = "implementations" },
     { name = "ipykernel", specifier = ">=7.3.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "lightgbm", specifier = ">=4.0.0" },
@@ -115,7 +115,7 @@ dev = [
 [[package]]
 name = "agentic-forecasting-implementations"
 version = "0.1.0"
-source = { virtual = "implementations" }
+source = { editable = "implementations" }
 dependencies = [
     { name = "aieng-forecasting", extra = ["agentic", "documents", "llm", "numerical"] },
     { name = "beautifulsoup4" },
