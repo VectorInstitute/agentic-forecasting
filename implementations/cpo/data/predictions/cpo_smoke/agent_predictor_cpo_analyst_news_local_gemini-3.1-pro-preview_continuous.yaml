@@ -1,0 +1,378 @@
+spec:
+  task:
+    task_id: palm_oil_mpob_price_forecast
+    target_series_id: palm_oil_mpob_weekly
+    horizons:
+    - 1
+    - 2
+    - 4
+    - 8
+    - 13
+    frequency: W-FRI
+    description: MPOB official crude palm oil price, "Local Delivered", Friday close
+      in MYR per tonne, projected 1, 2, 4, 8 and 13 weeks ahead.
+    payload_type: continuous
+    categories: null
+    resolution_fn: observed_value_at_resolution_timestamp
+  start: '2025-06-06T00:00:00'
+  end: '2025-06-13T00:00:00'
+  stride: 1
+  origin_dates: null
+  warmup: 104
+  description: Two-origin smoke backtest on the MPOB weekly crude palm oil price.
+    Same task, horizons and warmup as cpo_backtest, but only 2 origins so the pipeline
+    can be exercised end to end without waiting.
+predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+predictions:
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:18:19.953890'
+  as_of: '2025-06-06T00:00:00'
+  forecast_date: '2025-06-13T00:00:00'
+  payload:
+    point_forecast: 3900.0
+    quantiles:
+      '0.05': 3680.0
+      '0.1': 3740.0
+      '0.2': 3800.0
+      '0.3': 3830.0
+      '0.4': 3870.0
+      '0.5': 3900.0
+      '0.6': 3930.0
+      '0.7': 3970.0
+      '0.8': 4010.0
+      '0.9': 4060.0
+      '0.95': 4120.0
+  metadata:
+    rationale: CPO prices currently face competing forces. Seasonally rising production
+      in Malaysia and climbing stockpiles provide bearish pressure in the near term.
+      However, this is largely offset by India's decision to halve its import duty
+      on crude edible oils to 10%, which has rapidly spurred demand. Furthermore,
+      Indonesia's B40 biodiesel mandate and their 10% export levy hike keep a tight
+      grip on global supply. As a result, prices are expected to experience a mild
+      softening due to the seasonal inventory build through Q3, before stabilizing.
+      Forecasts anticipate range-bound movement generally around RM 3850-3900/tonne,
+      with expanding uncertainty bands over longer horizons to capture risks related
+      to weather, crude oil markets, and substitutable oilseed supplies.
+    horizon_rationale: Near-term prices are expected to remain anchored near recent
+      prints. The recent move by India to cut the basic import duty on crude edible
+      oils to 10% provides immediate demand support, offsetting initial pressures
+      from rising Malaysian inventories.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:18:19.953890'
+  as_of: '2025-06-06T00:00:00'
+  forecast_date: '2025-06-20T00:00:00'
+  payload:
+    point_forecast: 3880.0
+    quantiles:
+      '0.05': 3580.0
+      '0.1': 3660.0
+      '0.2': 3740.0
+      '0.3': 3790.0
+      '0.4': 3840.0
+      '0.5': 3880.0
+      '0.6': 3920.0
+      '0.7': 3970.0
+      '0.8': 4030.0
+      '0.9': 4100.0
+      '0.95': 4180.0
+  metadata:
+    rationale: CPO prices currently face competing forces. Seasonally rising production
+      in Malaysia and climbing stockpiles provide bearish pressure in the near term.
+      However, this is largely offset by India's decision to halve its import duty
+      on crude edible oils to 10%, which has rapidly spurred demand. Furthermore,
+      Indonesia's B40 biodiesel mandate and their 10% export levy hike keep a tight
+      grip on global supply. As a result, prices are expected to experience a mild
+      softening due to the seasonal inventory build through Q3, before stabilizing.
+      Forecasts anticipate range-bound movement generally around RM 3850-3900/tonne,
+      with expanding uncertainty bands over longer horizons to capture risks related
+      to weather, crude oil markets, and substitutable oilseed supplies.
+    horizon_rationale: As the market digests the influx of Indian buying, the reality
+      of the seasonal production upcycle and increasing stockpiles across Malaysia
+      will likely induce a mild softening of prices.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:18:19.953890'
+  as_of: '2025-06-06T00:00:00'
+  forecast_date: '2025-07-04T00:00:00'
+  payload:
+    point_forecast: 3850.0
+    quantiles:
+      '0.05': 3420.0
+      '0.1': 3520.0
+      '0.2': 3630.0
+      '0.3': 3710.0
+      '0.4': 3780.0
+      '0.5': 3850.0
+      '0.6': 3910.0
+      '0.7': 3980.0
+      '0.8': 4060.0
+      '0.9': 4170.0
+      '0.95': 4280.0
+  metadata:
+    rationale: CPO prices currently face competing forces. Seasonally rising production
+      in Malaysia and climbing stockpiles provide bearish pressure in the near term.
+      However, this is largely offset by India's decision to halve its import duty
+      on crude edible oils to 10%, which has rapidly spurred demand. Furthermore,
+      Indonesia's B40 biodiesel mandate and their 10% export levy hike keep a tight
+      grip on global supply. As a result, prices are expected to experience a mild
+      softening due to the seasonal inventory build through Q3, before stabilizing.
+      Forecasts anticipate range-bound movement generally around RM 3850-3900/tonne,
+      with expanding uncertainty bands over longer horizons to capture risks related
+      to weather, crude oil markets, and substitutable oilseed supplies.
+    horizon_rationale: Heading deeper into the peak production season, expanding supplies
+      are expected to exert downward pressure, bringing the point forecast lower.
+      The spread widens to account for potential policy tweaks in Indonesia and shifts
+      in the broader vegetable oil complex.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:18:19.953890'
+  as_of: '2025-06-06T00:00:00'
+  forecast_date: '2025-08-01T00:00:00'
+  payload:
+    point_forecast: 3850.0
+    quantiles:
+      '0.05': 3300.0
+      '0.1': 3420.0
+      '0.2': 3560.0
+      '0.3': 3670.0
+      '0.4': 3760.0
+      '0.5': 3850.0
+      '0.6': 3930.0
+      '0.7': 4030.0
+      '0.8': 4140.0
+      '0.9': 4280.0
+      '0.95': 4420.0
+  metadata:
+    rationale: CPO prices currently face competing forces. Seasonally rising production
+      in Malaysia and climbing stockpiles provide bearish pressure in the near term.
+      However, this is largely offset by India's decision to halve its import duty
+      on crude edible oils to 10%, which has rapidly spurred demand. Furthermore,
+      Indonesia's B40 biodiesel mandate and their 10% export levy hike keep a tight
+      grip on global supply. As a result, prices are expected to experience a mild
+      softening due to the seasonal inventory build through Q3, before stabilizing.
+      Forecasts anticipate range-bound movement generally around RM 3850-3900/tonne,
+      with expanding uncertainty bands over longer horizons to capture risks related
+      to weather, crude oil markets, and substitutable oilseed supplies.
+    horizon_rationale: At the 8-week horizon, strong structural demand floors (such
+      as Indonesia's B40 mandate and renewed Indian buying) are expected to balance
+      out the bearish weight of peak seasonal output, maintaining the price around
+      RM 3850.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:18:19.953890'
+  as_of: '2025-06-06T00:00:00'
+  forecast_date: '2025-09-05T00:00:00'
+  payload:
+    point_forecast: 3880.0
+    quantiles:
+      '0.05': 3150.0
+      '0.1': 3300.0
+      '0.2': 3480.0
+      '0.3': 3620.0
+      '0.4': 3750.0
+      '0.5': 3880.0
+      '0.6': 4000.0
+      '0.7': 4120.0
+      '0.8': 4270.0
+      '0.9': 4450.0
+      '0.95': 4620.0
+  metadata:
+    rationale: CPO prices currently face competing forces. Seasonally rising production
+      in Malaysia and climbing stockpiles provide bearish pressure in the near term.
+      However, this is largely offset by India's decision to halve its import duty
+      on crude edible oils to 10%, which has rapidly spurred demand. Furthermore,
+      Indonesia's B40 biodiesel mandate and their 10% export levy hike keep a tight
+      grip on global supply. As a result, prices are expected to experience a mild
+      softening due to the seasonal inventory build through Q3, before stabilizing.
+      Forecasts anticipate range-bound movement generally around RM 3850-3900/tonne,
+      with expanding uncertainty bands over longer horizons to capture risks related
+      to weather, crude oil markets, and substitutable oilseed supplies.
+    horizon_rationale: By early Q4, anticipation of the seasonal production slowdown
+      typically supports a modest recovery in prices. Uncertainty is high, reflecting
+      unpredictability in crude oil, geopolitical developments, and competitive substitute
+      oil yields, necessitating a very wide confidence interval.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:19:06.326432'
+  as_of: '2025-06-13T00:00:00'
+  forecast_date: '2025-06-20T00:00:00'
+  payload:
+    point_forecast: 3905.0
+    quantiles:
+      '0.05': 3700.0
+      '0.1': 3750.0
+      '0.2': 3800.0
+      '0.3': 3840.0
+      '0.4': 3875.0
+      '0.5': 3905.0
+      '0.6': 3935.0
+      '0.7': 3970.0
+      '0.8': 4010.0
+      '0.9': 4060.0
+      '0.95': 4100.0
+  metadata:
+    rationale: 'Currently, the MPOB price balances two powerful counteracting forces:
+      rising Malaysian inventories from robust production recovery, against a massive
+      demand spike prompted by India halving its edible oil import duties. Additionally,
+      Indonesia''s decision to hike its CPO export levy effectively grants a competitive
+      advantage to Malaysian shipments. Over the near term, we expect prices to trace
+      a tight range around 3850-3950 MYR/t, facing slight downward drift towards peak
+      production season before a potential recovery curve initiates heading into Q4.
+      Key variables defining the wider bounds include crude oil weakness undercutting
+      biodiesel margins and competitive fluctuations from global soy and sunflower
+      seed crops.'
+    horizon_rationale: Over a 1-week horizon, prices are likely to consolidate around
+      the 3900 MYR/t level. Despite high Malaysian stockpiles nearing 2 million tonnes,
+      massive export off-take following India's import duty halving provides strong
+      short-term support.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:19:06.326432'
+  as_of: '2025-06-13T00:00:00'
+  forecast_date: '2025-06-27T00:00:00'
+  payload:
+    point_forecast: 3890.0
+    quantiles:
+      '0.05': 3600.0
+      '0.1': 3670.0
+      '0.2': 3750.0
+      '0.3': 3800.0
+      '0.4': 3845.0
+      '0.5': 3890.0
+      '0.6': 3935.0
+      '0.7': 3980.0
+      '0.8': 4030.0
+      '0.9': 4110.0
+      '0.95': 4170.0
+  metadata:
+    rationale: 'Currently, the MPOB price balances two powerful counteracting forces:
+      rising Malaysian inventories from robust production recovery, against a massive
+      demand spike prompted by India halving its edible oil import duties. Additionally,
+      Indonesia''s decision to hike its CPO export levy effectively grants a competitive
+      advantage to Malaysian shipments. Over the near term, we expect prices to trace
+      a tight range around 3850-3950 MYR/t, facing slight downward drift towards peak
+      production season before a potential recovery curve initiates heading into Q4.
+      Key variables defining the wider bounds include crude oil weakness undercutting
+      biodiesel margins and competitive fluctuations from global soy and sunflower
+      seed crops.'
+    horizon_rationale: By week 2, the initial burst of Indian buying may slow down,
+      slightly shifting focus back onto ample Southeast Asian supplies and softer
+      competing soy oil prices.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:19:06.326432'
+  as_of: '2025-06-13T00:00:00'
+  forecast_date: '2025-07-11T00:00:00'
+  payload:
+    point_forecast: 3875.0
+    quantiles:
+      '0.05': 3480.0
+      '0.1': 3560.0
+      '0.2': 3670.0
+      '0.3': 3750.0
+      '0.4': 3815.0
+      '0.5': 3875.0
+      '0.6': 3935.0
+      '0.7': 4000.0
+      '0.8': 4080.0
+      '0.9': 4180.0
+      '0.95': 4270.0
+  metadata:
+    rationale: 'Currently, the MPOB price balances two powerful counteracting forces:
+      rising Malaysian inventories from robust production recovery, against a massive
+      demand spike prompted by India halving its edible oil import duties. Additionally,
+      Indonesia''s decision to hike its CPO export levy effectively grants a competitive
+      advantage to Malaysian shipments. Over the near term, we expect prices to trace
+      a tight range around 3850-3950 MYR/t, facing slight downward drift towards peak
+      production season before a potential recovery curve initiates heading into Q4.
+      Key variables defining the wider bounds include crude oil weakness undercutting
+      biodiesel margins and competitive fluctuations from global soy and sunflower
+      seed crops.'
+    horizon_rationale: Entering mid-July, the seasonal ramp-up in palm oil production
+      normally adds pressure. Indonesia's export levy increase helps keep Malaysian
+      palm oil attractive, providing a floor, but global vegetable oil complex sluggishness
+      points slightly down.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:19:06.326432'
+  as_of: '2025-06-13T00:00:00'
+  forecast_date: '2025-08-08T00:00:00'
+  payload:
+    point_forecast: 3850.0
+    quantiles:
+      '0.05': 3290.0
+      '0.1': 3410.0
+      '0.2': 3560.0
+      '0.3': 3670.0
+      '0.4': 3765.0
+      '0.5': 3850.0
+      '0.6': 3935.0
+      '0.7': 4030.0
+      '0.8': 4140.0
+      '0.9': 4290.0
+      '0.95': 4410.0
+  metadata:
+    rationale: 'Currently, the MPOB price balances two powerful counteracting forces:
+      rising Malaysian inventories from robust production recovery, against a massive
+      demand spike prompted by India halving its edible oil import duties. Additionally,
+      Indonesia''s decision to hike its CPO export levy effectively grants a competitive
+      advantage to Malaysian shipments. Over the near term, we expect prices to trace
+      a tight range around 3850-3950 MYR/t, facing slight downward drift towards peak
+      production season before a potential recovery curve initiates heading into Q4.
+      Key variables defining the wider bounds include crude oil weakness undercutting
+      biodiesel margins and competitive fluctuations from global soy and sunflower
+      seed crops.'
+    horizon_rationale: The 8-week horizon (mid-August) aligns closely with the peak
+      export season and high supply season. We forecast a modest drift lower as inventory
+      levels crest, assuming weather remains mostly normalized.
+- predictor_id: agent_predictor_cpo_analyst_news_local_gemini-3.1-pro-preview_continuous
+  task_id: palm_oil_mpob_price_forecast
+  issued_at: '2026-08-14T19:19:06.326432'
+  as_of: '2025-06-13T00:00:00'
+  forecast_date: '2025-09-12T00:00:00'
+  payload:
+    point_forecast: 3880.0
+    quantiles:
+      '0.05': 3170.0
+      '0.1': 3330.0
+      '0.2': 3520.0
+      '0.3': 3660.0
+      '0.4': 3770.0
+      '0.5': 3880.0
+      '0.6': 3990.0
+      '0.7': 4100.0
+      '0.8': 4240.0
+      '0.9': 4430.0
+      '0.95': 4590.0
+  metadata:
+    rationale: 'Currently, the MPOB price balances two powerful counteracting forces:
+      rising Malaysian inventories from robust production recovery, against a massive
+      demand spike prompted by India halving its edible oil import duties. Additionally,
+      Indonesia''s decision to hike its CPO export levy effectively grants a competitive
+      advantage to Malaysian shipments. Over the near term, we expect prices to trace
+      a tight range around 3850-3950 MYR/t, facing slight downward drift towards peak
+      production season before a potential recovery curve initiates heading into Q4.
+      Key variables defining the wider bounds include crude oil weakness undercutting
+      biodiesel margins and competitive fluctuations from global soy and sunflower
+      seed crops.'
+    horizon_rationale: By mid-September, market focus typically starts pulling forward
+      to Q4, when production begins to taper off. Combined with steady structural
+      demand from biodiesel programs (e.g., Indonesia's B40), this introduces an upward
+      recovery bias, though forecast uncertainty widens substantially.
+scores:
+- 33.628099173553714
+- 118.3512396694215
+- 114.69008264462812
+- 211.06198347107443
+- 307.0991735537191
+- 107.42561983471077
+- 54.252066115702476
+- 138.95867768595045
+- 221.7851239669422
+- 316.3512396694216
+metric: crps
+mean_score: 162.36033057851245
+ran_at: '2026-08-14T19:19:06.346600'
+skipped_origins: 0

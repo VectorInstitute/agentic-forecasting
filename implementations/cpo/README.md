@@ -75,7 +75,7 @@ everywhere.
 |---|---|
 | [`data.py`](data.py) | Loads prices, leak-safe. Start here. |
 | [`plots.py`](plots.py) | Price, fan, and comparison charts; `DEFAULT_CUTOFFS`, `HORIZONS_WEEKS`. |
-| [`agent.py`](agent.py) | The two agent arms: price-only, and price + cutoff-fenced `search_web`. |
+| [`agent.py`](agent.py) | The three agent arms: price-only, price + cutoff-fenced `search_web`, and price + the past 4 weeks of [`palm_articles_weekly_mpob.csv`](palm_articles_weekly_mpob.csv). |
 | [`run_agent.py`](run_agent.py) | Runs an agent arm over a spec and caches the result. Needs the Vector proxy keys. |
 | [`make_plots.py`](make_plots.py) | Builds `outputs/baselines_plots.html` — the results page — from the cached artefacts. |
 | [`00_FRED_source_evaluation.ipynb`](00_FRED_source_evaluation.ipynb) | Superseded — why FRED was rejected. |
@@ -95,7 +95,8 @@ everywhere.
 - [x] Select forecast cutoffs — 7 cutoffs on MPOB, 5 horizons, cleanly separated (2.13x),
   independent at 13-week spacing
 - [x] Reconcile spec target and horizons — all four specs now on MPOB at 1/2/4/8/13
-- [ ] Write the news loader — turn the CSV into weekly, cutoff-filtered context
+- [x] Write the news loader — `agent.py`'s `load_weekly_news` / `select_news_window`
+  turn `palm_articles_weekly_mpob.csv` into cutoff-filtered context (2026-08-14)
 - [x] Resolve the `2026-04-17` cutoff — swapped for `2025-11-28` (2026-08-11)
 - [ ] Confirm the swap clears the 100-article floor — the committed CSV shows
   only **50** articles for Oct 3 – Nov 28, so this depends on Jyotsna's new pull
@@ -105,6 +106,12 @@ everywhere.
 - [ ] Baselines on the dense weekly `cpo_backtest` (104 origins) to separate the close models
 - [x] Agent: prices only and prices + search, same origins (2026-08-12) — the
   news arm uses live `search_web` behind the cutoff verifier, not the CSV
+- [x] Agent: third arm, prices + the past 4 weeks of the condensed weekly news
+  CSV (`--arm local`, 2026-08-14) — scored on the cutoffs with
+  `gemini-3.1-pro-preview` (direct key, so no web-news arm to compare against
+  on that model): basic 154.8 vs local 155.9 mean CRPS, tied overall; local is
+  better at 8/13-week horizons and on the two downturn events, worse short and
+  quiet — single runs, same repeatability caveat as below
 - [x] Compare in one table — `outputs/baselines_plots.html`, built by
   `make_plots.py` from the committed artefacts in `data/predictions/`
 - [ ] Repeat the agent arms — one run of the price-only arm scored 143 and
