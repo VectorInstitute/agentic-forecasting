@@ -2,7 +2,19 @@
 
 A foundation for building, evaluating, and comparing forecasting systems — conventional numerical models, LLM Processes, and agentic forecasters — on real economic, financial, and event-prediction tasks.
 
-The repository pairs a small, stable core library with a set of self-contained reference implementations. The library gives you cutoff-safe data handling, a single `Predictor` interface, and a backtest/evaluation harness. Each reference implementation is a worked example of a different forecasting problem and the techniques that suit it. Start from whichever one is closest to what you want to build.
+## Contents
+
+The repo has two layers. A small core library (`aieng.forecasting`) owns cutoff-safe data handling, a shared `Predictor` interface, reusable methods, and the backtest/evaluation harness. Self-contained **reference implementations** under [`implementations/`](implementations/) apply those methods to real forecasting problems — pick the one closest to what you want to build; each directory has its own README.
+
+| # | Implementation | Use case | Methods |
+| --- | --- | --- | --- |
+| 0 | [Getting started](implementations/getting_started/) | Canada CPI gasoline, one month ahead — the smallest end-to-end loop | Naive last-value, AutoARIMA; CRPS via `backtest()` / `evaluate()` |
+| 1 | [S&P 500](implementations/sp500_forecasting/) | Daily index returns under a leak-safe macro/market covariate panel (1 / 5 / 21 business-day horizons) | Naive, ETS, Kalman, AutoARIMA, linear regression, LightGBM; covariate-aware LLM-Process |
+| 2 | [Food price forecasting](implementations/food_price_forecasting/) | Multivariate Canadian food CPI in the style of Canada's Food Price Report (nine sub-indices, 12-month trajectory, avg/avg YoY) | Naive last-value, AutoARIMA; report-grounded LLM-Process (quantile grid and sampled trajectory) |
+| 3 | [Energy / oil](implementations/energy_oil_forecasting/) | Daily WTI crude under regime-breaking news (continuous trajectory, binary up-shock, scenario analysis) | Prophet, LLM-Process, news-grounded agent, code-executing agent, adaptive (curriculum-trained) agent |
+| 4 | [BoC rate decisions](implementations/boc_rate_decisions/) | Will the Bank of Canada cut, hold, or hike at its next meeting? (ordered categorical; binary cut-vs-not special case) | Climatological frequency, multinomial logistic, categorical LLM-Process, analyst agent; LLM-as-judge reasoning alignment |
+
+Also in this README: [Setup](#setup) · [Core concepts](#core-concepts) · [Repository layout](#repository-layout) · [Documentation](#documentation)
 
 > **👉 First time here? Run the environment check.** After `uv sync` (see [Setup](#setup)), open [`implementations/getting_started/00_environment_check.ipynb`](implementations/getting_started/00_environment_check.ipynb) and run it top to bottom. It's a self-guided preflight that verifies every capability — proxy LLM inference, Langfuse, E2B code execution, StatCan/FRED data access, and an end-to-end mini backtest — and tells you exactly what to fix when something isn't set up. **Do this before anything else.**
 
@@ -23,18 +35,11 @@ Every method can be used in one of two modes, and the distinction runs through t
 
 ## Reference implementations
 
-Each is independent and self-contained — pick the one that matches the problem you care about, and read that directory's `README.md` for the full walkthrough. They are numbered in a recommended order that mirrors the bootcamp progression — conventional numerical methods → LLM Processes → agents → agentic evaluation — but any one stands on its own, so jump straight to the problem you care about.
+Use cases, methods, and links are in the [contents](#contents) table above. Each implementation is independent — pick the problem you care about and read that directory's `README.md` for the full walkthrough. They are numbered in a recommended order that mirrors the bootcamp progression — conventional numerical methods → LLM Processes → agents → agentic evaluation — but any one stands on its own.
 
-**Start here → #0 [`getting_started/`](implementations/getting_started/)** — one CPI series, one month ahead. The smallest end-to-end loop: a `Predictor`, a `BacktestSpec` and `EvalSpec`, naive + AutoARIMA baselines, CRPS scoring. The place to learn the evaluation framework before picking a domain below. Also includes [`99_repo_concierge.ipynb`](implementations/getting_started/99_repo_concierge.ipynb) — a lite-model repo guide for “how does this codebase work?” questions (`uv run adk run implementations/getting_started/concierge_agent` from the repo root).
+**Start here → #0 [`getting_started/`](implementations/getting_started/)** if the evaluation loop is new to you. That directory also includes [`99_repo_concierge.ipynb`](implementations/getting_started/99_repo_concierge.ipynb) — a lite-model repo guide for “how does this codebase work?” questions (`uv run adk run implementations/getting_started/concierge_agent` from the repo root).
 
-| #   | Implementation                                                       | The problem                                                                     | Concepts & techniques it demonstrates                                                                                                                                                                                                                                                                       |
-| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | [`sp500_forecasting/`](implementations/sp500_forecasting/)           | S&P 500 returns under a macro/market covariate panel.                           | A head-to-head of conventional numerical methods (naive, ETS, Kalman, AutoARIMA, linear regression, LightGBM) plus a covariate-aware LLM-Process, all reading the same leak-safe covariate panel. Cumulative-return targets at 1/5/21-business-day horizons, CRPS + direction metrics, config-driven specs. |
-| 2   | [`food_price_forecasting/`](implementations/food_price_forecasting/) | A multivariate food-CPI trajectory, in the style of Canada's Food Price Report. | Nine correlated sub-indices, a 12-step trajectory, a domain metric (avg/avg YoY), baselines vs LLM-Process predictors, leakage-aware backtests, and cached artifacts for fast iteration.                                                                                                                    |
-| 3   | [`energy_oil_forecasting/`](implementations/energy_oil_forecasting/) | Daily WTI crude-oil price under regime-breaking news.                           | A capability progression — Prophet → LLM-Process → news-grounded agent → code-executing agent — plus an adaptive agent that learns a strategy from data and is scored before vs after. Continuous trajectories, a binary up-shock task, and interactive scenario analysis.                                  |
-| 4   | [`boc_rate_decisions/`](implementations/boc_rate_decisions/)         | Will the Bank of Canada cut, hold, or hike at its next meeting?                 | Discrete-event forecasting: ordered-categorical outcomes on an irregular calendar, RPS scoring and one-vs-rest calibration (instead of CRPS), a binary (Brier) special case, cutoff-aware document ingestion, and an LLM-as-judge that scores an agent's reasoning against the official rationale.          |
-
-**Not sure where to start building?** Each of the four domain implementations above ends with a `99_starter_agent.ipynb` — a fresh, hackable **starter agent** (a `starter_agent/` module) with toggleable news search and code execution, two lightweight tool-usage skills, an interactive cell, and one scored forecast. It's the consistent "continue from here" entry point for taking any reference use case in an agentic direction, and a quick end-to-end test of that use case's agent stack.
+**Not sure where to start building?** Each of the four domain implementations (#1–#4) ends with a `99_starter_agent.ipynb` — a fresh, hackable **starter agent** (a `starter_agent/` module) with toggleable news search and code execution, two lightweight tool-usage skills, an interactive cell, and one scored forecast. It's the consistent "continue from here" entry point for taking any reference use case in an agentic direction, and a quick end-to-end test of that use case's agent stack.
 
 ## Time Series Data sources
 
@@ -67,6 +72,7 @@ On Coder workspaces, bootcamp keys (`OPENAI_*`, `E2B_*`, `LANGFUSE_*`) live in y
 ```text
 aieng-forecasting/   # Installable library: import as aieng.forecasting
 implementations/     # Self-contained reference implementations + co-located specs
+guides/              # Step-by-step strategy guides for common build-phase tasks
 scripts/             # Data-fetch scripts + E2B template builder
 tests/               # Onboarding integration tests (not run in CI)
 planning-docs/       # Architecture notes and the extension/roadmap catalog
@@ -197,6 +203,8 @@ uv run pre-commit run --all-files
 ## Documentation
 
 - Per-implementation READMEs under [`implementations/`](implementations/) — the primary user surface.
+- [`guides/`](guides/) — self-contained, step-by-step strategy guides for the most common build-phase tasks: onboarding a dataset, creating an experiment, customizing an agent's strategy, and auditing a result before you believe it.
+- [Architecture atlas](https://vectorinstitute.github.io/agentic-forecasting/architecture-atlas.html) ([source](docs/architecture-atlas.html)) — a self-contained visual atlas of the system architecture: the loop, the temporal fence, predictor families, the harness, agent anatomy, and how each reference implementation instantiates them.
 - [`aieng-forecasting/README.md`](aieng-forecasting/README.md) and [`aieng-forecasting/aieng/forecasting/methods/README.md`](aieng-forecasting/aieng/forecasting/methods/README.md) — the library and the method catalog.
 - [`planning-docs/roadmap.md`](planning-docs/roadmap.md) — architecture principles and extension ideas.
 
