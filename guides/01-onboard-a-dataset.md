@@ -2,6 +2,8 @@
 
 **By the end of this guide** you will have taken a plain CSV file and registered it as a first-class series in the repo's data layer: cutoff-safe, discoverable by id, and usable by every predictor and the backtest harness. Everything here runs offline — no API keys.
 
+If you're extending one of the existing reference implementations rather than bringing your own data, skip this guide and guide 2 — start from that implementation's `99_starter_agent.ipynb` and [guide 3](03-customize-agent-strategy.md). The [architecture atlas](https://vectorinstitute.github.io/agentic-forecasting/architecture-atlas.html) is the map of the system this guide plugs into — its §01–§02 cover the loop and the cutoff fence this guide exercises.
+
 **Prerequisites:** `uv sync --dev` from the repo root. That's it.
 
 ---
@@ -28,7 +30,7 @@ The canonical schema is a tidy, three-column frame (default `RangeIndex`, **not*
 
 ## The sample dataset
 
-Imagine you have a CSV of daily commodity prices — here, a synthetic "Harbourview harbor diesel spot price" series committed at [`guides/assets/harbourview_diesel_spot.csv`](assets/harbourview_diesel_spot.csv) so you can run every step verbatim:
+Imagine you have a CSV of daily commodity prices — here, a synthetic "Harbourview lumber spot price" series committed at [`guides/assets/harbourview_lumber_spot.csv`](assets/harbourview_lumber_spot.csv) so you can run every step verbatim:
 
 ```text
 date,price_usd
@@ -58,7 +60,7 @@ import pandas as pd
 
 from aieng.forecasting.data.features import canonical_three_col
 
-raw = pd.read_csv("guides/assets/harbourview_diesel_spot.csv")
+raw = pd.read_csv("guides/assets/harbourview_lumber_spot.csv")
 frame = raw.rename(columns={"date": "timestamp", "price_usd": "value"})
 
 # A same-day close is knowable at end of day: released_at = timestamp.
@@ -67,7 +69,9 @@ frame["released_at"] = frame["timestamp"]
 frame = canonical_three_col(frame)  # coerce dtypes, strip tz, sort, drop NaNs
 ```
 
-> **Choosing `released_at` honestly.** `released_at = timestamp` means a forecast origin on date *D* can see *D*'s own close. For market close prices, the repo's yfinance adapter is stricter: it stamps `released_at = timestamp + BDay(1)`, because at the moment a session opens you don't yet know its close. For official statistics the gap is much bigger — StatCan CPI publishes about three weeks after the reference month. If your series has a publication lag and you stamp `released_at = timestamp`, every backtest on it is quietly optimistic. When in doubt, model the lag: `frame["released_at"] = frame["timestamp"] + pd.offsets.BDay(1)` or `+ pd.Timedelta(days=21)`.
+#### Choosing released_at honestly
+
+`released_at = timestamp` means a forecast origin on date *D* can see *D*'s own close. For market close prices, the repo's yfinance adapter is stricter: it stamps `released_at = timestamp + BDay(1)`, because at the moment a session opens you don't yet know its close. For official statistics the gap is much bigger — StatCan CPI publishes about three weeks after the reference month. If your series has a publication lag and you stamp `released_at = timestamp`, every backtest on it is quietly optimistic. When in doubt, model the lag: `frame["released_at"] = frame["timestamp"] + pd.offsets.BDay(1)` or `+ pd.Timedelta(days=21)`.
 
 ## Step 2 — Register the series
 
@@ -75,7 +79,7 @@ frame = canonical_three_col(frame)  # coerce dtypes, strip tz, sort, drop NaNs
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.features import StaticFrameAdapter
 
-SERIES_ID = "harbourview_diesel_spot"
+SERIES_ID = "harbourview_lumber_spot"
 
 service = DataService()
 service.register(
@@ -83,9 +87,9 @@ service.register(
     StaticFrameAdapter(frame),
     SeriesMetadata(
         series_id=SERIES_ID,
-        description="Harbourview harbor diesel spot price, daily close (synthetic sample data)",
-        source="local CSV (guides/assets/harbourview_diesel_spot.csv)",
-        units="USD per barrel",
+        description="Harbourview lumber spot price, daily close (synthetic sample data)",
+        source="local CSV (guides/assets/harbourview_lumber_spot.csv)",
+        units="USD per cubic metre",
         frequency="B",
     ),
 )
@@ -95,7 +99,7 @@ print(service.summary())
 Two fields deserve care:
 
 - **`frequency`** is a pandas offset alias (`"B"` business-daily, `"D"` calendar-daily, `"MS"` month-start). It must match the grid your timestamps actually sit on — the backtest harness generates forecast origins and resolves outcomes by *exact* timestamp arithmetic on this frequency (more on that below).
-- **`description` / `source` / `units` are injected verbatim into LLM prompts** by the LLM-process and agent predictors. They are not decorative. "Harbourview harbor diesel spot price, daily close" gives the model something to reason with; "my data" does not.
+- **`description` / `source` / `units` are injected verbatim into LLM prompts** by the LLM-process and agent predictors. They are not decorative. "Harbourview lumber spot price, daily close" gives the model something to reason with; "my data" does not.
 
 ## Step 3 — Verify the cutoff discipline
 
@@ -118,7 +122,7 @@ The pattern every implementation follows is a `data.py` with a **module-level se
 
 ```python
 # implementations/<your_use_case>/data.py
-"""Data service for the Harbourview diesel sample series."""
+"""Data service for the Harbourview lumber sample series."""
 
 from pathlib import Path
 
@@ -126,14 +130,14 @@ import pandas as pd
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.features import StaticFrameAdapter, canonical_three_col
 
-HARBOURVIEW_SERIES_ID = "harbourview_diesel_spot"
+HARBOURVIEW_SERIES_ID = "harbourview_lumber_spot"
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_CSV_PATH = _REPO_ROOT / "guides" / "assets" / "harbourview_diesel_spot.csv"
+_CSV_PATH = _REPO_ROOT / "guides" / "assets" / "harbourview_lumber_spot.csv"
 
 
 def build_harbourview_service(csv_path: Path | None = None) -> DataService:
-    """Register the Harbourview diesel series on a fresh DataService."""
+    """Register the Harbourview lumber series on a fresh DataService."""
     raw = pd.read_csv(csv_path or _CSV_PATH)
     frame = raw.rename(columns={"date": "timestamp", "price_usd": "value"})
     frame["released_at"] = frame["timestamp"]
@@ -143,9 +147,9 @@ def build_harbourview_service(csv_path: Path | None = None) -> DataService:
         StaticFrameAdapter(canonical_three_col(frame)),
         SeriesMetadata(
             series_id=HARBOURVIEW_SERIES_ID,
-            description="Harbourview harbor diesel spot price, daily close (synthetic sample data)",
-            source="local CSV (guides/assets/harbourview_diesel_spot.csv)",
-            units="USD per barrel",
+            description="Harbourview lumber spot price, daily close (synthetic sample data)",
+            source="local CSV (guides/assets/harbourview_lumber_spot.csv)",
+            units="USD per cubic metre",
             frequency="B",
         ),
     )
@@ -168,16 +172,16 @@ import pandas as pd
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.features import StaticFrameAdapter, canonical_three_col
 
-raw = pd.read_csv('guides/assets/harbourview_diesel_spot.csv')
+raw = pd.read_csv('guides/assets/harbourview_lumber_spot.csv')
 frame = raw.rename(columns={'date': 'timestamp', 'price_usd': 'value'})
 frame['released_at'] = frame['timestamp']
 service = DataService()
-service.register('harbourview_diesel_spot', StaticFrameAdapter(canonical_three_col(frame)),
-                 SeriesMetadata(series_id='harbourview_diesel_spot',
-                                description='Harbourview diesel spot, daily close (synthetic)',
-                                source='local CSV', units='USD per barrel', frequency='B'))
+service.register('harbourview_lumber_spot', StaticFrameAdapter(canonical_three_col(frame)),
+                 SeriesMetadata(series_id='harbourview_lumber_spot',
+                                description='Harbourview lumber spot, daily close (synthetic)',
+                                source='local CSV', units='USD per cubic metre', frequency='B'))
 ctx = service.context(as_of=pd.Timestamp('2025-06-02'))
-s = ctx.get_series('harbourview_diesel_spot')
+s = ctx.get_series('harbourview_lumber_spot')
 assert s['timestamp'].max() <= pd.Timestamp('2025-06-02')
 print('onboarded:', len(s), 'rows visible as of 2025-06-02 — cutoff enforced')
 "
@@ -197,3 +201,5 @@ Expected output: `onboarded: 523 rows visible as of 2025-06-02 — cutoff enforc
 ## Where to go next
 
 Your series is now indistinguishable, to the rest of the repo, from WTI or CPI. **[Guide 2](02-create-an-experiment.md)** builds a full experiment on it: a backtest spec, a predictor lineup, and a leaderboard — still with zero API keys.
+
+Series aren't the only shape of evidence worth onboarding: document-shaped context — expert reports, press releases — rides the same cutoff fence via [`DocumentStore`](../aieng-forecasting/aieng/forecasting/documents/store.py), and [`implementations/food_price_forecasting/`](../implementations/food_price_forecasting/) is the pattern to steal.

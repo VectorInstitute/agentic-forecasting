@@ -6,6 +6,8 @@ This is the last guide in the series because it's the last thing you do on a bui
 
 **Prerequisites:** guide 2's mental model (spec, registry, `cached_multi_backtest`, leaderboard). Guide 3 helps for the trace-audit section but isn't required.
 
+This is the last move on either build path, and the [architecture atlas](https://vectorinstitute.github.io/agentic-forecasting/architecture-atlas.html#s04) shows where auditing sits in the harness.
+
 ---
 
 ## The mental model
@@ -31,9 +33,9 @@ import pandas as pd
 from aieng.forecasting.data import DataService, SeriesMetadata
 from aieng.forecasting.data.features import StaticFrameAdapter, canonical_three_col
 
-SERIES_ID = "harbourview_diesel_spot"
+SERIES_ID = "harbourview_lumber_spot"
 
-raw = pd.read_csv("guides/assets/harbourview_diesel_spot.csv")
+raw = pd.read_csv("guides/assets/harbourview_lumber_spot.csv")
 frame = raw.rename(columns={"date": "timestamp", "price_usd": "value"})
 frame["released_at"] = frame["timestamp"]
 
@@ -43,9 +45,9 @@ service.register(
     StaticFrameAdapter(canonical_three_col(frame)),
     SeriesMetadata(
         series_id=SERIES_ID,
-        description="Harbourview harbor diesel spot price, daily close (synthetic sample data)",
-        source="local CSV (guides/assets/harbourview_diesel_spot.csv)",
-        units="USD per barrel",
+        description="Harbourview lumber spot price, daily close (synthetic sample data)",
+        source="local CSV (guides/assets/harbourview_lumber_spot.csv)",
+        units="USD per cubic metre",
         frequency="B",
     ),
 )
@@ -55,17 +57,17 @@ service.register(
 spec_id: harbourview_backtest_1y
 
 description: >-
-  Development backtest for the Harbourview diesel sample series: ~23
+  Development backtest for the Harbourview lumber sample series: ~23
   fortnightly origins from July 2025 through May 2026, spanning the
   February 2026 regime break.
 
 tasks:
-  - task_id: harbourview_diesel_price_forecast
-    target_series_id: harbourview_diesel_spot
+  - task_id: harbourview_lumber_price_forecast
+    target_series_id: harbourview_lumber_spot
     horizons: [5, 10]
     frequency: B
     description: >-
-      Harbourview harbor diesel spot price (USD/bbl, synthetic sample series),
+      Harbourview lumber spot price (USD/m³, synthetic sample series),
       projected 5 and 10 business days ahead.
 
 start: "2025-07-07"
@@ -103,6 +105,8 @@ Naive (Last Value): mean crps 2.917 over 48 scored points (0 origins skipped)
 AutoARIMA: mean crps 2.188 over 48 scored points (0 origins skipped)
 ```
 
+(As in guide 2: the naive numbers reproduce exactly; AutoARIMA's wobble in the third decimal between runs.)
+
 AutoARIMA beats the naive floor by 25%. Ship it? Not yet. (But do read `n_scored` and `skipped_origins` first, exactly as guide 2 taught — 24 origins × 2 horizons = 48 means every origin resolved. A silently shrunken *n* invalidates every audit below.)
 
 ## Audit 1 — read what went in
@@ -125,7 +129,7 @@ origin 2025-07-07: 548 rows visible, last timestamp 2025-07-07
 
 The last visible row lands exactly on the origin — the cutoff discipline from guide 1, verified at the experiment's own first origin. If the last timestamp trails the origin by weeks, your `released_at` stamps (or your frequency grid) are wrong, and every score below is an answer to a different question than you think.
 
-**What would an LLM arm actually be sent?** LLM and agent predictors don't see the DataFrame — they see a string a prompt builder serialized from it. Print one, and *read it*:
+**What would an LLM arm actually be sent?** LLM and agent predictors don't see the DataFrame — they see a string a prompt builder serialized from it. There's no Harbourview-specific builder, so we borrow energy's for the demo. Print one, and *read it*:
 
 ```python
 from energy_oil_forecasting.analyst_agent import WtiPriceForecastPromptBuilder
@@ -137,7 +141,7 @@ print(payload[:400])
 
 ```text
 {
-  "task": "harbourview_diesel_price_forecast",
+  "task": "harbourview_lumber_price_forecast",
   "as_of": "2025-07-07",
   "horizons": [
     5,
@@ -150,9 +154,11 @@ print(payload[:400])
     ...
 ```
 
-Check three things: `last_date` equals the origin, the history ends there, and nothing in the payload postdates it. And notice what reading buys you that the leaderboard never will: this reused WTI builder labels the field `last_close_usd_bbl` — harmless for a diesel series priced in USD/bbl, but exactly the kind of mislabel (wrong units, wrong series description, empty context field) you only ever catch by looking. **The rule: one payload, read end to end, per arm, before any paid run.** Guide 3 spent a paragraph on this; a broken payload discovered after a 24-origin agent run is money already gone.
+Check three things: `last_date` equals the origin, the history ends there, and nothing in the payload postdates it. And notice what reading buys you that the leaderboard never will: this reused WTI builder stamps the field `last_close_usd_bbl` — flatly wrong units for a lumber series priced per cubic metre. Harmless in this offline demo, but if this payload went to a paid run the model would be half-told its lumber series is oil — exactly the kind of mislabel (wrong units, wrong series description, empty context field) you only ever catch by reading. **The rule: one payload, read end to end, per arm, before any paid run.** Guide 3 spent a paragraph on this; a broken payload discovered after a 24-origin agent run is money already gone.
 
 ## Audit 2 — read what the model said
+
+> This audit practices on a real committed artifact borrowed from the energy implementation's protected eval — a second, optional lab, separate from the Harbourview run above, because the Harbourview lineup has no agent arms to read.
 
 For numerical baselines there is nothing to read. For LLM and agent arms there is — every `Prediction` they emit carries `metadata` with the model's free-text `rationale` and, when Langfuse tracing is configured, a `langfuse_trace_url`. The repo commits real agent artifacts, so you can practice this audit without spending anything:
 
