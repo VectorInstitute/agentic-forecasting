@@ -1,4 +1,6 @@
 <!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agentic Forecasting Atlas</title>
@@ -71,8 +73,10 @@
   }
   .mono, code { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
   a { color: inherit; }
+  a.ext { text-decoration: underline; text-underline-offset: 3px; }
+  a.ext:hover { color: var(--ink); }
 
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; container-type: inline-size; }
   .prose { max-width: 74ch; }
   .prose p { margin: 0 0 1.1em; text-wrap: pretty; }
   .prose p:last-child { margin-bottom: 0; }
@@ -154,11 +158,14 @@
   .tag.method { color: var(--method); background: var(--method-bg); }
   .tag.eval   { color: var(--eval);   background: var(--eval-bg); }
   .tag.fence  { color: var(--fence);  background: var(--fence-bg); }
-  code.chip {
+  code.chip, a.chip {
     background: var(--stage-2);
     border: 1px solid var(--line-soft);
     border-radius: 3px; padding: .08em .4em; font-size: .9em;
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    text-decoration: none;
   }
+  a.chip:hover { border-color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
   svg { display: block; max-width: 100%; height: auto; }
   svg text { font-family: "IBM Plex Mono", ui-monospace, monospace; }
   figure { margin: 34px 0 0; }
@@ -208,7 +215,7 @@
   .metric-strip .m code { font-weight: 600; color: var(--eval); background: none; border: none; padding: 0; }
 
   .tablewrap { overflow-x: auto; margin-top: 34px; }
-  /* color/font set explicitly: tables don't inherit them in quirks mode (raw file, no doctype) */
+  /* color/font set explicitly so table cells pick up page tokens */
   table { border-collapse: collapse; width: 100%; font-size: 14.5px; color: var(--ink); font-family: inherit; }
   th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
   thead th {
@@ -249,7 +256,7 @@
   .steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 34px; }
   .steps3 .card { display: flex; flex-direction: column; gap: 10px; }
   .steps3 .n { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 700; font-size: 21px; }
-  .steps3 code.chip { display: inline-block; margin-top: auto; align-self: flex-start; }
+  .steps3 code.chip, .steps3 a.chip { display: inline-block; margin-top: auto; align-self: flex-start; }
   .closing {
     margin-top: 26px; padding: 18px 24px;
     border-left: 3px solid var(--method);
@@ -285,7 +292,8 @@
     .wrap { padding: 0 18px; }
   }
 </style>
-
+</head>
+<body>
 <header class="hero">
   <div class="wrap">
     <div class="eyebrow">Vector Institute · agentic-forecasting · bootcamp atlas</div>
@@ -345,6 +353,7 @@
     <h2>One loop, two layers</h2>
     <div class="prose">
       <p>Every experiment in this repo — a two-line naive baseline on gasoline CPI, a curriculum-trained oil analyst — walks the same loop. Data enters through adapters, one <code class="chip">fetch()</code> per source; there is nothing special about the built-in StatCan, FRED, and yfinance adapters, and nothing stops you from wrapping a CSV, an API, or a database the same way. Registered on a <code class="chip">DataService</code>, the data is fenced behind a cutoff, handed to predictors as one fresh context per forecast origin, and comes out the other side as scored, cached, comparable results.</p>
+      <p>That scored loop is Track 1. The same agents can also be used interactively — scenario analysis, monitoring, open-ended Q&amp;A — without emitting a <code class="chip">Prediction</code> the harness can score (Track 2). This atlas is about the scored loop.</p>
       <p>The two layers matter: the core library <code class="chip">aieng.forecasting</code> owns everything drawn solid below. <strong>You author the dashed pieces</strong> — a dataset, a spec, a predictor lineup — and the loop does the rest.</p>
     </div>
 
@@ -372,7 +381,7 @@
     <text x="248" y="96" font-size="12.5" fill="var(--ink)">one fetch() per source</text>
     <text x="248" y="116" font-size="12" fill="var(--ink-2)">timestamp · value ·</text>
     <text x="248" y="133" font-size="12" fill="var(--ink-2)">released_at</text>
-    <text x="248" y="153" font-size="11" fill="var(--ink-2)">cached once under data/</text>
+    <text x="248" y="153" font-size="11" fill="var(--ink-2)">cached under data/ by fetch scripts</text>
 
     <line x1="448" y1="102" x2="500" y2="102" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
     <text x="476" y="92" font-size="10.5" fill="var(--ink-2)" text-anchor="middle">register</text>
@@ -439,7 +448,7 @@
   </svg>
   <figcaption>Dashed boxes are authored per use case; solid boxes ship in the core library. The red enforcer is the subject of the next section.</figcaption>
   </figure>
-    <div class="refs">aieng-forecasting/aieng/forecasting/{data, evaluation, methods} · guides/01–02 walk this loop end to end</div>
+    <div class="refs">aieng-forecasting/aieng/forecasting/{data, evaluation, methods} · <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/01-onboard-a-dataset.md">guides/01</a>–<a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/02-create-an-experiment.md">02</a> walk this loop end to end</div>
     <div class="handoff"><a href="#s02">That red box in the middle is the whole reason the loop can be trusted → 02 The temporal fence</a></div>
   </div>
 </section>
@@ -498,11 +507,11 @@
     <div class="card accent-fence">
       <h3>The exception: agents leak</h3>
       <p style="margin-bottom:.7cqw;">An agent can leak through its tools, not the database — a web search, or any tool that trusts a model-supplied cutoff. The harness pushes back — a seeded cutoff plus an independent verifier (§05) — but the filter sometimes fails. <b>Agent backtests are optimistic by default</b>; audit traces.</p>
-      <p>More tool freedom, less information control — that's structural. It pushes evaluation toward fenced, pre-cached context (less agency) or <b>live forecasting</b>, where nothing exists to leak.</p>
+      <p>More tool freedom, less information control — that's structural. It pushes evaluation toward fenced, pre-cached context (less agency) or <b>live forecasting</b>, where there is no future to scrape — parametric knowledge and the model's training cutoff still apply.</p>
     </div>
   </div>
   </div>
-    <div class="refs">data/cutoff.py · data/context.py · data/service.py · guide 01 — choosing released_at honestly</div>
+    <div class="refs">data/cutoff.py · data/context.py · data/service.py · <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/01-onboard-a-dataset.md">guide 01</a> — choosing released_at honestly</div>
     <div class="handoff"><a href="#s03">With the data fenced, the question becomes who consumes it → 03 The predictors</a></div>
   </div>
 </section>
@@ -560,18 +569,18 @@
     <h2>Backtest to develop, evaluate to commit</h2>
     <div class="prose">
       <p>Specs are experiment design, kept in YAML and out of code: a task, a window of forecast origins, a stride, a warmup — or, for irregular calendars like BoC's meeting dates, an explicit <code class="chip">origin_dates</code> list. Because the lineup and the spec are independent, the same predictors run against a two-origin smoke spec, a full development backtest, and a protected evaluation — <strong>without edits</strong>.</p>
-      <p>The two loops answer different questions. <code class="chip">backtest()</code> is the open loop you run freely while developing and tuning. <code class="chip">evaluate()</code> is for the answer you commit to — and tuning against it destroys the answer, which is why it is budgeted, tracked, and never cached.</p>
+      <p>The two loops answer different questions. <code class="chip">backtest()</code> is the open loop you run freely while developing and tuning. <code class="chip">evaluate()</code> is for the answer you commit to — and tuning against it destroys the answer. Attach an <code class="chip">EvalTracker</code> and a <code class="chip">max_runs</code> cap and the harness refuses extra runs and never caches, so spend stays visible. Call it without a tracker and the budget does not apply.</p>
     </div>
     <div class="cols c2">
   <figure>
-  <svg viewBox="0 0 660 320" role="img" aria-label="A development backtest window over 2025 with warmup, regular origin ticks and horizon resolution arcs, followed by a disjoint protected evaluation window over 2026 with a run budget.">
+  <svg viewBox="0 0 660 320" role="img" aria-label="An example development backtest window over 2025 with warmup, regular origin ticks and horizon resolution arcs, followed by a disjoint protected evaluation window over 2026 with a run budget. Warmup length and horizons come from the spec.">
     <line x1="20" y1="150" x2="640" y2="150" stroke="var(--line)"/>
     <text x="30" y="298" font-size="12" fill="var(--ink-2)">2025</text>
     <text x="596" y="298" font-size="12" fill="var(--ink-2)">2026</text>
 
     <rect x="20" y="120" width="52" height="60" fill="var(--line-soft)"/>
     <text x="22" y="94" font-size="11" fill="var(--ink-2)">warmup</text>
-    <text x="22" y="109" font-size="11" fill="var(--ink-2)">≥ 250 rows</text>
+    <text x="22" y="109" font-size="11" fill="var(--ink-2)">from the spec</text>
 
     <rect x="72" y="120" width="330" height="60" rx="4" fill="var(--eval-bg)" stroke="var(--eval)"/>
     <text x="88" y="212" font-size="13" font-weight="600" fill="var(--eval)">development backtest</text>
@@ -591,7 +600,7 @@
     <path d="M 180 150 Q 210 44 240 150" fill="none" stroke="var(--ink-2)" stroke-width="1.3"/>
     <path d="M 180 150 Q 226 28 272 150" fill="none" stroke="var(--ink-2)" stroke-width="1.3"/>
     <circle cx="220" cy="150" r="3.5" fill="var(--ink-2)"/><circle cx="240" cy="150" r="3.5" fill="var(--ink-2)"/><circle cx="272" cy="150" r="3.5" fill="var(--ink-2)"/>
-    <text x="292" y="52" font-size="11" fill="var(--ink-2)">h = 5 · 10 · 21 resolve</text>
+    <text x="292" y="52" font-size="11" fill="var(--ink-2)">horizons resolve</text>
     <text x="292" y="68" font-size="11" fill="var(--ink-2)">against later observations</text>
 
     <text x="425" y="196" font-size="11" fill="var(--ink-2)" text-anchor="middle">disjoint</text>
@@ -605,7 +614,7 @@
     <text x="448" y="254" font-size="11" fill="var(--ink-2)">end trails the data</text>
     <text x="448" y="269" font-size="11" fill="var(--ink-2)">by ≥ max(horizons)</text>
   </svg>
-  <figcaption>Every origin: at least <code class="chip">warmup</code> rows behind it, all horizons resolvable ahead of it — or it is silently skipped.</figcaption>
+  <figcaption>An energy / S&amp;P-shaped example (2025 backtest, 2026 eval). Every origin needs <code class="chip">warmup</code> history behind it — 250 trading days on those specs, 24 months on CPI, 8 meetings on BoC — and all horizons resolvable ahead of it, or it is silently skipped.</figcaption>
   </figure>
   <div style="display:flex; flex-direction:column; gap:1.1cqw;">
     <div class="card accent-eval" style="padding-top:.9cqw;">
@@ -613,7 +622,7 @@
         <thead><tr><th></th><th><code>backtest()</code></th><th><code>evaluate()</code></th></tr></thead>
         <tbody>
           <tr><td>purpose</td><td>develop &amp; tune</td><td>the committed answer</td></tr>
-          <tr><td>runs</td><td>unlimited</td><td><code class="chip">max_runs</code> budget, tracked on disk</td></tr>
+          <tr><td>runs</td><td>unlimited</td><td><code class="chip">max_runs</code> budget, if an <code class="chip">EvalTracker</code> is attached</td></tr>
           <tr><td>caching</td><td>cached &amp; resumable</td><td>never — spend stays visible</td></tr>
           <tr><td>window</td><td>historical dev window</td><td>held-out, often post-LLM-cutoff</td></tr>
         </tbody>
@@ -699,7 +708,7 @@
       </div>
     </div>
   </div>
-    <div class="refs">methods/agentic/{agent_factory, predictor}.py · analyst_agent (energy, BoC) · starter_agent (#1–#4) · guide 03 — every customization lever, with a worked change for each</div>
+    <div class="refs">methods/agentic/{agent_factory, predictor}.py · analyst_agent (energy, BoC) · starter_agent (#1–#4) · <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/03-customize-agent-strategy.md">guide 03</a> — every customization lever, with a worked change for each</div>
     <div class="handoff"><a href="#s06">That is the architecture in full. Here is how five real problems put it to work → 06 The implementations</a></div>
   </div>
 </section>
@@ -727,7 +736,7 @@
       </tr>
       <tr>
         <td><span class="impl-name">1&nbsp; sp500_forecasting</span><br><span class="impl-sub">leak-safe covariate discipline</span></td>
-        <td>daily log returns, 1/5/21&nbsp;bd<br><span class="tag eval">continuous</span></td>
+        <td>cumulative log returns over 1/5/21&nbsp;bd<br><span class="tag eval">continuous</span></td>
         <td class="c"><span class="dot data">●</span></td><td class="c"><span class="dot method">●</span></td><td class="c"><span class="dot method">○</span></td><td class="c"><span class="dot method">○</span></td><td class="c"><span class="dot off">—</span></td>
         <td class="c"><span class="dot eval">●</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td>
       </tr>
@@ -777,7 +786,7 @@
     <text x="290" y="218" font-size="15" font-weight="600" fill="var(--ink)">sp500</text>
     <text x="266" y="272" font-size="12.5" fill="var(--ink)">+ discipline:</text>
     <text x="266" y="290" font-size="12.5" fill="var(--ink-2)">leak-safe covariate panel,</text>
-    <text x="266" y="306" font-size="12.5" fill="var(--ink-2)">six numerical methods,</text>
+    <text x="266" y="306" font-size="12.5" fill="var(--ink-2)">naive + five Darts methods,</text>
     <text x="266" y="322" font-size="12.5" fill="var(--ink-2)">budgeted protected eval</text>
     <!-- step 2 -->
     <text x="498" y="148" font-size="20" font-weight="700" fill="var(--method)">2</text>
@@ -806,7 +815,7 @@
   </svg>
   <figcaption>Each implementation stands alone — start at the problem closest to yours. The staircase is a reading order, not a dependency graph.</figcaption>
   </figure>
-    <div class="refs">implementations/{getting_started, sp500_forecasting, food_price_forecasting, energy_oil_forecasting, boc_rate_decisions} · each README is the full walkthrough · not sure where to start? 99_starter_agent.ipynb</div>
+    <div class="refs"><a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/tree/main/implementations">implementations/</a>{getting_started, sp500_forecasting, food_price_forecasting, energy_oil_forecasting, boc_rate_decisions} · each README is the full walkthrough · not sure where to start? <a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/implementations/energy_oil_forecasting/99_starter_agent.ipynb">99_starter_agent.ipynb</a></div>
     <div class="handoff"><a href="#s07">Which brings it back to you → 07 Build your own</a></div>
   </div>
 </section>
@@ -823,21 +832,21 @@
       <div class="card accent-data">
         <div class="n" style="color:var(--data)">1 · Onboard data</div>
         <p>Any source works — a CSV, an API, a database, scraped files. Map it onto <code class="chip">timestamp · value · released_at</code>, choose the release stamp honestly, register it on a <code class="chip">DataService</code>.</p>
-        <code class="chip">guides/01-onboard-a-dataset.md</code>
+        <a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/01-onboard-a-dataset.md">guides/01-onboard-a-dataset.md</a>
       </div>
       <div class="card accent-eval">
         <div class="n" style="color:var(--eval)">2 · Declare an experiment</div>
         <p>A task + window in YAML, a lineup in code, <code class="chip">cached_multi_backtest</code>, a leaderboard — with <b>strong baselines in every lineup</b>: the naive floor plus the best statistical model you can field. An agent is only as interesting as its margin over them. Hold out your eval window <em>before</em> you tune.</p>
-        <code class="chip">guides/02-create-an-experiment.md</code>
+        <a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/02-create-an-experiment.md">guides/02-create-an-experiment.md</a>
       </div>
       <div class="card accent-method">
         <div class="n" style="color:var(--method)">3 · Shape the agent</div>
         <p>Persona, toolbelt, search brief, skills — every lever that changes how the agent thinks, each with a worked change, scored against the baselines.</p>
-        <code class="chip">guides/03-customize-agent-strategy.md</code>
+        <a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/03-customize-agent-strategy.md">guides/03-customize-agent-strategy.md</a>
       </div>
     </div>
     <div class="closing">
-      The shape of a new forecaster is always the same: <b>implement <code class="chip">Predictor</code>, declare a spec, and run <code class="chip">backtest()</code> / <code class="chip">evaluate()</code></b> against the baselines — then <b>audit the result before you believe it</b> (<code class="chip">guides/04-audit-your-results.md</code>). Everything else in this atlas exists to keep that comparison honest.
+      The shape of a new forecaster is always the same: <b>implement <code class="chip">Predictor</code>, declare a spec, and run <code class="chip">backtest()</code> / <code class="chip">evaluate()</code></b> against the baselines — then <b>audit the result before you believe it</b> (<a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/04-audit-your-results.md">guides/04-audit-your-results.md</a>). Everything else in this atlas exists to keep that comparison honest.
     </div>
   </div>
 </section>
@@ -846,7 +855,7 @@
 
 <footer class="colophon">
   <div class="wrap" style="display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; width:100%;">
-    <span>github: VectorInstitute/agentic-forecasting</span>
+    <span><a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting">github.com/VectorInstitute/agentic-forecasting</a></span>
     <span>fin.</span>
   </div>
 </footer>
@@ -856,3 +865,5 @@
   const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
   if (hash.get('theme')) document.documentElement.dataset.theme = hash.get('theme');
 </script>
+</body>
+</html>
