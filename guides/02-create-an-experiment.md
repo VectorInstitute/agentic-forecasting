@@ -2,6 +2,8 @@
 
 **By the end of this guide** you will have a complete, repeatable experiment on the dataset from [guide 1](01-onboard-a-dataset.md): a forecasting task and backtest window declared in YAML, a predictor lineup selected in code, cached backtest runs, and a scored leaderboard — plus a clear picture of how the *protected evaluation* differs from the development backtest. Everything except the optional LLM predictors runs offline.
 
+The [architecture atlas](https://vectorinstitute.github.io/agentic-forecasting/architecture-atlas.html#s04) §04 is the map of the harness this guide exercises.
+
 **Prerequisites:** guide 1 (or any registered series of your own).
 
 ---
@@ -17,22 +19,22 @@ An experiment is four objects, each with one job:
 
 ## Step 1 — Write the spec
 
-Create `specs/harbourview_backtest_2025h1.yaml` (anywhere works for a first run; convention is `implementations/<your_use_case>/specs/`):
+Create `specs/harbourview_backtest_2025h1.yaml` (anywhere works for a first run; convention is `implementations/<your_use_case>/specs/`; the snippets below assume you run from the repo root with the spec at `specs/...` relative to it):
 
 ```yaml
 spec_id: harbourview_backtest_2025h1
 
 description: >-
-  Development backtest for the Harbourview diesel sample series: 13
+  Development backtest for the Harbourview lumber sample series: 13
   fortnightly origins over the first half of 2025.
 
 tasks:
-  - task_id: harbourview_diesel_price_forecast
-    target_series_id: harbourview_diesel_spot
+  - task_id: harbourview_lumber_price_forecast
+    target_series_id: harbourview_lumber_spot
     horizons: [5, 10]
     frequency: B
     description: >-
-      Harbourview harbor diesel spot price (USD/bbl, synthetic sample series),
+      Harbourview lumber spot price (USD/m³, synthetic sample series),
       projected 5 and 10 business days ahead.
 
 start: "2025-01-06"
@@ -140,9 +142,11 @@ Expected output on the sample data:
 
 ```text
          predictor                              task metric  mean_score  n_scored  skipped_origins
-         AutoARIMA harbourview_diesel_price_forecast   crps       1.922        26                0
-Naive (Last Value) harbourview_diesel_price_forecast   crps       2.598        26                0
+         AutoARIMA harbourview_lumber_price_forecast   crps       1.922        26                0
+Naive (Last Value) harbourview_lumber_price_forecast   crps       2.598        26                0
 ```
+
+(The naive row is deterministic and will match exactly; AutoARIMA samples its intervals, so expect its third decimal to wobble between runs — a first taste of the noise floor guide 4 measures properly.)
 
 Check `n_scored` and `skipped_origins` before believing `mean_score`: 13 origins × 2 horizons = 26 means everything resolved. And with a handful of origins, rankings sit inside the noise — energy's [`analysis.py`](../implementations/energy_oil_forecasting/analysis.py) has `leaderboard_with_uncertainty` (mean ± standard error) plus MAE/coverage helpers worth borrowing once you care about the answer rather than the pipeline.
 
@@ -150,7 +154,18 @@ Check `n_scored` and `skipped_origins` before believing `mean_score`: 13 origins
 
 The development backtest above is an **open loop**: run it as often as you like, tune freely. A protected evaluation answers a different question — *how good is the thing you already committed to?* — and tuning against it destroys the answer. The repo protects eval windows two ways; know both:
 
-**The enforced way: `EvalSpec` + `evaluate()`.** An eval spec adds `max_runs` (a run budget) to the same fields you wrote above. `evaluate()` / `multi_evaluate()` check the budget against a persistent on-disk counter before running, raise `EvalBudgetExceededError` when it's spent, record which run number produced each result — and **never cache**, precisely so that budget spend stays visible. One `multi_evaluate` call counts as one run regardless of task count. See [`sp500_eval_2026.yaml`](../implementations/sp500_forecasting/specs/sp500_eval_2026.yaml) (`max_runs: 5`) and [`cpi_gasoline_eval_2025.yaml`](../implementations/getting_started/specs/cpi_gasoline_eval_2025.yaml), which carries a runnable snippet in its header.
+**The enforced way: `EvalSpec` + `evaluate()`.** An eval spec adds `max_runs` (a run budget) to the same fields you wrote above, but the budget only bites if you attach an `EvalTracker`:
+
+```python
+from pathlib import Path
+
+from aieng.forecasting.evaluation import EvalTracker, evaluate
+
+tracker = EvalTracker(Path("eval_runs.yaml"))
+evaluate(predictor, spec, service, tracker=tracker)
+```
+
+Attach the tracker and `evaluate()` / `multi_evaluate()` check the budget against a persistent on-disk counter before running, raise `EvalBudgetExceededError` when it's spent, and record which run number produced each result. Call `evaluate()` without a tracker and it runs unconditionally — the budget simply does not apply. Either way, eval runs **never cache**, precisely so that budget spend (or the absence of tracking) stays visible. One `multi_evaluate` call counts as one run regardless of task count. See [`sp500_eval_2026.yaml`](../implementations/sp500_forecasting/specs/sp500_eval_2026.yaml) (`max_runs: 5`) and [`cpi_gasoline_eval_2025.yaml`](../implementations/getting_started/specs/cpi_gasoline_eval_2025.yaml), which carries a runnable snippet in its header.
 
 **The conventions way: energy's [notebook 06](../implementations/energy_oil_forecasting/06_protected_eval.ipynb).** No `max_runs` — protection comes from discipline: a 2026 eval window fully disjoint from the 2025 development backtest (and past the LLM's training cutoff, so results can't be memorization); predictors selected on 2025 data alone; `RUN_EVAL = False` run-guards that default to loading committed artifacts; and checksums proving the adaptive agent's strategy wasn't mutated between "before" and "after" scoring.
 

@@ -2,7 +2,9 @@
 
 **By the end of this guide** you will know every lever that changes how an analyst agent behaves — persona, toolbelt, skills, the web-search strategy, output contract, run parameters — and you will have a worked change for each. The point: even the simple starter agent (data + web search) supports *many* genuinely different strategies, and most of them are prompt, skill, or one-line config changes, not new infrastructure.
 
-**Prerequisites:** a working agent environment (run [`00_environment_check.ipynb`](../implementations/getting_started/00_environment_check.ipynb)). This guide anchors on the energy/WTI agent stack; the sibling implementations share the same template, so everything transfers.
+**Prerequisites:** a working agent environment (run [`00_environment_check.ipynb`](../implementations/getting_started/00_environment_check.ipynb)). This guide anchors on the energy/WTI starter agent; the sibling starters share the same `AgentConfig` contract but compose it differently — see "Which starter are you on?" below.
+
+The [architecture atlas §05](https://vectorinstitute.github.io/agentic-forecasting/architecture-atlas.html#s05) is the map of the agent anatomy this guide gives you the levers for.
 
 ---
 
@@ -12,7 +14,22 @@ One object defines what an agent *is*: [`AgentConfig`](../aieng-forecasting/aien
 
 That split is deliberate and worth internalizing: **the same identity can play several roles** (energy's notebook 03 runs one agent config against trajectory, binary-shock, and scenario tasks), and **the same role can be played by different identities** (which is how you A/B two strategies fairly).
 
-Your edit surface is the **starter agent** — [`starter_agent/`](../implementations/energy_oil_forecasting/starter_agent/) plus [`99_starter_agent.ipynb`](../implementations/energy_oil_forecasting/99_starter_agent.ipynb) — a small, hackable template built for exactly this. The **analyst agent** ([`analyst_agent/agent.py`](../implementations/energy_oil_forecasting/analyst_agent/agent.py)) is the finished four-level example to study: `basic` (no tools) → `news` (search) → `code_exec` (search + sandbox + skills) → `tool` (search + a fixed AutoARIMA function tool).
+Your edit surface is the **starter agent** — `starter_agent/` plus `99_starter_agent.ipynb` — a small, hackable template built for exactly this, and every implementation (#1 sp500, #2 food price, #3 energy, #4 BoC rate decisions) ships its own copy. This guide's file links point at energy's; open the pair for the track you actually picked. The **analyst agent** ([`analyst_agent/agent.py`](../implementations/energy_oil_forecasting/analyst_agent/agent.py)) is the finished four-level example to study: `basic` (no tools) → `news` (search) → `code_exec` (search + sandbox + skills) → `tool` (search + a fixed AutoARIMA function tool).
+
+## Which starter are you on?
+
+Every lever below is ultimately a field on one contract, [`AgentConfig`](../aieng-forecasting/aieng/forecasting/methods/agentic/agent_factory.py) — a pydantic model, same shape everywhere. What differs across implementations is how `starter_agent/agent.py` composes it:
+
+- **Toolbelt style** (energy only): `build_starter_agent_config(tools=[ToolSpec, ...])`. Each capability is a [`ToolSpec`](../implementations/energy_oil_forecasting/starter_agent/tools.py) factory in `starter_agent/tools.py`, folded onto `AgentConfig` by the config function.
+- **Toggle style** (sp500, food price, BoC): `build_starter_agent_config(model, search_model, *, enable_search=True, enable_code_exec=False)`. The booleans set the same `context_retrieval` / `code_execution` fields directly, inline in `agent.py`. There is deliberately no `tools.py` — don't go looking for one.
+
+| Move | Toolbelt (energy) | Toggle (sp500 / food / BoC) |
+| --- | --- | --- |
+| Attach search | `tools=[tools.news_search()]` | `enable_search=True` (default) |
+| Attach code exec | `tools=[tools.code_sandbox()]` | `enable_code_exec=True` |
+| Add a custom tool | write a `ToolSpec` factory, add it to `tools=[...]` | no toggle for this — build the config, then override a field on the returned `AgentConfig` (`config.model_copy(update={...})`, shown in lever 3 below) or edit your copy of `starter_agent/agent.py` directly |
+
+The worked examples below use energy's toolbelt style; where the API differs, the toggle equivalent is shown alongside.
 
 ## The levers
 
@@ -104,6 +121,24 @@ config = build_starter_agent_config(tools=[inventory_first_search()])
 
 Same agent, same tools, same cost — but every forecast is now grounded in physical-market evidence instead of headline narrative. Pair this with a matching edit to the playbook skill's query guidance and you have a coherent, testable strategy. (Keep the default's leakage-hygiene language — the "judge recency from substance, not bylines; don't fill gaps from memory" paragraph in [`tools.py`](../implementations/energy_oil_forecasting/starter_agent/tools.py) exists because those failure modes were observed.)
 
+**On a toggle starter** (no `tools.py` to edit), the same lever is a `model_copy` override on the config `build_starter_agent_config` hands back — swap in your own brief, keep the `search_model` the factory already chose:
+
+```python
+from aieng.forecasting.methods.agentic.agent_factory import ContextRetrievalConfig
+from sp500_forecasting.starter_agent import build_starter_agent_config
+
+config = build_starter_agent_config(enable_search=True)
+config = config.model_copy(update={
+    "context_retrieval": ContextRetrievalConfig(
+        enabled=True,
+        instruction=INVENTORY_FIRST_BRIEF,  # your replacement search-sub-agent brief
+        search_model=config.context_retrieval.search_model,  # preserve the factory's choice
+    )
+})
+```
+
+Same lever, same field (`context_retrieval`), different assembly.
+
 ## Lever 4 — Skills
 
 Skills are directories with a `SKILL.md` (and optional `references/`) that the agent lists and loads *on demand* — cheap standing knowledge that doesn't bloat the system prompt. The starter agent ships three playbooks; [`research-playbook/SKILL.md`](../implementations/energy_oil_forecasting/starter_agent/skills/research-playbook/SKILL.md) even has a "Domain focus (edit this for your use case)" section that is explicitly yours to rewrite: which signals matter, which queries pay off, which sources to trust.
@@ -145,4 +180,4 @@ Three disciplines:
 
 ## Where to go next
 
-[`99_starter_agent.ipynb`](../implementations/energy_oil_forecasting/99_starter_agent.ipynb) §4 is a six-step "make it yours" ladder that mirrors these levers interactively. Then **[Guide 4](04-audit-your-results.md)** closes the series with the other half of "measure it": auditing the results — payloads, traces, per-origin decomposition, the noise floor — before you believe them.
+`99_starter_agent.ipynb` §4 is a six-step "make it yours" ladder that mirrors these levers interactively — energy's is linked throughout this guide ([`99_starter_agent.ipynb`](../implementations/energy_oil_forecasting/99_starter_agent.ipynb)); sp500, food price, and BoC each ship the same notebook under their own `implementations/<track>/99_starter_agent.ipynb` — open the one for your track. Then **[Guide 4](04-audit-your-results.md)** closes the series with the other half of "measure it": auditing the results — payloads, traces, per-origin decomposition, the noise floor — before you believe them.
