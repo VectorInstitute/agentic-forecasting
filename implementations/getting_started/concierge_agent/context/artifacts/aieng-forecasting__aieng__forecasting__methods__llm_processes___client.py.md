@@ -25,13 +25,14 @@ into a single response, which would defeat sample-based forecasting.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import contextvars
 import json
 import logging
 import os
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Iterator, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -94,6 +95,54 @@ def langfuse_observe(name: str) -> Callable[..., Any]:
             return fn
 
         return _noop
+
+
+class _NoopGeneration:
+    """Stand-in used when Langfuse is unavailable, so callers need no branching."""
+
+    def update(self, **kwargs: Any) -> None:
+        """Discard the update."""
+        return
+
+
+@contextlib.contextmanager
+def langfuse_generation(*, name: str, model: str, input_messages: Any) -> Iterator[Any]:
+    """Emit a Langfuse ``generation`` around one LLM call.
+
+    We create the generation explicitly rather than relying on LiteLLM's
+    ``langfuse_otel`` callback: that callback emits no generation at all when
+    the call runs inside an already-active Langfuse span, which is every LLMP
+    ``predict`` (they are wrapped in :func:`langfuse_observe`). The result was
+    that token usage — and therefore cost — never reached Langfuse for any
+    LLMP run. Creating it here works nested and keeps model, usage, and
+    payload under our control.
+
+    Cost is deliberately not set: Langfuse derives it from ``usage_details``
+    and its own per-model prices, which match the Vector proxy's published
+    rates.
+
+    Yields a handle exposing ``update(**kwargs)`` — a no-op stand-in when
+    Langfuse is not installed or a generation cannot be started, so predictors
+    remain usable without the ``agentic``/``llm`` extras.
+    """
+    manager = None
+    try:
+        from langfuse import get_client  # noqa: PLC0415
+
+        manager = get_client().start_as_current_observation(
+            as_type="generation",
+            name=name,
+            model=model,
+            input=input_messages,
+        )
+    except Exception:  # pragma: no cover - depends on optional dependency
+        logger.debug("Langfuse generation unavailable; usage will not be traced.", exc_info=True)
+
+    if manager is None:
+        yield _NoopGeneration()
+        return
+    with manager as generation:
+        yield generation
 
 
 def current_trace_info() -> tuple[str | None, str | None]:
@@ -304,17 +353,21 @@ async def _one_completion_async(
         # models that don't support them (e.g. temperature on some o-series).
         kwargs["drop_params"] = True
 
-    resp = await litellm.acompletion(**kwargs)
-    cost = float(getattr(resp, "_hidden_params", {}).get("response_cost") or 0.0)
-    usage = getattr(resp, "usage", None)
-    in_tok = int(getattr(usage, "prompt_tokens", 0) or 0) if usage is not None else 0
-    out_tok = int(getattr(usage, "completion_tokens", 0) or 0) if usage is not None else 0
-    # Log full usage so we can see thinking-token breakdown when available.
-    # The proxy may populate completion_tokens_details.reasoning_tokens.
-    if usage is not None:
-        logger.debug("LLM usage: %s", vars(usage) if hasattr(usage, "__dict__") else usage)
-    raw = resp.choices[0].message.content
-    content = strip_markdown_fence(raw) if raw else raw
+    # ``model`` is the bare name as configured, before any "openai/" prefixing
+    # above; that is what Langfuse's price table matches on.
+    with langfuse_generation(name="llm_completion", model=model, input_messages=messages) as generation:
+        resp = await litellm.acompletion(**kwargs)
+        cost = float(getattr(resp, "_hidden_params", {}).get("response_cost") or 0.0)
+        usage = getattr(resp, "usage", None)
+        in_tok = int(getattr(usage, "prompt_tokens", 0) or 0) if usage is not None else 0
+        out_tok = int(getattr(usage, "completion_tokens", 0) or 0) if usage is not None else 0
+        # Log full usage so we can see thinking-token breakdown when available.
+        # The proxy may populate completion_tokens_details.reasoning_tokens.
+        if usage is not None:
+            logger.debug("LLM usage: %s", vars(usage) if hasattr(usage, "__dict__") else usage)
+        raw = resp.choices[0].message.content
+        content = strip_markdown_fence(raw) if raw else raw
+        generation.update(output=content, usage_details={"input": in_tok, "output": out_tok})
     return content, cost, in_tok, out_tok
 
 

@@ -7,6 +7,8 @@ stripping.  All LLM I/O is mocked so tests run without network access.
 
 from __future__ import annotations
 
+import contextlib
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -121,6 +123,7 @@ def _mock_litellm_response(content: str) -> MagicMock:
     return resp
 
 
+_CLIENT = "aieng.forecasting.methods.llm_processes._client"
 _DUMMY_MESSAGES = [{"role": "user", "content": "forecast"}]
 _DUMMY_FORMAT = {"type": "json_schema", "json_schema": {"name": "x", "schema": {}, "strict": True}}
 
@@ -257,3 +260,75 @@ async def test_non_proxy_path_sends_reasoning_effort_at_top_level() -> None:
     assert kw["reasoning_effort"] == "low"
     assert "extra_body" not in kw or "reasoning_effort" not in kw.get("extra_body", {})
     assert kw.get("drop_params") is True
+
+
+# ---------------------------------------------------------------------------
+# langfuse_generation — usage/cost reporting for the Langfuse trace
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_generation_receives_bare_model_usage_and_output() -> None:
+    """The Langfuse generation gets the bare model name, token usage, and output.
+
+    The bare (un-prefixed) name matters: Langfuse matches its per-model price
+    table on it, so sending ``openai/<model>`` would yield no cost.
+    """
+    captured: dict = {}
+
+    @contextlib.contextmanager
+    def _fake_generation(*, name: str, model: str, input_messages: object):
+        captured.update(name=name, model=model, input_messages=input_messages)
+
+        class _Gen:
+            def update(self, **kwargs: object) -> None:
+                captured["update"] = kwargs
+
+        yield _Gen()
+
+    resp = _mock_litellm_response('{"ok": 1}')
+    resp.usage = SimpleNamespace(prompt_tokens=11, completion_tokens=7)
+
+    with (
+        patch(f"{_CLIENT}.langfuse_generation", _fake_generation),
+        patch("litellm.acompletion", new=AsyncMock(return_value=resp)),
+    ):
+        await _one_completion_async(
+            model="gemini-3.5-flash",
+            messages=_DUMMY_MESSAGES,
+            response_format=_DUMMY_FORMAT,
+            temperature=1.0,
+            max_tokens=512,
+            timeout_s=30.0,
+            reasoning_effort=None,
+            api_base="https://proxy.example.com/v1",
+        )
+
+    assert captured["model"] == "gemini-3.5-flash"  # not "openai/gemini-3.5-flash"
+    assert captured["input_messages"] == _DUMMY_MESSAGES
+    assert captured["update"]["usage_details"] == {"input": 11, "output": 7}
+    assert captured["update"]["output"] == '{"ok": 1}'
+
+
+@pytest.mark.asyncio
+async def test_completion_succeeds_when_langfuse_is_unavailable() -> None:
+    """A failing Langfuse client degrades to a no-op; the completion still returns."""
+    resp = _mock_litellm_response('{"ok": 1}')
+    resp.usage = SimpleNamespace(prompt_tokens=3, completion_tokens=4)
+
+    with (
+        patch(f"{_CLIENT}.get_client", side_effect=RuntimeError("no langfuse"), create=True),
+        patch("litellm.acompletion", new=AsyncMock(return_value=resp)),
+    ):
+        content, _cost, in_tok, out_tok = await _one_completion_async(
+            model="gemini-3.5-flash",
+            messages=_DUMMY_MESSAGES,
+            response_format=_DUMMY_FORMAT,
+            temperature=1.0,
+            max_tokens=512,
+            timeout_s=30.0,
+            reasoning_effort=None,
+        )
+
+    assert content == '{"ok": 1}'
+    assert (in_tok, out_tok) == (3, 4)

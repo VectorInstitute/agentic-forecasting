@@ -1,9 +1,9 @@
 source_url: https://github.com/VectorInstitute/agentic-forecasting
-git_ref: 0ac6b3098bdb529c08f2445895d82490de2404fd
+git_ref: 1ca028d0df744fae68e47af998223d3347b92b1d
 branch: main
-built_at: '2026-06-30T15:09:29+00:00'
-ingest_source: /home/coder/agentic-forecasting
-entry_count: 196
+built_at: '2026-08-20T16:47:29+00:00'
+ingest_source: /home/akore/vscodeprojects/agentic-forecasting
+entry_count: 197
 entries:
 - path: AGENTS.md
   kind: markdown
@@ -22,7 +22,7 @@ entries:
   - Model selection
   - Code quality (not on commit)
   - Test philosophy
-  chars: 6702
+  chars: 6845
   artifact: artifacts/AGENTS.md.md
 - path: README.md
   kind: markdown
@@ -31,6 +31,7 @@ entries:
   symbols: []
   sections:
   - Agentic Forecasting
+  - Contents
   - What's here
   - Two ways to use a forecaster
   - Reference implementations
@@ -46,7 +47,7 @@ entries:
   - Extending the foundation
   - Code quality
   - Documentation
-  chars: 14796
+  chars: 14063
   artifact: artifacts/README.md.md
 - path: aieng-forecasting/aieng/forecasting/__init__.py
   kind: python
@@ -497,7 +498,7 @@ entries:
   - AdkTextRunnerConfig
   - AdkTextRunner
   sections: []
-  chars: 15228
+  chars: 16225
   artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__adk_runner.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/agentic/agent_factory.py
   kind: python
@@ -507,10 +508,11 @@ entries:
   - _LiteLLMNoiseFilter
   - ContextRetrievalConfig
   - CodeExecutionConfig
+  - _LeakageVerification
   - AgentConfig
   - build_adk_agent
   sections: []
-  chars: 24986
+  chars: 35486
   artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__agent_factory.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/agentic/curriculum.py
   kind: python
@@ -555,7 +557,7 @@ entries:
   - ForecastPromptBuilder
   - AgentPredictor
   sections: []
-  chars: 14369
+  chars: 14715
   artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__predictor.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/baselines/__init__.py
   kind: python
@@ -623,6 +625,8 @@ entries:
   symbols:
   - bootstrap_litellm
   - langfuse_observe
+  - _NoopGeneration
+  - langfuse_generation
   - current_trace_info
   - trace_url_for
   - set_current_trace_name
@@ -631,7 +635,7 @@ entries:
   - sample_n_async
   - run_async
   sections: []
-  chars: 18293
+  chars: 20531
   artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes___client.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/llm_processes/base.py
   kind: python
@@ -801,7 +805,7 @@ entries:
   - Directory layout
   - Relationship to `aieng-forecasting`
   - Adding a new use case
-  chars: 3778
+  chars: 3921
   artifact: artifacts/implementations__README.md.md
 - path: implementations/__init__.py
   kind: python
@@ -925,7 +929,7 @@ entries:
   - build_boc_news_config
   - build_boc_agent_predictor
   sections: []
-  chars: 16347
+  chars: 17929
   artifact: artifacts/implementations__boc_rate_decisions__analyst_agent__agent.py.md
 - path: implementations/boc_rate_decisions/data.py
   kind: python
@@ -1199,7 +1203,7 @@ entries:
   - _StarterForecastPromptBuilder
   - build_starter_agent_predictor
   sections: []
-  chars: 9637
+  chars: 10211
   artifact: artifacts/implementations__boc_rate_decisions__starter_agent__agent.py.md
 - path: implementations/boc_rate_decisions/starter_agent/skills/code-analysis-playbook/SKILL.md
   kind: markdown
@@ -1238,7 +1242,7 @@ entries:
   - How to search
   - Domain focus (edit this for your use case)
   - Room to grow
-  chars: 1947
+  chars: 2250
   artifact: artifacts/implementations__boc_rate_decisions__starter_agent__skills__research-playbook__SKILL.md.md
 - path: implementations/energy_oil_forecasting/01_wti_case_study.ipynb
   kind: notebook
@@ -1281,7 +1285,7 @@ entries:
   sections:
   - "WTI Crude Oil Price Forecasting \u2014 Stateless Methods: Systematic Backtest\
     \ (Notebook 4 of 7)"
-  chars: 18735
+  chars: 22648
   artifact: artifacts/implementations__energy_oil_forecasting__04_systematic_backtest_eval.ipynb.md
 - path: implementations/energy_oil_forecasting/05_adaptive_agent_training.ipynb
   kind: notebook
@@ -1321,7 +1325,7 @@ entries:
   symbols: []
   sections:
   - "WTI Crude Oil \u2014 Your Starter Agent"
-  chars: 7573
+  chars: 8586
   artifact: artifacts/implementations__energy_oil_forecasting__99_starter_agent.ipynb.md
 - path: implementations/energy_oil_forecasting/README.md
   kind: markdown
@@ -1374,7 +1378,7 @@ entries:
   - build_wti_adaptive_config
   - build_wti_adaptive_predictor
   sections: []
-  chars: 19884
+  chars: 20792
   artifact: artifacts/implementations__energy_oil_forecasting__adaptive_agent__agent.py.md
 - path: implementations/energy_oil_forecasting/adaptive_agent/curriculum/snapshot_utils.py
   kind: python
@@ -1564,14 +1568,28 @@ entries:
   - backtest_results_to_frame
   - trajectory_mae_table
   - select_top_predictors
+  - predictor_family
+  - predictions_to_frame
+  - per_horizon_crps
+  - leaderboard_with_uncertainty
+  - extract_agent_rationales
+  - eval_narrative_md
+  - build_price_frame
   - backtest_results_to_frame
+  - build_price_frame
   - compute_brier_score
+  - eval_narrative_md
+  - extract_agent_rationales
+  - leaderboard_with_uncertainty
+  - per_horizon_crps
+  - predictions_to_frame
+  - predictor_family
   - rolling_coverage_pct
   - score_backtest_results
   - select_top_predictors
   - trajectory_mae_table
   sections: []
-  chars: 6984
+  chars: 19850
   artifact: artifacts/implementations__energy_oil_forecasting__analysis.py.md
 - path: implementations/energy_oil_forecasting/analyst_agent/__init__.py
   kind: python
@@ -1603,7 +1621,7 @@ entries:
   - build_wti_tool_config
   - build_wti_agent_predictor
   sections: []
-  chars: 22599
+  chars: 27592
   artifact: artifacts/implementations__energy_oil_forecasting__analyst_agent__agent.py.md
 - path: implementations/energy_oil_forecasting/analyst_agent/skills/statistical-analysis/SKILL.md
   kind: markdown
@@ -1787,11 +1805,15 @@ entries:
   symbols: []
   sections:
   - "Energy Oil Eval Spec \u2014 2026 Prospective Competition"
-  - '# Runs on 8 weekly origins from Feb 2, 2026 to Mar 23, 2026.'
-  - Covers the high-volatility Persian Gulf geopolitical price shock period.
+  - '# Runs on 18 weekly origins from Feb 2, 2026 to Jun 1, 2026.'
+  - Covers the high-volatility Persian Gulf geopolitical price shock and its
+  - aftermath. The end date is set to the latest origin whose longest horizon
+  - "(21 business days) still resolves against available data \u2014 keep it at"
+  - most 21 business days behind the most recent cached WTI price (see
+  - scripts/fetch_wti.py) so every origin fully resolves.
   - 'Target is WTI Crude Oil price (yfinance ticker: CL=F).'
   - 'Horizons: 5, 10, 21 business days.'
-  chars: 1019
+  chars: 1316
   artifact: artifacts/implementations__energy_oil_forecasting__specs__energy_oil_eval.yaml.md
 - path: implementations/energy_oil_forecasting/specs/energy_oil_eval_smoke.yaml
   kind: yaml
@@ -1803,9 +1825,9 @@ entries:
   - '# Two-origin subset of energy_oil_eval.yaml for running the 2026 protected'
   - arena cheaply during development and end-to-end testing.
   - Use by setting SMOKE_TEST = True in the notebook setup cell.
-  - '# Origin count : 2 (vs. 8 in the full eval)'
+  - '# Origin count : 2 (vs. 18 in the full eval)'
   - 'Warmup       : 250 trading days (~1 year) of historical prices'
-  chars: 1084
+  chars: 1085
   artifact: artifacts/implementations__energy_oil_forecasting__specs__energy_oil_eval_smoke.yaml.md
 - path: implementations/energy_oil_forecasting/specs/energy_oil_smoke.yaml
   kind: yaml
@@ -1828,8 +1850,9 @@ entries:
   symbols:
   - build_starter_agent_config
   - build_starter_agent_predictor
+  - tools
   sections: []
-  chars: 542
+  chars: 688
   artifact: artifacts/implementations__energy_oil_forecasting__starter_agent____init__.py.md
 - path: implementations/energy_oil_forecasting/starter_agent/agent.py
   kind: python
@@ -1840,7 +1863,7 @@ entries:
   - _StarterForecastPromptBuilder
   - build_starter_agent_predictor
   sections: []
-  chars: 9265
+  chars: 9841
   artifact: artifacts/implementations__energy_oil_forecasting__starter_agent__agent.py.md
 - path: implementations/energy_oil_forecasting/starter_agent/skills/code-analysis-playbook/SKILL.md
   kind: markdown
@@ -1880,8 +1903,21 @@ entries:
   - How to search
   - Domain focus (edit this for your use case)
   - Room to grow
-  chars: 1830
+  chars: 2133
   artifact: artifacts/implementations__energy_oil_forecasting__starter_agent__skills__research-playbook__SKILL.md.md
+- path: implementations/energy_oil_forecasting/starter_agent/tools.py
+  kind: python
+  domain: impl.energy_oil_forecasting
+  summary: "The starter agent's toolbelt \u2014 one factory per tool, composed in\
+    \ the notebook."
+  symbols:
+  - ToolSpec
+  - news_search
+  - code_sandbox
+  - arima_forecast
+  sections: []
+  chars: 9826
+  artifact: artifacts/implementations__energy_oil_forecasting__starter_agent__tools.py.md
 - path: implementations/energy_oil_forecasting/tasks.py
   kind: python
   domain: impl.energy_oil_forecasting
@@ -1923,8 +1959,13 @@ entries:
   - verdict_label
   - prob_bar
   - conf_bar
+  - predictor_colors
+  - make_crps_heatmap
+  - make_leaderboard_interval_chart
+  - make_eval_forecast_chart
+  - render_rationales_html
   sections: []
-  chars: 43163
+  chars: 54100
   artifact: artifacts/implementations__energy_oil_forecasting__viz.py.md
 - path: implementations/food_price_forecasting/01_food_data_exploration.ipynb
   kind: notebook
@@ -2202,7 +2243,7 @@ entries:
   - _StarterForecastPromptBuilder
   - build_starter_agent_predictor
   sections: []
-  chars: 10665
+  chars: 11239
   artifact: artifacts/implementations__food_price_forecasting__starter_agent__agent.py.md
 - path: implementations/food_price_forecasting/starter_agent/skills/code-analysis-playbook/SKILL.md
   kind: markdown
@@ -2242,7 +2283,7 @@ entries:
   - How to search
   - Domain focus (edit this for your use case)
   - Room to grow
-  chars: 1871
+  chars: 2174
   artifact: artifacts/implementations__food_price_forecasting__starter_agent__skills__research-playbook__SKILL.md.md
 - path: implementations/getting_started/00_environment_check.ipynb
   kind: notebook
@@ -2645,7 +2686,7 @@ entries:
   - build_sp500_multivariate_service
   - sp500_logret_series_id
   sections: []
-  chars: 31632
+  chars: 32091
   artifact: artifacts/implementations__sp500_forecasting__data.py.md
 - path: implementations/sp500_forecasting/leaderboard.py
   kind: python
@@ -2799,7 +2840,7 @@ entries:
   - _StarterForecastPromptBuilder
   - build_starter_agent_predictor
   sections: []
-  chars: 11869
+  chars: 12443
   artifact: artifacts/implementations__sp500_forecasting__starter_agent__agent.py.md
 - path: implementations/sp500_forecasting/starter_agent/skills/code-analysis-playbook/SKILL.md
   kind: markdown
@@ -2839,7 +2880,7 @@ entries:
   - How to search
   - Domain focus (edit this for your use case)
   - Room to grow
-  chars: 1860
+  chars: 2163
   artifact: artifacts/implementations__sp500_forecasting__starter_agent__skills__research-playbook__SKILL.md.md
 - path: planning-docs/roadmap.md
   kind: markdown
@@ -2901,12 +2942,13 @@ entries:
 - path: scripts/fetch_fred.py
   kind: python
   domain: scripts
-  summary: Populate the local FRED cache with series used by the CFPR experiment.
+  summary: Populate the local FRED cache with series used by the food-price and S&P
+    500 experiments.
   symbols:
   - build_data_service
   - main
   sections: []
-  chars: 6020
+  chars: 8603
   artifact: artifacts/scripts__fetch_fred.py.md
 - path: scripts/fetch_sp500_market.py
   kind: python

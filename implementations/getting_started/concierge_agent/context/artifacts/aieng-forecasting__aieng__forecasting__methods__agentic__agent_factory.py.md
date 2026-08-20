@@ -17,6 +17,7 @@ raises :class:`ImportError` with installation guidance.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import warnings
@@ -24,9 +25,12 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
-from aieng.forecasting.models import LITE_MODEL
+from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
 from google.adk.models.base_llm import BaseLlm
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
+
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -80,6 +84,13 @@ except ModuleNotFoundError as exc:
 # final text, giving the predictor the structured JSON it expects.
 SMR_STATE_KEY = "__smr_output__"
 
+# Session-state key AgentPredictor seeds with the current prediction's as_of
+# date before each run (see AdkTextRunner.run_text_async's initial_state).
+# search_web reads this via its ADK-injected ToolContext as the authoritative
+# cutoff — unlike the LLM-supplied cutoff_date argument, the model can never
+# see or influence this key, so it can't be silently omitted or spoofed.
+AS_OF_STATE_KEY = "__as_of__"
+
 
 def _build_set_model_response_tool() -> FunctionTool:
     """Return a proxy-compatible ``set_model_response`` shim.
@@ -118,12 +129,18 @@ class ContextRetrievalConfig(BaseModel):
     the calling agent can retrieve grounded, sourced web context without a
     direct Gemini API key.
 
-    Temporal cutoff enforcement is soft (LLM-judgment-based): when
-    ``enforce_cutoff`` is ``True`` and the calling agent passes a
-    ``cutoff_date`` to the tool, the inner proxy prompt explicitly asks the
-    model to exclude post-cutoff sources.  This is the same trust model used
-    by the prior Google Search sub-agent — backtest leakage is a
-    pedagogically useful discussion point, not a hard guarantee.
+    Temporal cutoff enforcement has two layers. The first is soft
+    (LLM-judgment-based): when ``enforce_cutoff`` is ``True`` and the calling
+    agent passes a ``cutoff_date`` to the tool, the inner proxy prompt
+    explicitly asks the model to exclude post-cutoff sources. This alone is
+    not a hard guarantee — backtests have shown it leak real post-cutoff
+    information despite the instruction. The second, hard layer is an
+    independent verifier call (see ``verifier_model`` etc. below): a separate
+    LLM call extracts and judges each factual claim in the search result
+    against the cutoff, strips violations, and retries the search with
+    feedback when it cannot produce a sufficiently confident result —
+    returning an explicit failure sentinel rather than silently risky
+    content if verification never succeeds within the attempt budget.
 
     Attributes
     ----------
@@ -139,12 +156,27 @@ class ContextRetrievalConfig(BaseModel):
     enforce_cutoff : bool, default=True
         When ``True``, the ``search_web`` tool appends a cutoff-date
         constraint to the user prompt whenever ``cutoff_date`` is supplied by
-        the calling agent.  Set to ``False`` for live (non-backtest) agents
-        where no temporal fence is needed.
+        the calling agent, and runs the independent leakage verifier
+        described above. Set to ``False`` for live (non-backtest) agents
+        where no temporal fence is needed — the verifier is skipped entirely
+        in that case, at zero extra cost.
     temperature : float | None, default=None
         Sampling temperature for the inner search call.
     max_output_tokens : int | None, default=None
         Maximum output tokens for the inner search call.
+    verifier_model : str, default=ADVANCED_MODEL (``"gemini-3.5-flash"``)
+        Model used for the independent leakage-verification call. Defaults
+        to a different model than ``search_model`` so the verifier does not
+        share the same blind spot as the call it's checking.
+    verifier_max_attempts : int, default=3
+        Maximum number of search-then-verify attempts before giving up and
+        returning the ``[SEARCH_VERIFICATION_FAILED]`` sentinel.
+    verifier_confidence_threshold : int, default=8
+        Minimum self-reported confidence (1-10) the verifier must report,
+        alongside a clean verdict, for a result to be accepted. Kept
+        configurable rather than hardcoded because LLM self-reported
+        confidence is not well-calibrated: too strict a bar (e.g. a literal
+        10) risks exhausting retries on results that were actually fine.
     """
 
     model_config = {"extra": "forbid"}
@@ -159,6 +191,9 @@ class ContextRetrievalConfig(BaseModel):
     enforce_cutoff: bool = True
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
     max_output_tokens: int | None = Field(default=None, ge=1)
+    verifier_model: str = ADVANCED_MODEL
+    verifier_max_attempts: int = Field(default=3, ge=1)
+    verifier_confidence_threshold: int = Field(default=8, ge=1, le=10)
 
 
 class CodeExecutionConfig(BaseModel):
@@ -212,6 +247,106 @@ def _build_automatic_function_calling_config(
     return AutomaticFunctionCallingConfig(disable=True)
 
 
+class _LeakageVerification(BaseModel):
+    """Structured verdict from the independent temporal-leakage verifier."""
+
+    flagged_claims: list[str] = Field(default_factory=list)
+    filtered_text: str = ""
+    confidence: int = Field(ge=1, le=10)
+    clean: bool
+
+
+def _build_leakage_verification_schema() -> dict[str, Any]:
+    """Strict JSON schema for the verifier's structured output.
+
+    Field order matters: the model must extract/flag claims and produce
+    ``filtered_text`` before declaring ``confidence``/``clean``, so the
+    verdict follows the claim-level reasoning instead of preceding it.
+    """
+    return {
+        "type": "object",
+        "properties": {
+            "flagged_claims": {"type": "array", "items": {"type": "string"}},
+            "filtered_text": {"type": "string"},
+            "confidence": {"type": "integer", "minimum": 1, "maximum": 10},
+            "clean": {"type": "boolean"},
+        },
+        "required": ["flagged_claims", "filtered_text", "confidence", "clean"],
+    }
+
+
+_LEAKAGE_VERIFIER_INSTRUCTION = """\
+You are an independent fact-checker verifying that a web search result contains \
+no information published on or after a given cutoff date.
+
+Extract every discrete factual claim relevant to the query. For each claim, \
+judge whether its *content* (the event itself, prices/figures referenced, \
+described developments) could only be known on or after the cutoff date. \
+Do NOT trust a source's claimed publish date, byline timestamp, or URL — \
+page metadata and timestamps are frequently updated after original \
+publication and are not reliable evidence of when the underlying facts \
+became known. Reason from the substance of the claim itself.
+
+Remove every claim that fails this test and produce `filtered_text`: the \
+original text with only the surviving, pre-cutoff claims. Report the removed \
+claims in `flagged_claims`. Set `confidence` (1-10) to how confident you are \
+that `filtered_text` now contains zero post-cutoff leakage. Set `clean` to \
+true only if you removed all identifiable violations."""
+
+
+async def _verify_no_leakage(
+    *,
+    text: str,
+    query: str,
+    cutoff_date: str,
+    verifier_model: str,
+    openai_base_url: str,
+    openai_api_key: str | None,
+) -> _LeakageVerification:
+    """Judge a search result for post-cutoff claims via an independent verifier call.
+
+    Uses a different model (by default) than the search call it's checking,
+    so the verifier does not share the same knowledge-attribution blind spot
+    that caused the leak in the first place. Never raises on a malformed
+    verifier response — a parse failure is treated as a non-clean verdict so
+    it consumes a retry attempt like any other rejection.
+    """
+    import litellm  # noqa: PLC0415
+    from aieng.forecasting.methods.llm_processes._client import (  # noqa: PLC0415
+        make_json_schema_response_format,
+        strip_markdown_fence,
+    )
+
+    model = verifier_model if verifier_model.startswith("openai/") else f"openai/{verifier_model}"
+    resp = await litellm.acompletion(
+        model=model,
+        api_base=openai_base_url,
+        api_key=openai_api_key,
+        messages=[
+            {"role": "system", "content": _LEAKAGE_VERIFIER_INSTRUCTION},
+            {
+                "role": "user",
+                "content": f"Original query: {query}\nCutoff date: {cutoff_date}\n\nSearch result to verify:\n{text}",
+            },
+        ],
+        response_format=make_json_schema_response_format("LeakageVerification", _build_leakage_verification_schema()),
+        temperature=0.0,
+        max_tokens=2048,
+        timeout=60.0,
+    )
+    raw = resp.choices[0].message.content or "{}"
+    try:
+        return _LeakageVerification.model_validate(json.loads(strip_markdown_fence(raw)))
+    except (json.JSONDecodeError, ValidationError):
+        logger.warning("Leakage verifier returned unparseable output; treating as non-clean: %r", raw[:200])
+        return _LeakageVerification(
+            flagged_claims=["verifier response could not be parsed"],
+            filtered_text=text,
+            confidence=1,
+            clean=False,
+        )
+
+
 def _build_search_tool(
     config: ContextRetrievalConfig,
     *,
@@ -224,25 +359,25 @@ def _build_search_tool(
     the proxy with ``"tools": [{"googleSearch": {}}]`` so the model does
     server-side grounding and returns a synthesised answer plus source URLs
     extracted from ``choices[0].provider_specific_fields["grounding_metadata"]``.
+
+    When a ``cutoff_date`` is supplied and ``config.enforce_cutoff`` is
+    ``True``, the raw result is passed through an independent leakage
+    verifier (:func:`_verify_no_leakage`) before being returned. On a flagged
+    result, the search is retried (up to ``config.verifier_max_attempts``
+    times) with the previously flagged claims injected as explicit negative
+    feedback. If no attempt is verified clean, an explicit
+    ``[SEARCH_VERIFICATION_FAILED]`` sentinel is returned instead of
+    potentially-leaky content.
     """
 
-    async def search_web(query: str, cutoff_date: str | None = None) -> str:
-        """Search the web and return a grounded summary with source URLs.
+    def _format_result(content: str, sources: list[str]) -> str:
+        if sources:
+            content += "\n\nSources:\n" + "\n".join(sources[:5])
+        return content
 
-        Args:
-            query: What to search for.
-            cutoff_date: ISO date (YYYY-MM-DD). When provided, only include
-                         information published strictly before this date.
-
-        Returns
-        -------
-            A grounded summary of search results, with source URLs appended.
-        """
+    async def _do_search(user_content: str) -> tuple[str, list[str]]:
         import litellm  # noqa: PLC0415
 
-        user_content = query
-        if cutoff_date and config.enforce_cutoff:
-            user_content += f"\n\nOnly include and cite information published strictly before {cutoff_date}."
         search_model = config.search_model
         if not search_model.startswith("openai/"):
             search_model = f"openai/{search_model}"
@@ -265,9 +400,88 @@ def _build_search_tool(
         sources: list[str] = [
             uri for c in gm.get("groundingChunks", []) if (uri := (c.get("web") or {}).get("uri")) is not None
         ]
-        if sources:
-            content += "\n\nSources:\n" + "\n".join(sources[:5])
-        return content
+        return content, sources
+
+    async def search_web(query: str, cutoff_date: str | None = None, tool_context: ToolContext | None = None) -> str:
+        """Search the web and return a grounded summary with source URLs.
+
+        Args:
+            query: What to search for.
+            cutoff_date: ISO date (YYYY-MM-DD). When provided, only include
+                         information published strictly before this date.
+
+        Returns
+        -------
+            A grounded summary of search results, with source URLs appended.
+            When cutoff verification is enabled and cannot be satisfied
+            within the attempt budget, returns a ``[SEARCH_VERIFICATION_FAILED]``
+            sentinel instead of unverified content.
+
+        Notes
+        -----
+        ``tool_context`` is not part of the LLM-visible tool schema — ADK
+        injects it automatically because of its type annotation. When
+        :class:`AgentPredictor` runs this tool, it has already seeded the
+        session with the current prediction's ``as_of`` date under
+        :data:`AS_OF_STATE_KEY`; that harness-controlled value is the
+        authoritative cutoff whenever present, since (unlike ``cutoff_date``)
+        the calling LLM cannot see, omit, or alter it. This closes a bypass
+        where the model simply didn't pass ``cutoff_date`` and both the soft
+        cutoff instruction and the verifier below were silently skipped.
+        """
+        harness_as_of = tool_context.state.get(AS_OF_STATE_KEY) if tool_context is not None else None
+        if harness_as_of and cutoff_date and harness_as_of != cutoff_date:
+            logger.warning(
+                "search_web: cutoff_date=%r disagrees with harness as_of=%r; using the harness value.",
+                cutoff_date,
+                harness_as_of,
+            )
+        effective_cutoff = harness_as_of or cutoff_date
+
+        needs_verification = bool(effective_cutoff and config.enforce_cutoff)
+        if not needs_verification:
+            content, sources = await _do_search(query)
+            return _format_result(content, sources)
+
+        negative_guidance = ""
+        for attempt in range(1, config.verifier_max_attempts + 1):
+            user_content = (
+                query + f"\n\nOnly include and cite information published strictly before {effective_cutoff}."
+            )
+            if negative_guidance:
+                user_content += f"\n\n{negative_guidance}"
+            content, sources = await _do_search(user_content)
+            verdict = await _verify_no_leakage(
+                text=content,
+                query=query,
+                cutoff_date=effective_cutoff,  # type: ignore[arg-type]
+                verifier_model=config.verifier_model,
+                openai_base_url=openai_base_url,
+                openai_api_key=openai_api_key,
+            )
+            logger.info(
+                "search_web verification attempt %d/%d: clean=%s confidence=%d flagged=%d",
+                attempt,
+                config.verifier_max_attempts,
+                verdict.clean,
+                verdict.confidence,
+                len(verdict.flagged_claims),
+            )
+            if verdict.clean and verdict.confidence >= config.verifier_confidence_threshold:
+                return _format_result(verdict.filtered_text, sources)
+            logger.warning("search_web attempt %d flagged %d claim(s); retrying.", attempt, len(verdict.flagged_claims))
+            negative_guidance = (
+                f"Your previous search result may have included information published on or after "
+                f"{effective_cutoff}. Do not repeat or rely on these claims:\n- "
+                + "\n- ".join(verdict.flagged_claims or ["(unspecified — be more conservative)"])
+            )
+
+        logger.error("search_web exhausted %d attempts without a verified clean result.", config.verifier_max_attempts)
+        return (
+            f"[SEARCH_VERIFICATION_FAILED] Could not verify search results as free of information "
+            f"published on or after {effective_cutoff} after {config.verifier_max_attempts} attempts. "
+            "Treat this as no verified news context being available for this query."
+        )
 
     return search_web
 
