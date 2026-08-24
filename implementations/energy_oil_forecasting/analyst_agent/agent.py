@@ -51,6 +51,7 @@ from aieng.forecasting.methods.agentic.agent_factory import (
 from aieng.forecasting.methods.agentic.domain import (
     build_analyst_config,
     render_analyst_instruction,
+    render_context_retrieval_supplement,
     render_multitask_analyst_instruction,
 )
 from aieng.forecasting.methods.agentic.history import compress_history
@@ -73,6 +74,8 @@ from pydantic import BaseModel
 _WTI_ANALYST_INSTRUCTION = render_analyst_instruction(OIL_DOMAIN)
 _WTI_MULTITASK_ANALYST_INSTRUCTION = render_multitask_analyst_instruction(OIL_DOMAIN)
 _WTI_CONTEXT_RETRIEVAL_INSTRUCTION = OIL_DOMAIN.context_retrieval_instruction
+# Appended only by configs that enable ContextRetrievalConfig (news / code / tool).
+_CONTEXT_RETRIEVAL_SUPPLEMENT = render_context_retrieval_supplement(OIL_DOMAIN)
 
 # ---------------------------------------------------------------------------
 # Skills supplement (appended to instruction when skills are attached)
@@ -329,7 +332,7 @@ def build_wti_news_config(
     return build_analyst_config(
         OIL_DOMAIN,
         name_suffix="news",
-        instruction=_WTI_ANALYST_INSTRUCTION,
+        instruction=_WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT,
         model=model,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
@@ -391,7 +394,7 @@ def build_wti_code_exec_config(
     return build_analyst_config(
         OIL_DOMAIN,
         name_suffix="code",
-        instruction=_WTI_ANALYST_INSTRUCTION + _CODE_EXEC_SKILLS_SUPPLEMENT,
+        instruction=_WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _CODE_EXEC_SKILLS_SUPPLEMENT,
         model=model,
         max_output_tokens=max_output_tokens,
         context_retrieval=ContextRetrievalConfig(
@@ -467,7 +470,7 @@ def build_wti_tool_config(
     return build_analyst_config(
         OIL_DOMAIN,
         name_suffix="tool",
-        instruction=_WTI_ANALYST_INSTRUCTION + _FORECAST_TOOL_SUPPLEMENT,
+        instruction=_WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _FORECAST_TOOL_SUPPLEMENT,
         model=model,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,

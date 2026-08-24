@@ -42,6 +42,7 @@ from aieng.forecasting.methods.agentic.domain import (
     build_analyst_config,
     render_analyst_instruction,
     render_code_exec_supplement,
+    render_context_retrieval_supplement,
 )
 from aieng.forecasting.methods.agentic.history import compress_history
 from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
@@ -195,6 +196,7 @@ class Sp500ReturnForecastPromptBuilder(BaseModel):
 # ---------------------------------------------------------------------------
 
 _SP500_ANALYST_INSTRUCTION = render_analyst_instruction(SP500_DOMAIN)
+_CONTEXT_RETRIEVAL_SUPPLEMENT = render_context_retrieval_supplement(SP500_DOMAIN)
 
 # Code-execution supplement, appended when the E2B sandbox is wired. Kept
 # skill-agnostic: ADK injects the name + description of every attached skill
@@ -260,7 +262,7 @@ def build_sp500_news_config(
     return build_analyst_config(
         SP500_DOMAIN,
         name_suffix="news",
-        instruction=_SP500_ANALYST_INSTRUCTION,
+        instruction=_SP500_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT,
         model=model,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
@@ -317,7 +319,10 @@ def build_sp500_code_config(
     return build_analyst_config(
         SP500_DOMAIN,
         name_suffix="code",
-        instruction=_SP500_ANALYST_INSTRUCTION + _CODE_EXEC_SUPPLEMENT + render_code_exec_supplement(SP500_DOMAIN),
+        instruction=_SP500_ANALYST_INSTRUCTION
+        + _CONTEXT_RETRIEVAL_SUPPLEMENT
+        + _CODE_EXEC_SUPPLEMENT
+        + render_code_exec_supplement(SP500_DOMAIN),
         model=model,
         max_output_tokens=max_output_tokens,
         context_retrieval=ContextRetrievalConfig(

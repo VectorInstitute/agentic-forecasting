@@ -142,16 +142,17 @@ class DomainConfig(BaseModel):
 
 
 def render_analyst_instruction(domain: DomainConfig) -> str:
-    """Render the task-aware analyst instruction (news / code-exec / tool variants).
+    """Render the tool-free analyst instruction (price history only).
+
+    Tool-specific guidance (web search, code exec, forecast tool) is appended
+    by the config factories that enable those capabilities — never reference a
+    tool here that a basic (no-tool) config does not attach.
 
     Embeds the continuous output schema from
     :class:`~aieng.forecasting.methods.agentic.outputs.ContinuousAgentForecastOutput`
     so the required JSON block stays in sync with the schema.
     """
     schema = ContinuousAgentForecastOutput.prompt_schema_json()
-    query_lines = "".join(
-        f'- ``search_web(query="{q}", cutoff_date=<as_of>)``\n' for q in domain.recommended_search_queries
-    )
     return (
         "## Role\n\n"
         f"You are an expert {domain.analyst_persona}. You produce {domain.analyst_forecasting_focus}.\n\n"
@@ -168,17 +169,35 @@ def render_analyst_instruction(domain: DomainConfig) -> str:
         "2. Use exactly the quantile levels from `standard_quantiles` — no additions, no omissions.\n"
         "3. `point_forecast` must exactly equal the 0.50 quantile value.\n"
         "4. Quantile values must be strictly non-decreasing as quantile levels increase.\n"
-        "5. Document your reasoning in the `rationale` fields.\n"
-        "6. When tools are enabled, conclude with `set_model_response` to return the structured forecast.\n\n"
+        "5. Document your reasoning in the `rationale` fields.\n\n"
         "## Output schema\n\n"
-        "Call `set_model_response` with a `json_response` string matching **exactly**:\n\n"
+        "If a `set_model_response` tool is available, call it with a "
+        "`json_response` string matching **exactly**:\n\n"
         "```json\n" + schema + "\n```\n\n"
+        "Otherwise return that JSON directly as plain text with no preamble.\n\n"
         'Critical: use `"horizon"` (integer, not `"horizon_days"`). '
         '`"quantiles"` is a **list** of `{"quantile": <level>, "value": <price>}` '
         "objects — not a dict. Omit any field not shown above.\n\n"
         "## Analysis discipline\n\n"
-        "When context retrieval is available, call ``search_web`` to gather market "
-        "intelligence BEFORE producing forecasts.\n\n"
+        f"Document your key assumptions ({domain.key_assumptions_hint}) in the `rationale` "
+        "fields of your forecast output. "
+        "Reason only from the payload (and any tools listed in later sections of "
+        "this instruction — if none are listed, you have no tools)."
+    )
+
+
+def render_context_retrieval_supplement(domain: DomainConfig) -> str:
+    """Search-tool guidance appended only by news / code / tool configs.
+
+    Basic (no-tool) configs must not receive this block — advertising
+    ``search_web`` when the tool is not attached yields empty turns.
+    """
+    query_lines = "".join(
+        f'- ``search_web(query="{q}", cutoff_date=<as_of>)``\n' for q in domain.recommended_search_queries
+    )
+    return (
+        "\n\n## Context retrieval\n\n"
+        "Call ``search_web`` to gather market intelligence BEFORE producing forecasts.\n\n"
         "Call ``search_web`` with ``query`` and ``cutoff_date`` (set to the ``as_of`` "
         "date from the payload). The ``cutoff_date`` MUST always equal ``as_of`` — "
         "this is the temporal fence that prevents post-origin information from "
@@ -188,11 +207,7 @@ def render_analyst_instruction(domain: DomainConfig) -> str:
         "that query. Do not use your own background knowledge to fill the gap or "
         "speculate about what the news might have said — proceed with price-history "
         "and other available signals only, and note the gap in your rationale.\n\n"
-        "Recommended queries (call ``search_web`` once per topic):\n"
-        + query_lines
-        + "\n"
-        + f"Document your key assumptions ({domain.key_assumptions_hint}) in the `rationale` "
-        "fields of your forecast output."
+        "Recommended queries (call ``search_web`` once per topic):\n" + query_lines
     )
 
 

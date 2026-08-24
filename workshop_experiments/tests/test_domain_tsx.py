@@ -45,6 +45,7 @@ def test_analyst_instruction_renders_tsx_persona() -> None:
     text = render_analyst_instruction(TSX_DOMAIN)
     assert "S&P/TSX Composite equity-index analyst" in text
     assert "S&P/TSX Composite" in text
+    assert "search_web" not in text
     _assert_no_persona_bleed(text)
 
 
@@ -94,6 +95,8 @@ def test_agent_configs_build_and_are_persona_clean() -> None:
     assert code.code_execution.enabled
     _assert_no_persona_bleed(news.instruction)
     _assert_no_persona_bleed(code.instruction)
+    assert "search_web" in news.instruction
+    assert "search_web" in code.instruction
 
 
 def test_strategy_skill_name_is_tsx() -> None:

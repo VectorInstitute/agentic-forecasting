@@ -29,6 +29,7 @@ def test_analyst_instruction_renders_equity_persona() -> None:
     text = render_analyst_instruction(SP500_DOMAIN)
     assert "S&P 500" in text
     assert "equity-index analyst" in text
+    assert "search_web" not in text
     _assert_no_oil_terms(text)
 
 
@@ -73,6 +74,8 @@ def test_agent_configs_build_and_are_oil_free() -> None:
     assert code.code_execution.enabled
     _assert_no_oil_terms(news.instruction)
     _assert_no_oil_terms(code.instruction)
+    assert "search_web" in news.instruction
+    assert "search_web" in code.instruction
 
 
 def test_code_config_instruction_carries_workstyle_guidance() -> None:
