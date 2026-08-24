@@ -107,6 +107,8 @@ When you open a **Coder workspace**, startup runs automatically in the backgroun
 
 **Your next step:** run [`00_environment_check.ipynb`](implementations/getting_started/00_environment_check.ipynb) top to bottom. That notebook will confirm that startup succeeded.
 
+**ADK web UI.** `adk web` binds to `localhost` *inside* the workspace, so a browser on your laptop cannot reach it until you tunnel. [Guide 5](guides/05-access-adk-web-via-ssh-tunnel.md) walks through that on macOS, Windows, and Linux. Skip it if you are running the repo locally.
+
 On first boot, keys are verified against live services and your onboarding status is recorded. Workspace restarts reload keys without re-running the full test suite.
 
 **Local machine or troubleshooting** — fetch and verify keys manually:
@@ -203,7 +205,7 @@ uv run pre-commit run --all-files
 ## Documentation
 
 - Per-implementation READMEs under [`implementations/`](implementations/) — the primary user surface.
-- [`guides/`](guides/) — self-contained, step-by-step strategy guides for the most common build-phase tasks: onboarding a dataset, creating an experiment, customizing an agent's strategy, and auditing a result before you believe it.
+- [`guides/`](guides/) — self-contained, step-by-step strategy guides for the most common build-phase tasks: onboarding a dataset, creating an experiment, customizing an agent's strategy, and auditing a result before you believe it. [Guide 5](guides/05-access-adk-web-via-ssh-tunnel.md) is the Coder companion for reaching `adk web` from your laptop.
 - [Architecture atlas](https://vectorinstitute.github.io/agentic-forecasting/architecture-atlas.html) ([source](docs/architecture-atlas.html)) — a self-contained visual atlas of the system architecture: the loop, the temporal fence, predictor families, the harness, agent anatomy, and how each reference implementation instantiates them.
 - [`aieng-forecasting/README.md`](aieng-forecasting/README.md) and [`aieng-forecasting/aieng/forecasting/methods/README.md`](aieng-forecasting/aieng/forecasting/methods/README.md) — the library and the method catalog.
 - [`planning-docs/roadmap.md`](planning-docs/roadmap.md) — architecture principles and extension ideas.
