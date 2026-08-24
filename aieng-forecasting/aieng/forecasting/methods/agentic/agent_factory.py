@@ -674,7 +674,7 @@ def build_adk_agent(
         # from this name and OpenInference reports it to Langfuse, which matches
         # its per-model price table on the bare name. A prefixed name matches
         # nothing, so the generation is logged at zero cost. Both forms route
-        # identically. See planning-docs/litellm-langfuse-compat.md.
+        # identically.
         bare_model = model[len("openai/") :] if model.startswith("openai/") else model
         model = LiteLlm(
             model=bare_model,

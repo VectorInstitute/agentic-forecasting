@@ -50,8 +50,7 @@ def bootstrap_litellm() -> None:
     cost instead of deriving one from usage, so the callback forced agent-path
     generations to $0. Instead, :func:`langfuse_generation` creates LLM-process
     generations directly and OpenInference covers the agent path, so both price
-    correctly from ``usage_details``. See
-    ``planning-docs/litellm-langfuse-compat.md``.
+    correctly from ``usage_details``.
     """
     global _BOOTSTRAP_DONE  # noqa: PLW0603
     if _BOOTSTRAP_DONE:
@@ -122,8 +121,7 @@ def langfuse_generation(*, name: str, model: str, input_messages: Any) -> Iterat
     ``langfuse>=4.5.1``. Support for v4 is BerriAI/litellm#24123, open and
     unanswered since 2026-03-19. Retire this helper in favour of the callback
     once that issue is closed and ``langfuse_otel`` is confirmed to emit a
-    generation under an active Langfuse span. For background and the A/B
-    evidence, see ``planning-docs/litellm-langfuse-compat.md``.
+    generation under an active Langfuse span.
 
     Yields a handle exposing ``update(**kwargs)``. That handle is a no-op
     stand-in when Langfuse is not installed or a generation cannot be started,

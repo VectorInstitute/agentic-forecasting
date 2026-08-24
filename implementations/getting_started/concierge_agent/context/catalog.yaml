@@ -1,7 +1,7 @@
 source_url: https://github.com/VectorInstitute/agentic-forecasting
-git_ref: c44102e33c27f0e2749cbe17b66e7599e86e255e
+git_ref: 04507bf406cc5524c3d9523fc4835f29462fe3ea
 branch: main
-built_at: '2026-08-24T19:58:28+00:00'
+built_at: '2026-08-24T20:54:40+00:00'
 ingest_source: /home/akore/vscodeprojects/agentic-forecasting
 entry_count: 197
 entries:
@@ -429,7 +429,7 @@ entries:
   - init_langfuse_tracing
   - print_langfuse_trace_url
   sections: []
-  chars: 6141
+  chars: 6087
   artifact: artifacts/aieng-forecasting__aieng__forecasting__langfuse_tracing.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/README.md
   kind: markdown
@@ -512,7 +512,7 @@ entries:
   - AgentConfig
   - build_adk_agent
   sections: []
-  chars: 35818
+  chars: 35772
   artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__agent_factory.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/agentic/curriculum.py
   kind: python
@@ -635,7 +635,7 @@ entries:
   - sample_n_async
   - run_async
   sections: []
-  chars: 21351
+  chars: 21206
   artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__llm_processes___client.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/llm_processes/base.py
   kind: python

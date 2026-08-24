@@ -130,8 +130,7 @@ class TestBootstrapLiteLLMCallbackContract:
 
         The callback is unusable against the Langfuse v4 SDK and stamps a zero
         ``llm.cost.total`` on the active span, which suppresses Langfuse's own
-        cost calculation and forced agent-path generations to $0. See
-        ``planning-docs/litellm-langfuse-compat.md``.
+        cost calculation and forced agent-path generations to $0.
         """
         monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-test")
         monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test")

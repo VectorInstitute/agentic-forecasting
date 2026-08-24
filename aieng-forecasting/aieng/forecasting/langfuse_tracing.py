@@ -108,8 +108,7 @@ def init_langfuse_tracing() -> None:
 
     LiteLLM's ``langfuse_otel`` callback is deliberately not registered: it is
     unusable against the Langfuse v4 SDK and stamps a zero ``llm.cost.total``
-    on the active span, which suppresses Langfuse's own cost calculation. See
-    ``planning-docs/litellm-langfuse-compat.md``.
+    on the active span, which suppresses Langfuse's own cost calculation.
 
     Set ``LANGFUSE_HOST`` or ``LANGFUSE_BASE_URL`` for non-default regions.
     For short-lived processes, call ``langfuse.get_client().flush()`` before
