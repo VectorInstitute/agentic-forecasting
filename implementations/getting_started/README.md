@@ -154,7 +154,9 @@ and modules, and can quote snippets from the committed public-`main` catalog.
   ```
 
   (`uv run adk web implementations/getting_started/concierge_agent` opens the same
-  agent in a browser.)
+  agent in a browser. On a **Coder workspace**, that UI is inside the VM —
+  [guide 5](../../guides/05-access-adk-web-via-ssh-tunnel.md) tunnels it to your
+  laptop.)
 
   From `implementations/getting_started/`, the shorter `uv run adk run concierge_agent`
   works too.

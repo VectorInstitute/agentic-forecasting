@@ -118,8 +118,9 @@ ignore = [
 "scripts/**" = ["D1", "E402", "W505", "ERA001"]
 "implementations/**" = ["D1", "E402", "W505", "ERA001"]
 # Playground: throwaway exploration/diagnostics. Same relaxations as scripts,
-# plus PLC0415 (optional deps are imported inside try/except by design).
-"playground/**" = ["D1", "E402", "W505", "ERA001", "PLC0415"]
+# plus PLC0415 (optional deps are imported inside try/except by design) and
+# PLR0917 (archived notebooks predate the positional-arg cap).
+"playground/**" = ["D1", "E402", "W505", "ERA001", "PLC0415", "PLR0917"]
 # Repo-root integration tests: optional extras imported inside try/except.
 "tests/**" = ["D1", "E402", "W505", "ERA001", "PLC0415"]
 
