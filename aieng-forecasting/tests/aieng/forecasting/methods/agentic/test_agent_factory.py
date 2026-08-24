@@ -108,10 +108,12 @@ class TestBuildAdkAgent:
         agent = build_adk_agent(config)
 
         assert isinstance(agent.model, LiteLlm)
-        # LiteLlm receives the "openai/" prefix so LiteLLM routes via the
-        # OpenAI-compatible proxy path; the prefix is stripped before the
-        # proxy sees the model name.
-        assert agent.model.model == "openai/gemini-3.1-flash-lite-preview"
+        # The bare model name is kept and the OpenAI-compatible proxy route is
+        # selected via custom_llm_provider instead of an "openai/" prefix:
+        # OpenInference reports this name to Langfuse, which matches its price
+        # table on the bare name (a prefixed name logs zero cost).
+        assert agent.model.model == "gemini-3.1-flash-lite-preview"
+        assert agent.model._additional_args["custom_llm_provider"] == "openai"
 
     def test_string_model_kept_as_string_without_proxy(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Without a proxy URL the model is passed as a plain string to LlmAgent."""

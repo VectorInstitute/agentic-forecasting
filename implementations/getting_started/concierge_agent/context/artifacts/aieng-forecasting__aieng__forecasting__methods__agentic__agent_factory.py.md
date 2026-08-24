@@ -674,12 +674,16 @@ def build_adk_agent(
     if isinstance(model, str) and config.openai_base_url:
         from google.adk.models.lite_llm import LiteLlm  # noqa: PLC0415
 
-        # Prefix with "openai/" so LiteLLM uses the OpenAI-compatible path.
-        # LiteLLM strips the prefix before sending, so the proxy receives the
-        # bare model name.
-        litellm_model = model if model.startswith("openai/") else f"openai/{model}"
+        # Route via LiteLLM's OpenAI-compatible path with ``custom_llm_provider``
+        # rather than an ``openai/`` model prefix. ADK stamps ``LlmRequest.model``
+        # from this name and OpenInference reports it to Langfuse, which matches
+        # its per-model price table on the bare name. A prefixed name matches
+        # nothing, so the generation is logged at zero cost. Both forms route
+        # identically. See planning-docs/litellm-langfuse-compat.md.
+        bare_model = model[len("openai/") :] if model.startswith("openai/") else model
         model = LiteLlm(
-            model=litellm_model,
+            model=bare_model,
+            custom_llm_provider="openai",
             api_base=config.openai_base_url,
             api_key=config.openai_api_key,
         )

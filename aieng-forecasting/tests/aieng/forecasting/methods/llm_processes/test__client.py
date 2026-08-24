@@ -263,7 +263,7 @@ async def test_non_proxy_path_sends_reasoning_effort_at_top_level() -> None:
 
 
 # ---------------------------------------------------------------------------
-# langfuse_generation — usage/cost reporting for the Langfuse trace
+# langfuse_generation: usage and cost reporting for the Langfuse trace
 # ---------------------------------------------------------------------------
 
 
@@ -312,7 +312,7 @@ async def test_generation_receives_bare_model_usage_and_output() -> None:
 
 @pytest.mark.asyncio
 async def test_completion_succeeds_when_langfuse_is_unavailable() -> None:
-    """A failing Langfuse client degrades to a no-op; the completion still returns."""
+    """A failing Langfuse client degrades to a no-op and the completion returns."""
     resp = _mock_litellm_response('{"ok": 1}')
     resp.usage = SimpleNamespace(prompt_tokens=3, completion_tokens=4)
 

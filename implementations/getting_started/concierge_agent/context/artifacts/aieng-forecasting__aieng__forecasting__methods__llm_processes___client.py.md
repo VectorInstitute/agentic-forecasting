@@ -29,7 +29,6 @@ import contextlib
 import contextvars
 import json
 import logging
-import os
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Iterator, TypeVar
@@ -45,21 +44,23 @@ _BOOTSTRAP_DONE = False
 
 
 def bootstrap_litellm() -> None:
-    """One-time wiring of LiteLLM callbacks.
+    """Suppress LiteLLM and OpenTelemetry logging noise, once per process.
 
     Lazy and idempotent so non-LLM predictors do not require Langfuse env vars.
-    The Langfuse OTEL callback is registered only when ``LANGFUSE_PUBLIC_KEY``
-    is set in the environment.
+
+    LiteLLM's ``langfuse_otel`` callback is deliberately not registered. It is
+    unusable against the Langfuse v4 SDK this repo depends on, and it stamps
+    ``llm.cost.total`` on the active span from LiteLLM's own ``response_cost``,
+    which is ``0`` for every proxy-routed model. Langfuse honours a supplied
+    cost instead of deriving one from usage, so the callback forced agent-path
+    generations to $0. Instead, :func:`langfuse_generation` creates LLM-process
+    generations directly and OpenInference covers the agent path, so both price
+    correctly from ``usage_details``. See
+    ``planning-docs/litellm-langfuse-compat.md``.
     """
     global _BOOTSTRAP_DONE  # noqa: PLW0603
     if _BOOTSTRAP_DONE:
         return
-    import litellm  # noqa: PLC0415
-
-    if os.environ.get("LANGFUSE_PUBLIC_KEY"):
-        existing = list(getattr(litellm, "callbacks", []) or [])
-        if "langfuse_otel" not in existing:
-            litellm.callbacks = [*existing, "langfuse_otel"]
 
     # Suppress LiteLLM startup and OTEL noise (mirrors agent_factory.py filter).
     # Bedrock/SageMaker "no botocore" and OTEL proxy-server notices are harmless.
@@ -107,23 +108,31 @@ class _NoopGeneration:
 
 @contextlib.contextmanager
 def langfuse_generation(*, name: str, model: str, input_messages: Any) -> Iterator[Any]:
-    """Emit a Langfuse ``generation`` around one LLM call.
+    """Create a Langfuse ``generation`` around one LLM call.
 
-    We create the generation explicitly rather than relying on LiteLLM's
-    ``langfuse_otel`` callback: that callback emits no generation at all when
-    the call runs inside an already-active Langfuse span, which is every LLMP
-    ``predict`` (they are wrapped in :func:`langfuse_observe`). The result was
-    that token usage — and therefore cost — never reached Langfuse for any
-    LLMP run. Creating it here works nested and keeps model, usage, and
-    payload under our control.
+    LiteLLM's ``langfuse_otel`` callback emits no generation when the call runs
+    inside an already-active Langfuse span, which is every LLM-process
+    ``predict`` because they are wrapped in :func:`langfuse_observe`. Token
+    usage, and so cost, never reached Langfuse for those runs. Creating the
+    generation here works when nested and keeps the model, usage, and payload
+    under this module's control.
 
-    Cost is deliberately not set: Langfuse derives it from ``usage_details``
-    and its own per-model prices, which match the Vector proxy's published
+    Cost is deliberately not set. Langfuse derives it from ``usage_details``
+    against its own per-model prices, which match the Vector proxy's published
     rates.
 
-    Yields a handle exposing ``update(**kwargs)`` — a no-op stand-in when
-    Langfuse is not installed or a generation cannot be started, so predictors
-    remain usable without the ``agentic``/``llm`` extras.
+    ``start_as_current_observation(as_type="generation")`` is a first-class
+    Langfuse v4 instrumentation API. LiteLLM's Langfuse bridge targets the v2
+    SDK, pinning ``langfuse = ^2.45.0``, while this repo requires
+    ``langfuse>=4.5.1``. Support for v4 is BerriAI/litellm#24123, open and
+    unanswered since 2026-03-19. Retire this helper in favour of the callback
+    once that issue is closed and ``langfuse_otel`` is confirmed to emit a
+    generation under an active Langfuse span. For background and the A/B
+    evidence, see ``planning-docs/litellm-langfuse-compat.md``.
+
+    Yields a handle exposing ``update(**kwargs)``. That handle is a no-op
+    stand-in when Langfuse is not installed or a generation cannot be started,
+    so predictors remain usable without the ``agentic`` and ``llm`` extras.
     """
     manager = None
     try:
@@ -361,8 +370,8 @@ async def _one_completion_async(
         usage = getattr(resp, "usage", None)
         in_tok = int(getattr(usage, "prompt_tokens", 0) or 0) if usage is not None else 0
         out_tok = int(getattr(usage, "completion_tokens", 0) or 0) if usage is not None else 0
-        # Log full usage so we can see thinking-token breakdown when available.
-        # The proxy may populate completion_tokens_details.reasoning_tokens.
+        # Full usage exposes the thinking-token breakdown when the proxy
+        # populates completion_tokens_details.reasoning_tokens.
         if usage is not None:
             logger.debug("LLM usage: %s", vars(usage) if hasattr(usage, "__dict__") else usage)
         raw = resp.choices[0].message.content
