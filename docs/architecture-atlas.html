@@ -1,0 +1,915 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Forecasting Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF1F4;
+    --stage: #FBFCFD;
+    --stage-2: #F2F5F7;
+    --ink: #182230;
+    --ink-2: #5A6878;
+    --line: #D7DEE5;
+    --line-soft: #E4E9EE;
+    --data: #127F72;
+    --method: #6456C4;
+    --eval: #A9690E;
+    --fence: #C04B41;
+    --data-bg: rgba(18,127,114,.08);
+    --method-bg: rgba(100,86,196,.08);
+    --eval-bg: rgba(169,105,14,.09);
+    --fence-bg: rgba(192,75,65,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0A0F15;
+      --stage: #111924;
+      --stage-2: #16202D;
+      --ink: #E7EDF3;
+      --ink-2: #93A2B4;
+      --line: #27364a;
+      --line-soft: #1D2937;
+      --data: #3CC2B0;
+      --method: #A79AF2;
+      --eval: #E2A84D;
+      --fence: #E7776C;
+      --data-bg: rgba(60,194,176,.10);
+      --method-bg: rgba(167,154,242,.10);
+      --eval-bg: rgba(226,168,77,.10);
+      --fence-bg: rgba(231,119,108,.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0A0F15;
+    --stage: #111924;
+    --stage-2: #16202D;
+    --ink: #E7EDF3;
+    --ink-2: #93A2B4;
+    --line: #27364a;
+    --line-soft: #1D2937;
+    --data: #3CC2B0;
+    --method: #A79AF2;
+    --eval: #E2A84D;
+    --fence: #E7776C;
+    --data-bg: rgba(60,194,176,.10);
+    --method-bg: rgba(167,154,242,.10);
+    --eval-bg: rgba(226,168,77,.10);
+    --fence-bg: rgba(231,119,108,.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+  .mono, code { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  a { color: inherit; }
+  a.ext { text-decoration: underline; text-underline-offset: 3px; }
+  a.ext:hover { color: var(--ink); }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; container-type: inline-size; }
+  .prose { max-width: 74ch; }
+  .prose p { margin: 0 0 1.1em; text-wrap: pretty; }
+  .prose p:last-child { margin-bottom: 0; }
+
+  /* ---------- hero ---------- */
+  header.hero { padding: 84px 0 0; overflow: hidden; }
+  .hero .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--ink-2); margin-bottom: 22px;
+  }
+  h1 {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 700; font-size: clamp(38px, 6vw, 72px);
+    line-height: 1.05; letter-spacing: -0.025em; text-wrap: balance;
+  }
+  .standfirst {
+    margin-top: 22px; max-width: 66ch;
+    font-size: 19px; color: var(--ink-2); text-wrap: pretty;
+  }
+  .hero-legend { margin-top: 26px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-fig { margin-top: 8px; }
+  .hero-fig svg { width: 100%; height: auto; display: block; }
+
+  /* ---------- route ---------- */
+  .route { margin-top: 26px; }
+  .route ol {
+    list-style: none;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 26px 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px 48px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 14px;
+  }
+  .route a { text-decoration: none; display: flex; gap: 14px; padding: 3px 0; }
+  .route a:hover .rt { text-decoration: underline; }
+  .route .n { color: var(--ink-2); }
+  .route .rd { color: var(--ink-2); }
+
+  /* ---------- sections ---------- */
+  section { padding: 76px 0 60px; }
+  section + section { border-top: 1px solid var(--line-soft); }
+  .sec-eyebrow {
+    display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2);
+  }
+  h2 {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 700; font-size: clamp(26px, 3.4vw, 38px);
+    letter-spacing: -0.015em; line-height: 1.15; text-wrap: balance;
+    margin-bottom: 18px;
+  }
+  h3.sub {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 600; font-size: 20px; margin: 44px 0 12px;
+  }
+  .handoff {
+    margin-top: 44px; display: flex; justify-content: flex-end;
+  }
+  .handoff a {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 14px;
+    color: var(--ink-2); text-decoration: none;
+    border: 1px solid var(--line); border-radius: 999px; padding: 8px 18px;
+  }
+  .handoff a:hover { color: var(--ink); border-color: var(--ink-2); }
+  .refs {
+    margin-top: 28px; font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px; color: var(--ink-2);
+  }
+
+  /* ---------- shared bits (carried from the deck, page-scaled) ---------- */
+  .tag {
+    display: inline-block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    padding: .2em .6em; border-radius: 3px;
+  }
+  .tag.data   { color: var(--data);   background: var(--data-bg); }
+  .tag.method { color: var(--method); background: var(--method-bg); }
+  .tag.eval   { color: var(--eval);   background: var(--eval-bg); }
+  .tag.fence  { color: var(--fence);  background: var(--fence-bg); }
+  code.chip, a.chip {
+    background: var(--stage-2);
+    border: 1px solid var(--line-soft);
+    border-radius: 3px; padding: .08em .4em; font-size: .9em;
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    text-decoration: none;
+  }
+  a.chip:hover { border-color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  svg { display: block; max-width: 100%; height: auto; }
+  svg text { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  figure { margin: 34px 0 0; }
+  figcaption { font-size: 14px; color: var(--ink-2); margin-top: 12px; text-wrap: pretty; max-width: 80ch; }
+
+  .cols { display: grid; gap: 26px; align-items: start; margin-top: 34px; }
+  .cols.c2 { grid-template-columns: 1.35fr 1fr; }
+  .cols.c2 > figure { margin: 0; }
+  .card {
+    background: var(--stage-2);
+    border: 1px solid var(--line-soft);
+    border-radius: 6px; padding: 18px 20px;
+  }
+  .card h3 {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .card p, .card li { font-size: 15px; }
+  .card ul { padding-left: 1.4em; display: grid; gap: 7px; }
+  .card.accent-data   { border-left: 3px solid var(--data); }
+  .card.accent-method { border-left: 3px solid var(--method); }
+  .card.accent-eval   { border-left: 3px solid var(--eval); }
+  .card.accent-fence  { border-left: 3px solid var(--fence); }
+
+  .iface {
+    background: var(--stage-2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 16px 28px; text-align: center; margin: 34px auto 22px; width: fit-content; max-width: 100%;
+  }
+  .iface .name { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 700; font-size: 20px; }
+  .iface code { font-size: 14px; color: var(--ink-2); }
+  .fam-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .fam {
+    border: 1px solid var(--line-soft); border-top: 3px solid var(--line);
+    border-radius: 6px; padding: 16px 16px;
+    background: var(--stage-2);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .fam h3 { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 15.5px; }
+  .fam .members { font-size: 14.5px; color: var(--ink-2); display: grid; gap: 5px; }
+  .fam .note { margin-top: auto; font-size: 13.5px; border-top: 1px dashed var(--line-soft); padding-top: 10px; }
+  .fam.data   { border-top-color: var(--data); }
+  .fam.method { border-top-color: var(--method); }
+  .fam.data h3 { color: var(--data); } .fam.method h3 { color: var(--method); }
+  .metric-strip { margin-top: 22px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+  .metric-strip .m { display: flex; align-items: center; gap: 7px; background: var(--eval-bg); border-radius: 4px; padding: 5px 12px; }
+  .metric-strip .m code { font-weight: 600; color: var(--eval); background: none; border: none; padding: 0; }
+
+  .tablewrap { overflow-x: auto; margin-top: 34px; }
+  /* color/font set explicitly so table cells pick up page tokens */
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; color: var(--ink); font-family: inherit; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+  thead th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2);
+    border-bottom: 1px solid var(--line);
+  }
+  td.c, th.c { text-align: center; }
+  .dot { font-size: 1.15em; line-height: 1; }
+  .dot.data { color: var(--data); } .dot.method { color: var(--method); } .dot.eval { color: var(--eval); }
+  .dot.off { color: var(--ink-2); opacity: .45; }
+  .impl-name { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 600; white-space: nowrap; }
+  .impl-sub { color: var(--ink-2); font-size: .88em; }
+  .conv { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .82em; color: var(--eval); }
+  .matrix { font-size: 13.5px; }
+  .matrix thead th { font-size: 10.5px; letter-spacing: .05em; }
+  .matrix td, .matrix th { padding: 12px 7px; }
+  .matrix .tag { margin-top: 4px; white-space: nowrap; font-size: 10.5px; }
+  .legend-note { font-size: 14px; color: var(--ink-2); margin-top: 14px; max-width: 100ch; }
+  .cmp { width: 100%; }
+  .cmp td:first-child { color: var(--ink-2); font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .86em; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+  .chooser td:first-child { font-weight: 600; white-space: normal; }
+
+  .agent-grid { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 20px; margin-top: 34px; }
+  .agent-grid .card { display: flex; flex-direction: column; gap: 9px; }
+  .field { display: flex; justify-content: space-between; gap: 14px; font-size: 14px; padding: 5px 0; border-bottom: 1px dashed var(--line-soft); }
+  .field:last-of-type { border-bottom: none; }
+  .field code { color: var(--ink); background: none; border: none; padding: 0; }
+  .field span { color: var(--ink-2); text-align: right; }
+  .toolrow {
+    border: 1px solid var(--line-soft); border-radius: 5px; background: var(--stage);
+    padding: 9px 13px; font-size: 14px;
+  }
+  .toolrow b { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 600; }
+  .toolrow .d { color: var(--ink-2); }
+  .agent-grid .card p { font-size: 14.5px !important; }
+  .agent-grid .card > p[style] { margin-top: 6px; }
+
+  .steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 34px; }
+  .steps3 .card { display: flex; flex-direction: column; gap: 10px; }
+  .steps3 .n { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 700; font-size: 21px; }
+  .steps3 code.chip, .steps3 a.chip { display: inline-block; margin-top: auto; align-self: flex-start; }
+  .closing {
+    margin-top: 26px; padding: 18px 24px;
+    border-left: 3px solid var(--method);
+    background: var(--method-bg); border-radius: 0 6px 6px 0;
+    font-size: 17.5px; text-wrap: pretty;
+  }
+
+  footer.colophon {
+    border-top: 1px solid var(--line);
+    padding: 30px 0 60px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px; color: var(--ink-2);
+    display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  }
+
+  @media (max-width: 980px) {
+    .cols.c2, .agent-grid, .steps3 { grid-template-columns: 1fr; }
+    .fam-grid { grid-template-columns: 1fr 1fr; }
+    .route ol { grid-template-columns: 1fr; }
+  }
+  .route a > span:last-child { min-width: 0; }
+  .card { overflow-x: auto; }
+  @media (max-width: 700px) {
+    /* Diagrams keep a readable drawn size and scroll inside their own figure. */
+    figure { overflow-x: auto; }
+    figure svg { min-width: 720px; }
+    .field { flex-wrap: wrap; }
+    .field span { text-align: left; }
+    .chooser, .chooser tbody, .chooser tr, .chooser td { display: block; width: 100%; }
+    .chooser thead { display: none; }
+    .chooser tr { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+    .chooser td { border-bottom: none; padding: 3px 0; }
+    .chooser td:first-child {
+      font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px;
+      text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); margin-bottom: 2px;
+    }
+  }
+  @media (max-width: 620px) {
+    .fam-grid { grid-template-columns: 1fr; }
+    body { font-size: 16px; }
+    .wrap { padding: 0 18px; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Vector Institute · agentic-forecasting · bootcamp atlas</div>
+    <h1>Agentic Forecasting Atlas</h1>
+    <p class="standfirst">The system architecture of the bootcamp repo, read as one continuous story: how a series and its context get fenced behind a cutoff, how predictors — from naive baselines to tool-wielding agents — consume them, how the harness scores the results and judges the reasoning, and how five reference implementations put the same machinery to work. This atlas is the map — the step-by-step worksheets live in <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/tree/main/guides">guides/</a>, and §06–§07 below route you to the right one.</p>
+    <div class="hero-legend">
+      <span class="tag data">data layer</span>
+      <span class="tag method">predictors &amp; agents</span>
+      <span class="tag eval">evaluation harness</span>
+      <span class="tag fence">temporal fence</span>
+    </div>
+  </div>
+  <div class="hero-fig wrap"><svg class="hero-svg" viewBox="0 0 1600 430" role="img" aria-label="A price history and a shelf of cutoff-scoped context documents end at a dashed line labeled as_of; beyond it, nested quantile bands fan outward, annotated as scored by CRPS and carrying a judgeable rationale.">
+    <line x1="60" y1="392" x2="1540" y2="392" stroke="var(--line)" stroke-width="1"/>
+    <polyline points="60,300 140,288 220,310 300,278 380,294 460,262 540,280 620,246 700,266 780,232 860,254 940,224 1020,244 1060,252"
+      fill="none" stroke="var(--data)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+    <polygon points="1060,252 1540,118 1540,388" fill="var(--eval)" opacity="0.10"/>
+    <polygon points="1060,252 1540,176 1540,330" fill="var(--eval)" opacity="0.16"/>
+    <polygon points="1060,252 1540,222 1540,284" fill="var(--eval)" opacity="0.24"/>
+    <line x1="1060" y1="252" x2="1540" y2="252" stroke="var(--eval)" stroke-width="2.5" stroke-dasharray="7 6"/>
+    <line x1="1060" y1="70" x2="1060" y2="392" stroke="var(--fence)" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="1072" y="90" font-size="17" fill="var(--fence)">as_of</text>
+    <text x="1072" y="112" font-size="13" fill="var(--ink-2)">the information cutoff</text>
+    <text x="820" y="215" font-size="13" fill="var(--data)">history the predictor may see</text>
+    <g stroke="var(--data)" fill="var(--data-bg)" stroke-width="1.5">
+      <rect x="180" y="330" width="24" height="30" rx="2"/>
+      <rect x="214" y="330" width="24" height="30" rx="2"/>
+      <rect x="248" y="330" width="24" height="30" rx="2"/>
+    </g>
+    <g stroke="var(--data)" stroke-width="1" opacity="0.55">
+      <line x1="185" y1="339" x2="199" y2="339"/><line x1="185" y1="345" x2="199" y2="345"/><line x1="185" y1="351" x2="196" y2="351"/>
+      <line x1="219" y1="339" x2="233" y2="339"/><line x1="219" y1="345" x2="233" y2="345"/><line x1="219" y1="351" x2="230" y2="351"/>
+      <line x1="253" y1="339" x2="267" y2="339"/><line x1="253" y1="345" x2="267" y2="345"/><line x1="253" y1="351" x2="264" y2="351"/>
+    </g>
+    <text x="286" y="350" font-size="13" fill="var(--ink-2)">context — news · documents — fenced by the same cutoff</text>
+    <text x="1300" y="144" font-size="13" fill="var(--eval)">quantile fan · scored later by CRPS</text>
+    <text x="1300" y="166" font-size="13" fill="var(--ink-2)">+ a rationale you can judge</text>
+  </svg></div>
+  <nav class="wrap route" aria-label="Sections">
+    <ol>
+      <li><a href="#s01"><span class="n">01</span><span><span class="rt">The loop</span> <span class="rd">— how data becomes a scored forecast</span></span></a></li>
+      <li><a href="#s02"><span class="n">02</span><span><span class="rt">The temporal fence</span> <span class="rd">— why the scores can be trusted (mostly)</span></span></a></li>
+      <li><a href="#s03"><span class="n">03</span><span><span class="rt">The predictors</span> <span class="rd">— one interface, four families</span></span></a></li>
+      <li><a href="#s04"><span class="n">04</span><span><span class="rt">The harness</span> <span class="rd">— backtest to develop, evaluate to commit</span></span></a></li>
+      <li><a href="#s05"><span class="n">05</span><span><span class="rt">The agent</span> <span class="rd">— anatomy of an analyst</span></span></a></li>
+      <li><a href="#s06"><span class="n">06</span><span><span class="rt">The implementations</span> <span class="rd">— five instantiations, one architecture</span></span></a></li>
+      <li><a href="#s07"><span class="n">07</span><span><span class="rt">Build your own</span> <span class="rd">— two paths, four guides</span></span></a></li>
+    </ol>
+  </nav>
+</header>
+
+<main>
+
+<section id="s01">
+  <div class="wrap">
+    <div class="sec-eyebrow"><span>01</span><span>System architecture</span></div>
+    <h2>One loop, two layers</h2>
+    <div class="prose">
+      <p>Every experiment in this repo — a two-line naive baseline on gasoline CPI, a curriculum-trained oil analyst — walks the same loop. Data enters through adapters, one <code class="chip">fetch()</code> per source; there is nothing special about the built-in StatCan, FRED, and yfinance adapters, and nothing stops you from wrapping a CSV, an API, or a database the same way. Registered on a <code class="chip">DataService</code>, the data is fenced behind a cutoff, handed to predictors as one fresh context per forecast origin, and comes out the other side as scored, cached, comparable results.</p>
+      <p>That scored loop is Track 1. The same agents can also be used interactively — scenario analysis, monitoring, open-ended Q&amp;A — without emitting a <code class="chip">Prediction</code> the harness can score (Track 2). This atlas is about the scored loop.</p>
+      <p>The two layers matter: the core library <code class="chip">aieng.forecasting</code> owns everything drawn solid below. <strong>You author the dashed pieces</strong> — a dataset, a spec, a predictor lineup — and the loop does the rest.</p>
+    </div>
+
+  <figure>
+  <svg viewBox="0 0 1180 470" role="img" aria-label="Data flows from sources through adapters into a DataService with a cutoff enforcer, which produces per-origin forecast contexts. Specs and a predictor lineup feed the backtest/evaluate loop, which scores predictions and writes cached results feeding a leaderboard.">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/>
+      </marker>
+    </defs>
+    <!-- Row A: data layer -->
+    <rect x="20" y="52" width="160" height="112" rx="5" fill="var(--data-bg)" stroke="var(--data)"/>
+    <text x="32" y="74" font-size="14" font-weight="600" fill="var(--data)">Data sources</text>
+    <text x="32" y="96" font-size="12.5" fill="var(--ink)">StatCan · FRED</text>
+    <text x="32" y="114" font-size="12.5" fill="var(--ink)">yfinance</text>
+    <rect x="28" y="121" width="118" height="24" rx="3" fill="none" stroke="var(--ink-2)" stroke-dasharray="4 3"/>
+    <text x="36" y="137" font-size="12.5" fill="var(--ink)">your source</text>
+    <text x="28" y="156" font-size="10" fill="var(--ink-2)">CSV · API · DB · files</text>
+
+    <line x1="180" y1="102" x2="232" y2="102" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <text x="206" y="92" font-size="11" fill="var(--ink-2)" text-anchor="middle">fetch</text>
+
+    <rect x="236" y="52" width="212" height="112" rx="5" fill="var(--data-bg)" stroke="var(--data)"/>
+    <text x="248" y="74" font-size="14" font-weight="600" fill="var(--data)">Adapters</text>
+    <text x="248" y="96" font-size="12.5" fill="var(--ink)">one fetch() per source</text>
+    <text x="248" y="116" font-size="12" fill="var(--ink-2)">timestamp · value ·</text>
+    <text x="248" y="133" font-size="12" fill="var(--ink-2)">released_at</text>
+    <text x="248" y="153" font-size="11" fill="var(--ink-2)">cached under data/ by fetch scripts</text>
+
+    <line x1="448" y1="102" x2="500" y2="102" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <text x="476" y="92" font-size="10.5" fill="var(--ink-2)" text-anchor="middle">register</text>
+
+    <rect x="504" y="52" width="222" height="112" rx="5" fill="var(--data-bg)" stroke="var(--data)"/>
+    <text x="516" y="74" font-size="14" font-weight="600" fill="var(--data)">DataService</text>
+    <text x="516" y="94" font-size="12" fill="var(--ink-2)">series_id → frame + metadata</text>
+    <rect x="516" y="106" width="198" height="44" rx="3" fill="var(--fence-bg)" stroke="var(--fence)"/>
+    <text x="526" y="124" font-size="12.5" font-weight="600" fill="var(--fence)">CutoffEnforcer</text>
+    <text x="526" y="141" font-size="11.5" fill="var(--ink)">released_at ≤ as_of</text>
+
+    <line x1="726" y1="102" x2="836" y2="102" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <text x="781" y="92" font-size="11" fill="var(--ink-2)" text-anchor="middle">context(as_of)</text>
+
+    <rect x="840" y="52" width="212" height="112" rx="5" fill="var(--data-bg)" stroke="var(--data)"/>
+    <text x="852" y="74" font-size="14" font-weight="600" fill="var(--data)">ForecastContext</text>
+    <text x="852" y="96" font-size="12.5" fill="var(--ink)">get_series(id)</text>
+    <text x="852" y="114" font-size="12.5" fill="var(--ink)">get_documents(src)</text>
+    <text x="852" y="136" font-size="11.5" fill="var(--ink-2)">everything a predictor sees,</text>
+    <text x="852" y="152" font-size="11.5" fill="var(--ink-2)">scoped to one origin date</text>
+
+    <!-- elbow down into loop -->
+    <path d="M 946 164 L 946 216 L 645 216 L 645 258" fill="none" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <text x="958" y="204" font-size="11" fill="var(--ink-2)">one fresh context per origin</text>
+
+    <!-- Row B: harness -->
+    <rect x="20" y="258" width="390" height="80" rx="5" fill="var(--eval-bg)" stroke="var(--eval)" stroke-dasharray="5 4"/>
+    <text x="32" y="282" font-size="14" font-weight="600" fill="var(--eval)">Spec — specs/*.yaml</text>
+    <text x="32" y="304" font-size="12.5" fill="var(--ink)">task · target_series_id · horizons</text>
+    <text x="32" y="323" font-size="12.5" fill="var(--ink)">window · stride · warmup · spec_id</text>
+
+    <rect x="20" y="356" width="390" height="80" rx="5" fill="var(--method-bg)" stroke="var(--method)" stroke-dasharray="5 4"/>
+    <text x="32" y="380" font-size="14" font-weight="600" fill="var(--method)">Predictor lineup — in code</text>
+    <text x="32" y="402" font-size="12.5" fill="var(--ink)">baselines · Darts · LLM-Process · agents</text>
+    <text x="32" y="421" font-size="12.5" fill="var(--ink-2)">one shared interface (§03)</text>
+
+    <line x1="410" y1="298" x2="466" y2="298" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <line x1="410" y1="396" x2="466" y2="396" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <text x="438" y="288" font-size="11" fill="var(--ink-2)" text-anchor="middle">origins</text>
+    <text x="438" y="386" font-size="11" fill="var(--ink-2)" text-anchor="middle">predict</text>
+
+    <rect x="470" y="258" width="350" height="178" rx="5" fill="var(--eval-bg)" stroke="var(--eval)" stroke-width="1.5"/>
+    <text x="484" y="284" font-size="15" font-weight="700" fill="var(--eval)">backtest() / evaluate()</text>
+    <text x="484" y="312" font-size="12.5" fill="var(--ink)">for each origin:</text>
+    <text x="498" y="333" font-size="12.5" fill="var(--ink)">1  build the cutoff-scoped context</text>
+    <text x="498" y="353" font-size="12.5" fill="var(--ink)">2  predictor.predict(task, context)</text>
+    <text x="498" y="373" font-size="12.5" fill="var(--ink)">3  resolve outcomes from later data</text>
+    <text x="498" y="393" font-size="12.5" fill="var(--ink)">4  score — CRPS · Brier · RPS</text>
+    <text x="484" y="420" font-size="11.5" fill="var(--ink-2)">retries per origin · skips, never fabricates</text>
+
+    <line x1="820" y1="300" x2="874" y2="300" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <rect x="878" y="258" width="282" height="50" rx="5" fill="var(--eval-bg)" stroke="var(--eval)"/>
+    <text x="890" y="279" font-size="13.5" font-weight="600" fill="var(--eval)">BacktestResult</text>
+    <text x="890" y="298" font-size="11.5" fill="var(--ink-2)">predictions · scores · mean_score</text>
+    <line x1="1019" y1="308" x2="1019" y2="322" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <rect x="878" y="326" width="282" height="46" rx="5" fill="var(--stage-2)" stroke="var(--line)"/>
+    <text x="890" y="345" font-size="12" fill="var(--ink)">data/predictions/&lt;spec_id&gt;/…yaml</text>
+    <text x="890" y="362" font-size="11.5" fill="var(--ink-2)">cached — crash-safe, instant re-runs</text>
+    <line x1="1019" y1="372" x2="1019" y2="386" stroke="var(--ink-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+    <rect x="878" y="390" width="282" height="46" rx="5" fill="var(--stage-2)" stroke="var(--line)"/>
+    <text x="890" y="409" font-size="12" fill="var(--ink)">leaderboard · analysis · traces</text>
+    <text x="890" y="426" font-size="11.5" fill="var(--ink-2)">mean ± SE · per-horizon · rationales</text>
+  </svg>
+  <figcaption>Dashed boxes are authored per use case; solid boxes ship in the core library. The red enforcer is the subject of the next section.</figcaption>
+  </figure>
+    <div class="refs">aieng-forecasting/aieng/forecasting/{data, evaluation, methods} · <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/01-onboard-a-dataset.md">guides/01</a>–<a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/02-create-an-experiment.md">02</a> walk this loop end to end</div>
+    <div class="handoff"><a href="#s02">That red box in the middle is the whole reason the loop can be trusted → 02 The temporal fence</a></div>
+  </div>
+</section>
+
+<section id="s02">
+  <div class="wrap">
+    <div class="sec-eyebrow"><span>02</span><span>The load-bearing idea</span></div>
+    <h2>The temporal fence</h2>
+    <div class="prose">
+      <p>A backtest is only honest if every forecast is made from what was <strong>knowable at its origin</strong> — and "knowable" is not the same as "existed". A market close exists the moment the bell rings but publishes the next morning; official statistics trail their reference month by weeks. The repo encodes this as data, not discipline: every row carries a <code class="chip">released_at</code> stamp alongside its timestamp (absent the stamp, the timestamp stands in), and predictors can only see through the fence it defines. The same fence covers context — news snapshots and documents are cutoff-scoped exactly like series rows.</p>
+    </div>
+    <div class="cols c2">
+  <figure>
+  <svg viewBox="0 0 640 330" role="img" aria-label="Three series lanes with observation dots against a dashed as_of fence. Same-day releases pass up to the fence; market closes lag one day; official statistics lag weeks — lagged observations near the fence are blocked even though their timestamps precede it.">
+    <line x1="430" y1="18" x2="430" y2="284" stroke="var(--fence)" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="430" y="304" font-size="13" fill="var(--fence)" text-anchor="middle">as_of</text>
+    <text x="240" y="34" font-size="11.5" fill="var(--ink-2)" text-anchor="middle">← visible in ForecastContext</text>
+    <text x="530" y="34" font-size="11.5" fill="var(--ink-2)" text-anchor="middle">the future →</text>
+
+    <!-- lane 1 -->
+    <text x="20" y="76" font-size="12.5" fill="var(--ink)">spot close</text>
+    <text x="20" y="93" font-size="11" fill="var(--ink-2)">released_at = t</text>
+    <line x1="180" y1="86" x2="620" y2="86" stroke="var(--line-soft)"/>
+    <circle cx="200" cy="86" r="5" fill="var(--data)"/><circle cx="240" cy="86" r="5" fill="var(--data)"/><circle cx="280" cy="86" r="5" fill="var(--data)"/><circle cx="320" cy="86" r="5" fill="var(--data)"/><circle cx="360" cy="86" r="5" fill="var(--data)"/><circle cx="400" cy="86" r="5" fill="var(--data)"/><circle cx="422" cy="86" r="5" fill="var(--data)"/>
+    <circle cx="470" cy="86" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/><circle cx="510" cy="86" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/><circle cx="550" cy="86" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/><circle cx="590" cy="86" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/>
+
+    <!-- lane 2 -->
+    <text x="20" y="156" font-size="12.5" fill="var(--ink)">market close</text>
+    <text x="20" y="173" font-size="11" fill="var(--ink-2)">released_at = t+1 bday</text>
+    <line x1="180" y1="166" x2="620" y2="166" stroke="var(--line-soft)"/>
+    <circle cx="200" cy="166" r="5" fill="var(--data)"/><circle cx="240" cy="166" r="5" fill="var(--data)"/><circle cx="280" cy="166" r="5" fill="var(--data)"/><circle cx="320" cy="166" r="5" fill="var(--data)"/><circle cx="360" cy="166" r="5" fill="var(--data)"/><circle cx="400" cy="166" r="5" fill="var(--data)"/>
+    <circle cx="422" cy="166" r="5" fill="none" stroke="var(--fence)" stroke-width="1.6"/>
+    <circle cx="470" cy="166" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/><circle cx="510" cy="166" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/><circle cx="550" cy="166" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/><circle cx="590" cy="166" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/>
+    <text x="420" y="196" font-size="10.5" fill="var(--fence)" text-anchor="end">exists, but publishes tomorrow → blocked</text>
+
+    <!-- lane 3 -->
+    <text x="20" y="236" font-size="12.5" fill="var(--ink)">official stats</text>
+    <text x="20" y="253" font-size="11" fill="var(--ink-2)">released_at = t+21 days</text>
+    <line x1="180" y1="246" x2="620" y2="246" stroke="var(--line-soft)"/>
+    <circle cx="200" cy="246" r="5" fill="var(--data)"/><circle cx="240" cy="246" r="5" fill="var(--data)"/><circle cx="280" cy="246" r="5" fill="var(--data)"/><circle cx="320" cy="246" r="5" fill="var(--data)"/>
+    <circle cx="360" cy="246" r="5" fill="none" stroke="var(--fence)" stroke-width="1.6"/><circle cx="400" cy="246" r="5" fill="none" stroke="var(--fence)" stroke-width="1.6"/><circle cx="422" cy="246" r="5" fill="none" stroke="var(--fence)" stroke-width="1.6"/>
+    <circle cx="470" cy="246" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/><circle cx="510" cy="246" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/><circle cx="550" cy="246" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/><circle cx="590" cy="246" r="5" fill="none" stroke="var(--ink-2)" opacity="0.5"/>
+    <text x="420" y="276" font-size="10.5" fill="var(--fence)" text-anchor="end">publication lag → blocked</text>
+  </svg>
+  <figcaption>Filled = visible through <code class="chip">context(as_of)</code>. Hollow red = recorded but not yet released — the stamp, not the timestamp, decides.</figcaption>
+  </figure>
+  <div style="display:flex; flex-direction:column; gap:1.2cqw;">
+    <div class="card accent-fence">
+      <h3>How it's enforced</h3>
+      <ul>
+        <li>Predictors receive a <b>ForecastContext</b>, never the raw <code class="chip">DataService</code> — through that path, series leakage is structurally impossible.</li>
+        <li>Every series read routes through the <b>CutoffEnforcer</b> — keep rows where <code class="chip">released_at ≤ as_of</code>, falling back to <code class="chip">timestamp</code>; document reads are filtered by publication date the same way.</li>
+        <li>Honest <code class="chip">released_at</code> stamps are <em>your</em> responsibility when onboarding data — the one leak the library can't catch for you.</li>
+      </ul>
+    </div>
+    <div class="card accent-fence">
+      <h3>The exception: agents leak</h3>
+      <p style="margin-bottom:.7cqw;">An agent can leak through its tools, not the database — a web search, or any tool that trusts a model-supplied cutoff. The harness pushes back — a seeded cutoff plus an independent verifier (§05) — but the filter sometimes fails. <b>Agent backtests are optimistic by default</b>; audit traces.</p>
+      <p>More tool freedom, less information control — that's structural. It pushes evaluation toward fenced, pre-cached context (less agency) or <b>live forecasting</b>, where there is no future to scrape — parametric knowledge and the model's training cutoff still apply.</p>
+    </div>
+  </div>
+  </div>
+    <div class="refs">data/cutoff.py · data/context.py · data/service.py · <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/01-onboard-a-dataset.md#choosing-released_at-honestly">guide 01</a> — choosing released_at honestly</div>
+    <div class="handoff"><a href="#s03">With the data fenced, the question becomes who consumes it → 03 The predictors</a></div>
+  </div>
+</section>
+
+<section id="s03">
+  <div class="wrap">
+    <div class="sec-eyebrow"><span>03</span><span>Methods</span></div>
+    <h2>One interface, four families</h2>
+    <div class="prose">
+      <p>Everything that forecasts implements the same two-member contract: a <code class="chip">predictor_id</code> and a <code class="chip">predict(task, context)</code> that returns one prediction per horizon. That is the whole trick that makes the leaderboard possible — a naive baseline, a gradient-boosted model, a single structured LLM call, and a multi-turn agent all answer the same question from the same fenced context, so their scores mean the same thing.</p>
+      <p>The four families below are less a taxonomy than an escalation of how much machinery sits between the context and the answer. Keep the left two honest and strong: <strong>an agent is only as interesting as its margin over the best baseline you can field.</strong></p>
+    </div>
+
+    <div class="iface">
+      <div class="name">Predictor</div>
+      <code>predictor_id: str&nbsp;&nbsp;·&nbsp;&nbsp;predict(task, context) → list[Prediction]</code>
+    </div>
+    <div class="fam-grid">
+      <div class="fam data">
+        <h3>Baselines</h3>
+        <div class="members"><span>LastValue</span><span>HistoricalFrequency</span><span>CategoricalFrequency</span></div>
+        <p class="note">The calibration floor. Anything that loses to naive is a finding.</p>
+      </div>
+      <div class="fam data">
+        <h3>Numerical</h3>
+        <div class="members"><span>AutoARIMA · ETS · Kalman</span><span>LinearRegression · LightGBM</span><span>Prophet (impl-local)</span></div>
+        <p class="note">Darts-backed (Prophet aside), covariate-aware, probabilistic via sampling.</p>
+      </div>
+      <div class="fam method">
+        <h3>LLM Processes</h3>
+        <div class="members"><span>QuantileGrid</span><span>SampledTrajectory</span><span>Binary / Categorical prob.</span></div>
+        <p class="note">One structured LLM call — series + metadata in, distribution out. No tools.</p>
+      </div>
+      <div class="fam method">
+        <h3>Agentic</h3>
+        <div class="members"><span>AgentPredictor</span><span>= AgentConfig + prompt</span><span>&nbsp;&nbsp;builder + output schema</span></div>
+        <p class="note">A multi-turn ADK agent with tools, wrapped to honor the same contract (§05).</p>
+      </div>
+    </div>
+    <div class="metric-strip">
+      <span style="color:var(--ink-2)">The task's payload type fixes the metric:</span>
+      <span class="m">continuous → <code>CRPS</code></span>
+      <span class="m">binary → <code>Brier</code></span>
+      <span class="m">categorical → <code>RPS</code></span>
+      <span style="color:var(--ink-2)">— lower is better, everywhere.</span>
+    </div>
+    <div class="refs">evaluation/predictor.py · methods/{baselines, numerical, llm_processes, agentic} · LastValuePredictor is the annotated reference implementation</div>
+    <div class="handoff"><a href="#s04">A shared interface makes methods comparable; the harness makes the comparison fair → 04 The harness</a></div>
+  </div>
+</section>
+
+<section id="s04">
+  <div class="wrap">
+    <div class="sec-eyebrow"><span>04</span><span>Evaluation harness</span></div>
+    <h2>Backtest to develop, evaluate to commit</h2>
+    <div class="prose">
+      <p>Specs are experiment design, kept in YAML and out of code: a task, a window of forecast origins, a stride, a warmup — or, for irregular calendars like BoC's meeting dates, an explicit <code class="chip">origin_dates</code> list. Because the lineup and the spec are independent, the same predictors run against a two-origin smoke spec, a full development backtest, and a protected evaluation — <strong>without edits</strong>.</p>
+      <p>The two loops answer different questions. <code class="chip">backtest()</code> is the open loop you run freely while developing and tuning. <code class="chip">evaluate()</code> is for the answer you commit to — and tuning against it destroys the answer. Attach an <code class="chip">EvalTracker</code> and a <code class="chip">max_runs</code> cap and the harness refuses extra runs and never caches, so spend stays visible. Call it without a tracker and the budget does not apply.</p>
+    </div>
+    <div class="cols c2">
+  <figure>
+  <svg viewBox="0 0 660 320" role="img" aria-label="An example development backtest window over 2025 with warmup, regular origin ticks and horizon resolution arcs, followed by a disjoint protected evaluation window over 2026 with a run budget. Warmup length and horizons come from the spec.">
+    <line x1="20" y1="150" x2="640" y2="150" stroke="var(--line)"/>
+    <text x="30" y="298" font-size="12" fill="var(--ink-2)">2025</text>
+    <text x="596" y="298" font-size="12" fill="var(--ink-2)">2026</text>
+
+    <rect x="20" y="120" width="52" height="60" fill="var(--line-soft)"/>
+    <text x="22" y="94" font-size="11" fill="var(--ink-2)">warmup</text>
+    <text x="22" y="109" font-size="11" fill="var(--ink-2)">from the spec</text>
+
+    <rect x="72" y="120" width="330" height="60" rx="4" fill="var(--eval-bg)" stroke="var(--eval)"/>
+    <text x="88" y="212" font-size="13" font-weight="600" fill="var(--eval)">development backtest</text>
+    <text x="88" y="231" font-size="11.5" fill="var(--ink-2)">open loop · cached · run freely</text>
+
+    <line x1="100" y1="120" x2="100" y2="112" stroke="var(--eval)" stroke-width="2"/>
+    <line x1="140" y1="120" x2="140" y2="112" stroke="var(--eval)" stroke-width="2"/>
+    <line x1="180" y1="120" x2="180" y2="112" stroke="var(--eval)" stroke-width="2"/>
+    <line x1="220" y1="120" x2="220" y2="112" stroke="var(--eval)" stroke-width="2"/>
+    <line x1="260" y1="120" x2="260" y2="112" stroke="var(--eval)" stroke-width="2"/>
+    <line x1="300" y1="120" x2="300" y2="112" stroke="var(--eval)" stroke-width="2"/>
+    <line x1="340" y1="120" x2="340" y2="112" stroke="var(--eval)" stroke-width="2"/>
+    <line x1="380" y1="120" x2="380" y2="112" stroke="var(--eval)" stroke-width="2"/>
+    <text x="352" y="98" font-size="11" fill="var(--ink-2)" text-anchor="middle">origins — every stride-th step</text>
+
+    <path d="M 180 150 Q 200 62 220 150" fill="none" stroke="var(--ink-2)" stroke-width="1.3"/>
+    <path d="M 180 150 Q 210 44 240 150" fill="none" stroke="var(--ink-2)" stroke-width="1.3"/>
+    <path d="M 180 150 Q 226 28 272 150" fill="none" stroke="var(--ink-2)" stroke-width="1.3"/>
+    <circle cx="220" cy="150" r="3.5" fill="var(--ink-2)"/><circle cx="240" cy="150" r="3.5" fill="var(--ink-2)"/><circle cx="272" cy="150" r="3.5" fill="var(--ink-2)"/>
+    <text x="292" y="52" font-size="11" fill="var(--ink-2)">horizons resolve</text>
+    <text x="292" y="68" font-size="11" fill="var(--ink-2)">against later observations</text>
+
+    <text x="425" y="196" font-size="11" fill="var(--ink-2)" text-anchor="middle">disjoint</text>
+
+    <rect x="448" y="120" width="176" height="60" rx="4" fill="var(--fence-bg)" stroke="var(--fence)" stroke-width="1.5"/>
+    <text x="448" y="212" font-size="13" font-weight="600" fill="var(--fence)">protected eval</text>
+    <text x="448" y="231" font-size="11.5" fill="var(--ink-2)">held-out · budgeted · uncached</text>
+    <rect x="524" y="88" width="14" height="11" rx="2" fill="none" stroke="var(--fence)" stroke-width="1.6"/>
+    <path d="M 527 88 v-4 a4 4 0 0 1 8 0 v4" fill="none" stroke="var(--fence)" stroke-width="1.6"/>
+    <text x="548" y="98" font-size="11" fill="var(--fence)">max_runs</text>
+    <text x="448" y="254" font-size="11" fill="var(--ink-2)">end trails the data</text>
+    <text x="448" y="269" font-size="11" fill="var(--ink-2)">by ≥ max(horizons)</text>
+  </svg>
+  <figcaption>An energy / S&amp;P-shaped example (2025 backtest, 2026 eval). Every origin needs <code class="chip">warmup</code> history behind it — 250 trading days on those specs, 24 months on CPI, 8 meetings on BoC — and all horizons resolvable ahead of it, or it is silently skipped.</figcaption>
+  </figure>
+  <div style="display:flex; flex-direction:column; gap:1.1cqw;">
+    <div class="card accent-eval" style="padding-top:.9cqw;">
+      <table class="cmp">
+        <thead><tr><th></th><th><code>backtest()</code></th><th><code>evaluate()</code></th></tr></thead>
+        <tbody>
+          <tr><td>purpose</td><td>develop &amp; tune</td><td>the committed answer</td></tr>
+          <tr><td>runs</td><td>unlimited</td><td><code class="chip">max_runs</code> budget, if an <code class="chip">EvalTracker</code> is attached</td></tr>
+          <tr><td>caching</td><td>cached &amp; resumable</td><td>never — spend stays visible</td></tr>
+          <tr><td>window</td><td>historical dev window</td><td>held-out, often post-LLM-cutoff</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Two protection styles in the repo</h3>
+      <p><b>Enforced</b> — <code class="chip">EvalSpec + max_runs</code> (getting_started, S&amp;P 500, BoC). <b>Convention</b> — energy's notebook 06: disjoint 2026 window, run-guards defaulting to committed artifacts, checksummed agent state.</p>
+    </div>
+  </div>
+  </div>
+    <div class="refs">evaluation/{backtest, eval, artifacts}.py · implementations/*/specs/*.yaml · the results cache is keyed by ids, never by spec contents — bump spec_id when the window changes · <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/02-create-an-experiment.md#step-5--understand-the-protected-eval-before-you-need-it">guide 02</a> — specs, the cache-by-id gotcha, protected eval · <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/04-audit-your-results.md#audit-3--decompose-the-mean">guide 04</a> — don't believe the mean</div>
+    <div class="handoff"><a href="#s05">The harness treats an agent like any other predictor. Inside, it is anything but → 05 The agent</a></div>
+  </div>
+</section>
+
+<section id="s05">
+  <div class="wrap">
+    <div class="sec-eyebrow"><span>05</span><span>The agent stack</span></div>
+    <h2>Anatomy of an analyst agent</h2>
+    <div class="prose">
+      <p><strong>Identity</strong> (what the agent is) and <strong>role</strong> (its job in one experiment) are deliberately separate objects. The identity — persona, toolbelt, skills, model — is an <code class="chip">AgentConfig</code>; the role — what payload it sees per origin and what structured forecast it must return — lives on the <code class="chip">AgentPredictor</code> that wraps it. One identity can play many tasks, and rival strategies can play the same task fairly.</p>
+      <p>The capabilities column is where the fence from §02 gets stress-tested: the search tool runs a grounded sub-agent whose brief passes through an independent verifier before the analyst ever sees it. It reduces leakage; it does not eliminate it.</p>
+    </div>
+
+  <div class="agent-grid">
+    <div class="card accent-method">
+      <h3 style="color:var(--method)">Identity — AgentConfig</h3>
+      <div class="field"><code>name</code><span>keys the predictor_id</span></div>
+      <div class="field"><code>instruction</code><span>persona + supplements</span></div>
+      <div class="field"><code>model</code><span>LITE / ADVANCED</span></div>
+      <div class="field"><code>context_retrieval</code><span>search sub-agent</span></div>
+      <div class="field"><code>code_execution</code><span>E2B sandbox</span></div>
+      <div class="field"><code>function_tools</code><span>e.g. run_forecast</span></div>
+      <div class="field"><code>extra_tools</code><span>e.g. skill-mutation tools</span></div>
+      <div class="field"><code>skills_dirs</code><span>SKILL.md playbooks</span></div>
+      <p style="font-size:clamp(8px,1.05cqw,15px); color:var(--ink-2); margin-top:.5cqw;">Composed from a <b>toolbelt</b> in the energy starter agent — one <code class="chip">ToolSpec</code> per capability, folded onto the config; the other starters set the same fields directly. Adding a tool is one line.</p>
+    </div>
+    <div class="card">
+      <h3>Capabilities — build_adk_agent → tools</h3>
+      <figure style="margin-bottom:.7cqw;">
+      <svg viewBox="0 0 560 118" role="img" aria-label="The search_web pipeline: a query goes to a grounded search sub-agent, its brief passes through an independent verifier model which either returns the filtered brief or, after three failed attempts, a verification-failed sentinel.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker>
+          <marker id="arF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--fence)"/></marker>
+        </defs>
+        <rect x="4" y="34" width="86" height="40" rx="4" fill="var(--method-bg)" stroke="var(--method)"/>
+        <text x="47" y="52" font-size="11.5" fill="var(--ink)" text-anchor="middle">search_web</text>
+        <text x="47" y="67" font-size="10" fill="var(--ink-2)" text-anchor="middle">query, cutoff</text>
+        <line x1="90" y1="54" x2="122" y2="54" stroke="var(--ink-2)" stroke-width="1.3" marker-end="url(#ar2)"/>
+        <rect x="126" y="26" width="132" height="56" rx="4" fill="var(--stage-2)" stroke="var(--line)"/>
+        <text x="192" y="46" font-size="11.5" fill="var(--ink)" text-anchor="middle">grounded search</text>
+        <text x="192" y="61" font-size="10" fill="var(--ink-2)" text-anchor="middle">sub-agent · own</text>
+        <text x="192" y="74" font-size="10" fill="var(--ink-2)" text-anchor="middle">instruction</text>
+        <line x1="258" y1="54" x2="290" y2="54" stroke="var(--ink-2)" stroke-width="1.3" marker-end="url(#ar2)"/>
+        <text x="274" y="44" font-size="9.5" fill="var(--ink-2)" text-anchor="middle">brief</text>
+        <rect x="294" y="26" width="118" height="56" rx="4" fill="var(--fence-bg)" stroke="var(--fence)"/>
+        <text x="353" y="46" font-size="11.5" fill="var(--fence)" text-anchor="middle">verifier LLM</text>
+        <text x="353" y="61" font-size="10" fill="var(--ink-2)" text-anchor="middle">independent model,</text>
+        <text x="353" y="74" font-size="10" fill="var(--ink-2)" text-anchor="middle">strips post-cutoff</text>
+        <path d="M 353 26 Q 300 0 196 23" fill="none" stroke="var(--fence)" stroke-width="1.1" stroke-dasharray="3 3" marker-end="url(#arF)"/>
+        <text x="252" y="10" font-size="9.5" fill="var(--fence)">≤ 3 attempts</text>
+        <line x1="412" y1="54" x2="444" y2="54" stroke="var(--ink-2)" stroke-width="1.3" marker-end="url(#ar2)"/>
+        <rect x="448" y="20" width="108" height="34" rx="4" fill="var(--data-bg)" stroke="var(--data)"/>
+        <text x="502" y="41" font-size="10.5" fill="var(--data)" text-anchor="middle">filtered brief</text>
+        <rect x="448" y="62" width="108" height="34" rx="4" fill="none" stroke="var(--fence)" stroke-dasharray="4 3"/>
+        <text x="502" y="76" font-size="8.2" fill="var(--fence)" text-anchor="middle">[SEARCH_VERIFICATION</text>
+        <text x="502" y="88" font-size="8.2" fill="var(--fence)" text-anchor="middle">_FAILED]</text>
+      </svg>
+      </figure>
+      <div class="toolrow"><b>run_code</b> <span class="d">— E2B cloud sandbox. Fresh sandbox per call: prompt for self-contained scripts, batch-job style.</span></div>
+      <div class="toolrow"><b>run_forecast</b> <span class="d">— AutoARIMA behind a fixed, auditable interface. Statistics without code generation.</span></div>
+      <div class="toolrow"><b>SkillToolset</b> <span class="d">— SKILL.md playbooks, listed up front, loaded on demand. The adaptive agent's learned strategy is a <em>mutable</em> skill, edited through dedicated extra_tools.</span></div>
+    </div>
+    <div class="card accent-method">
+      <h3 style="color:var(--method)">Role — AgentPredictor</h3>
+      <div class="field"><code>prompt_builder</code><span>task + context → payload</span></div>
+      <div class="field"><code>output_schema</code><span>structured forecast → Prediction</span></div>
+      <p style="font-size:clamp(8.5px,1.12cqw,16px); margin-top:.4cqw;">The payload carries <code class="chip">as_of</code>, horizons, quantile levels, and compressed history — wrap the builder to inject anything else: pre-cached news, engineered features, prior forecasts.</p>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:.6cqw;">
+        <div class="toolrow" style="border-color:var(--fence);"><b style="color:var(--fence)">__as_of__</b> <span class="d">— the harness seeds the session cutoff, overriding whatever the model passes to search. Necessary, not sufficient: verification can fail, so agent backtests stay optimistic (§02).</span></div>
+        <div class="toolrow"><b>Langfuse</b> <span class="d">— with tracing configured, every prediction carries its trace URL. Read one full trace before trusting a score; guide 04 turns that habit into a method.</span></div>
+      </div>
+    </div>
+  </div>
+    <div class="refs">methods/agentic/{agent_factory, predictor}.py · analyst_agent (energy, BoC) · starter_agent (#1–#4) · <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/03-customize-agent-strategy.md">guide 03</a> — every customization lever, with a worked change for each · <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/03-customize-agent-strategy.md#which-starter-are-you-on">which starter you are on — toolbelt vs toggles</a></div>
+    <div class="handoff"><a href="#s06">That is the architecture in full. Here is how five real problems put it to work → 06 The implementations</a></div>
+  </div>
+</section>
+
+<section id="s06">
+  <div class="wrap">
+    <div class="sec-eyebrow"><span>06</span><span>Reference implementations</span></div>
+    <h2>Five instantiations of one architecture</h2>
+    <div class="prose">
+      <p>Same loop, same interface, same fence — different data, payloads, and machinery switched on. The matrix reads horizontally as "what does this implementation exercise" and vertically as "where do I find a working example of this component".</p>
+    </div>
+
+  <div class="tablewrap">
+  <table class="matrix">
+    <thead><tr>
+      <th>#&nbsp;&nbsp;Implementation</th><th>Target · payload</th>
+      <th class="c">Covariates</th><th class="c">LLM-Process</th><th class="c">Agent predictors</th><th class="c">Code exec</th><th class="c">Adaptive skills</th><th class="c">Budgeted eval</th><th class="c">Docs / reports</th><th class="c">LLM judge</th><th class="c">Irregular origins</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="impl-name">0&nbsp; getting_started</span><br><span class="impl-sub">the smallest end-to-end loop</span></td>
+        <td>CA gasoline CPI, 1&nbsp;mo<br><span class="tag eval">continuous</span></td>
+        <td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td>
+        <td class="c"><span class="dot eval">●</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td>
+      </tr>
+      <tr>
+        <td><span class="impl-name">1&nbsp; sp500_forecasting</span><br><span class="impl-sub">leak-safe covariate discipline</span></td>
+        <td>cumulative log returns over 1/5/21&nbsp;bd<br><span class="tag eval">continuous</span></td>
+        <td class="c"><span class="dot data">●</span></td><td class="c"><span class="dot method">●</span></td><td class="c"><span class="dot method">○</span></td><td class="c"><span class="dot method">○</span></td><td class="c"><span class="dot off">—</span></td>
+        <td class="c"><span class="dot eval">●</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td>
+      </tr>
+      <tr>
+        <td><span class="impl-name">2&nbsp; food_price</span><br><span class="impl-sub">report-grounded prompting</span></td>
+        <td>food CPI: aggregate + 8 sub-indices, 6–17&nbsp;mo<br><span class="tag eval">continuous ×9</span></td>
+        <td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot method">●</span></td><td class="c"><span class="dot method">○</span></td><td class="c"><span class="dot method">○</span></td><td class="c"><span class="dot off">—</span></td>
+        <td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot data">●</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td>
+      </tr>
+      <tr>
+        <td><span class="impl-name">3&nbsp; energy_oil</span><br><span class="impl-sub">the agentic staircase</span></td>
+        <td>daily WTI, 5/10/21&nbsp;bd<br><span class="tag eval">continuous + binary</span></td>
+        <td class="c"><span class="dot data">●</span></td><td class="c"><span class="dot method">●</span></td><td class="c"><span class="dot method">●</span></td><td class="c"><span class="dot method">●</span></td><td class="c"><span class="dot method">●</span></td>
+        <td class="c"><span class="conv">conv.</span></td><td class="c"><span class="dot data">●</span></td><td class="c"><span class="dot off">—</span></td><td class="c"><span class="dot off">—</span></td>
+      </tr>
+      <tr>
+        <td><span class="impl-name">4&nbsp; boc_rate_decisions</span><br><span class="impl-sub">judged categorical reasoning</span></td>
+        <td>cut / hold / hike per meeting<br><span class="tag eval">categorical</span></td>
+        <td class="c"><span class="dot data">●</span></td><td class="c"><span class="dot method">●</span></td><td class="c"><span class="dot method">●</span></td><td class="c"><span class="dot method">○</span></td><td class="c"><span class="dot off">—</span></td>
+        <td class="c"><span class="dot eval">●</span></td><td class="c"><span class="dot data">●</span></td><td class="c"><span class="dot eval">●</span></td><td class="c"><span class="dot data">●</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:clamp(8px,1.05cqw,15px); color:var(--ink-2); margin-top:.9cqw;">
+    <b>●</b> built into the curriculum &nbsp;·&nbsp; <b>○</b> available as an option or starter-agent toggle &nbsp;·&nbsp; <b>—</b> not used &nbsp;·&nbsp; <span class="conv">conv.</span> protected by convention, not <code class="chip">max_runs</code> (notebook 06).
+    Docs/reports: food = CFPR reports via <code class="chip">DocumentStore</code>; energy = pre-cached news snapshots (the adaptive curriculum); BoC's press releases serve as the judge's reference text. #1–#4 each end with a hackable <code class="chip">99_starter_agent</code>; #0 adds a repo-concierge Q&amp;A agent.
+  </p>
+    <h3 class="sub">What each one teaches</h3>
+    <div class="prose">
+      <p>The numbering is not arbitrary: it mirrors the bootcamp progression — conventional methods, then LLM processes, then agents, then agentic evaluation. Each step assumes the last and adds one idea.</p>
+    </div>
+
+  <figure style="flex:1; min-height:0;">
+  <svg viewBox="0 0 1180 400" role="img" aria-label="Five ascending steps, one per reference implementation, from the minimal getting-started loop up through covariate discipline, report grounding, the agentic staircase, and judged categorical reasoning.">
+    <!-- risers/treads -->
+    <path d="M 20 380 L 20 320 L 250 320 L 250 250 L 482 250 L 482 180 L 714 180 L 714 110 L 946 110 L 946 40 L 1170 40"
+      fill="none" stroke="var(--line)" stroke-width="2"/>
+    <!-- step 0 -->
+    <text x="36" y="288" font-size="20" font-weight="700" fill="var(--eval)">0</text>
+    <text x="60" y="288" font-size="15" font-weight="600" fill="var(--ink)">getting_started</text>
+    <text x="36" y="342" font-size="12.5" fill="var(--ink)">the loop itself:</text>
+    <text x="36" y="360" font-size="12.5" fill="var(--ink-2)">backtest → evaluate, CRPS,</text>
+    <text x="36" y="376" font-size="12.5" fill="var(--ink-2)">naive vs AutoARIMA</text>
+    <!-- step 1 -->
+    <text x="266" y="218" font-size="20" font-weight="700" fill="var(--data)">1</text>
+    <text x="290" y="218" font-size="15" font-weight="600" fill="var(--ink)">sp500</text>
+    <text x="266" y="272" font-size="12.5" fill="var(--ink)">+ discipline:</text>
+    <text x="266" y="290" font-size="12.5" fill="var(--ink-2)">leak-safe covariate panel,</text>
+    <text x="266" y="306" font-size="12.5" fill="var(--ink-2)">naive + five Darts methods,</text>
+    <text x="266" y="322" font-size="12.5" fill="var(--ink-2)">budgeted protected eval</text>
+    <!-- step 2 -->
+    <text x="498" y="148" font-size="20" font-weight="700" fill="var(--method)">2</text>
+    <text x="522" y="148" font-size="15" font-weight="600" fill="var(--ink)">food_price</text>
+    <text x="498" y="202" font-size="12.5" fill="var(--ink)">+ context:</text>
+    <text x="498" y="220" font-size="12.5" fill="var(--ink-2)">nine targets at once,</text>
+    <text x="498" y="236" font-size="12.5" fill="var(--ink-2)">expert reports grounding</text>
+    <text x="498" y="252" font-size="12.5" fill="var(--ink-2)">the LLM-Process prompt</text>
+    <!-- step 3 -->
+    <text x="730" y="78" font-size="20" font-weight="700" fill="var(--method)">3</text>
+    <text x="754" y="78" font-size="15" font-weight="600" fill="var(--ink)">energy_oil</text>
+    <text x="730" y="132" font-size="12.5" fill="var(--ink)">+ agency:</text>
+    <text x="730" y="150" font-size="12.5" fill="var(--ink-2)">news → code → tools,</text>
+    <text x="730" y="166" font-size="12.5" fill="var(--ink-2)">then an adaptive agent that</text>
+    <text x="730" y="182" font-size="12.5" fill="var(--ink-2)">trains its own strategy skill</text>
+    <!-- step 4 -->
+    <text x="962" y="26" font-size="20" font-weight="700" fill="var(--eval)">4</text>
+    <text x="986" y="26" font-size="15" font-weight="600" fill="var(--ink)">boc_rate_decisions</text>
+    <text x="962" y="62" font-size="12.5" fill="var(--ink)">+ judgment:</text>
+    <text x="962" y="80" font-size="12.5" fill="var(--ink-2)">categorical decisions on an</text>
+    <text x="962" y="96" font-size="12.5" fill="var(--ink-2)">irregular meeting calendar,</text>
+    <text x="962" y="112" font-size="12.5" fill="var(--ink-2)">LLM-judged rationales</text>
+    <!-- baseline -->
+    <line x1="20" y1="380" x2="1170" y2="380" stroke="var(--line-soft)"/>
+    <text x="1170" y="372" font-size="11" fill="var(--ink-2)" text-anchor="end">every step scores against the same harness</text>
+  </svg>
+  <figcaption>Each implementation stands alone — start at the problem closest to yours. The staircase is a reading order, not a dependency graph.</figcaption>
+  </figure>
+
+    <h3 class="sub">Where do you land?</h3>
+    <div class="tablewrap">
+    <table class="chooser">
+      <thead><tr><th>Situation</th><th>Do this</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Need the loop to click first</td>
+          <td>Run <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/implementations/getting_started/00_environment_check.ipynb">00_environment_check.ipynb</a> in <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/tree/main/implementations/getting_started">getting_started</a>, then §01–§04 of this page.</td>
+        </tr>
+        <tr>
+          <td>Have a CSV that is none of the five problems above</td>
+          <td><b>Path B</b> — <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/01-onboard-a-dataset.md">guide 1</a> → <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/02-create-an-experiment.md">2</a> → <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/04-audit-your-results.md">4</a> (<a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/03-customize-agent-strategy.md">guide 3</a> if you add an agent). The sample dataset in guide 1 runs offline.</td>
+        </tr>
+        <tr>
+          <td>Want to change how an existing agent thinks</td>
+          <td><b>Path A</b> — that implementation's <code class="chip">99_starter_agent.ipynb</code> + <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/03-customize-agent-strategy.md#which-starter-are-you-on">guide 3</a> (start at "which starter are you on"), then <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/04-audit-your-results.md">guide 4</a>.</td>
+        </tr>
+        <tr>
+          <td>Want news / tools / adaptive strategy</td>
+          <td><a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/tree/main/implementations/energy_oil_forecasting">energy_oil</a>'s <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/implementations/energy_oil_forecasting/README.md">README</a> then its <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/implementations/energy_oil_forecasting/99_starter_agent.ipynb">99_starter_agent</a> — guide 3 as written is this path (<code class="chip">ToolSpec</code> toolbelt).</td>
+        </tr>
+        <tr>
+          <td>Want covariates / report-grounded prompting / judged categorical</td>
+          <td><a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/implementations/sp500_forecasting/README.md">sp500</a> / <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/implementations/food_price_forecasting/README.md">food_price</a> / <a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/implementations/boc_rate_decisions/README.md">boc</a> README respectively, then Path A on that starter (toggles; guide 3's levers are the same <code class="chip">AgentConfig</code> fields).</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="refs"><a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting/tree/main/implementations">implementations/</a>{getting_started, sp500_forecasting, food_price_forecasting, energy_oil_forecasting, boc_rate_decisions} · each README is the full walkthrough</div>
+    <div class="handoff"><a href="#s07">Which brings it back to you → 07 Build your own</a></div>
+  </div>
+</section>
+
+<section id="s07">
+  <div class="wrap">
+    <div class="sec-eyebrow"><span>07</span><span>Extending the foundation</span></div>
+    <h2>Build your own forecaster</h2>
+    <div class="prose">
+      <p>The architecture exists so that a new forecaster is always one of two paths — extend a reference implementation, or bring your own dataset — and every move on either path has a step-by-step guide in the repo.</p>
+    </div>
+
+    <h3 class="sub">Path A — extend a reference implementation</h3>
+    <div class="card accent-method">
+      <p>Closest to a problem already in §06? Skip onboarding and specs entirely. Pick your implementation, open its <code class="chip">99_starter_agent.ipynb</code>, work guide 3's levers, and close with guide 4 — no new dataset or spec needed until you want one.</p>
+      <a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/03-customize-agent-strategy.md#the-levers">guides/03-customize-agent-strategy.md — the levers</a>
+    </div>
+
+    <h3 class="sub">Path B — bring your own dataset</h3>
+    <div class="steps3">
+      <div class="card accent-data">
+        <div class="n" style="color:var(--data)">1 · Onboard data</div>
+        <p>Any source works — a CSV, an API, a database, scraped files. Map it onto <code class="chip">timestamp · value · released_at</code>, choose the release stamp honestly, register it on a <code class="chip">DataService</code>.</p>
+        <a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/01-onboard-a-dataset.md">guides/01-onboard-a-dataset.md</a>
+      </div>
+      <div class="card accent-eval">
+        <div class="n" style="color:var(--eval)">2 · Declare an experiment</div>
+        <p>A task + window in YAML, a lineup in code, <code class="chip">cached_multi_backtest</code>, a leaderboard — with <b>strong baselines in every lineup</b>: the naive floor plus the best statistical model you can field. An agent is only as interesting as its margin over them. Hold out your eval window <em>before</em> you tune.</p>
+        <a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/02-create-an-experiment.md">guides/02-create-an-experiment.md</a>
+      </div>
+      <div class="card accent-method">
+        <div class="n" style="color:var(--method)">3 · Shape the agent</div>
+        <p>Persona, toolbelt, search brief, skills — every lever that changes how the agent thinks, each with a worked change, scored against the baselines. Only needed if you're adding an agent.</p>
+        <a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/03-customize-agent-strategy.md">guides/03-customize-agent-strategy.md</a>
+      </div>
+    </div>
+    <div class="closing">
+      On either path, the shape of a new forecaster is always the same: <b>implement <code class="chip">Predictor</code> and run <code class="chip">backtest()</code> / <code class="chip">evaluate()</code></b> against the baselines — then <b>audit the result before you believe it</b> (<a class="chip" href="https://github.com/VectorInstitute/agentic-forecasting/blob/main/guides/04-audit-your-results.md">guides/04-audit-your-results.md</a>). Everything else in this atlas exists to keep that comparison honest.
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="colophon">
+  <div class="wrap" style="display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; width:100%;">
+    <span><a class="ext" href="https://github.com/VectorInstitute/agentic-forecasting">github.com/VectorInstitute/agentic-forecasting</a></span>
+    <span>fin.</span>
+  </div>
+</footer>
+
+<script>
+  // Capture/preview helper: #theme=dark|light forces a theme.
+  const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+  if (hash.get('theme')) document.documentElement.dataset.theme = hash.get('theme');
+</script>
+</body>
+</html>
