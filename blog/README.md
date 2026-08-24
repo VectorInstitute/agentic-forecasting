@@ -50,6 +50,25 @@ plain `<figure>`/`<figcaption>` markup.
 For anything that just needs to be *read* (review, email, archive), send the
 **self-contained** file — nothing else to attach.
 
+## GitHub Pages (this fork)
+
+This fork hosts the series at
+[vectorinstitute.github.io/agentic-forecasting-live](https://vectorinstitute.github.io/agentic-forecasting-live/).
+The landing page plus both parts are assembled from the assets-linked HTML and
+the figure PNGs by `assemble_pages.py`, then published by
+`.github/workflows/deploy-blog.yml` on push to `main` (paths under `blog/`).
+
+```sh
+cd blog
+./render.sh --assets-linked    # if post.md or figures changed
+python3 assemble_pages.py      # writes site/build/ for a local preview
+python3 -m http.server 8000 --directory site/build
+# open http://localhost:8000
+```
+
+The origin repo’s architecture atlas stays on the origin Pages site; this
+fork’s Pages is the project writeup, not a copy of the atlas.
+
 ## Files
 
 - `render.sh` — the renderer (shell + a small Python post-processing pass).
@@ -60,6 +79,10 @@ For anything that just needs to be *read* (review, email, archive), send the
   styles. Inlined into every rendered page.
 - `assets/lightbox.js` — the click-to-enlarge lightbox (~50 lines, no
   dependencies, no CDN). Inlined into every rendered page.
+- `assemble_pages.py` — copies the landing page and assets-linked posts into
+  `site/build/` with image paths rewritten for GitHub Pages. Invoked by
+  `.github/workflows/deploy-blog.yml`.
+- `site/index.html` — the Pages landing page (fork framing + links to both parts).
 - `dist/` — rendered output (committed for `part-1`; regenerate with
   `./render.sh` after editing a `post.md`).
 

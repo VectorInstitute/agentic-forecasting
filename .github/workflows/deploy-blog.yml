@@ -1,0 +1,55 @@
+name: deploy blog
+
+# Publishes this fork's two-part blog series to GitHub Pages.
+# This is the public site for agentic-forecasting-live: a bootcamp-project
+# writeup built on VectorInstitute/agentic-forecasting.
+#
+# One-time repo setting (cannot be scripted from the workflow itself):
+#   Settings -> Pages -> Source: GitHub Actions
+#
+# This workflow owns Pages on this fork. The monitor workflow
+# (deploy-monitor.yml) is still manual-only and must not be run — it would
+# replace this site with monitor/site/. Fold the dashboard in as /monitor/
+# once publication approval lands.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - blog/**
+      - .github/workflows/deploy-blog.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - name: Assemble Pages site
+        run: python3 blog/assemble_pages.py
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: blog/site/build
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

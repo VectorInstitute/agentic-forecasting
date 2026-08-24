@@ -4,6 +4,11 @@ name: deploy monitor
 # A fixture-validation gate runs first, so a data file that violates the schemas fails
 # the deploy instead of shipping. Requires a one-time repo setting:
 #   Settings -> Pages -> Source: GitHub Actions   (see monitor/README.md).
+#
+# THIS FORK: GitHub Pages is owned by the blog series (deploy-blog.yml). Do not
+# run this workflow — it would replace the published site with monitor/site/.
+# Fold the dashboard in as /monitor/ once Vector Institute publication approval
+# lands. Until then, serve the monitor locally (see monitor/README.md).
 
 # MANUAL-ONLY (workflow_dispatch) until Vector Institute publication approval lands.
 # The monitor is deliberately NOT auto-published: while approval is pending, the

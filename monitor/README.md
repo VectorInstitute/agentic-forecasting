@@ -14,9 +14,10 @@ the database; the site just fetches and renders it.
 
 ## Serve locally
 
-**Local viewing is the supported way to see the monitor right now.** The public GitHub
-Pages deploy is deliberately OFF until Vector Institute publication approval lands (see
-[Deployment](#deployment-github-pages) below) — so serve the site yourself.
+**Local viewing is the supported way to see the monitor right now.** On this fork,
+GitHub Pages hosts the [blog series](https://vectorinstitute.github.io/agentic-forecasting-live/),
+not the dashboard. The public monitor deploy stays OFF until Vector Institute publication
+approval lands (see [Deployment](#deployment-github-pages) below) — so serve the site yourself.
 
 No build, no backend. From this directory:
 
@@ -83,8 +84,7 @@ committing.
 
 **Status: OFF (manual-only) pending Vector Institute publication approval.** Until that
 sign-off lands, the monitor is not published to any public URL — [local serving](#serve-locally)
-is the only supported viewing mode. The deploy workflow is retained but gated so nothing
-publishes by accident.
+is the only supported viewing mode. On this fork, GitHub Pages is the [blog series](https://vectorinstitute.github.io/agentic-forecasting-live/); running the monitor deploy would replace that site, so leave this workflow idle.
 
 `.github/workflows/deploy-monitor.yml` validates the fixtures, then publishes
 `monitor/site/` to GitHub Pages. It is intentionally triggered by **manual

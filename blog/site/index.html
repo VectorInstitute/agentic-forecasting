@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Forecasting Live</title>
+<meta name="description" content="A bootcamp-project fork of Vector Institute’s agentic-forecasting: a two-part series on scoring news-reading forecasting agents on a live market.">
+<style>
+:root {
+  color-scheme: light;
+  --text: #1c1d1f;
+  --text-muted: #5b5f66;
+  --text-faint: #82868f;
+  --bg: #fdfdfc;
+  --bg-inset: #f4f4f2;
+  --accent: #a3311f;
+  --link: #0b5cad;
+  --border: #e2e1dd;
+  --measure: 42rem;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 19px/1.65 Charter, "Iowan Old Style", "Palatino Linotype",
+        Palatino, Georgia, "Times New Roman", serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 3.5rem 1.25rem 5rem;
+}
+.eyebrow {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+               Helvetica, Arial, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.85rem;
+}
+h1 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+               Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.6rem);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin: 0 0 1.1rem;
+  color: #101113;
+}
+.lede {
+  font-size: 1.15rem;
+  color: var(--text-muted);
+  margin: 0 0 1.6rem;
+}
+p { margin: 0 0 1.25rem; }
+a { color: var(--link); text-decoration-thickness: from-font; }
+a:hover { text-decoration-thickness: 2px; }
+.fork-note {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+               Helvetica, Arial, sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
+  margin: 0 0 2.4rem;
+  color: var(--text-muted);
+}
+.fork-note strong { color: var(--text); }
+.series { list-style: none; padding: 0; margin: 0 0 2.5rem; }
+.series li { margin: 0 0 1rem; }
+.card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1.3rem 1.15rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 20, 20, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.card:hover {
+  border-color: #cfcbc4;
+  box-shadow: 0 4px 14px rgba(20, 20, 20, 0.07);
+  text-decoration: none;
+}
+.card .kicker {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+               Helvetica, Arial, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.35rem;
+}
+.card h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+               Helvetica, Arial, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 0.45rem;
+  color: #101113;
+}
+.card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.98rem;
+}
+h3 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+               Helvetica, Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 2.2rem 0 0.7rem;
+  color: #101113;
+}
+ul.links { margin: 0 0 2rem; padding-left: 1.2rem; }
+ul.links li { margin-bottom: 0.4rem; }
+footer {
+  border-top: 1px solid var(--border);
+  padding-top: 1.2rem;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+               Helvetica, Arial, sans-serif;
+}
+@media (max-width: 640px) {
+  .wrap { padding: 2.4rem 1rem 4rem; }
+  body { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+<p class="eyebrow">Bootcamp project · Vector Institute</p>
+<h1>Agentic Forecasting Live</h1>
+<p class="lede">A two-part series on what it takes to trust news-reading forecasting agents, written from a live evaluation built on the bootcamp foundation.</p>
+
+<p class="fork-note"><strong>This is a fork.</strong> The library, reference implementations, and strategy guides come from <a href="https://github.com/VectorInstitute/agentic-forecasting">VectorInstitute/agentic-forecasting</a>. This repository is a worked example of what a participant project can look like: take the foundation, pick a market, run a leak-safe evaluation of agents that read the news, and write up what survived scrutiny.</p>
+
+<ul class="series">
+  <li>
+    <a class="card" href="part-1/">
+      <p class="kicker">Part 1 of 2</p>
+      <h2>An honest scoreboard for market forecasting</h2>
+      <p>A frozen LLM Process against conventional numerical methods on the S&amp;P/TSX Composite — and why the quiet days flatter everyone while the loud days decide the ranking.</p>
+    </a>
+  </li>
+  <li>
+    <a class="card" href="part-2/">
+      <p class="kicker">Part 2 of 2</p>
+      <h2>Forecasting agents that read the news, and what it takes to trust them</h2>
+      <p>Hand the same task to agents that search and write a rationale. The hard part is leakage, the useful part is a handful of windows, and the honest ending is how little power a live market leaves you.</p>
+    </a>
+  </li>
+</ul>
+
+<h3>Around this project</h3>
+<ul class="links">
+  <li><a href="https://github.com/VectorInstitute/agentic-forecasting-live">This repository on GitHub</a> — the fork, including the experiment code under <code>workshop_experiments/</code>.</li>
+  <li><a href="https://github.com/VectorInstitute/agentic-forecasting">The origin repo</a> — the bootcamp foundation this project is built on.</li>
+  <li><a href="https://vectorinstitute.github.io/agentic-forecasting/architecture-atlas.html">Architecture atlas</a> — the origin’s map of the loop, the temporal fence, and the predictor families.</li>
+</ul>
+
+<footer>
+<p>Ethan Jackson, Ali Kore, Behnoosh Zamanlooy &amp; Shayaan Mehdi. Hosted on GitHub Pages from this fork; the origin’s docs stay on the origin.</p>
+</footer>
+</main>
+</body>
+</html>

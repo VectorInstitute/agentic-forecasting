@@ -1,6 +1,10 @@
-# Agentic Forecasting
+# Agentic Forecasting Live
 
-A foundation for building, evaluating, and comparing forecasting systems — conventional numerical models, LLM Processes, and agentic forecasters — on real economic, financial, and event-prediction tasks.
+> **This is a fork.** [`VectorInstitute/agentic-forecasting`](https://github.com/VectorInstitute/agentic-forecasting) is the bootcamp foundation. This repository is a worked example of what a participant project can look like: a live evaluation of news-reading forecasting agents, written up as a two-part series.
+>
+> **Read the series** (hosted on this fork’s GitHub Pages): [Part 1 — An honest scoreboard for market forecasting](https://vectorinstitute.github.io/agentic-forecasting-live/part-1/) · [Part 2 — Forecasting agents that read the news](https://vectorinstitute.github.io/agentic-forecasting-live/part-2/) · [series home](https://vectorinstitute.github.io/agentic-forecasting-live/).
+
+A foundation for building, evaluating, and comparing forecasting systems — conventional numerical models, LLM Processes, and agentic forecasters — on real economic, financial, and event-prediction tasks. The library and reference implementations below are kept in sync with origin `main` so this fork stays a drop-in descendant of that foundation.
 
 ## Contents
 
@@ -73,6 +77,8 @@ On Coder workspaces, bootcamp keys (`OPENAI_*`, `E2B_*`, `LANGFUSE_*`) live in y
 aieng-forecasting/   # Installable library: import as aieng.forecasting
 implementations/     # Self-contained reference implementations + co-located specs
 guides/              # Step-by-step strategy guides for common build-phase tasks
+blog/                # Two-part series (this fork); GitHub Pages source
+workshop_experiments/  # Live TSX / S&P 500 evaluation that the series reports
 scripts/             # Data-fetch scripts + E2B template builder
 tests/               # Onboarding integration tests (not run in CI)
 planning-docs/       # Architecture notes and the extension/roadmap catalog
@@ -204,7 +210,8 @@ uv run pre-commit run --all-files
 
 - Per-implementation READMEs under [`implementations/`](implementations/) — the primary user surface.
 - [`guides/`](guides/) — self-contained, step-by-step strategy guides for the most common build-phase tasks: onboarding a dataset, creating an experiment, customizing an agent's strategy, and auditing a result before you believe it.
-- [Architecture atlas](https://vectorinstitute.github.io/agentic-forecasting/architecture-atlas.html) ([source](docs/architecture-atlas.html)) — a self-contained visual atlas of the system architecture: the loop, the temporal fence, predictor families, the harness, agent anatomy, and how each reference implementation instantiates them.
+- [This fork’s series](https://vectorinstitute.github.io/agentic-forecasting-live/) ([source](blog/)) — the two-part live-evaluation writeup hosted on this repository’s GitHub Pages.
+- [Architecture atlas](https://vectorinstitute.github.io/agentic-forecasting/architecture-atlas.html) ([source](docs/architecture-atlas.html)) — the origin repo’s visual atlas of the system architecture: the loop, the temporal fence, predictor families, the harness, agent anatomy, and how each reference implementation instantiates them.
 - [`aieng-forecasting/README.md`](aieng-forecasting/README.md) and [`aieng-forecasting/aieng/forecasting/methods/README.md`](aieng-forecasting/aieng/forecasting/methods/README.md) — the library and the method catalog.
 - [`planning-docs/roadmap.md`](planning-docs/roadmap.md) — architecture principles and extension ideas.
 
