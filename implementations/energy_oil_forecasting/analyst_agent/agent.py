@@ -534,9 +534,7 @@ def build_wti_code_exec_config(
     return AgentConfig(
         name="wti_analyst_code",
         model=model,
-        instruction=(
-            _WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _CODE_EXEC_SKILLS_SUPPLEMENT
-        ),
+        instruction=(_WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _CODE_EXEC_SKILLS_SUPPLEMENT),
         max_output_tokens=max_output_tokens,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
@@ -611,9 +609,7 @@ def build_wti_tool_config(
     return AgentConfig(
         name="wti_analyst_tool",
         model=model,
-        instruction=(
-            _WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _FORECAST_TOOL_SUPPLEMENT
-        ),
+        instruction=(_WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _FORECAST_TOOL_SUPPLEMENT),
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
