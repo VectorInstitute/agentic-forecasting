@@ -103,7 +103,7 @@ This has a concrete implication for this evaluation:
   fetch data via yfinance and reason from what it computed — not from memorized
   facts about 2025 WTI prices.
 
-- The **evaluation period** (Feb–Mar 2026) is definitively post-cutoff.
+- The **evaluation period** (Feb–Jun 2026) is definitively post-cutoff.
   During eval, the agent must rely entirely on:
   1. Live Google Search (with `cutoff_date` enforcement per origin)
   2. Code execution (for statistical analysis of fetched data)

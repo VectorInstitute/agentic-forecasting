@@ -20,7 +20,7 @@ So "done" always includes a documentation reconciliation step. Before considerin
 
 1. **Grep for what you touched** across docs — the feature name, the module/class/function, the dataset, the spec, the notebook. The fast version: `grep -rn "<thing>" --include="*.md" .` (and check notebook markdown cells). Don't rely on memory for where something is mentioned.
 2. **Reconcile every hit.** If a doc calls something "planned", "deferred", "not yet wired in", a "seam", or "out of scope" and you just made it real, update that wording. If a doc lists files, notebooks, predictors, specs, or data sources and you added or removed one, fix the list. If you changed a default, a metric, or a command, fix it everywhere it appears.
-3. **Update the layered docs together**, not just the nearest one: the use-case README (most detail), the reference-implementations table in the root `README.md`, the method catalog (`aieng-forecasting/aieng/forecasting/methods/README.md`) when you touch a reusable predictor, and `planning-docs/roadmap.md` when something moves from "extension idea" to "shipped".
+3. **Update the layered docs together**, not just the nearest one: the use-case README (most detail), the contents table in the root `README.md`, the method catalog (`aieng-forecasting/aieng/forecasting/methods/README.md`) when you touch a reusable predictor, and `planning-docs/roadmap.md` when something moves from "extension idea" to "shipped".
 
 Concrete example: integrating Canada's Food Price Report PDFs into the food-price LLM-Process prompt is **not done when the code runs** — it is done when `implementations/food_price_forecasting/README.md` (which currently frames report→prompt wiring as a deferred extension) and the "Reports as predictor context" entry in `planning-docs/roadmap.md` no longer describe it as future work. Shipping the code while those still say "deferred" is the regression the reviewer should catch.
 
@@ -35,6 +35,7 @@ The older planning log, backlog, project charter, and technical-design files und
 Project shape to keep in mind:
 
 - The core library `aieng.forecasting` owns stable infrastructure; reusable predictors live in `aieng.forecasting.methods`; use-case material lives in `implementations/<use-case>/`.
+- Strategy guides live under `guides/` (onboard a dataset, create an experiment, customize an agent, audit a result).
 - YAML specs are co-located under `implementations/<use-case>/specs/`.
 - Reference implementations: Getting Started, Food Price Forecasting, Energy/Oil (stateless capability track plus an adaptive learning agent), BoC Rate Decisions (quantitative path, cutoff-aware press-release ingestion, and a reasoning-alignment evaluator), and S&P 500 (in active development).
 - Energy/oil's older information-session notebooks are archived under `playground/energy_case_study/`.
@@ -42,7 +43,7 @@ Project shape to keep in mind:
 
 ### README files
 
-Search the repo for `README.md` files (excluding `.venv/`) to find every README — there is one at the root, one per package (`aieng-forecasting/`, `implementations/`), the method catalog under `aieng-forecasting/aieng/forecasting/methods/`, and one per use case under `implementations/<use-case>/`. These are the primary user surface and the first thing a new contributor reads; the reconciliation rule above applies to all of them. Keep them accurate and production-quality: describe what the code does and what you can build from it, with no internal program, scheduling, or ownership framing.
+Search the repo for `README.md` files (excluding `.venv/`) to find every README — there is one at the root, one per package (`aieng-forecasting/`, `implementations/`), the method catalog under `aieng-forecasting/aieng/forecasting/methods/`, one per use case under `implementations/<use-case>/`, and the strategy-guide index under `guides/`. These are the primary user surface and the first thing a new contributor reads; the reconciliation rule above applies to all of them. Keep them accurate and production-quality: describe what the code does and what you can build from it, with no internal program, scheduling, or ownership framing.
 
 ---
 
