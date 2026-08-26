@@ -73,6 +73,8 @@ You are an expert WTI crude oil market analyst.
 You will receive a JSON payload containing:
 - `task_spec`: the exact question and required JSON output schema
 - `as_of`: the forecast origin date (temporal cutoff)
+- `horizons`: integer horizon steps (business days ahead)
+- `standard_quantiles`: quantile levels for continuous forecasts (when applicable)
 - `origin_price_usd_bbl`: WTI close on the origin date
 - `target_history_csv`: compressed WTI daily close history
 
@@ -447,10 +449,12 @@ def build_wti_news_config(
     """Build an :class:`AgentConfig` with bounded Google Search.
 
     Wires a :class:`~aieng.forecasting.methods.agentic.agent_factory.ContextRetrievalConfig`
-    sub-agent that enforces a temporal cutoff on every search call, preventing
-    future information from contaminating historical backtests. An
-    independent verifier call audits each search result against the cutoff
-    before it reaches the analyst (see :class:`ContextRetrievalConfig`).
+    sub-agent that enforces a temporal cutoff on retrospective search calls
+    (``as_of`` strictly before UTC today), preventing future information
+    from contaminating historical backtests. Live origins skip the fence.
+    An independent verifier call audits each historical search result
+    against the cutoff before it reaches the analyst (see
+    :class:`ContextRetrievalConfig`).
 
     Parameters
     ----------
@@ -539,9 +543,7 @@ def build_wti_code_exec_config(
     return AgentConfig(
         name="wti_analyst_code",
         model=model,
-        instruction=(
-            _WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _CODE_EXEC_SKILLS_SUPPLEMENT
-        ),
+        instruction=(_WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _CODE_EXEC_SKILLS_SUPPLEMENT),
         max_output_tokens=max_output_tokens,
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
@@ -616,9 +618,7 @@ def build_wti_tool_config(
     return AgentConfig(
         name="wti_analyst_tool",
         model=model,
-        instruction=(
-            _WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _FORECAST_TOOL_SUPPLEMENT
-        ),
+        instruction=(_WTI_ANALYST_INSTRUCTION + _CONTEXT_RETRIEVAL_SUPPLEMENT + _FORECAST_TOOL_SUPPLEMENT),
         context_retrieval=ContextRetrievalConfig(
             enabled=True,
             instruction=_WTI_CONTEXT_RETRIEVAL_INSTRUCTION,
@@ -668,6 +668,11 @@ def build_wti_agent_predictor(config: AgentConfig) -> AgentPredictor:
 def __getattr__(name: str) -> Any:
     """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``."""
     if name == "root_agent":
-        return build_adk_agent(build_wti_basic_config())
+        # return build_adk_agent(build_wti_basic_config())
+        return build_adk_agent(
+            build_wti_multitask_news_config(
+                model=ADVANCED_MODEL, search_model=ADVANCED_MODEL, verifier_model=ADVANCED_MODEL
+            )
+        )
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 ```

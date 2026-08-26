@@ -9,14 +9,19 @@ kind: notebook
 > **Part 3 of 7.** This notebook builds on the agentic predictor introduced in
 > [`02_intro_agentic_predictor.ipynb`](02_intro_agentic_predictor.ipynb).
 
-A single Analyst Agent — backed by bounded Google Search — answers three tasks
-using **one system prompt** and **task-specific user payloads**:
+**Identity vs role.** One Analyst Agent (system prompt + toolbelt) answers three
+different questions. The identity is fixed; only the **task spec** in the user
+payload changes:
 
 | Stream | Task | Output |
 |--------|------|--------|
-| A | Trajectory | 5/10/21-day price forecasts |
-| B | Binary shock | P(WTI +$5 in 5 days) |
-| C | Scenario analysis | Top 3 expert scenarios for 60 days |
+| 1 | Trajectory | 5/10/21-day price forecasts |
+| 2 | Binary shock | P(WTI +$5 in 5 days) |
+| 3 | Scenario analysis | Top 3 expert scenarios for 60 days |
+
+A **task spec** is the ask: the question, the rules, and the required JSON shape.
+It is *not* the system prompt. Edit the identity strings once, then edit each
+stream's task spec and re-run (keep `USE_CACHE = False` after edits).
 
 ## Cell 2 (code)
 
@@ -39,16 +44,22 @@ AGENT_MODEL = "gemini-3.1-flash-lite-preview"
 
 # ── Cache control ─────────────────────────────────────────────────────────────
 # Set to False to force a full end-to-end agent run (ignores all cached results).
+# Keep False if you edit the identity or any stream's task spec.
 USE_CACHE = False
 
 from aieng.forecasting.evaluation.task import ForecastingTask
+from aieng.forecasting.methods.agentic import (
+    AgentPredictor,
+    ContinuousAgentForecastOutput,
+    DiscreteAgentForecastOutput,
+)
 from energy_oil_forecasting.analysis import compute_brier_score, trajectory_mae_table
+from energy_oil_forecasting.analyst_agent import build_wti_multitask_news_config
 from energy_oil_forecasting.data import WTI_SERIES_ID, build_wti_service, naive_utc_now
 from energy_oil_forecasting.paths import (
     PROPHET_SHOCK_TRAJ_CACHE,
     PROPHET_TRAJ_CACHE,
     SCENARIO_CACHE,
-    SCENARIO_ORIGIN,
     SHOCK_ANALYST_CACHE,
     SHOCK_HORIZON,
     SHOCK_ORIGINS,
@@ -62,7 +73,10 @@ from energy_oil_forecasting.prophet_baseline import (
     prophet_prob_shock,
     wti_series_to_price_df,
 )
-from energy_oil_forecasting.tasks import TASK_SPECS, build_wti_news_predictor
+from energy_oil_forecasting.tasks import (
+    ScenarioAgentForecastOutput,
+    WtiMultitaskPromptBuilder,
+)
 from energy_oil_forecasting.viz import (
     conf_bar,
     make_shock_comparison_chart,
@@ -79,28 +93,193 @@ price_df = wti_series_to_price_df(ctx.get_series(WTI_SERIES_ID))
 prophet_traj_df = load_prophet_trajectories(price_df, TRAJECTORY_ORIGINS, PROPHET_TRAJ_CACHE)
 prophet_shock_df = load_prophet_trajectories(price_df, SHOCK_ORIGINS, PROPHET_SHOCK_TRAJ_CACHE)
 print(f"Price history through {price_df.index[-1].date()}")
+
+
+def preview_user_payload(builder: WtiMultitaskPromptBuilder, task: ForecastingTask, origin: pd.Timestamp) -> None:
+    """Show the JSON user payload the agent would receive (no model call)."""
+    as_of = origin - pd.Timedelta(days=1)
+    origin_ctx = data_service.context(as_of=as_of)
+    payload = json.loads(builder(task=task, context=origin_ctx))
+    hist_lines = payload["target_history_csv"].splitlines()
+    ask_prose, _, ask_schema = payload["task_spec"].partition("Required JSON format:")
+    display(
+        Markdown(
+            f"### User payload preview  "
+            f"*(as_of {payload['as_of']}, WTI ${payload['origin_price_usd_bbl']:.2f}/bbl)*\n\n"
+            "This is how we assign the task: the ask rides in `task_spec`; "
+            "horizons and quantiles come from the `ForecastingTask`.\n\n"
+            f"**Price history** — last 10 of {len(hist_lines) - 1} rows:\n\n"
+            "```\n" + "\n".join(hist_lines[-10:]) + "\n```\n\n"
+            f"**horizons:** `{payload['horizons']}`  ·  "
+            f"**standard_quantiles:** {len(payload['standard_quantiles'])} levels\n\n"
+            f"**task_spec** ({len(payload['task_spec'])} chars) — prose:\n\n"
+            + ask_prose.strip()
+            + "\n\n**Required JSON format:**\n\n```json\n"
+            + ask_schema.strip()
+            + "\n```"
+        )
+    )
 ```
 
 ## Cell 3 (markdown)
 
 ---
-## Stream 1 — Trajectory Forecast
+## Shared identity — system prompt + toolbelt
 
-Compare Prophet fan charts to the news-grounded agent at three origins.
+This is what the agent *is*. The same `analyst_config` is reused by all three streams.
+Edit the strings below to change persona or search behaviour; do **not** put the
+trajectory / shock / scenario ask here — that belongs in each stream's task spec.
 
 ## Cell 4 (code)
 
 ```python
+# ── Editable identity (shared by Streams 1–3) ─────────────────────────────────
+# Task-agnostic: persona + how to read the payload. The ask is NOT here.
+
+SYSTEM_INSTRUCTION = """
+## Role
+
+You are an expert WTI crude oil market analyst.
+
+## Input
+
+You will receive a JSON payload containing:
+- `task_spec`: the exact question and required JSON output schema
+- `as_of`: the forecast origin date (temporal cutoff)
+- `horizons`: integer horizon steps (business days ahead)
+- `standard_quantiles`: quantile levels for continuous forecasts (when applicable)
+- `origin_price_usd_bbl`: WTI close on the origin date
+- `target_history_csv`: compressed WTI daily close history
+
+When context retrieval is enabled, call ``search_web`` BEFORE answering.
+
+## Output contract
+
+Read the data (and briefing, if retrieved) carefully, then execute the task in `task_spec` precisely.
+
+If a `set_model_response` tool is available, call it with your complete JSON as `json_response` — the exact schema is described in `task_spec`. Otherwise return the JSON directly as plain text with no preamble.
+""".strip()
+
+SEARCH_INSTRUCTION = """
+You are an oil market intelligence specialist with access to web search.
+
+Search for information relevant to the query and return a concise structured markdown summary (3-5 paragraphs) covering relevant aspects of:
+- WTI/Brent crude price level and recent trend
+- OPEC+ production decisions and supply outlook
+- Geopolitical risks in the Persian Gulf, Middle East, key shipping lanes
+- US Strategic Petroleum Reserve and energy policy signals
+- Notable tanker/shipping incidents or supply disruption signals
+- Published analyst forecasts or unusual price-target revisions
+
+Ground your summary in the search results you actually retrieve. When a cutoff date is specified, do not report or speculate about events that occurred after that date.
+
+Before finalizing your summary, reason step by step: (1) for each candidate fact, judge its actual recency from the substance of the result itself, never from a source's claimed publish date or byline timestamp — those are frequently stale or updated after original publication; (2) discard anything you cannot confidently place before the cutoff date; (3) only then write your summary. Do not supplement the search results with your own background/training knowledge — if the results are insufficient, say so explicitly rather than filling gaps from memory.
+""".strip()
+
+_base = build_wti_multitask_news_config(model=AGENT_MODEL)
+analyst_config = _base.model_copy(
+    update={
+        "instruction": SYSTEM_INSTRUCTION,
+        "context_retrieval": _base.context_retrieval.model_copy(update={"instruction": SEARCH_INSTRUCTION}),
+    }
+)
+
+cr = analyst_config.context_retrieval
+display(
+    Markdown(
+        f"### Toolbelt inventory  *(agent `{analyst_config.name}`, model `{analyst_config.model}`)*\n\n"
+        "| Capability | Status |\n|---|---|\n"
+        f"| `search_web` (context-retrieval sub-agent) | "
+        f"{'**on**' if cr.enabled else 'off'} — cutoff = payload `as_of` |\n"
+        f"| Search model | `{cr.search_model}` |\n"
+        f"| Temporal-leakage verifier | `{cr.verifier_model}` "
+        f"(max {cr.verifier_max_attempts} attempts, confidence ≥ {cr.verifier_confidence_threshold}) |\n"
+        f"| Skills | none (`skills_dirs` empty) |\n"
+        f"| Code execution | {'on' if analyst_config.code_execution.enabled else '**off**'} |\n"
+        f"| `run_forecast` / function tools | "
+        f"{'yes' if analyst_config.function_tools else '**none**'} |\n"
+        "| `set_model_response` | attached **per stream** via `output_schema`, not by identity |\n"
+    )
+)
+display(Markdown("### System instruction\n\n```\n" + SYSTEM_INSTRUCTION + "\n```"))
+display(Markdown("### Search sub-agent instruction\n\n```\n" + SEARCH_INSTRUCTION + "\n```"))
+```
+
+## Cell 5 (markdown)
+
+---
+## Stream 1 — Trajectory Forecast
+
+**Question:** Where will WTI be in 5, 10, and 21 business days?
+
+Same identity as above. The task spec below is the ask — edit horizons or rules,
+then re-run (keep `USE_CACHE = False`). Compare Prophet fan charts to the
+news-grounded agent at three origins.
+
+**Try this:** set `TRAJECTORY_HORIZONS = [5, 21]` and update the spec wording to match.
+
+## Cell 6 (code)
+
+```python
+# ── Stream 1 task spec (edit this) ────────────────────────────────────────────
+TRAJECTORY_HORIZONS = [5, 10, 21]  # feeds ForecastingTask; listed again in the ask
+
+_TRAJ_SCHEMA = ContinuousAgentForecastOutput.prompt_schema_json()
+TRAJECTORY_TASK_SPEC = f"""Forecast the WTI crude oil price at each horizon listed in the payload
+(`horizons`, business days ahead). Default horizons for this demo: {TRAJECTORY_HORIZONS}.
+
+Rules:
+  - Produce one forecast for each horizon in `horizons`.
+  - Use exactly the quantile levels from `standard_quantiles` — no additions, no omissions.
+  - `point_forecast` must exactly equal the 0.50 quantile value.
+  - Quantile values must be strictly non-decreasing as quantile levels increase.
+  - Document your reasoning in the `rationale` fields.
+
+If a `set_model_response` tool is available, call it with your complete JSON as `json_response`. Otherwise return the JSON directly as plain text.
+
+Required JSON format:
+{_TRAJ_SCHEMA}
+"""
+
+_prose, _, _schema = TRAJECTORY_TASK_SPEC.partition("Required JSON format:")
+display(
+    Markdown(
+        "### Task spec — Stream 1\n\n"
+        + _prose.strip()
+        + "\n\n**Required JSON format** (`ContinuousAgentForecastOutput`):\n\n```json\n"
+        + _schema.strip()
+        + "\n```"
+    )
+)
+```
+
+## Cell 7 (code)
+
+```python
+# ── Assign role: wire identity + task spec (no model call) ────────────────────
 trajectory_task = ForecastingTask(
     task_id="wti_trajectory_demo",
     target_series_id=WTI_SERIES_ID,
-    horizons=[5, 10, 21],
+    horizons=list(TRAJECTORY_HORIZONS),
     frequency="B",
     description="Trajectory demo for NB3",
 )
+traj_prompt_builder = WtiMultitaskPromptBuilder(task_spec=TRAJECTORY_TASK_SPEC)
+traj_predictor = AgentPredictor(
+    agent_config=analyst_config,
+    prompt_builder=traj_prompt_builder,
+    output_schema=ContinuousAgentForecastOutput,
+)
 
-traj_predictor = build_wti_news_predictor("trajectory", model=AGENT_MODEL)
+print(f"Predictor schema: {traj_predictor.output_schema.__name__}")
+preview_user_payload(traj_prompt_builder, trajectory_task, TRAJECTORY_ORIGINS[-1])
+```
 
+## Cell 8 (code)
+
+```python
+# ── Run trajectory agent at three origins ─────────────────────────────────────
+# Uses analyst_config + TRAJECTORY_TASK_SPEC. Keep USE_CACHE = False after edits.
 if USE_CACHE and TRAJ_AGENT_CACHE.exists():
     with open(TRAJ_AGENT_CACHE) as f:
         traj_agent_results = json.load(f)
@@ -121,17 +300,17 @@ else:
         json.dump(traj_agent_results, f, indent=2)
     print(f"Saved {len(traj_agent_results)} agent trajectory runs.")
 
-# Summary: agent point forecasts at each origin
 print("\nAgent trajectory summary:")
 for r in traj_agent_results:
     preds = r["predictions"]
-    pts = [f"h{[5, 10, 21][i]}=${preds[i]['payload']['point_forecast']:.1f}" for i in range(len(preds))]
+    hs = TRAJECTORY_HORIZONS
+    pts = [f"h{hs[i]}=${preds[i]['payload']['point_forecast']:.1f}" for i in range(len(preds))]
     origin_price_rows = price_df[price_df.index >= pd.Timestamp(r["origin"])]
     origin_price = f"WTI=${origin_price_rows.iloc[0]['price']:.2f}" if not origin_price_rows.empty else ""
     print(f"  {r['origin']}  {origin_price}  {' | '.join(pts)}")
 ```
 
-## Cell 5 (code)
+## Cell 9 (code)
 
 ```python
 # ── I/O inspection: 2026-03-02 — conflict onset, most informative ────────────
@@ -140,7 +319,7 @@ inspect_rec = next((r for r in traj_agent_results if r["origin"] == INSPECT_ORIG
 
 if inspect_rec:
     origin_ts = pd.Timestamp(INSPECT_ORIGIN)
-    bday_dates = pd.bdate_range(start=origin_ts + pd.offsets.BDay(1), periods=21)
+    bday_dates = pd.bdate_range(start=origin_ts + pd.offsets.BDay(1), periods=max(TRAJECTORY_HORIZONS))
     origin_price_row = price_df[price_df.index >= origin_ts]
     origin_price = float(origin_price_row.iloc[0]["price"]) if not origin_price_row.empty else float("nan")
 
@@ -148,7 +327,7 @@ if inspect_rec:
     rationale = preds[0].get("metadata", {}).get("rationale", "") if preds else ""
 
     table_rows = "| Horizon | Agent ($) | 80% CI | Actual ($) | Agent err | Prophet err |\n|---|---|---|---|---|---|\n"
-    for i, h in enumerate([5, 10, 21]):
+    for i, h in enumerate(TRAJECTORY_HORIZONS):
         actual_rows = price_df[price_df.index >= bday_dates[h - 1]]
         actual = float(actual_rows.iloc[0]["price"]) if not actual_rows.empty else float("nan")
         pt = preds[i]["payload"]["point_forecast"]
@@ -175,7 +354,7 @@ if inspect_rec:
     )
 ```
 
-## Cell 6 (code)
+## Cell 10 (code)
 
 ```python
 # ── Trajectory fan chart: Prophet fan vs agent error bars at 3 origins ───────
@@ -190,14 +369,58 @@ if not mae_df.empty:
     print(f"\nMean MAE  Prophet: ${mean_mae['Prophet MAE']:.2f}  Agent: ${mean_mae['Agent MAE']:.2f}")
 ```
 
-## Cell 7 (markdown)
+## Cell 11 (markdown)
 
 ---
 ## Stream 2 — Binary Shock Prediction
 
-## Cell 8 (code)
+**Question:** What is P(WTI closes more than $5/bbl higher in 5 trading days)?
+
+Same identity. A different task spec. Edit the threshold or horizon wording below —
+if you change the scored definition, also update `SHOCK_THRESHOLD` / `SHOCK_HORIZON`
+so the scorer stays aligned.
+
+**Try this:** raise the bar to +$10 and compare probabilities.
+
+## Cell 12 (code)
 
 ```python
+# ── Stream 2 task spec (edit this) ────────────────────────────────────────────
+# Scorer uses SHOCK_THRESHOLD / SHOCK_HORIZON from paths.py — keep them in sync.
+_SHOCK_SCHEMA = DiscreteAgentForecastOutput.prompt_schema_json()
+SHOCK_TASK_SPEC = f"""Estimate P(up) — the probability that WTI will close MORE THAN
+${int(SHOCK_THRESHOLD)}/bbl HIGHER than today's price at the end of
+{SHOCK_HORIZON} trading days.
+
+This is a directional upside question only.
+
+Calibration guidance:
+  - No unusual upside catalyst       -> base rate ~10-15%
+  - Escalating unconfirmed risk      -> 20-40%
+  - Confirmed supply disruption      -> 60-85%
+
+If a `set_model_response` tool is available, call it with your complete JSON as `json_response`. Otherwise return the JSON directly as plain text.
+
+Required JSON format:
+{_SHOCK_SCHEMA}
+"""
+
+_prose, _, _schema = SHOCK_TASK_SPEC.partition("Required JSON format:")
+display(
+    Markdown(
+        "### Task spec — Stream 2\n\n"
+        + _prose.strip()
+        + "\n\n**Required JSON format** (`DiscreteAgentForecastOutput`):\n\n```json\n"
+        + _schema.strip()
+        + "\n```"
+    )
+)
+```
+
+## Cell 13 (code)
+
+```python
+# ── Assign role: wire identity + task spec (no model call) ────────────────────
 shock_task = ForecastingTask(
     task_id="wti_upshock_demo",
     target_series_id=WTI_SERIES_ID,
@@ -205,9 +428,22 @@ shock_task = ForecastingTask(
     frequency="B",
     description="Binary upshock demo",
 )
+shock_prompt_builder = WtiMultitaskPromptBuilder(task_spec=SHOCK_TASK_SPEC)
+shock_predictor = AgentPredictor(
+    agent_config=analyst_config,
+    prompt_builder=shock_prompt_builder,
+    output_schema=DiscreteAgentForecastOutput,
+)
 
-shock_predictor = build_wti_news_predictor("shock", model=AGENT_MODEL)
+print(f"Predictor schema: {shock_predictor.output_schema.__name__}")
+preview_user_payload(shock_prompt_builder, shock_task, SHOCK_ORIGINS[-1])
+```
 
+## Cell 14 (code)
+
+```python
+# ── Run shock agent across origins ────────────────────────────────────────────
+# Uses analyst_config + SHOCK_TASK_SPEC. Keep USE_CACHE = False after edits.
 if USE_CACHE and SHOCK_ANALYST_CACHE.exists():
     with open(SHOCK_ANALYST_CACHE) as f:
         shock_results = json.load(f)
@@ -230,14 +466,14 @@ else:
         )
     with open(SHOCK_ANALYST_CACHE, "w") as f:
         json.dump(shock_results, f, indent=2)
+    print(f"Saved {len(shock_results)} shock forecasts.")
 
 agent_probs = [r["probability"] for r in shock_results]
 outcomes = [r["outcome"] for r in shock_results]
 print(f"Agent Brier score: {compute_brier_score(agent_probs, outcomes):.4f}")
-print(f"Task spec preview:\n{TASK_SPECS['shock'][:200]}...")
 ```
 
-## Cell 9 (code)
+## Cell 15 (code)
 
 ```python
 # ── Per-origin forecast cards ─────────────────────────────────────────────────
@@ -272,7 +508,7 @@ for r in shock_results:
     )
 ```
 
-## Cell 10 (code)
+## Cell 16 (code)
 
 ```python
 # ── Prophet probabilities for the shock origins ───────────────────────────────
@@ -302,46 +538,116 @@ print("Mean Brier score (lower = better, 0.25 = random ceiling):")
 display(brier_df)
 ```
 
-## Cell 11 (markdown)
+## Cell 17 (markdown)
 
 ---
 ## Stream 3 — Scenario Analysis
 
-## Cell 12 (code)
+**Question:** What three scenarios are oil-market analysts debating for WTI over the next 60 days?
+
+Same identity. Track 2 structured qualitative analysis — no ground truth to score.
+Edit the task spec (number of scenarios, framing) or the origin, then re-run.
+
+**Try this:** change "three scenarios" to "two bullish and one bearish", or set
+`SCENARIO_AS_OF = pd.Timestamp("2026-02-02")` (pre-shock) and compare.
+
+## Cell 18 (code)
 
 ```python
+# ── Stream 3 task spec (edit this) ────────────────────────────────────────────
+# SCENARIO_AS_OF = SCENARIO_ORIGIN  # 2026-03-02 — conflict onset
+SCENARIO_AS_OF = pd.Timestamp("2026-02-02")  # pre-shock, quieter market
+# SCENARIO_AS_OF = pd.Timestamp.today()  # live — no deep historical fence
+
+_SCENARIO_SCHEMA = ScenarioAgentForecastOutput.prompt_schema_json()
+SCENARIO_TASK_SPEC = f"""Identify the three scenarios that oil market analysts and experts are most
+actively debating for WTI crude over the next 60 days, given the current
+market context and price history.
+
+For each scenario:
+  - Give it a concise name (3-6 words)
+  - Describe it in 1-2 sentences
+  - Assign a probability (all three must sum to <= 1.0)
+  - Provide an expected WTI price range at the 60-day horizon as [low, high]
+  - Give your point estimate for WTI at 60 days under this scenario
+  - List 1-2 key drivers that would cause this scenario to materialise
+
+Also identify which scenario is the base case and provide an overall
+one-paragraph reasoning summary.
+
+If a `set_model_response` tool is available, call it with your complete JSON as `json_response`. Otherwise return the JSON directly as plain text.
+
+Required JSON format:
+{_SCENARIO_SCHEMA}
+"""
+
+_origin_price_row = price_df[price_df.index >= SCENARIO_AS_OF]
+_origin_price = float(_origin_price_row.iloc[0]["price"]) if not _origin_price_row.empty else float("nan")
+_prose, _, _schema = SCENARIO_TASK_SPEC.partition("Required JSON format:")
+display(
+    Markdown(
+        f"### Task spec — Stream 3  *(origin {SCENARIO_AS_OF.date()}, WTI ${_origin_price:.2f}/bbl)*\n\n"
+        + _prose.strip()
+        + "\n\n**Required JSON format** (`ScenarioAgentForecastOutput`):\n\n```json\n"
+        + _schema.strip()
+        + "\n```"
+    )
+)
+```
+
+## Cell 19 (code)
+
+```python
+# ── Assign role: wire identity + task spec (no model call) ────────────────────
 scenario_task = ForecastingTask(
     task_id="wti_scenario_demo",
     target_series_id=WTI_SERIES_ID,
-    horizons=[21],
+    horizons=[21],  # ForecastingTask requires a horizon; the 60-day ask lives in the spec
     frequency="B",
     description="Scenario analysis demo",
 )
+scenario_prompt_builder = WtiMultitaskPromptBuilder(task_spec=SCENARIO_TASK_SPEC)
+scenario_predictor = AgentPredictor(
+    agent_config=analyst_config,
+    prompt_builder=scenario_prompt_builder,
+    output_schema=ScenarioAgentForecastOutput,
+)
 
-scenario_predictor = build_wti_news_predictor("scenario", model=AGENT_MODEL)
+print(f"Predictor schema: {scenario_predictor.output_schema.__name__}")
+preview_user_payload(scenario_prompt_builder, scenario_task, SCENARIO_AS_OF)
+```
+
+## Cell 20 (code)
+
+```python
+# ── Run the scenario agent ────────────────────────────────────────────────────
+# Uses analyst_config + SCENARIO_TASK_SPEC. Keep USE_CACHE = False after edits.
+if USE_CACHE:
+    print("USE_CACHE is True — cached cards ignore edits to the task spec.")
 
 if USE_CACHE and SCENARIO_CACHE.exists():
     with open(SCENARIO_CACHE) as f:
         scenario_payload = json.load(f)
     print("Loaded cached scenario analysis.")
 else:
-    as_of = SCENARIO_ORIGIN - pd.Timedelta(days=1)
+    as_of = SCENARIO_AS_OF - pd.Timedelta(days=1)
     origin_ctx = data_service.context(as_of=as_of)
     preds = scenario_predictor.predict(scenario_task, origin_ctx)
     scenario_payload = preds[0].metadata
     with open(SCENARIO_CACHE, "w") as f:
         json.dump(scenario_payload, f, indent=2)
+    print("Saved scenario analysis.")
 
-# ── Rich scenario cards ───────────────────────────────────────────────────────
-scenario_origin_price_row = price_df[price_df.index >= SCENARIO_ORIGIN]
+# ── Scenario cards ────────────────────────────────────────────────────────────
+scenario_origin_price_row = price_df[price_df.index >= SCENARIO_AS_OF]
 scenario_origin_price = (
     float(scenario_origin_price_row.iloc[0]["price"]) if not scenario_origin_price_row.empty else float("nan")
 )
 
 display(
     Markdown(
-        f"#### Stream 3 — Scenario Analysis  "
-        f"*(origin: {SCENARIO_ORIGIN.date()}, WTI ${scenario_origin_price:.2f}/bbl)*\n\n"
+        f"#### Agent response — Stream 3  "
+        f"*(origin: {SCENARIO_AS_OF.date()}, WTI ${scenario_origin_price:.2f}/bbl)*\n\n"
         f"Base case: **{scenario_payload.get('base_case', '?')}**"
     )
 )
@@ -375,15 +681,22 @@ if overall:
     display(Markdown(f"---\n\n> **Overall reasoning:** {overall}"))
 ```
 
-## Cell 13 (markdown)
+## Cell 21 (markdown)
 
 ---
 
 ## Summary
 
-One agent identity (`build_wti_multitask_news_config` / `build_wti_news_config`) with
-three task-specific prompt builders and output schemas demonstrates the bootcamp
-pattern for multi-task agentic forecasting. Continue to
-[`04_systematic_backtest_eval.ipynb`](04_systematic_backtest_eval.ipynb) for the
-stateless backtest harness, then Notebooks 5–6 for the adaptive agent training and
-protected evaluation.
+**One identity, three roles.** The shared `analyst_config` (system instruction +
+`search_web` toolbelt) never changes across streams. Each stream assigns a role
+with an editable **task spec** in the user payload via `WtiMultitaskPromptBuilder`,
+plus a stream-specific `output_schema`.
+
+That is the bootcamp pattern for multi-task agentic forecasting. Notebooks 02/04
+still use a trajectory-specialized system prompt (`build_wti_news_config`) for
+scored backtests — a useful contrast: bake the contract into identity, or keep
+identity stable and swap the user-message ask.
+
+Continue to [`04_systematic_backtest_eval.ipynb`](04_systematic_backtest_eval.ipynb)
+for the stateless backtest harness, then Notebooks 5–6 for the adaptive agent
+training and protected evaluation.

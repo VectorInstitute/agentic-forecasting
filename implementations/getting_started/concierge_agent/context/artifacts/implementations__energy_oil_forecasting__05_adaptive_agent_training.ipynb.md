@@ -387,7 +387,9 @@ WTI_STRATEGY_DIR=adaptive_agent/skills/wti-strategy-trained \\
 ```
 
 Open `http://localhost:8000` in your browser. The agent has its full skill
-set available: code execution, web search, and mutation tools.
+set available: code execution, web search, and mutation tools. On a **Coder
+workspace** that URL is inside the VM — [guide 5](../../guides/05-access-adk-web-via-ssh-tunnel.md)
+tunnels it to your laptop.
 
 **Suggested conversation starters:**
 

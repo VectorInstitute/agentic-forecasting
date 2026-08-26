@@ -42,7 +42,7 @@ AGENT_MODEL = "gemini-3.1-flash-lite-preview"
 # ── Run guard ──────────────────────────────────────
 # Live agent calls cost tokens and need PROXY_* in the repo-root .env, plus warm
 # data caches. Default False so `Run All` is safe; set True to call the model.
-RUN_AGENT = False
+RUN_AGENT = True
 
 from boc_rate_decisions.starter_agent import (
     build_starter_agent_config,

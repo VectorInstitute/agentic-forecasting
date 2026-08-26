@@ -18,7 +18,7 @@ from typing import Any, ClassVar, Literal
 
 import pandas as pd
 from aieng.forecasting.data.context import ForecastContext
-from aieng.forecasting.evaluation.prediction import BinaryForecast, Prediction
+from aieng.forecasting.evaluation.prediction import STANDARD_QUANTILES, BinaryForecast, Prediction
 from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic import (
     AgentPredictor,
@@ -29,31 +29,24 @@ from aieng.forecasting.methods.agentic.agent_factory import AgentConfig
 from aieng.forecasting.methods.agentic.outputs import AgentForecastOutput
 from aieng.forecasting.models import LITE_MODEL
 from energy_oil_forecasting.analyst_agent import (
-    WtiPriceForecastPromptBuilder,
     build_wti_multitask_news_config,
-    build_wti_news_config,
     compress_history,
 )
 from energy_oil_forecasting.paths import SHOCK_HORIZON, SHOCK_THRESHOLD
 from pydantic import BaseModel, Field
 
 
-# ── Task specification strings (embedded in user prompts for NB3) ───────────
-# Each spec uses the corresponding output class's prompt_schema_json() so the
-# required JSON format in the prompt is always in sync with the Pydantic schema.
-
-TASK_TRAJECTORY_SPEC = (
-    "Forecast the WTI crude oil price at the horizons listed in the payload.\n\n"
-    "If a `set_model_response` tool is available, call it with your complete "
-    "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
-    "Required JSON format:\n" + ContinuousAgentForecastOutput.prompt_schema_json()
-)
-
 TaskKind = Literal["trajectory", "shock", "scenario"]
 
 
 class WtiMultitaskPromptBuilder(BaseModel):
-    """Prompt builder for task-spec-driven agent calls (NB3)."""
+    """Prompt builder for task-spec-driven agent calls (NB3).
+
+    The system instruction is task-agnostic; the ask lives in ``task_spec``.
+    The payload also includes ``horizons`` and ``standard_quantiles`` so
+    trajectory (and any horizon-aware) tasks can read them without baking the
+    forecasting contract into the system prompt.
+    """
 
     task_spec: str
 
@@ -66,6 +59,8 @@ class WtiMultitaskPromptBuilder(BaseModel):
             "task": task.task_id,
             "task_spec": self.task_spec,
             "as_of": str(context.as_of)[:10],
+            "horizons": list(task.horizons),
+            "standard_quantiles": list(STANDARD_QUANTILES),
             "origin_price_usd_bbl": float(last_row["value"]),
             "target_history_csv": compress_history(df),
         }
@@ -160,19 +155,50 @@ class ScenarioAgentForecastOutput(AgentForecastOutput):
 # Task specification strings embedded in user prompts for NB3.
 # Defined after the output classes so each spec can reference the
 # corresponding prompt_schema_json() classmethod — single source of truth.
+# Notebook 03 copies these into editable cells; the factory uses these defaults.
+
+TASK_TRAJECTORY_SPEC = (
+    "Forecast the WTI crude oil price at each horizon listed in the payload "
+    "(`horizons`, business days ahead).\n\n"
+    "Rules:\n"
+    "  - Produce one forecast for each horizon in `horizons`.\n"
+    "  - Use exactly the quantile levels from `standard_quantiles` — "
+    "no additions, no omissions.\n"
+    "  - `point_forecast` must exactly equal the 0.50 quantile value.\n"
+    "  - Quantile values must be strictly non-decreasing as quantile levels increase.\n"
+    "  - Document your reasoning in the `rationale` fields.\n\n"
+    "If a `set_model_response` tool is available, call it with your complete "
+    "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
+    "Required JSON format:\n" + ContinuousAgentForecastOutput.prompt_schema_json()
+)
 
 TASK_SHOCK_SPEC = (
     f"Estimate P(up) — the probability that WTI will close MORE THAN\n"
     f"${int(SHOCK_THRESHOLD)}/bbl HIGHER than today's price at the end of\n"
     f"{SHOCK_HORIZON} trading days.\n\n"
+    "This is a directional upside question only.\n\n"
+    "Calibration guidance:\n"
+    "  - No unusual upside catalyst       -> base rate ~10-15%\n"
+    "  - Escalating unconfirmed risk      -> 20-40%\n"
+    "  - Confirmed supply disruption      -> 60-85%\n\n"
     "If a `set_model_response` tool is available, call it with your complete "
     "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
     "Required JSON format:\n" + DiscreteAgentForecastOutput.prompt_schema_json()
 )
 
 TASK_SCENARIOS_SPEC = (
-    "Identify the three scenarios oil market analysts are debating for WTI "
-    "over the next 60 days.\n\n"
+    "Identify the three scenarios that oil market analysts and experts are most "
+    "actively debating for WTI crude over the next 60 days, given the current "
+    "market context and price history.\n\n"
+    "For each scenario:\n"
+    "  - Give it a concise name (3-6 words)\n"
+    "  - Describe it in 1-2 sentences\n"
+    "  - Assign a probability (all three must sum to <= 1.0)\n"
+    "  - Provide an expected WTI price range at the 60-day horizon as [low, high]\n"
+    "  - Give your point estimate for WTI at 60 days under this scenario\n"
+    "  - List 1-2 key drivers that would cause this scenario to materialise\n\n"
+    "Also identify which scenario is the base case and provide an overall "
+    "one-paragraph reasoning summary.\n\n"
     "If a `set_model_response` tool is available, call it with your complete "
     "JSON as `json_response`. Otherwise return the JSON directly as plain text.\n\n"
     "Required JSON format:\n" + ScenarioAgentForecastOutput.prompt_schema_json()
@@ -198,6 +224,10 @@ def build_wti_news_predictor(
 ) -> AgentPredictor:
     """Build a news-grounded agent predictor for the given task kind.
 
+    All three task kinds share the same multitask news identity
+    (:func:`~energy_oil_forecasting.analyst_agent.build_wti_multitask_news_config`);
+    only the user-payload ``task_spec`` and output schema change.
+
     Parameters
     ----------
     task : TaskKind
@@ -208,12 +238,6 @@ def build_wti_news_predictor(
         Defaults to the lite model (``"gemini-3.1-flash-lite-preview"``); pass the
         advanced model (``"gemini-3.5-flash"``) when more capability is needed.
     """
-    if task == "trajectory":
-        return AgentPredictor(
-            agent_config=build_wti_news_config(model=model),
-            prompt_builder=WtiPriceForecastPromptBuilder(),
-            output_schema=ContinuousAgentForecastOutput,
-        )
     return AgentPredictor(
         agent_config=build_wti_multitask_news_config(model=model),
         prompt_builder=WtiMultitaskPromptBuilder(task_spec=TASK_SPECS[task]),
@@ -222,13 +246,11 @@ def build_wti_news_predictor(
 
 
 def build_wti_agent_predictor_for_task(config: AgentConfig, task: TaskKind) -> AgentPredictor:
-    """Wire any WTI agent config to a task-specific predictor."""
-    if task == "trajectory":
-        return AgentPredictor(
-            agent_config=config,
-            prompt_builder=WtiPriceForecastPromptBuilder(),
-            output_schema=ContinuousAgentForecastOutput,
-        )
+    """Wire any WTI agent config to a task-specific predictor.
+
+    Uses the multitask prompt builder for every task kind so the ask rides in
+    ``task_spec`` rather than in the system instruction.
+    """
     return AgentPredictor(
         agent_config=config,
         prompt_builder=WtiMultitaskPromptBuilder(task_spec=TASK_SPECS[task]),
