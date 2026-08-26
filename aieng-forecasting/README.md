@@ -8,7 +8,7 @@ This package provides the stable infrastructure used across all reference implem
 - Forecasting task and prediction payload models.
 - Backtesting, evaluation, scoring, and artifact helpers.
 - Reusable reference predictors under `aieng.forecasting.methods`.
-- Langfuse / OpenTelemetry tracing bootstrap in `aieng.forecasting.langfuse_tracing`.
+- Langfuse / OpenTelemetry tracing bootstrap in `aieng.forecasting.langfuse_tracing` (including nested `search_web` search/verifier generations).
 
 Current data adapters cover StatCan tables, FRED series, and daily yfinance
 market series.

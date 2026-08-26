@@ -23,7 +23,7 @@ Also in this README: [Setup](#setup) · [Core concepts](#core-concepts) · [Repo
 - **Core library** — `aieng-forecasting` (`aieng.forecasting`): data services, cutoff enforcement, forecasting tasks, prediction payloads, backtesting, evaluation, and artifacts.
 - **Reusable methods** — `aieng.forecasting.methods`: `Predictor` implementations including naive baselines (continuous, binary, and categorical), Darts numerical predictors, LLM-process predictors (continuous, binary-probability, and categorical-probability), and ADK-based agentic infrastructure (`build_adk_agent`, `AdkTextRunner`, `AgentPredictor`).
 - **Reference implementations** — `implementations/<use-case>/`: notebooks, helper modules, task-specific configuration, and co-located YAML specs.
-- **Tracing** — Langfuse / OpenTelemetry bootstrap (`aieng.forecasting.langfuse_tracing`) for LiteLLM and Google ADK.
+- **Tracing** — Langfuse / OpenTelemetry bootstrap (`aieng.forecasting.langfuse_tracing`) for LiteLLM and Google ADK. Agent `search_web` calls nest inner search and leakage-verifier generations in the same trace.
 - **Data scripts** — `scripts/`: one fetch script per data source, plus `build_e2b_template.py` for the agentic code-execution sandbox.
 
 ## Two ways to use a forecaster

@@ -444,10 +444,12 @@ def build_wti_news_config(
     """Build an :class:`AgentConfig` with bounded Google Search.
 
     Wires a :class:`~aieng.forecasting.methods.agentic.agent_factory.ContextRetrievalConfig`
-    sub-agent that enforces a temporal cutoff on every search call, preventing
-    future information from contaminating historical backtests. An
-    independent verifier call audits each search result against the cutoff
-    before it reaches the analyst (see :class:`ContextRetrievalConfig`).
+    sub-agent that enforces a temporal cutoff on retrospective search calls
+    (``as_of`` strictly before UTC today), preventing future information
+    from contaminating historical backtests. Live origins skip the fence.
+    An independent verifier call audits each historical search result
+    against the cutoff before it reaches the analyst (see
+    :class:`ContextRetrievalConfig`).
 
     Parameters
     ----------

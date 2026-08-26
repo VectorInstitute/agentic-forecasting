@@ -4,6 +4,10 @@ Call :func:`init_langfuse_tracing` once at process startup when using the
 ``llm`` or ``agentic`` extras and Langfuse credentials are set in the
 environment.
 
+Inner LiteLLM calls that ADK OpenInference does not see (``search_web``'s
+grounded search and leakage verifier) should wrap with
+:func:`langfuse_generation` so they nest under the active agent trace.
+
 Call :func:`print_langfuse_trace_url` after a ``predict()`` call to flush
 pending spans and print a clickable Langfuse UI link.
 """
@@ -12,9 +16,18 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import contextmanager
+from typing import Any, Iterator
 
 
 logger = logging.getLogger(__name__)
+
+
+class _NoOpObservation:
+    """Stand-in when Langfuse is unavailable so callers can always ``.update()``."""
+
+    def update(self, **_kwargs: Any) -> None:
+        return None
 
 
 def _langfuse_credentials_present() -> bool:
@@ -86,6 +99,48 @@ class _LangfuseTracingBootstrap:
 
 
 _bootstrap = _LangfuseTracingBootstrap()
+
+
+@contextmanager
+def langfuse_generation(
+    name: str,
+    *,
+    model: str | None = None,
+    input: Any = None,  # noqa: A002 — matches Langfuse observation field name
+    metadata: dict[str, Any] | None = None,
+) -> Iterator[Any]:
+    """Open a Langfuse generation nested under the current observation.
+
+    Used for inner LiteLLM calls that ADK OpenInference does not see (the
+    ``search_web`` googleSearch completion and the independent leakage
+    verifier). When an ADK tool span is already active, the new generation
+    becomes its child, so verifier traces show up inside the agent tree
+    rather than as a separate root.
+
+    No-op when credentials are absent or the SDK raises, so tool code can
+    wrap completions without a tracing extra.
+    """
+    if not _langfuse_credentials_present():
+        yield _NoOpObservation()
+        return
+    try:
+        from langfuse import get_client  # noqa: PLC0415
+
+        kwargs: dict[str, Any] = {"name": name, "as_type": "generation"}
+        if model is not None:
+            kwargs["model"] = model
+        if input is not None:
+            kwargs["input"] = input
+        if metadata:
+            kwargs["metadata"] = metadata
+        observation_cm = get_client().start_as_current_observation(**kwargs)
+    except Exception:
+        logger.debug("langfuse_generation(%s) failed; continuing without a span.", name, exc_info=True)
+        yield _NoOpObservation()
+        return
+
+    with observation_cm as generation:
+        yield generation
 
 
 def init_langfuse_tracing() -> None:

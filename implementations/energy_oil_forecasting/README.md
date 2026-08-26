@@ -55,7 +55,7 @@ An earlier set of information-session notebooks is archived in [`playground/ener
 
 ## The Forecasting Tasks
 
-Each forecasting origin defines a strict information cutoff (`as_of`). Predictors receive price history up to `as_of` and answer up to three tasks:
+Each forecasting origin defines a strict information cutoff (`as_of`). Predictors receive price history up to `as_of` and answer up to three tasks. News-grounded agents apply the same fence to `search_web` when `as_of` is in the past (an independent verifier, visible as `search_web.leakage_verifier` under the Langfuse agent trace) and skip it for a live origin.
 
 ### Task A: Trajectory Forecast (Track 1)
 
