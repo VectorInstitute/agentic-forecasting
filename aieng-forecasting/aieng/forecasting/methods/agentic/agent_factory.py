@@ -313,7 +313,16 @@ def _verification_skip_reason(effective_cutoff: str | None, *, enforce_cutoff: b
 
 
 def _usage_from_litellm(resp: Any) -> dict[str, int]:
-    """Map a LiteLLM response's token counts into Langfuse ``usage_details``."""
+    """Map LiteLLM token counts into Langfuse ``usage_details``.
+
+    Keys must be ``input`` / ``output`` (optionally ``input_cached_tokens``).
+    Those are the usage types on Langfuse's model price table. Sending
+    ``input_tokens`` / ``output_tokens`` still shows counts in the UI but
+    matches no price, so ``totalCost`` stays null — which is what happened
+    on ``search_web.google_search`` and ``search_web.leakage_verifier``
+    until this mapping was aligned with the LLM-process path and ADK
+    OpenInference.
+    """
     usage = getattr(resp, "usage", None)
     if usage is None:
         return {}
@@ -322,11 +331,15 @@ def _usage_from_litellm(resp: Any) -> dict[str, int]:
         out_tok = int(getattr(usage, "completion_tokens", 0) or 0)
     except (TypeError, ValueError):
         return {}
-    details: dict[str, int] = {}
-    if in_tok:
-        details["input_tokens"] = in_tok
-    if out_tok:
-        details["output_tokens"] = out_tok
+    details: dict[str, int] = {"input": in_tok, "output": out_tok}
+    prompt_details = getattr(usage, "prompt_tokens_details", None)
+    if prompt_details is not None:
+        try:
+            cached = int(getattr(prompt_details, "cached_tokens", 0) or 0)
+        except (TypeError, ValueError):
+            cached = 0
+        if cached:
+            details["input_cached_tokens"] = cached
     return details
 
 

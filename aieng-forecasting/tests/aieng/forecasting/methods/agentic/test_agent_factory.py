@@ -18,6 +18,7 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     ContextRetrievalConfig,
     _build_search_tool,
     _is_retrospective_cutoff,
+    _usage_from_litellm,
     _verification_skip_reason,
     build_adk_agent,
 )
@@ -733,6 +734,34 @@ class TestRetrospectiveCutoff:
         assert result == "Live news."
 
 
+class TestUsageFromLitellm:
+    """Langfuse prices ``input`` / ``output`` usage types, not ``input_tokens``."""
+
+    def test_maps_prompt_and_completion_tokens(self) -> None:
+        """LiteLLM prompt/completion counts become Langfuse input/output keys."""
+        resp = SimpleNamespace(usage=SimpleNamespace(prompt_tokens=284, completion_tokens=522))
+        assert _usage_from_litellm(resp) == {"input": 284, "output": 522}
+
+    def test_includes_cached_tokens_when_present(self) -> None:
+        """Cached prompt tokens map to the Langfuse price-table usage type."""
+        resp = SimpleNamespace(
+            usage=SimpleNamespace(
+                prompt_tokens=1000,
+                completion_tokens=10,
+                prompt_tokens_details=SimpleNamespace(cached_tokens=800),
+            )
+        )
+        assert _usage_from_litellm(resp) == {
+            "input": 1000,
+            "output": 10,
+            "input_cached_tokens": 800,
+        }
+
+    def test_missing_usage_returns_empty(self) -> None:
+        """A response with no usage object contributes no Langfuse usage_details."""
+        assert _usage_from_litellm(SimpleNamespace()) == {}
+
+
 class TestSearchToolLangfuseTracing:
     """Inner search and verifier emit nested Langfuse generations."""
 
@@ -741,7 +770,7 @@ class TestSearchToolLangfuseTracing:
         resp = MagicMock()
         resp.choices[0].message.content = content
         resp.choices[0].provider_specific_fields = {}
-        resp.usage = None
+        resp.usage = SimpleNamespace(prompt_tokens=284, completion_tokens=522)
         return resp
 
     @staticmethod
@@ -755,7 +784,7 @@ class TestSearchToolLangfuseTracing:
         resp = MagicMock()
         resp.choices[0].message.content = json.dumps(payload)
         resp.choices[0].provider_specific_fields = {}
-        resp.usage = None
+        resp.usage = SimpleNamespace(prompt_tokens=676, completion_tokens=475)
         return resp
 
     @pytest.mark.asyncio
@@ -765,6 +794,7 @@ class TestSearchToolLangfuseTracing:
         tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
         gen_names: list[str] = []
         gen_metadata: list[dict[str, Any]] = []
+        gen_updates: list[dict[str, Any]] = []
 
         @contextmanager
         def _fake_generation(
@@ -776,7 +806,13 @@ class TestSearchToolLangfuseTracing:
         ) -> Iterator[MagicMock]:
             gen_names.append(name)
             gen_metadata.append(dict(metadata or {}))
-            yield MagicMock()
+            gen = MagicMock()
+
+            def _update(**kwargs: Any) -> None:
+                gen_updates.append(kwargs)
+
+            gen.update.side_effect = _update
+            yield gen
 
         async def _fake_acompletion(**kwargs):  # type: ignore[override]
             if kwargs["model"] == f"openai/{config.verifier_model}":
@@ -795,6 +831,8 @@ class TestSearchToolLangfuseTracing:
         assert gen_metadata[1]["effective_cutoff"] == "2024-01-15"
         assert gen_metadata[0]["attempt"] == 1
         assert gen_metadata[1]["attempt"] == 1
+        assert gen_updates[0]["usage_details"] == {"input": 284, "output": 522}
+        assert gen_updates[1]["usage_details"] == {"input": 676, "output": 475}
 
     @pytest.mark.asyncio
     async def test_live_origin_records_search_generation_without_verifier(self) -> None:
