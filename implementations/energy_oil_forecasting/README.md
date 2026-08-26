@@ -27,7 +27,7 @@ introduced in notebook 2.
 |----------|-------|---------|
 | **[`01_wti_case_study.ipynb`](01_wti_case_study.ipynb)** | **The Case Study Narrative** — rolling Prophet backtest animation, annotated context chart, 2025 vs 2026 coverage punchline, futures curve | No |
 | **[`02_intro_agentic_predictor.ipynb`](02_intro_agentic_predictor.ipynb)** | **The Agentic Staircase** — 4 capability levels on Mar 2, 2026; inspect configs and prompts | Yes |
-| **[`03_one_agent_three_tasks.ipynb`](03_one_agent_three_tasks.ipynb)** | **One Agent, Three Tasks** — trajectory, binary shock, scenario analysis via shared agent identity | Yes |
+| **[`03_one_agent_three_tasks.ipynb`](03_one_agent_three_tasks.ipynb)** | **One Agent, Three Tasks** — shared identity once; three editable inline task specs (trajectory, shock, scenario) | Yes |
 | **[`04_systematic_backtest_eval.ipynb`](04_systematic_backtest_eval.ipynb)** | **Systematic Competition** — 2025 backtest → leaderboard → 2026 protected eval | Yes |
 
 ### Adaptive-agent track
@@ -62,19 +62,23 @@ Each forecasting origin defines a strict information cutoff (`as_of`). Predictor
 - **Horizons:** 5, 10, 21 business days
 - **Output:** Point estimate + standard quantile grid (via `ContinuousAgentForecastOutput`)
 - **Evaluation:** CRPS and MAE (Notebook 4 backtest)
+- **Notebook 03:** editable `TRAJECTORY_TASK_SPEC` in the user payload (same identity as Streams 2–3)
 
 ### Task B: Binary Up-shock Probability (Track 1)
 
 - **Question:** P(WTI closes > $5/bbl higher in 5 business days)
 - **Output:** `DiscreteAgentForecastOutput` → `BinaryForecast`
 - **Evaluation:** Brier score (Notebook 3)
+- **Notebook 03:** editable `SHOCK_TASK_SPEC` in the user payload
 
 ### Task C: Scenario Analysis (Track 2)
 
-- **Output:** Three scenario cards with probabilities and 60-day ranges
+- **Question:** What three scenarios are oil-market analysts debating for WTI over the next 60 days?
+- **Output:** Named scenario cards with probabilities, 60-day WTI ranges, point estimates, and key drivers
 - **Evaluation:** Display / qualitative (Track 2 — not head-to-head scored in backtest)
+- **Notebook 03:** editable `SCENARIO_TASK_SPEC` in the user payload
 
-The **one-agent-three-tasks** pattern lives in [`tasks.py`](tasks.py): one `AgentConfig` identity, three `(prompt_builder, output_schema)` pairs via `build_wti_news_predictor(task)`.
+The **one-agent-three-tasks** pattern: notebook 03 defines the shared identity once (system instruction + `search_web` toolbelt), then each stream assigns a role with an inline **task spec** via `WtiMultitaskPromptBuilder`. Library defaults live in [`tasks.py`](tasks.py) (`TASK_SPECS` / `build_wti_news_predictor(task)`); notebooks 02/04 keep a trajectory-specialized system prompt (`build_wti_news_config`) for scored trajectory backtests.
 
 ---
 
@@ -109,7 +113,7 @@ notebook 05).
 |-------|--------|------|
 | Package | `aieng.forecasting.methods.agentic` | `AgentPredictor`, `AgentConfig`, output schema base classes |
 | Stateless identity | `analyst_agent/agent.py` | Instructions, capability presets, skills — fixed at config time |
-| Role per task | `tasks.py` | Prompt builders, `build_wti_news_predictor(task)` |
+| Role per task | `tasks.py` + notebook 03 inline specs | `WtiMultitaskPromptBuilder(task_spec=...)`, `build_wti_news_predictor(task)` |
 | Learning agent | `adaptive_agent/` | Persistent, mutable strategy state updated via self-directed study (notebooks 05–06) |
 
 ---
