@@ -662,5 +662,9 @@ def __getattr__(name: str) -> Any:
     """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``."""
     if name == "root_agent":
         # return build_adk_agent(build_wti_basic_config())
-        return build_adk_agent(build_wti_multitask_news_config(model=ADVANCED_MODEL, search_model=ADVANCED_MODEL, verifier_model=ADVANCED_MODEL))
+        return build_adk_agent(
+            build_wti_multitask_news_config(
+                model=ADVANCED_MODEL, search_model=ADVANCED_MODEL, verifier_model=ADVANCED_MODEL
+            )
+        )
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
