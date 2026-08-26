@@ -68,6 +68,8 @@ You are an expert WTI crude oil market analyst.
 You will receive a JSON payload containing:
 - `task_spec`: the exact question and required JSON output schema
 - `as_of`: the forecast origin date (temporal cutoff)
+- `horizons`: integer horizon steps (business days ahead)
+- `standard_quantiles`: quantile levels for continuous forecasts (when applicable)
 - `origin_price_usd_bbl`: WTI close on the origin date
 - `target_history_csv`: compressed WTI daily close history
 
@@ -659,5 +661,6 @@ def build_wti_agent_predictor(config: AgentConfig) -> AgentPredictor:
 def __getattr__(name: str) -> Any:
     """Expose ``root_agent`` lazily for schema-free interactive use via ``adk web``."""
     if name == "root_agent":
-        return build_adk_agent(build_wti_basic_config())
+        # return build_adk_agent(build_wti_basic_config())
+        return build_adk_agent(build_wti_multitask_news_config(model=ADVANCED_MODEL, search_model=ADVANCED_MODEL, verifier_model=ADVANCED_MODEL))
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
