@@ -3,8 +3,11 @@
 import inspect
 import json
 import logging
+from contextlib import contextmanager
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, Iterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -14,6 +17,8 @@ from aieng.forecasting.methods.agentic.agent_factory import (
     CodeExecutionConfig,
     ContextRetrievalConfig,
     _build_search_tool,
+    _is_retrospective_cutoff,
+    _verification_skip_reason,
     build_adk_agent,
 )
 from aieng.forecasting.methods.agentic.outputs import ContinuousAgentForecastOutput
@@ -634,3 +639,182 @@ class TestSearchToolLeakageVerification:
 
         assert len(calls) == 2
         assert result == "Clean summary."
+
+
+class TestRetrospectiveCutoff:
+    """Live origins skip the verifier; historical dates still fence."""
+
+    def test_yesterday_is_retrospective(self) -> None:
+        """A cutoff strictly before UTC today is a backtest fence."""
+        with patch(
+            "aieng.forecasting.methods.agentic.agent_factory._utc_today",
+            return_value=date(2026, 8, 26),
+        ):
+            assert _is_retrospective_cutoff("2026-08-25") is True
+            assert _is_retrospective_cutoff("2024-01-15") is True
+
+    def test_today_and_future_are_live(self) -> None:
+        """Today or later is a live origin — no leakage fence."""
+        with patch(
+            "aieng.forecasting.methods.agentic.agent_factory._utc_today",
+            return_value=date(2026, 8, 26),
+        ):
+            assert _is_retrospective_cutoff("2026-08-26") is False
+            assert _is_retrospective_cutoff("2026-08-27") is False
+
+    def test_unparseable_cutoff_is_treated_as_retrospective(self) -> None:
+        """Malformed dates must not silently disable the guard."""
+        assert _is_retrospective_cutoff("not-a-date") is True
+
+    def test_skip_reason_live_as_of(self) -> None:
+        """enforce_cutoff=True still skips when the cutoff is today."""
+        with patch(
+            "aieng.forecasting.methods.agentic.agent_factory._utc_today",
+            return_value=date(2026, 8, 26),
+        ):
+            assert _verification_skip_reason("2026-08-26", enforce_cutoff=True) == "live_as_of"
+            assert _verification_skip_reason("2026-08-25", enforce_cutoff=True) is None
+
+    @pytest.mark.asyncio
+    async def test_verifier_skipped_when_cutoff_is_today(self) -> None:
+        """A live as_of (today) is a single search call, no verifier."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            resp = MagicMock()
+            resp.choices[0].message.content = "Live news."
+            resp.choices[0].provider_specific_fields = {}
+            resp.usage = None
+            return resp
+
+        with (
+            patch("aieng.forecasting.methods.agentic.agent_factory._utc_today", return_value=date(2026, 8, 26)),
+            patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)),
+        ):
+            result = await tool(query="WTI price", cutoff_date="2026-08-26")
+
+        assert len(calls) == 1
+        assert result == "Live news."
+        user_msg = next(m for m in calls[0]["messages"] if m["role"] == "user")
+        assert "2026-08-26" not in user_msg["content"]
+
+    @pytest.mark.asyncio
+    async def test_harness_today_skips_even_when_llm_passes_past_cutoff(self) -> None:
+        """Harness as_of of today wins; verifier does not run."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
+        fake_tool_context = SimpleNamespace(state={AS_OF_STATE_KEY: "2026-08-26"})
+        calls: list[dict] = []
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            calls.append(kwargs)
+            resp = MagicMock()
+            resp.choices[0].message.content = "Live news."
+            resp.choices[0].provider_specific_fields = {}
+            resp.usage = None
+            return resp
+
+        with (
+            patch("aieng.forecasting.methods.agentic.agent_factory._utc_today", return_value=date(2026, 8, 26)),
+            patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)),
+        ):
+            result = await tool(
+                query="WTI price",
+                cutoff_date="2024-01-15",
+                tool_context=fake_tool_context,
+            )
+
+        assert len(calls) == 1
+        assert result == "Live news."
+
+
+class TestSearchToolLangfuseTracing:
+    """Inner search and verifier emit nested Langfuse generations."""
+
+    @staticmethod
+    def _search_response(content: str) -> MagicMock:
+        resp = MagicMock()
+        resp.choices[0].message.content = content
+        resp.choices[0].provider_specific_fields = {}
+        resp.usage = None
+        return resp
+
+    @staticmethod
+    def _verify_response() -> MagicMock:
+        payload = {
+            "flagged_claims": [],
+            "filtered_text": "Clean summary.",
+            "confidence": 9,
+            "clean": True,
+        }
+        resp = MagicMock()
+        resp.choices[0].message.content = json.dumps(payload)
+        resp.choices[0].provider_specific_fields = {}
+        resp.usage = None
+        return resp
+
+    @pytest.mark.asyncio
+    async def test_search_and_verifier_generations_nested_on_historical_cutoff(self) -> None:
+        """A past cutoff records google_search then leakage_verifier generations."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
+        gen_names: list[str] = []
+        gen_metadata: list[dict[str, Any]] = []
+
+        @contextmanager
+        def _fake_generation(
+            name: str,
+            *,
+            model: str | None = None,
+            input: Any = None,  # noqa: A002
+            metadata: dict[str, Any] | None = None,
+        ) -> Iterator[MagicMock]:
+            gen_names.append(name)
+            gen_metadata.append(dict(metadata or {}))
+            yield MagicMock()
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            if kwargs["model"] == f"openai/{config.verifier_model}":
+                return self._verify_response()
+            return self._search_response("Raw summary.")
+
+        with (
+            patch("aieng.forecasting.langfuse_tracing.langfuse_generation", _fake_generation),
+            patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)),
+        ):
+            result = await tool(query="WTI price", cutoff_date="2024-01-15")
+
+        assert result == "Clean summary."
+        assert gen_names == ["search_web.google_search", "search_web.leakage_verifier"]
+        assert gen_metadata[0]["effective_cutoff"] == "2024-01-15"
+        assert gen_metadata[1]["effective_cutoff"] == "2024-01-15"
+        assert gen_metadata[0]["attempt"] == 1
+        assert gen_metadata[1]["attempt"] == 1
+
+    @pytest.mark.asyncio
+    async def test_live_origin_records_search_generation_without_verifier(self) -> None:
+        """Live as_of still traces the search call; verifier span is absent."""
+        config = ContextRetrievalConfig(enabled=True, instruction="Search assistant.")
+        tool = _build_search_tool(config, openai_base_url="https://proxy.example.com/v1", openai_api_key="test-key")
+        gen_names: list[str] = []
+
+        @contextmanager
+        def _fake_generation(name: str, **kwargs: Any) -> Iterator[MagicMock]:
+            gen_names.append(name)
+            yield MagicMock()
+
+        async def _fake_acompletion(**kwargs):  # type: ignore[override]
+            return self._search_response("Live news.")
+
+        with (
+            patch("aieng.forecasting.methods.agentic.agent_factory._utc_today", return_value=date(2026, 8, 26)),
+            patch("aieng.forecasting.langfuse_tracing.langfuse_generation", _fake_generation),
+            patch("litellm.acompletion", new=AsyncMock(side_effect=_fake_acompletion)),
+        ):
+            result = await tool(query="WTI price", cutoff_date="2026-08-26")
+
+        assert result == "Live news."
+        assert gen_names == ["search_web.google_search"]

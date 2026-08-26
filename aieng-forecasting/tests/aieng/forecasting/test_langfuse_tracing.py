@@ -12,6 +12,7 @@ from aieng.forecasting.langfuse_tracing import (
     _langfuse_credentials_present,
     _LangfuseTracingBootstrap,
     init_langfuse_tracing,
+    langfuse_generation,
 )
 
 
@@ -198,3 +199,59 @@ def test_init_langfuse_tracing_is_a_no_op_without_credentials(
     monkeypatch.delenv("LANGFUSE_SECRET_KEY", raising=False)
     init_langfuse_tracing()
     assert not fresh._langfuse_client_initialized
+
+
+# ---------------------------------------------------------------------------
+# langfuse_generation — nested generations for inner LiteLLM calls
+# ---------------------------------------------------------------------------
+
+
+class TestLangfuseGeneration:
+    """``langfuse_generation`` no-ops without credentials and nests when present."""
+
+    def test_no_op_without_credentials(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Missing keys yield an object that accepts ``update`` without raising."""
+        monkeypatch.delenv("LANGFUSE_PUBLIC_KEY", raising=False)
+        monkeypatch.delenv("LANGFUSE_SECRET_KEY", raising=False)
+        with langfuse_generation(name="search_web.leakage_verifier") as generation:
+            generation.update(output="ok")
+
+    def test_opens_generation_when_credentials_present(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Credentials plus SDK open a nested generation observation."""
+        monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-test")
+        monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test")
+        mock_client = MagicMock()
+        mock_generation = MagicMock()
+        mock_client.start_as_current_observation.return_value.__enter__.return_value = mock_generation
+        mock_client.start_as_current_observation.return_value.__exit__.return_value = False
+        langfuse_mod = MagicMock()
+        langfuse_mod.get_client.return_value = mock_client
+        with (
+            patch.dict(sys.modules, {"langfuse": langfuse_mod}),
+            langfuse_generation(
+                name="search_web.leakage_verifier",
+                model="gemini-3.5-flash",
+                input={"query": "WTI"},
+                metadata={"attempt": 1},
+            ) as generation,
+        ):
+            assert generation is mock_generation
+        mock_client.start_as_current_observation.assert_called_once()
+        kwargs = mock_client.start_as_current_observation.call_args.kwargs
+        assert kwargs["name"] == "search_web.leakage_verifier"
+        assert kwargs["as_type"] == "generation"
+        assert kwargs["model"] == "gemini-3.5-flash"
+        assert kwargs["input"] == {"query": "WTI"}
+        assert kwargs["metadata"] == {"attempt": 1}
+
+    def test_sdk_failure_is_swallowed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A raising SDK must not break the wrapped LiteLLM call."""
+        monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-test")
+        monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test")
+        langfuse_mod = MagicMock()
+        langfuse_mod.get_client.side_effect = RuntimeError("connection refused")
+        with (
+            patch.dict(sys.modules, {"langfuse": langfuse_mod}),
+            langfuse_generation(name="search_web.google_search") as generation,
+        ):
+            generation.update(output="still works")
