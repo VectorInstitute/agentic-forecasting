@@ -8,13 +8,14 @@ kind: notebook
 
 **If you're not sure what to do next, continue from here.**
 
-This notebook is a fresh, hackable agent for the WTI crude-oil use case — deliberately *not* wired into the numbered curriculum. It gives you our common building blocks behind simple toggles, so you can start building something of your own:
+This notebook is a fresh, hackable agent for the WTI crude-oil use case — deliberately *not* wired into the numbered curriculum. An agent is a **persona** plus a **toolbelt**, and you assemble that toolbelt right here in the notebook from a menu of one-line tool factories:
 
-- **optional news search** — bounded, cutoff-aware Google Search (proxy-only)
-- **optional code execution** — an E2B Python sandbox
-- **two lightweight skills** — *tool-usage playbooks* in `starter_agent/skills/`
+- **`news_search()`** — bounded, cutoff-aware Google Search (proxy-only)
+- **`arima_forecast()`** — an AutoARIMA statistical anchor the agent can call directly (no code-gen)
+- **`code_sandbox()`** — an E2B Python sandbox for the agent to compute its own diagnostics
+- each tool pulls in its own *playbook* skill from `starter_agent/skills/`
 
-It does two things: lets you **talk to the agent** (open-ended, Track 2) and **score one real forecast** (Track 1). The live cells are gated by `RUN_AGENT` so a fresh `Run All` is safe and free; flip it to `True` to actually call the model.
+The factories live in `starter_agent/tools.py` — open it to see how a tool is built, or add your own. It does two things: lets you **talk to the agent** (open-ended, Track 2) and **score one real forecast** (Track 1). The live cells are gated by `RUN_AGENT` so a fresh `Run All` is safe and free; flip it to `True` to actually call the model.
 
 ## Cell 2 (code)
 
@@ -47,6 +48,7 @@ RUN_AGENT = False
 from energy_oil_forecasting.starter_agent import (
     build_starter_agent_config,
     build_starter_agent_predictor,
+    tools,
 )
 
 
@@ -56,24 +58,31 @@ print("RUN_AGENT =", RUN_AGENT, "| model =", AGENT_MODEL)
 ## Cell 3 (markdown)
 
 ---
-## 1. Meet your agent
+## 1. Build your agent's toolbelt
 
-`build_starter_agent_config` returns an `AgentConfig` with two toggles. The default turns **news search on** (proxy-only, no extra key) and **code execution off** (it needs `E2B_API_KEY` and is slower). Flip them and re-run — the loaded skills follow the enabled tools.
+This is where you compose the agent. `build_starter_agent_config` takes a `tools=[...]` list — the toolbelt — and folds each tool onto the agent (its config, its skill, its instructions). **Comment a line to drop a tool; uncomment to add one**, then re-run. That's the whole model: an agent is a persona plus the tools you hand it.
 
 ## Cell 4 (code)
 
 ```python
-config = build_starter_agent_config(
-    model=AGENT_MODEL,
-    enable_search=True,  # ← cutoff-aware Google Search (proxy-only)
-    enable_code_exec=False,  # ← E2B Python sandbox (needs E2B_API_KEY); try True!
-)
+# ── Your agent's toolbelt ──────────────────────────────
+# Each factory returns one tool. Comment a line to drop it, uncomment to add it.
+# See starter_agent/tools.py for how each is built — and to write your own.
+toolbelt = [
+    tools.news_search(),  # cutoff-aware Google Search (proxy-only, no extra key)
+    tools.arima_forecast(),  # AutoARIMA anchor — the agent calls a forecast directly, no code-gen
+    # tools.code_sandbox(),   # E2B Python sandbox (needs E2B_API_KEY, slower) — uncomment to add
+]
 
-print("Agent:", config.name)
-print("Search enabled:    ", config.context_retrieval.enabled)
-print("Code-exec enabled: ", config.code_execution.enabled)
-print("Skills loaded:     ", [p.name for p in config.skills_dirs])
-print("\n── System instruction (edit this in starter_agent/agent.py) ──\n")
+config = build_starter_agent_config(model=AGENT_MODEL, tools=toolbelt)
+
+print("Agent:   ", config.name)
+print("Toolbelt:", [t.label for t in toolbelt])
+print("  search enabled:   ", config.context_retrieval.enabled)
+print("  forecast tool:    ", bool(config.function_tools))
+print("  code-exec enabled:", config.code_execution.enabled)
+print("Skills loaded:      ", [p.name for p in config.skills_dirs])
+print("\n── System instruction (edit the persona in starter_agent/agent.py) ──\n")
 print(config.instruction[:1200], "...")
 ```
 
@@ -164,11 +173,11 @@ else:
 
 This agent is a starting point. Here are concrete next steps, easiest first — each is a small edit, then re-run the cells above.
 
-1. **Flip code execution on.** Set `enable_code_exec=True` in §1 (needs `E2B_API_KEY`). The agent loads the `code-analysis-playbook` skill and can compute its own diagnostics before forecasting. Compare the rationale.
+1. **Change the toolbelt.** In §1, uncomment `tools.code_sandbox()` (needs `E2B_API_KEY`) to let the agent compute its own diagnostics, or drop `arima_forecast()` and compare the rationale with and without a statistical anchor. Adding a tool automatically loads its playbook skill and its instructions.
 2. **Edit the agent's personality.** Open `starter_agent/agent.py` and change `_build_starter_instruction()` — make it more cautious, more contrarian, focused on one driver. Re-run §1 to see the new instruction.
-3. **Sharpen the skills.** The two files in `starter_agent/skills/` are short on purpose. Add your best queries to `research-playbook`, or a new diagnostic to `code-analysis-playbook`. The agent picks them up automatically.
+3. **Sharpen the skills.** The files in `starter_agent/skills/` are short on purpose. Add your best queries to `research-playbook`, or a new diagnostic to `code-analysis-playbook`. The agent picks them up automatically.
 4. **Change the question and the origin.** Try a different `QUESTION` in §2 and a different origin in §3.
-5. **Add a tool.** Give the agent a conventional forecast tool as a statistical anchor — see `analyst_agent.build_wti_tool_config` for the `ForecastTool` pattern.
+5. **Write your own tool.** Open `starter_agent/tools.py` and add a factory that returns a `ToolSpec` — point `arima_forecast()` at a different series, swap AutoARIMA for another predictor, or wrap a brand-new function tool. Then add it to the toolbelt in §1.
 6. **Score it properly.** Run it across several origins with `backtest()` (see `04_systematic_backtest_eval.ipynb`) and compare CRPS against the baselines.
 
 Bigger ideas — an agent that *learns* a strategy (notebooks 05–06), news vs. no-news lift, live prospective forecasting — are in the use-case `README.md` and `planning-docs/roadmap.md`.

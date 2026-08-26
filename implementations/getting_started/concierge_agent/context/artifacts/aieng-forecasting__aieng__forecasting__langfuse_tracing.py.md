@@ -29,12 +29,11 @@ def _langfuse_credentials_present() -> bool:
 
 
 class _LangfuseTracingBootstrap:
-    """Registers LiteLLM + ADK exporters at most once per process."""
+    """Registers the Langfuse client and ADK instrumentation once per process."""
 
-    __slots__ = ("_google_adk_instrumented", "_langfuse_client_initialized", "_litellm_instrumented")
+    __slots__ = ("_google_adk_instrumented", "_langfuse_client_initialized")
 
     def __init__(self) -> None:
-        self._litellm_instrumented = False
         self._google_adk_instrumented = False
         self._langfuse_client_initialized = False
 
@@ -51,7 +50,6 @@ class _LangfuseTracingBootstrap:
         # this, ADK spans are emitted into a no-op provider and never reach Langfuse.
         self._ensure_langfuse_client()
 
-        self._register_litellm_langfuse_otel()
         self._instrument_google_adk()
 
     def _ensure_langfuse_client(self) -> None:
@@ -68,21 +66,6 @@ class _LangfuseTracingBootstrap:
             logger.exception("Langfuse get_client() failed; ADK spans may not export.")
             return
         self._langfuse_client_initialized = True
-
-    def _register_litellm_langfuse_otel(self) -> None:
-        """Register LiteLLM Langfuse callback."""
-        if self._litellm_instrumented:
-            return
-        try:
-            import litellm  # noqa: PLC0415
-        except ImportError:
-            logger.debug("litellm not installed; skipping LiteLLM Langfuse callback.")
-            return
-
-        existing = list(getattr(litellm, "callbacks", None) or [])
-        if "langfuse_otel" not in existing:
-            litellm.callbacks = [*existing, "langfuse_otel"]
-        self._litellm_instrumented = True
 
     def _instrument_google_adk(self) -> None:
         """Instrument Google ADK."""
@@ -125,10 +108,12 @@ def init_langfuse_tracing() -> None:
        ``TracerProvider`` receives Langfuse's span processor.  This is required
        for ADK spans emitted via ``openinference-instrumentation-google-adk``
        to reach Langfuse.
-    2. Appends ``"langfuse_otel"`` to ``litellm.callbacks`` once (if
-       ``litellm`` is importable).
-    3. Runs ``GoogleADKInstrumentor().instrument()`` once (if
+    2. Runs ``GoogleADKInstrumentor().instrument()`` once (if
        ``openinference-instrumentation-google-adk`` is importable).
+
+    LiteLLM's ``langfuse_otel`` callback is deliberately not registered: it is
+    unusable against the Langfuse v4 SDK and stamps a zero ``llm.cost.total``
+    on the active span, which suppresses Langfuse's own cost calculation.
 
     Set ``LANGFUSE_HOST`` or ``LANGFUSE_BASE_URL`` for non-default regions.
     For short-lived processes, call ``langfuse.get_client().flush()`` before

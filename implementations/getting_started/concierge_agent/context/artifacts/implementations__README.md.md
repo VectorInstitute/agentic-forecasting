@@ -32,7 +32,7 @@ implementations/
 `-- pyproject.toml            # local workspace packaging
 ```
 
-YAML backtest and eval specs live under each use case in `specs/`. Each directory is independent; see its `README.md` for the walkthrough.
+YAML backtest and eval specs live under each use case in `specs/`. Each directory is independent; see its `README.md` for the walkthrough. For the build-phase moves — onboarding data, standing up an experiment, customizing an agent, auditing a result — see [`guides/`](../guides/).
 
 Every domain use case (all except `getting_started`) also ships a `starter_agent/` module and a `99_starter_agent.ipynb` — a fresh, hackable **starter agent** that is the consistent "build your own" entry point for that use case (toggleable news search + code execution, two lightweight tool-usage skills, an interactive cell, and one scored forecast).
 

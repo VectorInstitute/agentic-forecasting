@@ -14,8 +14,10 @@ This notebook simulates a rigorous production forecasting workflow:
 3. Select the **top contender configurations** based solely on 2025
    historical performance (no peeking at 2026).
 4. Let the contenders compete in the **2026 Protected Arena**
-   (`energy_oil_eval.yaml`) during the geopolitical price shock —
-   measuring adaptive real-time responsiveness and calibration.
+   (`energy_oil_eval.yaml`) across the geopolitical price shock and its
+   aftermath — measuring adaptive real-time responsiveness and calibration.
+   The eval window runs through the most recent origin whose 21-business-day
+   horizon still resolves against cached data (see `scripts/fetch_wti.py`).
 
 The line-up spans three families behind one `Predictor` interface: **baselines**
 (Naive, AutoARIMA), **numerical ML** (LightGBM ± a leak-safe covariate panel),
@@ -56,7 +58,7 @@ warnings.filterwarnings("ignore")
 # Set SMOKE_TEST = True to run a 2-origin, 1-sample version of the notebook
 # for fast local development and end-to-end CI testing. The full specs run
 # 51 backtest + 8 eval origins; smoke runs 2 + 2.
-SMOKE_TEST = True
+SMOKE_TEST = False
 
 # ── Models ────────────────────────────────────────────────────────────────────
 # The project standardises on two Vector-proxy models. Every LLM and agent
@@ -324,9 +326,11 @@ print(f"Saved {sum(n in _BASELINE_PREDICTORS for n in backtest_results)} backtes
 ---
 ## 5. 2026 Evaluation — Held-Out Test Period
 
-We run every active predictor on **8 weekly origins in early 2026**
-(`energy_oil_eval.yaml`) — a period of major geopolitical volatility not seen
-during the 2025 backtest.
+We run every active predictor on **18 weekly origins spanning Feb–Jun 2026**
+(`energy_oil_eval.yaml`) — the major geopolitical volatility spike not seen
+during the 2025 backtest, plus its aftermath. The window runs through the
+most recent origin that still fully resolves against cached WTI data (the
+21-business-day horizon needs data 21 business days past the origin).
 
 This evaluation serves two purposes:
 1. **Measure out-of-sample robustness** — do the 2025 edges (statistical,
@@ -402,55 +406,161 @@ print(df_scorecard.to_string())
 ## Cell 16 (markdown)
 
 ---
-## 7. Core Takeaways
+## 7. Diagnostics — reading past the leaderboard
 
-1. **Numerical methods beat the naive baseline** by extracting structure from the
-   price history — AutoARIMA via local autocorrelation, LightGBM via lagged
-   gradient-boosted quantiles. In stable regimes this translates to better CRPS.
+The scorecard above is a single number per method. That hides *where* the score
+comes from and *whether the ranking is even real*. The next cells decompose it
+straight from the eval predictions — so they recompute on any rerun, smoke or
+full:
 
-2. **Covariates can sharpen LightGBM.** The `LightGBM + cov` variant adds a
-   leak-safe panel (Brent, natural gas, gasoline, gold, the USD index, the
-   USL/USO futures-curve contango proxy, and VIX). Comparing it to plain
-   `LightGBM` isolates how much the cross-market context is worth — the same
-   lesson that made covariates decisive in the S&P 500 study.
+- **CRPS by horizon** — does a method win everywhere, or is its mean dominated by
+  one horizon? (For a short forecast, the 5-day calls are easy and nearly tied;
+  the ranking is usually decided by the longest horizon.)
+- **Mean CRPS ± standard error** — with only a handful of origins, are the gaps
+  between methods bigger than the noise, or is the "winner" a coin flip?
 
-3. **Tree models extrapolate poorly through regime shifts.** LightGBM forecasts
-   the price *level*, and gradient-boosted trees cannot predict outside the range
-   seen in training. When the 2026 shock pushes WTI to new levels, expect the
-   tree methods — like AutoARIMA — to lag and produce biased, under-confident
-   intervals. This is a structural limitation, not a tuning problem.
+With the **smoke spec (2 origins → a few scored points)** expect wide error bars
+and an unstable ranking. That is exactly why a surprising leaderboard here is not
+yet evidence of anything — it is a pipeline check.
 
-4. **LLM/agent methods bring a different prior.** The LLM-process forecasters and
-   the news-reading agent are run on both `gemini-3.1-flash-lite-preview` and
-   `gemini-3.5-flash`, so the scorecard shows both *method* and *model* effects —
-   and whether reading the news helps when the numerical methods are blindsided.
+## Cell 17 (code)
 
-5. **The `Predictor` abstraction makes the comparison clean.** The same harness,
-   scoring functions, covariate panel, and eval spec serve every family, and the
-   registry lets you switch any predictor on or off without touching the pipeline.
+```python
+from energy_oil_forecasting import viz
+from energy_oil_forecasting.analysis import (
+    build_price_frame,
+    eval_narrative_md,
+    extract_agent_rationales,
+    leaderboard_with_uncertainty,
+    per_horizon_crps,
+    predictions_to_frame,
+)
+from IPython.display import HTML, Markdown, display  # noqa: A004
+
+
+# Explode every scored 2026 eval prediction into one tidy row per
+# (predictor, origin, horizon): point, 80% interval, realised price, and CRPS.
+# Everything in Sections 7–10 reads from this frame, so it all recomputes when
+# you flip SMOKE_TEST off and rerun.
+price_df = build_price_frame(data_service)
+eval_frame = predictions_to_frame(eval_results, data_service)
+eval_board = leaderboard_with_uncertainty(eval_frame)
+ph_crps = per_horizon_crps(eval_frame)
+
+print("━" * 72)
+print("MEAN CRPS BY PREDICTOR × HORIZON (lower = better; 'All' = overall mean):")
+print("━" * 72)
+print(ph_crps.round(2).to_string())
+```
+
+## Cell 18 (code)
+
+```python
+# Heatmap of the table above. Read it left-to-right: the short-horizon columns
+# are usually a near-uniform green (everyone is right), and one long-horizon
+# column carries the colour spread that sets the 'All' ranking.
+viz.make_crps_heatmap(ph_crps)
+```
+
+## Cell 19 (code)
+
+```python
+# Same leaderboard, now with a standard-error bar on each mean. If the bars of
+# the top methods overlap, their ordering is not statistically distinguishable —
+# the honest verdict when only a few origins have been scored.
+viz.make_leaderboard_interval_chart(eval_board)
+```
+
+## Cell 20 (markdown)
 
 ---
-## 8. What stateless methods can't do
+## 8. What are the top methods actually forecasting?
 
-Every method here is calibrated (or prompted) once and never updated between
-rounds. This is intentional — it creates a clean baseline — but it leaves a
-systematic gap:
+A CRPS number doesn't show *behaviour*. Below, each leading method's **median
+forecast and 80% interval** are drawn against the realised WTI path at every
+eval origin. This is where the leaderboard becomes legible — watch for who
+tracks the move, who simply anchors to the last price, and whose intervals are
+too narrow to cover the outcome when the market jumps.
 
-- **No error feedback.** If a method consistently produces intervals that are too
-  narrow in elevated-vol regimes, it keeps making the same mistake. There is no
-  mechanism to update calibration between rounds.
+## Cell 21 (code)
 
-- **No strategy evolution.** Each prediction starts from the same prior (the same
-  fitted model, or the same prompt). Resolved outcomes disappear without
+```python
+# Plot the leaderboard's top methods, and always include the best LLM/agent
+# method for contrast (so the chart compares families even when a baseline leads).
+_leaders = list(eval_board.index[:3])
+_best_llm = next((p for p in eval_board.index if eval_board.loc[p, "family"] == "LLM / Agent"), None)
+if _best_llm and _best_llm not in _leaders:
+    _leaders.append(_best_llm)
+print(f"Showing: {', '.join(_leaders)}")
+viz.make_eval_forecast_chart(eval_frame, price_df, _leaders)
+```
+
+## Cell 22 (markdown)
+
+---
+## 9. Reading the agent's reasoning
+
+The news-reading agent attaches a free-text **rationale** to every forecast, and
+a link to the full **Langfuse trace**. These are pulled straight from the
+prediction metadata. This is where a surprising score becomes interpretable: you
+can read whether the agent actually saw the geopolitical risk, and *how* it
+turned that into a price and an interval — including, often, an interval far too
+narrow for a regime shift.
+
+## Cell 23 (code)
+
+```python
+# One card per (agent, origin): the rationale, the per-horizon note, and a link
+# to the full reasoning trace. Empty only if no LLM/agent predictor is enabled.
+eval_rationales = extract_agent_rationales(eval_results)
+display(HTML(viz.render_rationales_html(eval_rationales)))
+```
+
+## Cell 24 (markdown)
+
+---
+## 10. Takeaways — computed from this run
+
+The summary below is **generated from the eval results in memory, not
+hard-coded**, so it always matches what actually ran: the real winner, whether
+its lead clears the noise floor, the horizon that decided the ranking, the
+best-performing family, and a calibration line. Flip `SMOKE_TEST` off, rerun,
+and these takeaways update themselves with the full leaderboard.
+
+## Cell 25 (code)
+
+```python
+display(Markdown(eval_narrative_md(eval_frame, smoke=SMOKE_TEST)))
+```
+
+## Cell 26 (markdown)
+
+---
+## 11. What stateless methods can't do
+
+Sections 7–10 score and dissect this run on its own terms. But every method here
+shares one structural limit, independent of who topped the leaderboard: it is
+calibrated (or prompted) **once and never updated between rounds**. That is
+intentional — it creates a clean baseline — but it leaves a systematic gap:
+
+- **No error feedback.** If a method's intervals are consistently too narrow in
+  an elevated-vol regime (read the coverage line in Section 10, and the squashed
+  error bars in Section 8), it keeps making the same mistake. Nothing updates its
+  calibration between origins.
+
+- **No strategy evolution.** Each prediction starts from the same prior — the
+  same fitted model, or the same prompt. Resolved outcomes disappear without
   influencing future forecasts.
 
 - **Context without memory.** Even the news agent re-reads the world each origin;
-  it does not accumulate what worked.
+  it does not accumulate what worked. The rationales in Section 9 are written
+  fresh every time, with no record of how the last one resolved.
 
-→ **Notebook 5** introduces adaptive agents that study the 2025 backtest,
-record systematic observations, and calibrate their strategies accordingly. At
-inference time, each agent receives the live stateless estimate and decides how
-to adjust it — applying what it learned from training.
+→ **Notebook 5** introduces adaptive agents that study the 2025 backtest, record
+systematic observations, and calibrate their strategies accordingly. At inference
+time, each agent receives the live stateless estimate and decides how to adjust
+it — applying what it learned from training.
 
 → **Notebook 6** evaluates whether any training approach actually improved
-out-of-sample performance on the held-out 2026 data.
+out-of-sample performance on the held-out 2026 data — measured against the
+stateless baseline this notebook just established.
