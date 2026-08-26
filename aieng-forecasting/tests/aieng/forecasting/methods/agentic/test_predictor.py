@@ -287,6 +287,13 @@ class TestTolerantParsing:
 class TestPredictErrorHandling:
     """``predict()`` swallows conversion errors but propagates schema errors."""
 
+    def test_empty_response_raises_descriptive_error(self) -> None:
+        """An exhausted agent response reports the agent failure, not a JSON error."""
+        predictor, _ = _make_predictor(response="  ")
+
+        with pytest.raises(ValueError, match="empty response"):
+            predictor.predict(_task([1]), _context())
+
     def test_horizon_mismatch_returns_empty_list_and_logs(self, caplog: pytest.LogCaptureFixture) -> None:
         """Output that validates but fails to_predictions yields ``[]`` and logs."""
         # Output covers horizon 1, task asks for [1, 2]; conversion will raise.

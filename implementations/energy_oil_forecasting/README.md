@@ -116,6 +116,10 @@ notebook 05).
 | Role per task | `tasks.py` + notebook 03 inline specs | `WtiMultitaskPromptBuilder(task_spec=...)`, `build_wti_news_predictor(task)` |
 | Learning agent | `adaptive_agent/` | Persistent, mutable strategy state updated via self-directed study (notebooks 05–06) |
 
+The WTI code-execution preset reserves 32K output tokens for tool work and the
+final structured forecast. If an agent still returns no text, `AgentPredictor`
+reports an empty response directly instead of surfacing a JSON parsing error.
+
 ---
 
 ## Data Source & Setup
