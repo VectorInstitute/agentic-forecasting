@@ -8,7 +8,7 @@ WTI Crude Oil is highly liquid and sensitive to geopolitical risk, macroeconomic
 
 1. **Statistical models** (Prophet) extrapolate trend and seasonality but are blind to regime-breaking news.
 2. **Context-aware agentic models** (bounded Google Search) adapt to shocks by reasoning over shipping lane closures, OPEC+ policy, and political escalation.
-3. **Code-executing agentic models** verify trends, compute rolling indicators, and self-calibrate intervals via sandboxed Python.
+3. **Code-executing agentic models** verify trends, compute rolling indicators, and self-calibrate intervals via self-contained sandboxed Python scripts with explicit imports.
 
 ---
 

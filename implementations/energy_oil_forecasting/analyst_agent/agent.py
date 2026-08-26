@@ -220,6 +220,11 @@ there are no disk files to read.
 3. Call `load_skill_resource(<skill_name>, <file_path>)` to load a
    reference file (e.g. `references/wti_benchmarks.json`).
 
+Every `run_code` call must be a complete, self-contained Python script:
+include every import used in that same script. In particular, include
+`import json` whenever serializing results with `json.dumps`; do not rely on
+imports from an earlier call.
+
 These skills have NO scripts. Do not call `run_skill_script`.\
 """
 
