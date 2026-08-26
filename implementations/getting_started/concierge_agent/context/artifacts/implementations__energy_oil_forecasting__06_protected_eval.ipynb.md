@@ -470,4 +470,4 @@ WTI_STRATEGY_DIR=adaptive_agent/skills/wti-strategy-trained \\
     uv run adk web adaptive_agent/
 ```
 
-Open `http://localhost:8000`. See Notebook 5 for suggested conversation starters.
+Open `http://localhost:8000`. See Notebook 5 for suggested conversation starters. On a **Coder workspace** that URL is inside the VM — [guide 5](../../guides/05-access-adk-web-via-ssh-tunnel.md) tunnels it to your laptop.

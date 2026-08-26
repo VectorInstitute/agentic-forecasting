@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import warnings
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
@@ -129,18 +130,26 @@ class ContextRetrievalConfig(BaseModel):
     the calling agent can retrieve grounded, sourced web context without a
     direct Gemini API key.
 
-    Temporal cutoff enforcement has two layers. The first is soft
-    (LLM-judgment-based): when ``enforce_cutoff`` is ``True`` and the calling
-    agent passes a ``cutoff_date`` to the tool, the inner proxy prompt
-    explicitly asks the model to exclude post-cutoff sources. This alone is
-    not a hard guarantee — backtests have shown it leak real post-cutoff
-    information despite the instruction. The second, hard layer is an
-    independent verifier call (see ``verifier_model`` etc. below): a separate
-    LLM call extracts and judges each factual claim in the search result
-    against the cutoff, strips violations, and retries the search with
-    feedback when it cannot produce a sufficiently confident result —
+    Temporal cutoff enforcement has two layers, and both run only when the
+    effective cutoff is a *retrospective* date (strictly before UTC today).
+    Live origins (cutoff on or after today) skip the fence so current news
+    is not stripped; set ``enforce_cutoff=False`` to skip it even on
+    historical dates. The first layer is soft (LLM-judgment-based): the
+    inner proxy prompt asks the model to exclude post-cutoff sources. This
+    alone is not a hard guarantee — backtests have shown it leak real
+    post-cutoff information despite the instruction. The second, hard layer
+    is an independent verifier call (see ``verifier_model`` etc. below): a
+    separate LLM call extracts and judges each factual claim in the search
+    result against the cutoff, strips violations, and retries the search
+    with feedback when it cannot produce a sufficiently confident result —
     returning an explicit failure sentinel rather than silently risky
     content if verification never succeeds within the attempt budget.
+
+    Both inner LLM calls (grounded search and verifier) emit Langfuse
+    generations named ``search_web.google_search`` and
+    ``search_web.leakage_verifier`` when tracing is configured, nested
+    under the ADK ``search_web`` tool span so they appear in the same
+    agent trace.
 
     Attributes
     ----------
@@ -155,11 +164,12 @@ class ContextRetrievalConfig(BaseModel):
         when ``enabled`` is ``True``.
     enforce_cutoff : bool, default=True
         When ``True``, the ``search_web`` tool appends a cutoff-date
-        constraint to the user prompt whenever ``cutoff_date`` is supplied by
-        the calling agent, and runs the independent leakage verifier
-        described above. Set to ``False`` for live (non-backtest) agents
-        where no temporal fence is needed — the verifier is skipped entirely
-        in that case, at zero extra cost.
+        constraint and runs the independent leakage verifier whenever the
+        effective cutoff (harness ``as_of``, else the LLM-supplied
+        ``cutoff_date``) is strictly before UTC today. Cutoffs on or after
+        today are treated as live and skip both layers automatically. Set
+        to ``False`` to skip the fence even on historical dates, at zero
+        extra verifier cost.
     temperature : float | None, default=None
         Sampling temperature for the inner search call.
     max_output_tokens : int | None, default=None
@@ -275,6 +285,69 @@ def _build_leakage_verification_schema() -> dict[str, Any]:
     }
 
 
+def _utc_today() -> date:
+    """Calendar date in UTC; used to decide whether a cutoff is retrospective."""
+    return datetime.now(timezone.utc).date()
+
+
+def _is_retrospective_cutoff(cutoff: str) -> bool:
+    """Return True when *cutoff* is a calendar date strictly before UTC today.
+
+    Live origins (today or a future date) should not run the leakage fence:
+    there is nothing post-cutoff to leak, and the verifier would strip
+    current news. Unparseable values are treated as retrospective so a
+    malformed date cannot silently disable the guard.
+    """
+    raw = cutoff.strip()[:10]
+    try:
+        cutoff_d = date.fromisoformat(raw)
+    except ValueError:
+        return True
+    return cutoff_d < _utc_today()
+
+
+def _verification_skip_reason(effective_cutoff: str | None, *, enforce_cutoff: bool) -> str | None:
+    """Why cutoff enforcement is skipped, or ``None`` when the verifier should run."""
+    if not effective_cutoff:
+        return "no_cutoff"
+    if not enforce_cutoff:
+        return "enforce_cutoff_disabled"
+    if not _is_retrospective_cutoff(effective_cutoff):
+        return "live_as_of"
+    return None
+
+
+def _usage_from_litellm(resp: Any) -> dict[str, int]:
+    """Map LiteLLM token counts into Langfuse ``usage_details``.
+
+    Keys must be ``input`` / ``output`` (optionally ``input_cached_tokens``).
+    Those are the usage types on Langfuse's model price table. Sending
+    ``input_tokens`` / ``output_tokens`` still shows counts in the UI but
+    matches no price, so ``totalCost`` stays null — which is what happened
+    on ``search_web.google_search`` and ``search_web.leakage_verifier``
+    until this mapping was aligned with the LLM-process path and ADK
+    OpenInference.
+    """
+    usage = getattr(resp, "usage", None)
+    if usage is None:
+        return {}
+    try:
+        in_tok = int(getattr(usage, "prompt_tokens", 0) or 0)
+        out_tok = int(getattr(usage, "completion_tokens", 0) or 0)
+    except (TypeError, ValueError):
+        return {}
+    details: dict[str, int] = {"input": in_tok, "output": out_tok}
+    prompt_details = getattr(usage, "prompt_tokens_details", None)
+    if prompt_details is not None:
+        try:
+            cached = int(getattr(prompt_details, "cached_tokens", 0) or 0)
+        except (TypeError, ValueError):
+            cached = 0
+        if cached:
+            details["input_cached_tokens"] = cached
+    return details
+
+
 _LEAKAGE_VERIFIER_INSTRUCTION = """\
 You are an independent fact-checker verifying that a web search result contains \
 no information published on or after a given cutoff date.
@@ -302,6 +375,7 @@ async def _verify_no_leakage(
     verifier_model: str,
     openai_base_url: str,
     openai_api_key: str | None,
+    trace_metadata: dict[str, Any] | None = None,
 ) -> _LeakageVerification:
     """Judge a search result for post-cutoff claims via an independent verifier call.
 
@@ -312,39 +386,62 @@ async def _verify_no_leakage(
     it consumes a retry attempt like any other rejection.
     """
     import litellm  # noqa: PLC0415
+    from aieng.forecasting.langfuse_tracing import langfuse_generation  # noqa: PLC0415
     from aieng.forecasting.methods.llm_processes._client import (  # noqa: PLC0415
         make_json_schema_response_format,
         strip_markdown_fence,
     )
 
     model = verifier_model if verifier_model.startswith("openai/") else f"openai/{verifier_model}"
-    resp = await litellm.acompletion(
-        model=model,
-        api_base=openai_base_url,
-        api_key=openai_api_key,
-        messages=[
-            {"role": "system", "content": _LEAKAGE_VERIFIER_INSTRUCTION},
-            {
-                "role": "user",
-                "content": f"Original query: {query}\nCutoff date: {cutoff_date}\n\nSearch result to verify:\n{text}",
-            },
-        ],
-        response_format=make_json_schema_response_format("LeakageVerification", _build_leakage_verification_schema()),
-        temperature=0.0,
-        max_tokens=2048,
-        timeout=60.0,
-    )
-    raw = resp.choices[0].message.content or "{}"
-    try:
-        return _LeakageVerification.model_validate(json.loads(strip_markdown_fence(raw)))
-    except (json.JSONDecodeError, ValidationError):
-        logger.warning("Leakage verifier returned unparseable output; treating as non-clean: %r", raw[:200])
-        return _LeakageVerification(
-            flagged_claims=["verifier response could not be parsed"],
-            filtered_text=text,
-            confidence=1,
-            clean=False,
+    messages = [
+        {"role": "system", "content": _LEAKAGE_VERIFIER_INSTRUCTION},
+        {
+            "role": "user",
+            "content": f"Original query: {query}\nCutoff date: {cutoff_date}\n\nSearch result to verify:\n{text}",
+        },
+    ]
+    with langfuse_generation(
+        name="search_web.leakage_verifier",
+        model=verifier_model,
+        input={"messages": messages},
+        metadata=trace_metadata,
+    ) as generation:
+        resp = await litellm.acompletion(
+            model=model,
+            api_base=openai_base_url,
+            api_key=openai_api_key,
+            messages=messages,
+            response_format=make_json_schema_response_format(
+                "LeakageVerification", _build_leakage_verification_schema()
+            ),
+            temperature=0.0,
+            max_tokens=2048,
+            timeout=60.0,
         )
+        raw = resp.choices[0].message.content or "{}"
+        try:
+            verdict = _LeakageVerification.model_validate(json.loads(strip_markdown_fence(raw)))
+        except (json.JSONDecodeError, ValidationError):
+            logger.warning("Leakage verifier returned unparseable output; treating as non-clean: %r", raw[:200])
+            verdict = _LeakageVerification(
+                flagged_claims=["verifier response could not be parsed"],
+                filtered_text=text,
+                confidence=1,
+                clean=False,
+            )
+        update: dict[str, Any] = {
+            "output": {
+                "clean": verdict.clean,
+                "confidence": verdict.confidence,
+                "flagged_claims": verdict.flagged_claims,
+                "filtered_text": verdict.filtered_text,
+            },
+        }
+        usage = _usage_from_litellm(resp)
+        if usage:
+            update["usage_details"] = usage
+        generation.update(**update)
+        return verdict
 
 
 def _build_search_tool(
@@ -360,14 +457,15 @@ def _build_search_tool(
     server-side grounding and returns a synthesised answer plus source URLs
     extracted from ``choices[0].provider_specific_fields["grounding_metadata"]``.
 
-    When a ``cutoff_date`` is supplied and ``config.enforce_cutoff`` is
-    ``True``, the raw result is passed through an independent leakage
-    verifier (:func:`_verify_no_leakage`) before being returned. On a flagged
-    result, the search is retried (up to ``config.verifier_max_attempts``
-    times) with the previously flagged claims injected as explicit negative
-    feedback. If no attempt is verified clean, an explicit
-    ``[SEARCH_VERIFICATION_FAILED]`` sentinel is returned instead of
-    potentially-leaky content.
+    When a retrospective ``cutoff_date`` (or harness ``as_of``) is present
+    and ``config.enforce_cutoff`` is ``True``, the raw result is passed
+    through an independent leakage verifier (:func:`_verify_no_leakage`)
+    before being returned. Cutoffs on or after UTC today skip the fence
+    (live search). On a flagged result, the search is retried (up to
+    ``config.verifier_max_attempts`` times) with the previously flagged
+    claims injected as explicit negative feedback. If no attempt is verified
+    clean, an explicit ``[SEARCH_VERIFICATION_FAILED]`` sentinel is returned
+    instead of potentially-leaky content.
     """
 
     def _format_result(content: str, sources: list[str]) -> str:
@@ -375,32 +473,47 @@ def _build_search_tool(
             content += "\n\nSources:\n" + "\n".join(sources[:5])
         return content
 
-    async def _do_search(user_content: str) -> tuple[str, list[str]]:
+    async def _do_search(user_content: str, *, trace_metadata: dict[str, Any] | None = None) -> tuple[str, list[str]]:
         import litellm  # noqa: PLC0415
+        from aieng.forecasting.langfuse_tracing import langfuse_generation  # noqa: PLC0415
 
         search_model = config.search_model
         if not search_model.startswith("openai/"):
             search_model = f"openai/{search_model}"
-        resp = await litellm.acompletion(
-            model=search_model,
-            api_base=openai_base_url,
-            api_key=openai_api_key,
-            messages=[
-                {"role": "system", "content": config.instruction},
-                {"role": "user", "content": user_content},
-            ],
-            tools=[{"googleSearch": {}}],
-            max_tokens=config.max_output_tokens or 4096,
-            temperature=config.temperature or 0.0,
-            timeout=60.0,
-        )
-        content = resp.choices[0].message.content or ""
-        psf = getattr(resp.choices[0], "provider_specific_fields", {}) or {}
-        gm = psf.get("grounding_metadata") or {}
-        sources: list[str] = [
-            uri for c in gm.get("groundingChunks", []) if (uri := (c.get("web") or {}).get("uri")) is not None
+        messages = [
+            {"role": "system", "content": config.instruction},
+            {"role": "user", "content": user_content},
         ]
-        return content, sources
+        with langfuse_generation(
+            name="search_web.google_search",
+            model=config.search_model,
+            input={"messages": messages},
+            metadata=trace_metadata,
+        ) as generation:
+            resp = await litellm.acompletion(
+                model=search_model,
+                api_base=openai_base_url,
+                api_key=openai_api_key,
+                messages=messages,
+                tools=[{"googleSearch": {}}],
+                max_tokens=config.max_output_tokens or 4096,
+                temperature=config.temperature or 0.0,
+                timeout=60.0,
+            )
+            content = resp.choices[0].message.content or ""
+            psf = getattr(resp.choices[0], "provider_specific_fields", {}) or {}
+            gm = psf.get("grounding_metadata") or {}
+            sources: list[str] = [
+                uri for c in gm.get("groundingChunks", []) if (uri := (c.get("web") or {}).get("uri")) is not None
+            ]
+            update: dict[str, Any] = {"output": content}
+            usage = _usage_from_litellm(resp)
+            if usage:
+                update["usage_details"] = usage
+            extra_meta = {**(trace_metadata or {}), "source_count": len(sources)}
+            update["metadata"] = extra_meta
+            generation.update(**update)
+            return content, sources
 
     async def search_web(query: str, cutoff_date: str | None = None, tool_context: ToolContext | None = None) -> str:
         """Search the web and return a grounded summary with source URLs.
@@ -428,6 +541,11 @@ def _build_search_tool(
         the calling LLM cannot see, omit, or alter it. This closes a bypass
         where the model simply didn't pass ``cutoff_date`` and both the soft
         cutoff instruction and the verifier below were silently skipped.
+
+        Cutoff enforcement (soft prompt + verifier) runs only when that
+        effective date is strictly before UTC today. An ``as_of`` of today
+        or later is treated as a live origin and searched without a
+        temporal fence, matching ``enforce_cutoff=False``.
         """
         harness_as_of = tool_context.state.get(AS_OF_STATE_KEY) if tool_context is not None else None
         if harness_as_of and cutoff_date and harness_as_of != cutoff_date:
@@ -437,20 +555,33 @@ def _build_search_tool(
                 harness_as_of,
             )
         effective_cutoff = harness_as_of or cutoff_date
-
-        needs_verification = bool(effective_cutoff and config.enforce_cutoff)
-        if not needs_verification:
-            content, sources = await _do_search(query)
+        skip_reason = _verification_skip_reason(effective_cutoff, enforce_cutoff=config.enforce_cutoff)
+        base_meta: dict[str, Any] = {
+            "effective_cutoff": effective_cutoff,
+            "harness_as_of": harness_as_of,
+            "llm_cutoff_date": cutoff_date,
+        }
+        if skip_reason is not None:
+            logger.info(
+                "search_web: skipping cutoff enforcement (%s); cutoff=%s",
+                skip_reason,
+                effective_cutoff,
+            )
+            content, sources = await _do_search(
+                query,
+                trace_metadata={**base_meta, "verification_skipped": skip_reason},
+            )
             return _format_result(content, sources)
 
         negative_guidance = ""
         for attempt in range(1, config.verifier_max_attempts + 1):
+            attempt_meta = {**base_meta, "attempt": attempt, "verifier_max_attempts": config.verifier_max_attempts}
             user_content = (
                 query + f"\n\nOnly include and cite information published strictly before {effective_cutoff}."
             )
             if negative_guidance:
                 user_content += f"\n\n{negative_guidance}"
-            content, sources = await _do_search(user_content)
+            content, sources = await _do_search(user_content, trace_metadata=attempt_meta)
             verdict = await _verify_no_leakage(
                 text=content,
                 query=query,
@@ -458,6 +589,7 @@ def _build_search_tool(
                 verifier_model=config.verifier_model,
                 openai_base_url=openai_base_url,
                 openai_api_key=openai_api_key,
+                trace_metadata=attempt_meta,
             )
             logger.info(
                 "search_web verification attempt %d/%d: clean=%s confidence=%d flagged=%d",

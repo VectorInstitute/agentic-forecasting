@@ -1,8 +1,8 @@
 source_url: https://github.com/VectorInstitute/agentic-forecasting
-git_ref: 04507bf406cc5524c3d9523fc4835f29462fe3ea
+git_ref: fc1e62211abf3c1d60d4425bcbd186f83f5cd7ea
 branch: main
-built_at: '2026-08-24T20:54:40+00:00'
-ingest_source: /home/akore/vscodeprojects/agentic-forecasting
+built_at: '2026-08-26T18:48:11+00:00'
+ingest_source: /Users/ethanjackson/agentic-forecasting
 entry_count: 197
 entries:
 - path: AGENTS.md
@@ -47,7 +47,7 @@ entries:
   - Extending the foundation
   - Code quality
   - Documentation
-  chars: 14063
+  chars: 14678
   artifact: artifacts/README.md.md
 - path: aieng-forecasting/aieng/forecasting/__init__.py
   kind: python
@@ -425,11 +425,13 @@ entries:
   domain: core.root
   summary: Langfuse-oriented tracing bootstrap for LiteLLM and Google ADK.
   symbols:
+  - _NoOpObservation
   - _LangfuseTracingBootstrap
+  - langfuse_generation
   - init_langfuse_tracing
   - print_langfuse_trace_url
   sections: []
-  chars: 6087
+  chars: 8048
   artifact: artifacts/aieng-forecasting__aieng__forecasting__langfuse_tracing.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/README.md
   kind: markdown
@@ -446,7 +448,7 @@ entries:
   - Numerical
   - LLM Processes
   - Agentic
-  chars: 7424
+  chars: 7717
   artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__README.md.md
 - path: aieng-forecasting/aieng/forecasting/methods/__init__.py
   kind: python
@@ -512,7 +514,7 @@ entries:
   - AgentConfig
   - build_adk_agent
   sections: []
-  chars: 35772
+  chars: 41485
   artifact: artifacts/aieng-forecasting__aieng__forecasting__methods__agentic__agent_factory.py.md
 - path: aieng-forecasting/aieng/forecasting/methods/agentic/curriculum.py
   kind: python
@@ -805,7 +807,7 @@ entries:
   - Directory layout
   - Relationship to `aieng-forecasting`
   - Adding a new use case
-  chars: 3921
+  chars: 4270
   artifact: artifacts/implementations__README.md.md
 - path: implementations/__init__.py
   kind: python
@@ -850,7 +852,7 @@ entries:
   symbols: []
   sections:
   - "Bank of Canada Rate Decisions \u2014 Your Starter Agent"
-  chars: 8086
+  chars: 8085
   artifact: artifacts/implementations__boc_rate_decisions__99_starter_agent.ipynb.md
 - path: implementations/boc_rate_decisions/README.md
   kind: markdown
@@ -1242,7 +1244,7 @@ entries:
   - How to search
   - Domain focus (edit this for your use case)
   - Room to grow
-  chars: 2250
+  chars: 2398
   artifact: artifacts/implementations__boc_rate_decisions__starter_agent__skills__research-playbook__SKILL.md.md
 - path: implementations/energy_oil_forecasting/01_wti_case_study.ipynb
   kind: notebook
@@ -1274,7 +1276,7 @@ entries:
   symbols: []
   sections:
   - "WTI Oil Price Forecasting \u2014 One Agent, Three Tasks"
-  chars: 14481
+  chars: 28199
   artifact: artifacts/implementations__energy_oil_forecasting__03_one_agent_three_tasks.ipynb.md
 - path: implementations/energy_oil_forecasting/04_systematic_backtest_eval.ipynb
   kind: notebook
@@ -1298,7 +1300,7 @@ entries:
   - "Task A \u2014 Cross-Period Robustness (2023\u20132024)"
   - "Task B \u2014 Scope Check and Graduation Attempt"
   - Strategy state after robustness testing
-  chars: 15882
+  chars: 16026
   artifact: artifacts/implementations__energy_oil_forecasting__05_adaptive_agent_training.ipynb.md
 - path: implementations/energy_oil_forecasting/05_forecast_tool_demo.ipynb
   kind: notebook
@@ -1316,7 +1318,7 @@ entries:
   symbols: []
   sections:
   - "WTI Crude Oil \u2014 Protected Evaluation (Notebook 6 of 7)"
-  chars: 15724
+  chars: 15864
   artifact: artifacts/implementations__energy_oil_forecasting__06_protected_eval.ipynb.md
 - path: implementations/energy_oil_forecasting/99_starter_agent.ipynb
   kind: notebook
@@ -1346,7 +1348,7 @@ entries:
   - Module Layout
   - Agent layering
   - Data Source & Setup
-  chars: 7707
+  chars: 8624
   artifact: artifacts/implementations__energy_oil_forecasting__README.md.md
 - path: implementations/energy_oil_forecasting/__init__.py
   kind: python
@@ -1621,7 +1623,7 @@ entries:
   - build_wti_tool_config
   - build_wti_agent_predictor
   sections: []
-  chars: 27592
+  chars: 27984
   artifact: artifacts/implementations__energy_oil_forecasting__analyst_agent__agent.py.md
 - path: implementations/energy_oil_forecasting/analyst_agent/skills/statistical-analysis/SKILL.md
   kind: markdown
@@ -1903,7 +1905,7 @@ entries:
   - How to search
   - Domain focus (edit this for your use case)
   - Room to grow
-  chars: 2133
+  chars: 2281
   artifact: artifacts/implementations__energy_oil_forecasting__starter_agent__skills__research-playbook__SKILL.md.md
 - path: implementations/energy_oil_forecasting/starter_agent/tools.py
   kind: python
@@ -1939,7 +1941,7 @@ entries:
   - build_wti_agent_predictor_for_task
   - build_wti_news_predictor
   sections: []
-  chars: 8968
+  chars: 10398
   artifact: artifacts/implementations__energy_oil_forecasting__tasks.py.md
 - path: implementations/energy_oil_forecasting/viz.py
   kind: python
@@ -2283,7 +2285,7 @@ entries:
   - How to search
   - Domain focus (edit this for your use case)
   - Room to grow
-  chars: 2174
+  chars: 2322
   artifact: artifacts/implementations__food_price_forecasting__starter_agent__skills__research-playbook__SKILL.md.md
 - path: implementations/getting_started/00_environment_check.ipynb
   kind: notebook
@@ -2346,7 +2348,7 @@ entries:
   symbols: []
   sections:
   - "Repo Concierge \u2014 ask questions about this codebase"
-  chars: 5804
+  chars: 5996
   artifact: artifacts/implementations__getting_started__99_repo_concierge.ipynb.md
 - path: implementations/getting_started/README.md
   kind: markdown
@@ -2369,7 +2371,7 @@ entries:
   - Where to go next
   - Directory layout
   - Key interfaces (from `aieng-forecasting`)
-  chars: 9367
+  chars: 9546
   artifact: artifacts/implementations__getting_started__README.md.md
 - path: implementations/getting_started/__init__.py
   kind: python
@@ -2880,7 +2882,7 @@ entries:
   - How to search
   - Domain focus (edit this for your use case)
   - Room to grow
-  chars: 2163
+  chars: 2311
   artifact: artifacts/implementations__sp500_forecasting__starter_agent__skills__research-playbook__SKILL.md.md
 - path: planning-docs/roadmap.md
   kind: markdown

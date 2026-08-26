@@ -170,7 +170,9 @@ That loads the same `repo_concierge` agent (`gemini-3.1-flash-lite-preview`) wit
 
 **Alternative:** `uv run adk web implementations/getting_started/concierge_agent`
 opens a browser UI (same agent). From `implementations/getting_started/`, you can
-also use the shorter `uv run adk run concierge_agent`.
+also use the shorter `uv run adk run concierge_agent`. [Guide 5](../../guides/05-access-adk-web-via-ssh-tunnel.md)
+is the full walkthrough: serve the concierge (or any other bootcamp agent) and,
+on a Coder workspace, tunnel the UI to your laptop.
 
 ---
 
