@@ -99,14 +99,16 @@ name = "agentic-forecasting-implementations"
 version = "0.1.0"
 source = { editable = "implementations" }
 dependencies = [
-    { name = "aieng-forecasting", extra = ["agentic", "documents", "llm", "numerical"] },
+    { name = "aieng-forecasting", extra = ["agentic", "comparison", "documents", "llm", "numerical"] },
     { name = "beautifulsoup4" },
+    { name = "macroforecast" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "aieng-forecasting", extras = ["numerical", "llm", "agentic", "documents"], editable = "aieng-forecasting" },
+    { name = "aieng-forecasting", extras = ["numerical", "llm", "agentic", "documents", "comparison"], editable = "aieng-forecasting" },
     { name = "beautifulsoup4", specifier = ">=4.12,<5" },
+    { name = "macroforecast", specifier = ">=0.9.2" },
 ]
 
 [[package]]
@@ -155,6 +157,9 @@ agentic = [
     { name = "langfuse" },
     { name = "openinference-instrumentation-google-adk" },
 ]
+comparison = [
+    { name = "macroforecast" },
+]
 documents = [
     { name = "pymupdf4llm" },
     { name = "pyyaml" },
@@ -188,6 +193,7 @@ requires-dist = [
     { name = "langfuse", marker = "extra == 'llm'", specifier = ">=4.5.1" },
     { name = "lightgbm", marker = "extra == 'numerical'", specifier = ">=4.6.0" },
     { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.85.0" },
+    { name = "macroforecast", marker = "extra == 'comparison'", specifier = ">=0.9.5" },
     { name = "openinference-instrumentation-google-adk", marker = "extra == 'agentic'", specifier = ">=0.1.11" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "properscoring", specifier = ">=0.1" },
@@ -199,7 +205,7 @@ requires-dist = [
     { name = "statsforecast", marker = "extra == 'numerical'", specifier = ">=2.0.1" },
     { name = "yfinance", specifier = ">=1.3.0" },
 ]
-provides-extras = ["documents", "agentic", "llm", "numerical"]
+provides-extras = ["documents", "agentic", "llm", "numerical", "comparison"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1269,6 +1275,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d7/8a/24cc33a44fe1b5266362e947ade46a5be9721bf9fe2e8becfea021c34863/e2b_code_interpreter-2.7.0.tar.gz", hash = "sha256:8c591cc12ad2542e44228de51596e24032c5368d2d01c445182adf78037d31e2", size = 11048, upload-time = "2026-05-22T20:07:19.081Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6e/1b/53d20a6b71bae02e498c5df31d2cba12b0838f47f0dfd2b5ea6fb5a466dd/e2b_code_interpreter-2.7.0-py3-none-any.whl", hash = "sha256:b6b9ac43371b36c4bafa28890e41acd0f2c0148931cbef07f42a6a3e52a03b60", size = 14468, upload-time = "2026-05-22T20:07:17.415Z" },
+]
+
+[[package]]
+name = "et-xmlfile"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/38/af70d7ab1ae9d4da450eeec1fa3918940a5fafb9055e934af8d6eb0c2313/et_xmlfile-2.0.0.tar.gz", hash = "sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54", size = 17234, upload-time = "2024-10-25T17:25:40.039Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl", hash = "sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa", size = 18059, upload-time = "2024-10-25T17:25:39.051Z" },
 ]
 
 [[package]]
@@ -2762,6 +2777,23 @@ wheels = [
 ]
 
 [[package]]
+name = "macroforecast"
+version = "0.9.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "openpyxl" },
+    { name = "pandas" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "statsmodels" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ed/92/996381997ef52f4c10567678aa708eafbb18f3a6de86481bb320095fca79/macroforecast-0.9.5.tar.gz", hash = "sha256:10b2eebd0243e201f209c828152e20699b56b86f7be2484817e6028eaeb1c3ee", size = 535460, upload-time = "2026-06-26T23:45:09.95Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/d2/a6eaa040c4c387e5811ae9e7b45a58c25f137caae2a3b0f41685079be753/macroforecast-0.9.5-py3-none-any.whl", hash = "sha256:64805ed469c7673012823e9440ce520b6181aa54b499131eb9e90315161cad3b", size = 576102, upload-time = "2026-06-26T23:45:08.393Z" },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "4.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3518,6 +3550,18 @@ wheels = [
 ]
 
 [[package]]
+name = "openpyxl"
+version = "3.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "et-xmlfile" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3d/f9/88d94a75de065ea32619465d2f77b29a0469500e99012523b91cc4141cd1/openpyxl-3.1.5.tar.gz", hash = "sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050", size = 186464, upload-time = "2024-06-28T14:03:44.161Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl", hash = "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2", size = 250910, upload-time = "2024-06-28T14:03:41.161Z" },
+]
+
+[[package]]
 name = "opentelemetry-api"
 version = "1.41.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3737,7 +3781,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -5073,16 +5117,16 @@ resolution-markers = [
     "python_full_version < '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "cloudpickle", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "numba", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "packaging", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "pandas", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "scikit-learn", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "scipy", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "slicer", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "tqdm", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
-    { name = "typing-extensions", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "cloudpickle" },
+    { name = "numba" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "pandas" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "slicer" },
+    { name = "tqdm" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/dc/c6/9823a7f483aa9f3179fc359c10d22da9e418b1a7a3fc99a42b705d05e82a/shap-0.49.1.tar.gz", hash = "sha256:1114ecd804fff29f50d522ce6031082fcf42fe4a32fb1b5da233b2415d784c8c", size = 4084725, upload-time = "2025-10-14T10:04:49.75Z" }
 wheels = [
@@ -5109,17 +5153,17 @@ resolution-markers = [
     "(python_full_version < '3.13' and platform_machine != 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.13' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "cloudpickle", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "llvmlite", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "numba", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "numpy", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "packaging", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "pandas", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "scikit-learn", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "scipy", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "slicer", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "tqdm", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
-    { name = "typing-extensions", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "cloudpickle" },
+    { name = "llvmlite" },
+    { name = "numba" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "pandas" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "slicer" },
+    { name = "tqdm" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a4/0a/4a3ee4b1a3654f2a9ae038a64bb3e91a42af3da07577d69b65241f010970/shap-0.51.0.tar.gz", hash = "sha256:cfa17ff213657c9d50285aa923d79b0037a62e2ee1a31bc3eec7e196b00bdb59", size = 4108336, upload-time = "2026-03-04T09:18:19.985Z" }
 wheels = [
