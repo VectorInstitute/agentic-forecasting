@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "aieng-forecasting[numerical,llm,agentic,documents]",
     "beautifulsoup4>=4.12,<5",  # BoC press-release HTML extraction (boc_rate_decisions.press_releases)
+    "xgboost>=2.1,<4",
 ]
 
 [tool.setuptools.packages.find]
