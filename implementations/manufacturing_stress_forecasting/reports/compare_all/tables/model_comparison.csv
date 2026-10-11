@@ -1,0 +1,8 @@
+model,model_label,description,metric,mean_brier,scored_origins,skipped_origins,delta_vs_baseline,brier_skill_vs_baseline
+historical_frequency,Historical frequency,Expanding historical event frequency; the Brier-score reference baseline.,brier,0.06669266093465771,84,0,0.0,0.0
+logistic_c_0_001,Logistic (C=0.001),"Fit-at-origin logistic regression (C=0.001) using cutoff-safe IPMAN, macroeconomic, and market features.",brier,0.0689211618885101,84,0,0.0022285009538523803,-0.033414485531410465
+hybrid_anchor,Hybrid anchor (logistic),"Deterministic anchor; logistic-only, not a 50/50 blend.",brier,0.0689211618885101,84,0,0.0022285009538523803,-0.033414485531410465
+adaptive_agent,Adaptive agent,Stateful LLM agent using the logistic anchor and persisted strategy; its adjustment is bounded to ±0.03.,brier,0.06920487988057167,84,0,0.002512218945913955,-0.03766859667475719
+hybrid_agent_adjusted,Hybrid agent adjusted,"LLM-proposed probability adjusted from the logistic anchor, with the change bounded to ±0.03.",brier,0.07068946389906912,84,0,0.003996802964411406,-0.05992867743464725
+xgb_50_depth2_lr0_03_minchild3_l2_5,XGBoost (50 trees),"XGBoost with 50 trees, max depth 2, learning rate 0.03, min_child_weight 3, and reg_lambda 5.",brier,0.07218861617575986,84,0,0.005495955241102149,-0.08240719689512499
+analyst_agent,Analyst agent,LLM analyst forecast from cutoff-safe evidence and historical event rate.,brier,0.09792648809523812,84,0,0.031233827160580402,-0.46832480100294416

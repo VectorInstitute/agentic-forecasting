@@ -13,6 +13,7 @@ The repo has two layers. A small core library (`aieng.forecasting`) owns cutoff-
 | 2 | [Food price forecasting](implementations/food_price_forecasting/) | Multivariate Canadian food CPI in the style of Canada's Food Price Report (nine sub-indices, 12-month trajectory, avg/avg YoY) | Naive last-value, AutoARIMA; report-grounded LLM-Process (quantile grid and sampled trajectory) |
 | 3 | [Energy / oil](implementations/energy_oil_forecasting/) | Daily WTI crude under regime-breaking news (continuous trajectory, binary up-shock, scenario analysis) | Prophet, LLM-Process, news-grounded agent, code-executing agent, adaptive (curriculum-trained) agent |
 | 4 | [BoC rate decisions](implementations/boc_rate_decisions/) | Will the Bank of Canada cut, hold, or hike at its next meeting? (ordered categorical; binary cut-vs-not special case) | Climatological frequency, multinomial logistic, categorical LLM-Process, analyst agent; LLM-as-judge reasoning alignment |
+| 5 | [Manufacturing stress](implementations/manufacturing_stress_forecasting/) | Will U.S. manufacturing (IPMAN) be under stress three months ahead? (binary, monthly origins) | Historical frequency, logistic, XGBoost; analyst, anchor-bounded hybrid, and adaptive agents, including a walk-forward agent that learns from published outcomes; block-bootstrap and Diebold-Mariano comparisons |
 
 Also in this README: [Setup](#setup) · [Core concepts](#core-concepts) · [Repository layout](#repository-layout) · [Documentation](#documentation)
 
@@ -138,7 +139,7 @@ New to the project? Open [`implementations/getting_started/00_environment_check.
 
 ### Populate the data cache
 
-Data is fetched once and cached locally (gitignored). Each implementation names the fetch script(s) it needs in its own `README.md` — for example `scripts/fetch_cpi.py` (getting started), `scripts/fetch_sp500_market.py` + `scripts/fetch_fred.py` (S&P 500), `scripts/fetch_wti.py` (energy), and `scripts/fetch_boc.py` and `scripts/fetch_boc_press_releases.py` (BoC). Run the relevant one before opening that implementation's notebooks:
+Data is fetched once and cached locally (gitignored). Each implementation names the fetch script(s) it needs in its own `README.md` — for example `scripts/fetch_cpi.py` (getting started), `scripts/fetch_sp500_market.py` + `scripts/fetch_fred.py` (S&P 500), `scripts/fetch_wti.py` (energy), `scripts/fetch_boc.py` and `scripts/fetch_boc_press_releases.py` (BoC), and `scripts/fetch_manufacturing_stress.py` (manufacturing stress). Run the relevant one before opening that implementation's notebooks:
 
 ```bash
 uv run python scripts/fetch_cpi.py

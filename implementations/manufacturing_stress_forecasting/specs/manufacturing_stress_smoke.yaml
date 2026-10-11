@@ -1,0 +1,21 @@
+# Initial Track 1 experiment: one binary target, one three-month horizon.
+
+description: >-
+  Development backtest for forecasting whether U.S. manufacturing will be
+  under IPMAN-defined stress three months after each forecast origin.
+
+task:
+  task_id: manufacturing_stress_3m
+  target_series_id: manufacturing_stress
+  horizons: [3]
+  frequency: MS
+  payload_type: binary
+  description: >-
+    Probability that U.S. manufacturing will be under stress three months
+    ahead. A resolved month is stressed when IPMAN has declined by at least
+    2 percent over its preceding three months.
+
+start: "2018-01-01"
+end: "2024-12-01"
+stride: 3
+warmup: 60

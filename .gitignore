@@ -42,6 +42,10 @@ implementations/**/data/
 !implementations/energy_oil_forecasting/data/predictions/
 !implementations/energy_oil_forecasting/data/predictions/**
 
+# Manufacturing workbench reports are reproducible project artifacts.
+!implementations/manufacturing_stress_forecasting/reports/
+!implementations/manufacturing_stress_forecasting/reports/**
+
 # workspace-specific agents
 .github/agents/
 .github/prompts/

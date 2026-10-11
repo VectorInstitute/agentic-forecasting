@@ -1,0 +1,15 @@
+model,model_label,probability_bin,origins,mean_probability,observed_event_rate
+historical_frequency,Historical frequency,0.0-0.2,84.0,0.06510478340276714,0.07142857142857142
+logistic_c_0_001,Logistic (C=0.001),0.0-0.2,82.0,0.06668504922865147,0.07317073170731707
+logistic_c_0_001,Logistic (C=0.001),0.2-0.4,2.0,0.24435397869468886,0.0
+xgb_50_depth2_lr0_03_minchild3_l2_5,XGBoost (50 trees),0.0-0.2,84.0,0.07611176019002285,0.07142857142857142
+hybrid_anchor,Hybrid anchor (logistic),0.0-0.2,82.0,0.06668504922865147,0.07317073170731707
+hybrid_anchor,Hybrid anchor (logistic),0.2-0.4,2.0,0.24435397869468886,0.0
+analyst_agent,Analyst agent,0.0-0.2,74.0,0.12195945945945946,0.06756756756756757
+analyst_agent,Analyst agent,0.2-0.4,7.0,0.27714285714285714,0.14285714285714285
+analyst_agent,Analyst agent,0.6-0.8,1.0,0.65,0.0
+analyst_agent,Analyst agent,0.8-1.0,2.0,0.85,0.0
+hybrid_agent_adjusted,Hybrid agent adjusted,0.0-0.2,82.0,0.08119954548853549,0.07317073170731707
+hybrid_agent_adjusted,Hybrid agent adjusted,0.2-0.4,2.0,0.27435395949974006,0.0
+adaptive_agent,Adaptive agent,0.0-0.2,82.0,0.06754170851603476,0.07317073170731707
+adaptive_agent,Adaptive agent,0.2-0.4,2.0,0.27435395949974006,0.0

@@ -296,7 +296,11 @@ class AgentPredictor(Predictor):
             try:
                 output = self.output_schema.model_validate(json.loads(output_str))
             except Exception:
-                logger.warning("Raw agent response (schema validation failed):\n%s", output_str)
+                logger.warning(
+                    "Raw agent response (schema validation failed; langfuse_trace_id=%s):\n%s",
+                    self._runner.last_trace_id,
+                    output_str,
+                )
                 raise
 
         # Convert output to list of predictions

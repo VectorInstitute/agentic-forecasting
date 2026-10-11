@@ -1,0 +1,8 @@
+regime_dimension,regime,origins,stress_events,observed_event_rate
+momentum_regime,expanding,35,3.0,0.08571428571428572
+momentum_regime,slowing,43,3.0,0.06976744186046512
+momentum_regime,stressed,6,0.0,0.0
+financial_regime,restrictive,43,2.0,0.046511627906976744
+financial_regime,supportive,41,4.0,0.0975609756097561
+volatility_regime,elevated,27,2.0,0.07407407407407407
+volatility_regime,normal,57,4.0,0.07017543859649122

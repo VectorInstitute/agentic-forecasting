@@ -1,0 +1,24 @@
+# Long-window deterministic evaluation: every month from 2003 through 2024.
+# Covers the 2008-09 recession, the 2015-16 industrial slowdown, and the 2020
+# shock, giving many more stress events than the 2018-2024 smoke window.
+
+description: >-
+  Full-history deterministic backtest for forecasting whether U.S.
+  manufacturing will be under IPMAN-defined stress three months after each
+  monthly forecast origin from 2003 through 2024.
+
+task:
+  task_id: manufacturing_stress_3m
+  target_series_id: manufacturing_stress
+  horizons: [3]
+  frequency: MS
+  payload_type: binary
+  description: >-
+    Probability that U.S. manufacturing will be under stress three months
+    ahead. A resolved month is stressed when IPMAN has declined by at least
+    2 percent over its preceding three months.
+
+start: "2003-01-01"
+end: "2024-12-01"
+stride: 1
+warmup: 60

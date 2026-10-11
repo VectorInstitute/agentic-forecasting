@@ -1,0 +1,36 @@
+model,model_label,probability_bin,origins
+historical_frequency,Historical frequency,0.0-0.2,84
+historical_frequency,Historical frequency,0.2-0.4,0
+historical_frequency,Historical frequency,0.4-0.6,0
+historical_frequency,Historical frequency,0.6-0.8,0
+historical_frequency,Historical frequency,0.8-1.0,0
+logistic_c_0_001,Logistic (C=0.001),0.0-0.2,82
+logistic_c_0_001,Logistic (C=0.001),0.2-0.4,2
+logistic_c_0_001,Logistic (C=0.001),0.4-0.6,0
+logistic_c_0_001,Logistic (C=0.001),0.6-0.8,0
+logistic_c_0_001,Logistic (C=0.001),0.8-1.0,0
+xgb_50_depth2_lr0_03_minchild3_l2_5,XGBoost (50 trees),0.0-0.2,84
+xgb_50_depth2_lr0_03_minchild3_l2_5,XGBoost (50 trees),0.2-0.4,0
+xgb_50_depth2_lr0_03_minchild3_l2_5,XGBoost (50 trees),0.4-0.6,0
+xgb_50_depth2_lr0_03_minchild3_l2_5,XGBoost (50 trees),0.6-0.8,0
+xgb_50_depth2_lr0_03_minchild3_l2_5,XGBoost (50 trees),0.8-1.0,0
+hybrid_anchor,Hybrid anchor (logistic),0.0-0.2,82
+hybrid_anchor,Hybrid anchor (logistic),0.2-0.4,2
+hybrid_anchor,Hybrid anchor (logistic),0.4-0.6,0
+hybrid_anchor,Hybrid anchor (logistic),0.6-0.8,0
+hybrid_anchor,Hybrid anchor (logistic),0.8-1.0,0
+analyst_agent,Analyst agent,0.0-0.2,74
+analyst_agent,Analyst agent,0.2-0.4,7
+analyst_agent,Analyst agent,0.4-0.6,0
+analyst_agent,Analyst agent,0.6-0.8,1
+analyst_agent,Analyst agent,0.8-1.0,2
+hybrid_agent_adjusted,Hybrid agent adjusted,0.0-0.2,82
+hybrid_agent_adjusted,Hybrid agent adjusted,0.2-0.4,2
+hybrid_agent_adjusted,Hybrid agent adjusted,0.4-0.6,0
+hybrid_agent_adjusted,Hybrid agent adjusted,0.6-0.8,0
+hybrid_agent_adjusted,Hybrid agent adjusted,0.8-1.0,0
+adaptive_agent,Adaptive agent,0.0-0.2,82
+adaptive_agent,Adaptive agent,0.2-0.4,2
+adaptive_agent,Adaptive agent,0.4-0.6,0
+adaptive_agent,Adaptive agent,0.6-0.8,0
+adaptive_agent,Adaptive agent,0.8-1.0,0

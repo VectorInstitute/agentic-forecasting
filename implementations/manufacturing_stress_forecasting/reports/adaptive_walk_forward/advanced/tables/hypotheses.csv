@@ -1,0 +1,4 @@
+id,claim,status,confirmations,refutations,origins
+hyp-001,"When IPMAN three-month growth is positive, the anchor over-forecasts manufacturing stress.",confirmed,3,0,"origin-001, origin-003, origin-005"
+hyp-002,"When three-month stock returns are negative and VIX is elevated, the anchor under-forecasts manufacturing stress.",confirmed,3,0,"origin-009, origin-011, origin-010"
+hyp-003,"When IPMAN three-month decline is greater than 5%, the anchor severely under-forecasts manufacturing stress.",confirmed,3,0,"origin-011, origin-010, origin-012"

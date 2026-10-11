@@ -67,3 +67,12 @@ def test_missing_api_key_without_cache_raises(tmp_path: Path) -> None:
         adapter = FREDAdapter("EXCAUS", api_key=None, cache_dir=cache_dir)
         with pytest.raises(ValueError, match="FRED API key not provided"):
             adapter.fetch()
+
+
+def test_api_key_whitespace_is_trimmed() -> None:
+    """Whitespace around a pasted key must not be included in the request URL."""
+    fake = _fred_cls_returning(_raw_fred_series())
+    with patch("fredapi.Fred", fake):
+        FREDAdapter("EXCAUS", api_key="  fake-key\n", cache_dir=None, refresh=True).fetch()
+
+    assert fake.call_args.kwargs["api_key"] == "fake-key"

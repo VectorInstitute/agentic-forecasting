@@ -1,0 +1,16 @@
+,series_id,family,transformation
+0,ipman_change_1m_pct,IPMAN momentum,trailing 1-month percent change
+1,ipman_change_3m_pct,IPMAN momentum,trailing 3-month percent change
+2,ipman_change_6m_pct,IPMAN momentum,trailing 6-month percent change
+3,FEDFUNDS,macro/market,monthly level or trailing return from data service
+4,YC_SPREAD,macro/market,monthly level or trailing return from data service
+5,CPIAUCSL,macro/market,monthly level or trailing return from data service
+6,CPI_YOY,macro/market,monthly level or trailing return from data service
+7,UNRATE,macro/market,monthly level or trailing return from data service
+8,ICSA,macro/market,monthly level or trailing return from data service
+9,VIXCLS,macro/market,monthly level or trailing return from data service
+10,CREDIT_SPREAD,macro/market,monthly level or trailing return from data service
+11,SPY_RETURN_3M,macro/market,monthly level or trailing return from data service
+12,SPY_RETURN_12M,macro/market,monthly level or trailing return from data service
+13,XLI_RETURN_3M,macro/market,monthly level or trailing return from data service
+14,XLI_RETURN_12M,macro/market,monthly level or trailing return from data service

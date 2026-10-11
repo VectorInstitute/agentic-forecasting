@@ -86,7 +86,8 @@ class FREDAdapter(BaseAdapter):
         refresh: bool = False,
     ) -> None:
         self._series_id = series_id
-        self._api_key = api_key or os.environ.get("FRED_API_KEY")
+        raw_key = (api_key if api_key is not None else os.environ.get("FRED_API_KEY", "")).strip()
+        self._api_key = raw_key or None
         self._cache_dir = Path(cache_dir) if cache_dir is not None else None
         self._refresh = refresh
 

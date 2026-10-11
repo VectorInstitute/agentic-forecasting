@@ -1,0 +1,18 @@
+description: >-
+  Limited protected evaluation window for the manufacturing stress forecasting
+  task. Each predictor evaluation consumes one of five tracked runs.
+spec_id: manufacturing_stress_protected_eval_v1
+
+task:
+  task_id: manufacturing_stress_3m
+  target_series_id: manufacturing_stress
+  horizons: [3]
+  frequency: MS
+  payload_type: binary
+  description: Probability that manufacturing will be under stress three months ahead.
+
+start: "2023-01-01"
+end: "2024-12-01"
+stride: 3
+warmup: 60
+max_runs: 5

@@ -1,0 +1,24 @@
+schema_version: '1.0'
+approach_narrative: Start from the numerical hybrid anchor and make only bounded,
+  evidence-backed adjustments.
+calibration_corrections: []
+hypotheses:
+- id: hyp-001
+  claim: Manufacturing stress is unlikely in the three-month horizon despite the current
+    trailing 3-month IPMAN contraction, as the contraction magnitude (-0.94%) is significantly
+    above the stress threshold (-2.0%) and the most recent month shows stability.
+  status: open
+  confirmations: 0
+  refutations: 0
+  origins: []
+observations:
+- date: '2026-10-05'
+  finding: Current 3-month trailing IPMAN change is -0.94%, well above the -2% stress
+    threshold. Recent monthly data shows stagnation rather than a downward trend.
+    Macro signals like the yield spread (1.26) and credit spread (2.45) remain stable,
+    suggesting no imminent systemic shock.
+  linked_hypothesis: hyp-001
+- date: '2026-10-05'
+  finding: Current 3-month trailing IPMAN change of -0.94% is well above the stress
+    threshold of -2%.
+  linked_hypothesis: hyp-001

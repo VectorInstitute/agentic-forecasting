@@ -295,15 +295,24 @@ class AdkTextRunner:
         content = genai_types.Content(role="user", parts=[genai_types.Part(text=prompt)])
 
         async def drain_run() -> str:
+            final_text: str | None = None
             async for event in self._runner.run_async(
                 user_id=user_id,
                 session_id=session_id,
                 new_message=content,
                 run_config=run_config,
             ):
-                if event.is_final_response() and event.content and event.content.parts:
-                    return event.content.parts[0].text or ""
-            return ""
+                if final_text is None and event.is_final_response() and event.content and event.content.parts:
+                    text_parts = [
+                        part.text
+                        for part in event.content.parts
+                        if isinstance(part.text, str)
+                        and part.text.strip()
+                        and getattr(part, "thought", False) is not True
+                    ]
+                    if text_parts:
+                        final_text = "".join(text_parts)
+            return final_text or ""
 
         async def run_and_resolve() -> str:
             """Run the agent and return the best available output string.

@@ -1,0 +1,20 @@
+,series_id,category,observations,missing_values,missing_rate,reference_start,reference_end,median_release_delay_days
+0,CPIAUCSL,Active macro or market feature,955,0,0.0,1947-01-01,2026-08-01,1.0
+1,CPI_YOY,Active macro or market feature,943,0,0.0,1948-01-01,2026-08-01,1.0
+2,CREDIT_SPREAD,Active macro or market feature,489,0,0.0,1986-01-01,2026-09-01,31.0
+3,FEDFUNDS,Active macro or market feature,866,0,0.0,1954-07-01,2026-08-01,1.0
+4,ICSA,Active macro or market feature,717,0,0.0,1967-01-01,2026-09-01,28.0
+5,SPY_RETURN_12M,Active macro or market feature,334,0,0.0,1999-01-01,2026-10-01,31.0
+6,SPY_RETURN_3M,Active macro or market feature,343,0,0.0,1998-04-01,2026-10-01,31.0
+7,UNRATE,Active macro or market feature,943,0,0.0,1948-01-01,2026-08-01,1.0
+8,VIXCLS,Active macro or market feature,441,0,0.0,1990-01-01,2026-09-01,31.0
+9,XLI_RETURN_12M,Active macro or market feature,323,0,0.0,1999-12-01,2026-10-01,31.0
+10,XLI_RETURN_3M,Active macro or market feature,332,0,0.0,1999-03-01,2026-10-01,31.0
+11,YC_SPREAD,Active macro or market feature,604,0,0.0,1976-06-01,2026-09-01,31.0
+17,manufacturing_stress,Binary target,653,0,0.0,1972-04-01,2026-08-01,31.0
+16,ipman_us_manufacturing_production,IPMAN level,656,0,0.0,1972-01-01,2026-08-01,31.0
+13,ipman_change_1m_pct,IPMAN momentum feature,655,0,0.0,1972-02-01,2026-08-01,31.0
+14,ipman_change_3m_pct,IPMAN momentum feature,653,0,0.0,1972-04-01,2026-08-01,31.0
+15,ipman_change_6m_pct,IPMAN momentum feature,650,0,0.0,1972-07-01,2026-08-01,31.0
+12,fed_funds_rate_pct,Registered macro or market input,866,0,0.0,1954-07-01,2026-08-01,1.0
+18,treasury_10y_minus_2y_pct_points,Registered macro or market input,604,0,0.0,1976-06-01,2026-09-01,31.0

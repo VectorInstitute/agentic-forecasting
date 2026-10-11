@@ -1,0 +1,20 @@
+,series_id,category,observations,missing_values,missing_rate,reference_start,reference_end,first_release,last_release
+0,CPIAUCSL,Active macro or market feature,955,0,0.0,1947-01-01,2026-08-01,1947-01-02,2026-08-03
+1,CPI_YOY,Active macro or market feature,943,0,0.0,1948-01-01,2026-08-01,1948-01-02,2026-08-03
+2,CREDIT_SPREAD,Active macro or market feature,489,0,0.0,1986-01-01,2026-09-01,1986-02-03,2026-10-01
+3,FEDFUNDS,Active macro or market feature,866,0,0.0,1954-07-01,2026-08-01,1954-07-02,2026-08-03
+4,ICSA,Active macro or market feature,717,0,0.0,1967-01-01,2026-09-01,1967-01-30,2026-09-14
+5,SPY_RETURN_12M,Active macro or market feature,334,0,0.0,1999-01-01,2026-10-01,1999-02-01,2026-10-05
+6,SPY_RETURN_3M,Active macro or market feature,343,0,0.0,1998-04-01,2026-10-01,1998-05-01,2026-10-05
+7,UNRATE,Active macro or market feature,943,0,0.0,1948-01-01,2026-08-01,1948-01-02,2026-08-03
+8,VIXCLS,Active macro or market feature,441,0,0.0,1990-01-01,2026-09-01,1990-02-01,2026-09-23
+9,XLI_RETURN_12M,Active macro or market feature,323,0,0.0,1999-12-01,2026-10-01,2000-01-03,2026-10-05
+10,XLI_RETURN_3M,Active macro or market feature,332,0,0.0,1999-03-01,2026-10-01,1999-04-01,2026-10-05
+11,YC_SPREAD,Active macro or market feature,604,0,0.0,1976-06-01,2026-09-01,1976-07-01,2026-09-22
+17,manufacturing_stress,Binary target,653,0,0.0,1972-04-01,2026-08-01,1972-05-01,2026-09-01
+16,ipman_us_manufacturing_production,IPMAN level,656,0,0.0,1972-01-01,2026-08-01,1972-02-01,2026-09-01
+13,ipman_change_1m_pct,IPMAN momentum feature,655,0,0.0,1972-02-01,2026-08-01,1972-03-01,2026-09-01
+14,ipman_change_3m_pct,IPMAN momentum feature,653,0,0.0,1972-04-01,2026-08-01,1972-05-01,2026-09-01
+15,ipman_change_6m_pct,IPMAN momentum feature,650,0,0.0,1972-07-01,2026-08-01,1972-08-01,2026-09-01
+12,fed_funds_rate_pct,Registered macro or market input,866,0,0.0,1954-07-01,2026-08-01,1954-07-02,2026-08-03
+18,treasury_10y_minus_2y_pct_points,Registered macro or market input,604,0,0.0,1976-06-01,2026-09-01,1976-07-01,2026-09-22

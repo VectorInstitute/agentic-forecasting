@@ -1,0 +1,23 @@
+{
+  "source_notebook": "implementations/manufacturing_stress_forecasting/manufacturing_stress_workbench_2.ipynb",
+  "cache_spec_id": "manufacturing_stress_smoke_llmp_v3_14b1deebe4",
+  "backtest_window": {
+    "start": "2018-01-01T00:00:00",
+    "end": "2024-12-01T00:00:00"
+  },
+  "stride_months": 1,
+  "horizon_months": 3,
+  "scored_origins": 84,
+  "models": [
+    "historical_frequency",
+    "logistic_c_0_001",
+    "xgb_50_depth2_lr0_03_minchild3_l2_5",
+    "hybrid_anchor",
+    "analyst_agent",
+    "hybrid_agent_adjusted",
+    "adaptive_agent"
+  ],
+  "agent_results_reused_from_cache": true,
+  "deterministic_models_recomputed_from_local_inputs": true,
+  "generated_utc": "2026-10-05T16:25:38.333317+00:00"
+}

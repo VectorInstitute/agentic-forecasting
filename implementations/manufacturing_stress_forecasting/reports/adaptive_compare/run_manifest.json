@@ -1,0 +1,58 @@
+{
+  "built_at_utc": "2026-10-05T20:24:25.753257+00:00",
+  "cache_directory": "data/predictions/manufacturing_stress_adaptive_model_comparison/manufacturing_stress_smoke_llmp_v3_14b1deebe4",
+  "cache_id": "manufacturing_stress_smoke_llmp_v3_14b1deebe4",
+  "charts": {
+    "figures/calibration.png": "tables/calibration_bins.csv",
+    "figures/forecast_probabilities.png": "tables/paired_origin_predictions.csv",
+    "figures/mean_brier_scores.png": "tables/model_summary.csv",
+    "figures/probability_difference.png": "tables/paired_origin_predictions.csv"
+  },
+  "llm_calls_during_report_build": 0,
+  "models": {
+    "adaptive_advanced": {
+      "color": "#d9822b",
+      "label": "Advanced",
+      "mean_brier": 0.07045702380952382,
+      "model": "gemini-3.5-flash",
+      "predictor_id": "agent_predictor_manufacturing_stress_adaptive_analyst_gemini_3_5_flash_read_only_gemini-3.5-flash_discrete",
+      "ran_at": "2026-10-05T19:04:29.192147",
+      "scored_origins": 84,
+      "skipped_origins": 0
+    },
+    "adaptive_lite": {
+      "color": "#2f6f8f",
+      "label": "Lite",
+      "mean_brier": 0.09014672498745041,
+      "model": "gemini-3.1-flash-lite-preview",
+      "predictor_id": "agent_predictor_manufacturing_stress_adaptive_analyst_gemini_3_1_flash_lite_preview_read_only_gemini-3.1-flash-lite-preview_discrete",
+      "ran_at": "2026-10-05T17:11:43.673739",
+      "scored_origins": 84,
+      "skipped_origins": 0
+    }
+  },
+  "observed_stress_events": 6,
+  "paired_origins": 84,
+  "report_directory": "implementations/manufacturing_stress_forecasting/reports/adaptive_compare",
+  "risk_direction_agreements": 50,
+  "spec": {
+    "description": "Development backtest for forecasting whether U.S. manufacturing will be under IPMAN-defined stress three months after each forecast origin.",
+    "end": "2024-12-01T00:00:00",
+    "origin_dates": null,
+    "start": "2018-01-01T00:00:00",
+    "stride": 1,
+    "task": {
+      "categories": null,
+      "description": "Probability that U.S. manufacturing will be under stress three months ahead. A resolved month is stressed when IPMAN has declined by at least 2 percent over its preceding three months.",
+      "frequency": "MS",
+      "horizons": [
+        3
+      ],
+      "payload_type": "binary",
+      "resolution_fn": "observed_value_at_resolution_timestamp",
+      "target_series_id": "manufacturing_stress",
+      "task_id": "manufacturing_stress_3m"
+    },
+    "warmup": 60
+  }
+}

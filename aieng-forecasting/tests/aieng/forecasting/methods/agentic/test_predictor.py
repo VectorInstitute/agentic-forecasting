@@ -306,6 +306,16 @@ class TestPredictErrorHandling:
         with pytest.raises(ValidationError):
             predictor.predict(_task([1]), _context())
 
+    def test_schema_error_log_includes_langfuse_trace_id(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Include trace IDs in parse failures for easier generation inspection."""
+        predictor, _ = _make_predictor(response="")
+        predictor._runner.last_trace_id = "trace-123"
+
+        with caplog.at_level(logging.WARNING), pytest.raises(json.JSONDecodeError):
+            predictor.predict(_task([1]), _context())
+
+        assert "langfuse_trace_id=trace-123" in caplog.text
+
 
 # ---------------------------------------------------------------------------
 # Async/sync bridge

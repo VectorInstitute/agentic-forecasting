@@ -1,0 +1,2 @@
+origins,mean_anchor_probability,mean_agent_proposal,mean_final_probability,mean_applied_adjustment,median_applied_adjustment,minimum_applied_adjustment,maximum_applied_adjustment,adjustments_up,adjustments_down,adjustments_unchanged,clamped_proposals
+84,0.07091526242766816,0.0935607142857143,0.07246580972993251,0.0015505473022643366,-0.0025022053080348307,-0.008158040658308746,0.03,26,58,0,7

@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-10-07T02:53:06.526333+00:00",
+  "spec": {
+    "task": {
+      "task_id": "manufacturing_stress_3m",
+      "target_series_id": "manufacturing_stress",
+      "horizons": [
+        3
+      ],
+      "frequency": "MS",
+      "description": "Probability that U.S. manufacturing will be under stress three months ahead. A resolved month is stressed when IPMAN has declined by at least 2 percent over its preceding three months.",
+      "payload_type": "binary",
+      "categories": null,
+      "resolution_fn": "observed_value_at_resolution_timestamp"
+    },
+    "start": "2003-01-01T00:00:00",
+    "end": "2024-12-01T00:00:00",
+    "stride": 1,
+    "origin_dates": null,
+    "warmup": 60,
+    "description": "Full-history deterministic backtest for forecasting whether U.S. manufacturing will be under IPMAN-defined stress three months after each monthly forecast origin from 2003 through 2024."
+  },
+  "n_origins": 264,
+  "n_stressed_forecast_months": 20,
+  "n_episodes": 5,
+  "tables": [
+    "compare_all_2018_2024_uncertainty.csv",
+    "model_comparison.csv",
+    "origin_level_predictions.csv",
+    "stress_episodes.csv",
+    "subperiod_comparison.csv"
+  ],
+  "figures": [
+    "forecast_probabilities.png",
+    "cumulative_brier_difference.png",
+    "reliability.png"
+  ],
+  "llm_calls": 0
+}

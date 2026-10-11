@@ -1,0 +1,3 @@
+aieng-forecasting[agentic,documents,llm,numerical]
+beautifulsoup4<5,>=4.12
+xgboost<4,>=2.1

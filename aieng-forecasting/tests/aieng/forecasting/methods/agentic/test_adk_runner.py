@@ -28,6 +28,7 @@ def _final_event(text: str) -> MagicMock:
     event.is_final_response.return_value = True
     part = MagicMock()
     part.text = text
+    part.thought = False
     event.content.parts = [part]
     return event
 
@@ -372,6 +373,41 @@ class TestResponseExtraction:
         )
         runner = AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app"))
         assert await runner.run_text_async("hi") == "hello world"
+
+    async def test_joins_final_text_parts_and_ignores_thought_parts(self, patch_runner_cls, mock_agent) -> None:
+        """Use final answer text, not internal thought or function-call parts."""
+        event = _final_event("")
+        thought = MagicMock()
+        thought.text = "internal thought"
+        thought.thought = True
+        json_start = MagicMock()
+        json_start.text = '{"probability":'
+        json_start.thought = False
+        json_end = MagicMock()
+        json_end.text = "0.4}"
+        json_end.thought = False
+        event.content.parts = [thought, json_start, json_end]
+        patch_runner_cls.run_async.return_value = _stream(event)
+
+        runner = AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app"))
+
+        assert await runner.run_text_async("forecast") == '{"probability":0.4}'
+
+    async def test_drains_stream_after_first_final_event(self, patch_runner_cls, mock_agent) -> None:
+        """Consume cleanup events after capturing the final response."""
+        consumed = False
+
+        async def stream_with_trailing_event():
+            nonlocal consumed
+            yield _final_event("hello world")
+            yield _intermediate_event()
+            consumed = True
+
+        patch_runner_cls.run_async.return_value = stream_with_trailing_event()
+        runner = AdkTextRunner(mock_agent, config=AdkTextRunnerConfig(app_name="app"))
+
+        assert await runner.run_text_async("hi") == "hello world"
+        assert consumed
 
     async def test_returns_empty_string_when_stream_has_no_final_event(self, patch_runner_cls, mock_agent) -> None:
         """Stream with only non-final events yields an empty string."""

@@ -1,0 +1,98 @@
+schema_version: '1.0'
+approach_narrative: Start from the numerical hybrid anchor and make only bounded,
+  evidence-backed adjustments.
+calibration_corrections:
+- condition: CREDIT_SPREAD > 2.0 and VIXCLS > 20
+  adjustment: '+0.03'
+  source_hypothesis: hyp-001
+  confirmed_on: origin-014
+hypotheses:
+- id: hyp-001
+  claim: When CREDIT_SPREAD is above 2.0 and VIXCLS is above 20, the anchor under-forecasts
+    stress.
+  status: confirmed
+  confirmations: 3
+  refutations: 0
+  origins:
+  - origin-010
+  - origin-011
+  - origin-012
+observations:
+- date: origin-004
+  finding: The strategy performed slightly better than the anchor on the two newly
+    resolved origins, though both were non-stress periods.
+  linked_hypothesis: null
+- date: origin-008
+  finding: The strategy maintained a lower mean Brier score than the anchor across
+    the six resolved origins, all of which were non-stress periods.
+  linked_hypothesis: null
+- date: origin-011
+  finding: origin-009
+  linked_hypothesis: hyp-001
+- date: origin-011
+  finding: The strategy correctly identified the stress event at origin-009 better
+    than the anchor, though both models significantly under-forecasted the probability
+    of the event.
+  linked_hypothesis: null
+- date: origin-012
+  finding: The strategy correctly identified the stress event at origin-010, outperforming
+    the anchor, and providing a second confirmation for the hypothesis that high credit
+    spreads and VIX levels indicate under-forecasting of stress.
+  linked_hypothesis: hyp-001
+- date: origin-013
+  finding: The strategy correctly identified the stress event at origin-011, outperforming
+    the anchor, and providing a third confirmation for the hypothesis that high credit
+    spreads and VIX levels indicate under-forecasting of stress.
+  linked_hypothesis: hyp-001
+- date: origin-014
+  finding: The strategy successfully identified the stress event at origin-012, providing
+    a fourth confirmation for the hypothesis that high credit spreads and VIX levels
+    indicate under-forecasting of stress, leading to the graduation of this hypothesis
+    into a formal calibration correction.
+  linked_hypothesis: hyp-001
+- date: origin-015
+  finding: The strategy continued to outperform the anchor on the newly resolved stress
+    event at origin-013, maintaining its lower mean Brier score.
+  linked_hypothesis: null
+- date: origin-016
+  finding: The strategy correctly identified the non-stress outcome at origin-014,
+    though it slightly underperformed the anchor in terms of Brier score due to the
+    higher probability assigned to stress.
+  linked_hypothesis: null
+- date: origin-020
+  finding: The strategy's calibration correction for high credit spreads and VIX levels
+    continued to be applied correctly across the newly resolved origins, though it
+    resulted in higher Brier scores during non-stress periods compared to the anchor.
+  linked_hypothesis: hyp-001
+- date: origin-024
+  finding: The strategy's calibration correction for high credit spreads and VIX levels
+    continued to be applied correctly across the newly resolved origins, though it
+    resulted in higher Brier scores during non-stress periods compared to the anchor.
+  linked_hypothesis: hyp-001
+- date: origin-028
+  finding: The strategy's calibration correction for high credit spreads and VIX levels
+    was applied at origin-024, confirming the hypothesis, though it resulted in a
+    higher Brier score during this non-stress period compared to the anchor.
+  linked_hypothesis: hyp-001
+- date: origin-028
+  finding: The strategy continued to apply the calibration correction for high credit
+    spreads and VIX levels across the newly resolved origins, though it resulted in
+    higher Brier scores during non-stress periods compared to the anchor.
+  linked_hypothesis: null
+- date: origin-032
+  finding: The strategy's calibration correction for high credit spreads and VIX levels
+    was applied at origin-027, but the outcome was non-stress, and the correction
+    was not triggered at the other three newly resolved origins, which were also non-stress
+    periods.
+  linked_hypothesis: hyp-001
+- date: origin-032
+  finding: The strategy's calibration correction for high credit spreads and VIX levels
+    was applied at origin-027, but the outcome was non-stress, and the correction
+    was not triggered at the other three newly resolved origins, which were also non-stress
+    periods.
+  linked_hypothesis: null
+- date: origin-036
+  finding: The strategy correctly identified the non-stress outcomes at the four newly
+    resolved origins, matching the anchor's performance as the calibration correction
+    was not triggered.
+  linked_hypothesis: null

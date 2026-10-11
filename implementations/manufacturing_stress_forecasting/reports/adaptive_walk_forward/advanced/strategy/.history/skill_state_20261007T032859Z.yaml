@@ -1,0 +1,100 @@
+schema_version: '1.0'
+approach_narrative: 'Start from the numerical hybrid anchor and apply upward adjustments
+  when severe IPMAN declines or high financial stress indicate heightened risk. Apply
+  downward adjustments only when short-term IPMAN growth is positive and financial
+  indicators are stable. Rationale: Resolved feedback from recent origins shows the
+  anchor severely under-forecasts stress during periods of negative stock returns,
+  elevated VIX, and deep IPMAN contractions.'
+calibration_corrections:
+- condition: When IPMAN three-month growth is positive.
+  adjustment: Reduce the forecast probability below the anchor by 0.01 to 0.015.
+  source_hypothesis: hyp-001
+  confirmed_on: origin-007
+- condition: When three-month stock returns are negative and VIX is elevated.
+  adjustment: Increase the forecast probability above the anchor by 0.05 to 0.15.
+  source_hypothesis: hyp-002
+  confirmed_on: origin-013
+hypotheses:
+- id: hyp-001
+  claim: When IPMAN three-month growth is positive, the anchor over-forecasts manufacturing
+    stress.
+  status: confirmed
+  confirmations: 3
+  refutations: 0
+  origins:
+  - origin-001
+  - origin-003
+  - origin-005
+- id: hyp-002
+  claim: When three-month stock returns are negative and VIX is elevated, the anchor
+    under-forecasts manufacturing stress.
+  status: confirmed
+  confirmations: 3
+  refutations: 0
+  origins:
+  - origin-009
+  - origin-011
+  - origin-010
+- id: hyp-003
+  claim: When IPMAN three-month decline is greater than 5%, the anchor severely under-forecasts
+    manufacturing stress.
+  status: open
+  confirmations: 2
+  refutations: 0
+  origins:
+  - origin-011
+  - origin-010
+observations:
+- date: origin-003
+  finding: Positive short-term IPMAN growth and positive industrial stock returns
+    indicate low near-term risk of manufacturing stress.
+  linked_hypothesis: null
+- date: origin-003
+  finding: In origin-001, IPMAN growth was positive and the resolved outcome was no
+    stress, confirming that a lower forecast than the anchor was accurate.
+  linked_hypothesis: hyp-001
+- date: origin-005
+  finding: Strong positive short-term IPMAN growth and low financial stress indicators
+    suggest extremely low risk of manufacturing stress.
+  linked_hypothesis: hyp-001
+- date: origin-006
+  finding: Positive three-month IPMAN growth of 0.86% and positive industrial stock
+    returns of 1.44% indicate low risk of manufacturing stress.
+  linked_hypothesis: hyp-001
+- date: origin-007
+  finding: Positive three-month IPMAN growth of 1.11% and strong industrial stock
+    returns of 10.96% indicate very low risk of manufacturing stress.
+  linked_hypothesis: null
+- date: origin-008
+  finding: Positive three-month IPMAN growth of 0.17% and positive industrial stock
+    returns of 5.76% indicate low risk of manufacturing stress.
+  linked_hypothesis: null
+- date: origin-009
+  finding: Positive three-month IPMAN growth indicates low stress risk, while negative
+    industrial stock returns and elevated VIX present countervailing concerns.
+  linked_hypothesis: null
+- date: origin-010
+  finding: Negative three-month IPMAN growth of -1.38% and elevated financial stress
+    indicators suggest a heightened risk of manufacturing stress.
+  linked_hypothesis: null
+- date: origin-011
+  finding: In origin-009, three-month stock returns were negative and VIX was elevated,
+    and the outcome was stress (1) while the anchor was only 0.049.
+  linked_hypothesis: hyp-002
+- date: origin-011
+  finding: The anchor under-forecasted manufacturing stress in origin-009 when stock
+    returns were negative and VIX was elevated.
+  linked_hypothesis: hyp-002
+- date: origin-012
+  finding: Negative three-month IPMAN growth and elevated financial stress indicators
+    preceded a resolved outcome of manufacturing stress in origin-010.
+  linked_hypothesis: hyp-002
+- date: origin-012
+  finding: In origin-012, IPMAN three-month decline is -5.75% and the anchor remains
+    extremely low at 0.059 despite severe contraction.
+  linked_hypothesis: hyp-003
+- date: origin-013
+  finding: Severe three-month IPMAN contraction exceeding five percent combined with
+    extreme financial stress indicates a very high probability of ongoing manufacturing
+    stress.
+  linked_hypothesis: hyp-003
