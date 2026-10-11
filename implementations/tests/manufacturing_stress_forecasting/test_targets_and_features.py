@@ -11,6 +11,7 @@ from manufacturing_stress_forecasting.features import (
     XLI_RETURN_3M_SERIES_ID,
     XLI_RETURN_12M_SERIES_ID,
     YIELD_CURVE_SERIES_ID,
+    build_feature_matrix,
     build_feature_snapshot,
     build_macro_feature_frames,
 )
@@ -105,3 +106,66 @@ def test_expanded_macro_features_include_cpi_yoy_and_monthly_market_return() -> 
     assert features[SPY_RETURN_12M_SERIES_ID]["value"].iloc[-1] == pytest.approx(60.0)
     assert features[XLI_RETURN_3M_SERIES_ID]["value"].iloc[-1] == pytest.approx(0.0)
     assert features[XLI_RETURN_12M_SERIES_ID]["value"].iloc[-1] == pytest.approx(0.0)
+
+
+def test_feature_matrix_matches_per_origin_snapshots_including_late_revisions() -> None:
+    frames: dict[str, pd.DataFrame] = {}
+    for index, series_id in enumerate(FEATURE_SERIES_IDS):
+        # The January value is published after February's, so the latest
+        # reference month must win regardless of publication order.
+        frames[series_id] = pd.DataFrame(
+            {
+                "timestamp": pd.to_datetime(["2024-01-01", "2024-02-01", "2024-03-01"]),
+                "value": [float(index), 10.0 + index, 20.0 + index],
+                "released_at": pd.to_datetime(["2024-03-15", "2024-03-01", "2024-04-01"]),
+            }
+        )
+    origins = pd.to_datetime(["2024-02-15", "2024-03-01", "2024-03-20", "2024-05-01"])
+
+    matrix = build_feature_matrix(list(origins), frames)
+
+    assert matrix == [build_feature_snapshot(origin, frames) for origin in origins]
+    assert matrix[0] is None
+
+
+def test_logistic_fallback_uses_visible_label_history_not_feature_limited_rows() -> None:
+    from aieng.forecasting.data import DataService, SeriesMetadata  # noqa: PLC0415
+    from aieng.forecasting.data.features import StaticFrameAdapter  # noqa: PLC0415
+    from aieng.forecasting.evaluation.task import ForecastingTask  # noqa: PLC0415
+    from manufacturing_stress_forecasting.predictors import ManufacturingStressLogisticPredictor  # noqa: PLC0415
+
+    label_dates = pd.date_range("2000-01-01", periods=40, freq="MS")
+    labels = pd.DataFrame(
+        {
+            "timestamp": label_dates,
+            "value": [1.0] * 4 + [0.0] * 36,
+            "released_at": label_dates + pd.offsets.MonthBegin(1),
+        }
+    )
+    # Features only begin after every stress label, so training rows are all zero.
+    feature_dates = pd.date_range("2001-06-01", periods=20, freq="MS")
+    service = DataService()
+    for series_id, frame in [("manufacturing_stress", labels)] + [
+        (series_id, pd.DataFrame({"timestamp": feature_dates, "value": 1.0, "released_at": feature_dates}))
+        for series_id in FEATURE_SERIES_IDS
+    ]:
+        service.register(
+            series_id,
+            StaticFrameAdapter(frame),
+            SeriesMetadata(series_id=series_id, description=series_id, source="test", units="x", frequency="MS"),
+        )
+    task = ForecastingTask(
+        task_id="t",
+        description="t",
+        target_series_id="manufacturing_stress",
+        horizons=[3],
+        frequency="MS",
+        payload_type="binary",
+    )
+
+    prediction = ManufacturingStressLogisticPredictor().predict(
+        task, service.context(as_of=pd.Timestamp("2003-05-01"))
+    )[0]
+
+    assert prediction.metadata["model"] == "base_rate_fallback"
+    assert prediction.payload.probability == pytest.approx(4 / 40)

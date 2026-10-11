@@ -12,7 +12,7 @@ import pandas as pd
 
 
 DEFAULT_AUDIT = Path(__file__).parent / "skills" / "manufacturing-strategy" / ".history" / "adaptation_audit.jsonl"
-DEFAULT_OUTPUT = Path(__file__).parent / "reports" / "adaptive_agent"
+DEFAULT_OUTPUT = Path(__file__).resolve().parents[1] / "reports" / "adaptive_agent"
 
 
 def load_audit(path: Path) -> pd.DataFrame:

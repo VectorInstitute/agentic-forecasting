@@ -1,0 +1,2 @@
+id,claim,status,confirmations,refutations,origins
+hyp-001,"When CREDIT_SPREAD is above 2.0 and VIXCLS is above 20, the anchor under-forecasts stress.",confirmed,3,0,"origin-010, origin-011, origin-012"

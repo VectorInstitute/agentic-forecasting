@@ -10,7 +10,11 @@ from aieng.forecasting.data.context import ForecastContext
 from aieng.forecasting.evaluation.prediction import BinaryForecast, Prediction
 from aieng.forecasting.evaluation.predictor import Predictor
 from aieng.forecasting.evaluation.task import ForecastingTask
-from manufacturing_stress_forecasting.features import FEATURE_SERIES_IDS, build_feature_snapshot
+from manufacturing_stress_forecasting.features import (
+    FEATURE_SERIES_IDS,
+    build_feature_matrix,
+    build_feature_snapshot,
+)
 
 
 class ManufacturingStressLogisticPredictor(Predictor):
@@ -45,7 +49,16 @@ class ManufacturingStressLogisticPredictor(Predictor):
 
         rows, outcomes = self._training_data(target, feature_frames, lead)
         current = build_feature_snapshot(as_of, feature_frames, series_ids=FEATURE_SERIES_IDS)
-        payload, model_metadata = self._fit_and_predict(rows, outcomes, current)
+        if current is None or len(outcomes) < self._min_training_examples or len(set(outcomes)) < 2:
+            # Fall back to the full visible label history, not the feature-limited
+            # training rows: those start when the last feature series begins and
+            # can contain no events at all, which would forecast exactly zero.
+            visible_rate = target["value"].astype(float).mean()
+            fallback_rate = float(visible_rate) if pd.notna(visible_rate) else 0.1
+            payload: BinaryForecast = BinaryForecast(probability=fallback_rate)
+            model_metadata: dict[str, object] = {"model": "base_rate_fallback"}
+        else:
+            payload, model_metadata = self._fit_and_predict(rows, outcomes, current)
 
         return [
             Prediction(
@@ -67,13 +80,9 @@ class ManufacturingStressLogisticPredictor(Predictor):
     ) -> tuple[list[list[float]], list[float]]:
         rows: list[list[float]] = []
         outcomes: list[float] = []
-        for resolution_date, outcome in zip(target["timestamp"], target["value"], strict=True):
-            past_origin = pd.Timestamp(resolution_date) - lead
-            snapshot = build_feature_snapshot(
-                past_origin,
-                feature_frames,
-                series_ids=FEATURE_SERIES_IDS,
-            )
+        past_origins = [pd.Timestamp(resolution_date) - lead for resolution_date in target["timestamp"]]
+        snapshots = build_feature_matrix(past_origins, feature_frames, series_ids=FEATURE_SERIES_IDS)
+        for snapshot, outcome in zip(snapshots, target["value"], strict=True):
             if snapshot is None:
                 continue
             rows.append([snapshot[series_id] for series_id in FEATURE_SERIES_IDS])
@@ -84,14 +93,9 @@ class ManufacturingStressLogisticPredictor(Predictor):
         self,
         rows: list[list[float]],
         outcomes: list[float],
-        current: dict[str, float] | None,
+        current: dict[str, float],
     ) -> tuple[BinaryForecast, dict[str, object]]:
-        base_rate = float(np.mean(outcomes)) if outcomes else 0.1
-        if current is None:
-            return BinaryForecast(probability=base_rate), {"model": "base_rate_fallback"}
-        if len(outcomes) < self._min_training_examples or len(set(outcomes)) < 2:
-            return BinaryForecast(probability=base_rate), {"model": "base_rate_fallback"}
-
+        """Fit on rows containing both classes and score the current snapshot."""
         from sklearn.linear_model import LogisticRegression  # noqa: PLC0415
         from sklearn.pipeline import make_pipeline  # noqa: PLC0415
         from sklearn.preprocessing import StandardScaler  # noqa: PLC0415

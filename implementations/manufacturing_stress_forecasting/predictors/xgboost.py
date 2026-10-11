@@ -37,14 +37,8 @@ class ManufacturingStressXGBoostPredictor(ManufacturingStressLogisticPredictor):
         self,
         rows: list[list[float]],
         outcomes: list[float],
-        current: dict[str, float] | None,
+        current: dict[str, float],
     ) -> tuple[BinaryForecast, dict[str, object]]:
-        base_rate = float(np.mean(outcomes)) if outcomes else 0.1
-        if current is None:
-            return BinaryForecast(probability=base_rate), {"model": "base_rate_fallback"}
-        if len(outcomes) < self._min_training_examples or len(set(outcomes)) < 2:
-            return BinaryForecast(probability=base_rate), {"model": "base_rate_fallback"}
-
         from xgboost import XGBClassifier  # noqa: PLC0415
 
         model = XGBClassifier(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+import numpy as np
 import pandas as pd
 from aieng.forecasting.data.features import canonical_three_col
 
@@ -137,8 +138,7 @@ def build_macro_feature_frames(
         YIELD_CURVE_SERIES_ID: spread_monthly,
     }
     if all(
-        frame is not None
-        for frame in (cpi, unemployment, initial_claims, vix, credit_spread, spy_prices, xli_prices)
+        frame is not None for frame in (cpi, unemployment, initial_claims, vix, credit_spread, spy_prices, xli_prices)
     ):
         cpi_monthly = monthly_level(cpi)
         cpi_yoy = cpi_monthly.copy()
@@ -186,6 +186,59 @@ def build_feature_snapshot(
     return snapshot
 
 
+def build_feature_matrix(
+    origins: Sequence[pd.Timestamp],
+    feature_frames: dict[str, pd.DataFrame],
+    *,
+    series_ids: Sequence[str] = FEATURE_SERIES_IDS,
+) -> list[dict[str, float] | None]:
+    """Vectorised equivalent of calling ``build_feature_snapshot`` at every origin.
+
+    For each series, observations are ordered by ``released_at`` and each row
+    carries the value of the latest reference month published so far; an
+    as-of merge then picks that value for every origin. This matches the
+    per-origin snapshot exactly (including revisions published out of order)
+    while avoiding one filter per origin and series, which dominates
+    fit-at-origin training cost over long backtests.
+    """
+    origin_index = pd.DatetimeIndex(pd.to_datetime(list(origins))).as_unit("ns")
+    order = np.argsort(origin_index.values, kind="stable")
+    sorted_origins = pd.DataFrame({"origin": origin_index.values[order], "position": order})
+    values = np.full((len(origin_index), len(series_ids)), np.nan)
+    available = np.ones(len(origin_index), dtype=bool)
+
+    for column, series_id in enumerate(series_ids):
+        frame = feature_frames[series_id]
+        published = pd.DataFrame(
+            {
+                "released_at": pd.to_datetime(frame["released_at"]).dt.as_unit("ns").to_numpy(),
+                "timestamp": pd.to_datetime(frame["timestamp"]).dt.as_unit("ns").to_numpy(),
+                "value": frame["value"].astype(float).to_numpy(),
+            }
+        ).sort_values(["released_at", "timestamp"], kind="stable")
+        timestamps = published["timestamp"].to_numpy()
+        running_latest = np.maximum.accumulate(timestamps)
+        latest_row = np.where(timestamps >= running_latest, np.arange(len(published)), -1)
+        latest_row = np.maximum.accumulate(latest_row)
+        published["latest_value"] = published["value"].to_numpy()[latest_row]
+
+        merged = pd.merge_asof(
+            sorted_origins,
+            published[["released_at", "latest_value"]].drop_duplicates("released_at", keep="last"),
+            left_on="origin",
+            right_on="released_at",
+            direction="backward",
+        )
+        positions = merged["position"].to_numpy()
+        values[positions, column] = merged["latest_value"].to_numpy()
+        available[positions[merged["released_at"].isna().to_numpy()]] = False
+
+    return [
+        dict(zip(series_ids, (float(value) for value in row), strict=True)) if is_available else None
+        for row, is_available in zip(values, available, strict=True)
+    ]
+
+
 __all__ = [
     "FED_FUNDS_SERIES_ID",
     "FEDFUNDS_SERIES_ID",
@@ -209,6 +262,7 @@ __all__ = [
     "XLI_RETURN_12M_SERIES_ID",
     "YIELD_CURVE_SERIES_ID",
     "apply_conservative_monthly_release_lag",
+    "build_feature_matrix",
     "build_feature_snapshot",
     "build_ipman_feature_frames",
     "build_macro_feature_frames",

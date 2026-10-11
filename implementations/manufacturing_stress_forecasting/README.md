@@ -35,6 +35,18 @@ That distinction makes this forecasting rather than current-state detection.
 
 All predictors return `BinaryForecast` probabilities; backtested predictors are scored with Brier score.
 
+When an origin has too few training rows, or only one class, the logistic and
+XGBoost predictors fall back to the visible stress-label base rate (the same
+quantity historical frequency uses). Training rows only begin once every
+feature series exists (1999, because of the SPY/XLI 12-month returns) and
+contain no stress events before 2008, so falling back to their own rate would
+forecast exactly zero.
+
+Training rows for the fit-at-origin models are built with
+`features.build_feature_matrix`, a vectorised as-of join that reproduces
+`build_feature_snapshot` at every past origin exactly, about 100× faster. This
+is what makes the 264-origin full-history evaluation run in under a minute.
+
 ## Data and cutoff assumptions
 Compare XGBoost with logistic regression and historical frequency rather than judging it
 in isolation, because this small monthly dataset can overfit flexible models.
@@ -78,6 +90,13 @@ governed by typed mutation tools. Both agent rows retain the anchor, proposed
 probability, applied adjustment, rationale, and evidence in metadata.
 The stateless hybrid and adaptive agent use distinct predictor/cache IDs, so
 the adaptive backtest cannot silently reuse the hybrid result.
+Hypothesis outcomes must cite a forecast origin whose outcome had been
+published (see the walk-forward section below). Outside the walk-forward there
+is no resolved evidence, so `record_hypothesis_outcome` refuses and the agent
+can only record observations or open hypotheses. The committed default
+strategy's graduated `hyp-001` was created before this guard, when a single
+forecast could confirm its own hypothesis three times; treat it as a legacy
+artifact.
 When Langfuse credentials are configured, adaptive runs emit tagged traces and
 each durable strategy mutation is also appended to the redacted
 `adaptive_agent/skills/manufacturing-strategy/.history/adaptation_audit.jsonl`
@@ -310,9 +329,108 @@ Run one current forecast, including the structured agent:
 uv run --directory implementations python -m manufacturing_stress_forecasting.run_agent_prediction
 ```
 
+### Full-history evaluation with uncertainty
+
+The 2018–2024 window has only six stress months, too few to rank models.
+`run_full_history.py` runs historical frequency, the logistic anchor, and the
+selected XGBoost on every month from 2003 through 2024
+([`manufacturing_stress_full_history.yaml`](specs/manufacturing_stress_full_history.yaml)):
+264 origins, 20 stress months, and five episodes (2008, 2008–09, 2020, 2021,
+2022). No LLM calls; it runs in under a minute from the cached data:
+
+```bash
+uv run --directory implementations python -m manufacturing_stress_forecasting.run_full_history
+```
+
+It writes [`reports/full_history/`](reports/full_history/) with:
+
+- Brier score, Brier skill, a circular block-bootstrap 90% interval for the
+  difference from historical frequency, and a Diebold-Mariano test whose
+  variance allows for the overlap of three-month targets on monthly origins
+  (`evaluation_stats.py`).
+- A Murphy decomposition (reliability / resolution / uncertainty).
+- Sub-period tables that separate 2003–2017, which overlaps the
+  hyperparameter-tuning folds, from 2018–2024.
+- A stress-episode table showing each model's probability in the three origins
+  before every episode.
+- The same uncertainty statistics applied to the saved 2018–2024 agent results
+  in `reports/compare_all/`.
+
+Headline: no model beats historical frequency. The logistic anchor is
+statistically indistinguishable from it, XGBoost is significantly worse, and
+both raise their probabilities only after an episode has begun. On 2018–2024,
+the adaptive agent's interval includes zero, while the stateless hybrid agent
+and XGBoost are worse than the base rate at the 90% level.
+
+### Adaptive agent that learns from published outcomes (walk-forward)
+
+`run_adaptive_walk_forward.py` runs the adaptive agent through origins in date
+order with an `OutcomeLedger` (`adaptive_agent/ledger.py`). At each origin the
+prompt includes `resolved_feedback`: the agent's earlier forecasts whose stress
+label had been **published** by that origin, with its Brier score and the
+anchor's. Origins are referred to by date-free ids (`origin-001`), and prompts
+anonymise dates.
+
+Learning happens in a separate **review** call (`adaptive_agent/review.py`)
+rather than in the forecast call. A first lite-model run that asked each
+forecast call to also maintain the strategy made no strategy changes at all
+across 76 origins: the model just forecast. Reviews run every
+`--review-every` origins (default 4, about yearly at the default stride) and
+immediately after any newly published stress outcome. A review sees the
+strategy, the ids of newly resolved origins, and up to 24 resolved forecasts
+with the signals seen at each origin (3- and 6-month IPMAN change, yield-curve
+and credit spreads, VIX, 3-month XLI return), so hypotheses can name signal
+conditions. Its only job is to score open hypotheses, graduate those the tools
+allow, open new ones for recurring misses, and record one observation.
+Forecast calls read the strategy but cannot change it. `--review-every 0`
+restores the single-call design for comparison. Reviews are logged to
+`reviews.jsonl` and summarised in the report.
+
+See [`adaptive_agent/README.md`](adaptive_agent/README.md) for a concise
+explanation of the outcome-grounding controls and reproducible commands that
+validate the ledger, review process, saved mutation evidence, and statistical
+evaluation.
+
+The strategy tools enforce the learning rules:
+
+- `record_hypothesis_outcome` accepts only an `origin_id` the ledger shows as
+  resolved at the current origin, once per hypothesis.
+- `graduate_hypothesis` needs three confirmations from distinct resolved
+  origins and more confirmations than refutations; three refutations close a
+  hypothesis.
+- Every mutation is audited with the origin id at which it was made.
+
+The final probability stays within ±0.03 of the logistic anchor. Progress is
+appended to `predictions.jsonl` after every origin, so rerunning the same
+command resumes after an interruption. Outputs go to
+`reports/adaptive_walk_forward/<lite|advanced>/`: the per-origin table,
+comparisons against the anchor and historical frequency, a learning curve, the
+early/middle/late agent-minus-anchor table, the hypothesis lifecycle, and the
+final learned `strategy/SKILL.md`.
+
+```bash
+# No LLM calls: checks the loop and report end to end.
+uv run --directory implementations python -m manufacturing_stress_forecasting.run_adaptive_walk_forward --dry-run
+
+# Lite model, quarterly origins 2006-2024 (76 forecasts plus about 25 reviews).
+uv run --directory implementations python -m manufacturing_stress_forecasting.run_adaptive_walk_forward --model lite
+
+# Advanced model; --stride 1 gives monthly origins (228 forecasts, more feedback).
+uv run --directory implementations python -m manufacturing_stress_forecasting.run_adaptive_walk_forward --model advanced
+```
+
+Use `--fresh` to discard progress and reseed the strategy, `--max-origins N`
+for a short trial, `--review-every 0` for the no-review comparison (pair it
+with `--run-dir`), and `--report-only` to rebuild the report. This is still a
+retrospective study: anonymised dates reduce, but do not remove, the chance
+that the model recognises a historical episode.
+
 ## Next steps
 
 1. Plot IPMAN and the derived stress months; confirm or revise the 2% threshold.
-2. Compare the expanded macro-panel score with the earlier IPMAN-only result.
-3. Compare the cached agent backtest against the deterministic baselines only
-   after checking scored and skipped origin counts.
+2. Add leading manufacturing surveys (Philadelphia Fed and Empire State
+   indices on FRED); the full-history decomposition shows resolution, not
+   calibration, is what the current features lack.
+3. Drop or backfill the market features so training rows reach back before
+   1999 and include more stress episodes.
+4. Record forecasts prospectively for a clean out-of-sample test of the agents.

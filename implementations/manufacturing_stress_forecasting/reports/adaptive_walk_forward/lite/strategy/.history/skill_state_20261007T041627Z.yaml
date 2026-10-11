@@ -1,0 +1,30 @@
+schema_version: '1.0'
+approach_narrative: Start from the numerical hybrid anchor and make only bounded,
+  evidence-backed adjustments.
+calibration_corrections: []
+hypotheses:
+- id: hyp-001
+  claim: When CREDIT_SPREAD is above 2.0 and VIXCLS is above 20, the anchor under-forecasts
+    stress.
+  status: open
+  confirmations: 1
+  refutations: 0
+  origins:
+  - origin-010
+observations:
+- date: origin-004
+  finding: The strategy performed slightly better than the anchor on the two newly
+    resolved origins, though both were non-stress periods.
+  linked_hypothesis: null
+- date: origin-008
+  finding: The strategy maintained a lower mean Brier score than the anchor across
+    the six resolved origins, all of which were non-stress periods.
+  linked_hypothesis: null
+- date: origin-011
+  finding: origin-009
+  linked_hypothesis: hyp-001
+- date: origin-011
+  finding: The strategy correctly identified the stress event at origin-009 better
+    than the anchor, though both models significantly under-forecasted the probability
+    of the event.
+  linked_hypothesis: null

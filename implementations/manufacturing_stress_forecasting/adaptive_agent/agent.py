@@ -8,6 +8,7 @@ from aieng.forecasting.evaluation.task import ForecastingTask
 from aieng.forecasting.methods.agentic import AdaptiveSkillStore, AdkTextRunnerConfig, AgentPredictor, build_adk_agent
 from aieng.forecasting.methods.agentic.agent_factory import AgentConfig
 from aieng.forecasting.models import ADVANCED_MODEL, LITE_MODEL
+from manufacturing_stress_forecasting.adaptive_agent.ledger import OutcomeLedger
 from manufacturing_stress_forecasting.adaptive_agent.state import ManufacturingStrategyState
 from manufacturing_stress_forecasting.adaptive_agent.tools import build_strategy_tools
 from manufacturing_stress_forecasting.analyst_agent.json_runner import ManufacturingStressJsonRunner
@@ -22,9 +23,16 @@ DEFAULT_STRATEGY_DIR = Path(__file__).parent / "skills" / "manufacturing-strateg
 
 
 class ManufacturingAdaptivePromptBuilder(HybridManufacturingStressPromptBuilder):
-    def __init__(self, strategy_dir: Path, *, anonymize_dates: bool = False) -> None:
+    def __init__(
+        self,
+        strategy_dir: Path,
+        *,
+        anonymize_dates: bool = False,
+        ledger: OutcomeLedger | None = None,
+    ) -> None:
         super().__init__(anonymize_dates=anonymize_dates)
         self._store = AdaptiveSkillStore(strategy_dir, ManufacturingStrategyState)
+        self._ledger = ledger
 
     def __call__(self, *, task: ForecastingTask, context: ForecastContext) -> str:
         payload = json.loads(super().__call__(task=task, context=context))
@@ -32,6 +40,8 @@ class ManufacturingAdaptivePromptBuilder(HybridManufacturingStressPromptBuilder)
         payload["adaptive_rules"] = (
             "Use strategy observations as context; never change model parameters or the numerical anchor."
         )
+        if self._ledger is not None:
+            payload["resolved_feedback"] = self._ledger.feedback_payload()
         return json.dumps(payload, separators=(",", ":"))
 
 
@@ -42,18 +52,35 @@ def build_manufacturing_adaptive_agent_predictor(
     model: str = LITE_MODEL,
     anonymize_dates: bool = False,
     mutation_enabled: bool = True,
+    ledger: OutcomeLedger | None = None,
 ) -> AgentPredictor:
+    """Build the stateful adaptive agent.
+
+    Pass an ``OutcomeLedger`` (as the walk-forward runner does) to show the
+    agent its own published forecast outcomes and let it confirm or refute
+    hypotheses against them. Without one, hypothesis outcomes are refused.
+    """
     resolved = config.model_copy(deep=True) if config is not None else build_hybrid_agent_config(model=model)
     if config is None and model == ADVANCED_MODEL:
         resolved.max_output_tokens = max(resolved.max_output_tokens or 0, 4096)
     resolved.name = f"manufacturing_stress_adaptive_analyst_{model.replace('.', '_').replace('-', '_')}"
     if not mutation_enabled:
         resolved.name += "_read_only"
-    mutation_instruction = (
-        "Use the strategy mutation tools only for durable patterns supported by distinct forecast origins."
-        if mutation_enabled
-        else "Treat adaptive_strategy as read-only; do not attempt to change or save strategy state."
-    )
+    if not mutation_enabled:
+        mutation_instruction = "Treat adaptive_strategy as read-only; do not attempt to change or save strategy state."
+    elif ledger is not None:
+        mutation_instruction = (
+            "resolved_feedback lists your earlier forecasts whose outcomes are now published, with your Brier "
+            "score and the anchor's. Learn only from these. Before forecasting, check open hypotheses against "
+            "newly resolved origins and record each as confirmed or refuted, citing its origin_id. Open a new "
+            "hypothesis only for a recurring miss pattern that names a condition on the supplied signals. "
+            "Graduate a hypothesis only after the tool reports enough confirmations. Most forecasts need no "
+            "mutation at all; never mutate based on the current, unresolved forecast."
+        )
+    else:
+        mutation_instruction = (
+            "Use the strategy mutation tools only for durable patterns supported by distinct forecast origins."
+        )
     resolved.instruction += (
         "\n\nYou are a stateful adaptive manufacturing analyst. Read adaptive_strategy before forecasting. "
         "Use the numerical anchor as the starting point and apply only bounded adjustments. "
@@ -66,7 +93,7 @@ def build_manufacturing_adaptive_agent_predictor(
         "exactly one JSON object as the final response. Do not submit a partial object or extra prose.\n\n"
         + HybridManufacturingStressOutput.prompt_schema_json()
     )
-    resolved.extra_tools = build_strategy_tools(strategy_dir) if mutation_enabled else []
+    resolved.extra_tools = build_strategy_tools(strategy_dir, ledger=ledger) if mutation_enabled else []
     agent = build_adk_agent(resolved, output_schema=HybridManufacturingStressOutput)
     runner = ManufacturingStressJsonRunner(
         agent,
@@ -87,7 +114,7 @@ def build_manufacturing_adaptive_agent_predictor(
     )
     return AgentPredictor(
         agent_config=resolved,
-        prompt_builder=ManufacturingAdaptivePromptBuilder(strategy_dir, anonymize_dates=anonymize_dates),
+        prompt_builder=ManufacturingAdaptivePromptBuilder(strategy_dir, anonymize_dates=anonymize_dates, ledger=ledger),
         output_schema=HybridManufacturingStressOutput,
         enable_langfuse_tracing=False,
         runner=runner,

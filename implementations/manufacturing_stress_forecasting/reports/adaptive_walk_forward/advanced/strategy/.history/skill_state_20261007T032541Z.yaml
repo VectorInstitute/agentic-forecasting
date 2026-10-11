@@ -1,0 +1,36 @@
+schema_version: '1.0'
+approach_narrative: Start from the numerical hybrid anchor and make only bounded,
+  evidence-backed adjustments.
+calibration_corrections:
+- condition: When IPMAN three-month growth is positive.
+  adjustment: Reduce the forecast probability below the anchor by 0.01 to 0.015.
+  source_hypothesis: hyp-001
+  confirmed_on: origin-007
+hypotheses:
+- id: hyp-001
+  claim: When IPMAN three-month growth is positive, the anchor over-forecasts manufacturing
+    stress.
+  status: confirmed
+  confirmations: 3
+  refutations: 0
+  origins:
+  - origin-001
+  - origin-003
+  - origin-005
+observations:
+- date: origin-003
+  finding: Positive short-term IPMAN growth and positive industrial stock returns
+    indicate low near-term risk of manufacturing stress.
+  linked_hypothesis: null
+- date: origin-003
+  finding: In origin-001, IPMAN growth was positive and the resolved outcome was no
+    stress, confirming that a lower forecast than the anchor was accurate.
+  linked_hypothesis: hyp-001
+- date: origin-005
+  finding: Strong positive short-term IPMAN growth and low financial stress indicators
+    suggest extremely low risk of manufacturing stress.
+  linked_hypothesis: hyp-001
+- date: origin-006
+  finding: Positive three-month IPMAN growth of 0.86% and positive industrial stock
+    returns of 1.44% indicate low risk of manufacturing stress.
+  linked_hypothesis: hyp-001

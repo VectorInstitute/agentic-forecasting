@@ -43,7 +43,8 @@ The repository is a foundation. Each reference implementation's README ends with
 
 - **BoC live forecasting** — extend `meeting_schedule.yaml` with the Bank's published future dates and forecast each announcement the day before it happens: genuinely out-of-sample, and the honest test that backtest leakage precludes. Needs annual calendar maintenance.
 - **Reports as predictor context** — wire cutoff-filtered documents into the forecast prompt: BoC press releases / Monetary Policy Reports through the LLM-Process `user_prompt_suffix` or the `build_boc_news_config` retrieval seam, and the analogous food-CPI CFPR wiring (extraction already exists; mirror BoC's `PressReleaseStore`). Measure the lift over the quantitative-only baseline.
-- **Memory-augmented agent** — an agent that learns from its own resolved prediction errors over time; a generalization of the energy adaptive agent across use cases.
+- **Memory-augmented agent** — an agent that learns from its own resolved prediction errors over time; a generalization of the energy adaptive agent across use cases. Manufacturing stress ships one binary-task instance: `run_adaptive_walk_forward.py` forecasts origins in date order, shows the agent only outcomes published by each origin (`OutcomeLedger`), and its strategy tools refuse hypothesis outcomes that do not cite a resolved origin. Strategy updates happen in a separate periodic review call: asked to forecast and maintain its strategy in one call, the lite model never mutated it. Porting the ledger pattern to energy or BoC is the natural next step.
+- **Uncertainty-aware comparisons (principle).** With few events and overlapping horizons, point-estimate Brier rankings mislead. Manufacturing's `evaluation_stats.py` (circular block bootstrap, horizon-aware Diebold-Mariano, Murphy decomposition) is self-contained and a candidate to promote into `aieng.forecasting.evaluation` for every use case.
 
 ### Agent and analyst depth
 
@@ -63,7 +64,7 @@ Every domain implementation (S&P 500, food, energy, BoC) now ships a **`starter_
 
 Record predictions from the reference methods (energy first, given its daily data), persist predictions and reasoning traces, and resolve them as horizons mature — a true prospective Track 1 test, distinct from Track 2 scoring.
 
-**Cutoff-aware evaluation (principle).** LLM/agent forecasters can only be scored honestly on origins *after* the model's training cutoff (~Jan 2025 for Gemini) — earlier origins measure memorised recall, not forecasting, and silently flatter the LLM against the cutoff-safe numerical methods. Energy and S&P 500 both put the LLM-inclusive comparison in a 2025 backtest plus a protected 2026 eval; pre-cutoff windows (e.g. S&P 500's 2020 COVID stress) are kept **numerical-only**. food and BoC still backtest their LLM rows on pre-cutoff windows and should migrate to the same discipline.
+**Cutoff-aware evaluation (principle).** LLM/agent forecasters can only be scored honestly on origins *after* the model's training cutoff (~Jan 2025 for Gemini) — earlier origins measure memorised recall, not forecasting, and silently flatter the LLM against the cutoff-safe numerical methods. Energy and S&P 500 both put the LLM-inclusive comparison in a 2025 backtest plus a protected 2026 eval; pre-cutoff windows (e.g. S&P 500's 2020 COVID stress) are kept **numerical-only**. food, BoC, and manufacturing stress still backtest their LLM rows on pre-cutoff windows (manufacturing anonymises dates to reduce, not remove, recall) and should migrate to the same discipline.
 
 ### Core-library follow-up
 

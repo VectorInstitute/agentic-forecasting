@@ -22,7 +22,6 @@ from manufacturing_stress_forecasting.analyst_agent import (
 from manufacturing_stress_forecasting.analyst_agent.json_runner import ManufacturingStressJsonRunner
 from manufacturing_stress_forecasting.predictors import (
     ManufacturingStressLogisticPredictor,
-    ManufacturingStressXGBoostPredictor,
 )
 from pydantic import Field, field_validator
 
@@ -45,16 +44,13 @@ class NumericalAnchor:
     def probability(self) -> float:
         return self.logistic_probability
 
-    def as_dict(self) -> dict[str, float | str]:
+    def as_dict(self) -> dict[str, float | str | None]:
         return {
             "logistic_probability": self.logistic_probability,
             "xgboost_probability": self.xgboost_probability,
             "anchor_probability": self.probability,
             "anchor_method": "logistic_only",
         }
-        if self.xgboost_probability is not None:
-            values["xgboost_probability"] = self.xgboost_probability
-        return values
 
 
 class HybridManufacturingStressOutput(AgentForecastOutput):
